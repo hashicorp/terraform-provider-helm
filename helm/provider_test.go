@@ -8,8 +8,11 @@ import (
 )
 
 const (
-	testNamespace   = "terraform-acc-test"
-	testReleaseName = "test-release"
+	testNamespace        = "terraform-acc-test"
+	testReleaseName      = "test-release"
+	testRepositoryName   = "test-repository"
+	testRepositoryURL    = "https://kubernetes-charts.storage.googleapis.com"
+	testRepositoryURLAlt = "https://kubernetes-charts-incubator.storage.googleapis.com"
 )
 
 var (

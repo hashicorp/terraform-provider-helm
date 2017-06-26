@@ -154,7 +154,7 @@ func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(helm.Interface)
 
 	if r, err := getRelease(client, d); err == nil {
-		return setIdAndMetadata(d, r)
+		return setIdAndMetadataFromRelease(d, r)
 	}
 
 	chart, _, err := getChart(d)
@@ -180,7 +180,7 @@ func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return setIdAndMetadata(d, res.Release)
+	return setIdAndMetadataFromRelease(d, res.Release)
 }
 
 func resourceChartRead(d *schema.ResourceData, meta interface{}) error {
@@ -191,10 +191,10 @@ func resourceChartRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return setIdAndMetadata(d, r)
+	return setIdAndMetadataFromRelease(d, r)
 }
 
-func setIdAndMetadata(d *schema.ResourceData, r *release.Release) error {
+func setIdAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
 	d.SetId(r.Name)
 
 	return d.Set("metadata", []map[string]interface{}{{
@@ -235,7 +235,7 @@ func resourceChartUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return setIdAndMetadata(d, res.Release)
+	return setIdAndMetadataFromRelease(d, res.Release)
 }
 func resourceChartDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(helm.Interface)
