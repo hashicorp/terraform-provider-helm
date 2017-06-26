@@ -3,6 +3,7 @@ package helm
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,9 +21,6 @@ import (
 	"k8s.io/helm/pkg/strvals"
 )
 
-/*
-	f.StringVar(&inst.nameTemplate, "name-template", "", "specify template used to name the release")
-*/
 var ErrReleaseNotFound = errors.New("release not found")
 
 func resourceChart() *schema.Resource {
@@ -39,9 +37,17 @@ func resourceChart() *schema.Resource {
 				ForceNew:    true,
 				Description: "Release name.",
 			},
+			"repository": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "Repository where to locate the requested chart. If is an URL the chart is installed without install the repository.",
+			},
 			"chart": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "Chart name to be installed.",
 			},
 			"version": {
 				Type:        schema.TypeString,
@@ -70,10 +76,10 @@ func resourceChart() *schema.Resource {
 				Optional:    true,
 				Description: "Namespace to install the release into.",
 			},
-			"repository": {
+			"repository_url": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Repository URL where to locate the requested chart.",
+				Description: "Repository URL where to locate the requested chart without install the repository.",
 			},
 			"verify": {
 				Type:        schema.TypeBool,
@@ -346,81 +352,139 @@ func getRelease(client helm.Interface, d *schema.ResourceData) (*release.Release
 	return nil, ErrReleaseNotFound
 }
 
-// locateChartPath looks for a chart directory in known places, and returns either the full path or an error.
-//
-// This does not ensure that the chart is well-formed; only that the requested filename exists.
-//
-// Order of resolution:
-// - current working directory
-// - if path is absolute or begins with '.', error out here
-// - chart repos in $HELM_HOME
-// - URL
-//
-// If 'verify' is true, this will attempt to also verify the chart.
-func locateChartPath(repoURL, name, version string, verify bool, keyring string) (string, error) {
+type chartLocator func(repositoryURL, name, version string, verify bool, keyring string) (string, error)
+
+func locateChartPath(repository, name, version string, verify bool, keyring string) (string, error) {
 	name = strings.TrimSpace(name)
 	version = strings.TrimSpace(version)
-	if fi, err := os.Stat(name); err == nil {
-		abs, err := filepath.Abs(name)
+
+	repositoryURL, name, err := resolveChartName(repository, name)
+	if err != nil {
+		return "", err
+	}
+
+	pipeline := []chartLocator{
+		locateChartPathInLocal,
+		locateChartPathInLocalRepository,
+		locateChartPathInRepository,
+	}
+
+	for _, f := range pipeline {
+		path, err := f(repositoryURL, name, version, verify, keyring)
 		if err != nil {
-			return abs, err
+			return "", err
 		}
-		if verify {
-			if fi.IsDir() {
-				return "", errors.New("cannot verify a directory")
-			}
-			if _, err := downloader.VerifyChart(abs, keyring); err != nil {
-				return "", err
-			}
+
+		if path == "" {
+			continue
 		}
-		return abs, nil
+
+		return path, err
 	}
-	if filepath.IsAbs(name) || strings.HasPrefix(name, ".") {
-		return name, fmt.Errorf("path %q not found", name)
+
+	return "", fmt.Errorf("chart %q not found", name)
+}
+
+func resolveChartName(repository, name string) (string, string, error) {
+	_, err := url.ParseRequestURI(repository)
+	if err == nil {
+		return repository, name, nil
 	}
+
+	if strings.Index(name, "/") == -1 && repository != "" {
+		name = fmt.Sprintf("%s/%s", repository, name)
+	}
+
+	return "", name, nil
+}
+
+func locateChartPathInLocal(repositoryURL, name, version string, verify bool, keyring string) (string, error) {
+	fi, err := os.Stat(name)
+	if err != nil {
+		if filepath.IsAbs(name) || strings.HasPrefix(name, ".") {
+			return "", fmt.Errorf("path %q not found", name)
+		}
+
+		return "", nil
+	}
+
+	abs, err := filepath.Abs(name)
+	if err != nil {
+		return "", err
+	}
+
+	if !verify {
+		if fi.IsDir() {
+			return "", fmt.Errorf("cannot verify a directory")
+		}
+
+		if _, err := downloader.VerifyChart(abs, keyring); err != nil {
+			return "", err
+		}
+	}
+
+	return abs, nil
+}
+
+func locateChartPathInLocalRepository(
+	repositoryURL, name, version string, verify bool, keyring string) (string, error) {
 
 	crepo := filepath.Join(settings.Home.Repository(), name)
 	if _, err := os.Stat(crepo); err == nil {
 		return filepath.Abs(crepo)
 	}
 
-	dl := downloader.ChartDownloader{
-		HelmHome: settings.Home,
-		Out:      os.Stdout,
-		Keyring:  keyring,
-		Getters:  getter.All(settings),
-	}
-	if verify {
-		dl.Verify = downloader.VerifyAlways
-	}
-	if repoURL != "" {
-		chartURL, err := repo.FindChartInRepoURL(repoURL, name, version,
-			tlsCertFile, tlsKeyFile, tlsCaCertFile, getter.All(settings))
-		if err != nil {
-			return "", err
-		}
-		name = chartURL
+	return "", nil
+}
+
+func locateChartPathInRepository(
+	repositoryURL, name, version string, verify bool, keyring string) (string, error) {
+
+	name, err := retrieveChartURL(repositoryURL, name, version)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve %q, %s", name, err)
 	}
 
 	if _, err := os.Stat(settings.Home.Archive()); os.IsNotExist(err) {
 		os.MkdirAll(settings.Home.Archive(), 0744)
 	}
 
-	filename, _, err := dl.DownloadTo(name, version, settings.Home.Archive())
-	if err == nil {
-		lname, err := filepath.Abs(filename)
-		if err != nil {
-			return filename, err
-		}
-		debug("Fetched %s to %s\n", name, filename)
-		return lname, nil
-	} else if settings.Debug {
-		return filename, err
-	}
-
-	return filename, fmt.Errorf("file %q not found", name)
+	return downloadChart(name, version, verify, keyring)
 }
 
+func retrieveChartURL(repositoryURL, name, version string) (string, error) {
+	if repositoryURL == "" {
+		return name, nil
+	}
+
+	return repo.FindChartInRepoURL(
+		repositoryURL, name, version,
+		tlsCertFile, tlsKeyFile, tlsCaCertFile, getter.All(settings),
+	)
+}
+
+func downloadChart(name, version string, verify bool, keyring string) (string, error) {
+	dl := downloader.ChartDownloader{
+		HelmHome: settings.Home,
+		Out:      os.Stdout,
+		Keyring:  keyring,
+		Getters:  getter.All(settings),
+	}
+
+	if verify {
+		dl.Verify = downloader.VerifyAlways
+	}
+
+	filename, _, err := dl.DownloadTo(name, version, settings.Home.Archive())
+	if err != nil {
+		return "", err
+	}
+
+	debug("Fetched %s to %s\n", name, filename)
+	return filepath.Abs(filename)
+}
+
+// from helm
 func checkDependencies(ch *chart.Chart, reqs *chartutil.Requirements) error {
 	missing := []string{}
 

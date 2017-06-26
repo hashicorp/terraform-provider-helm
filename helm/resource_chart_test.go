@@ -56,6 +56,28 @@ func TestAccResourceChart_update(t *testing.T) {
 	})
 }
 
+func TestAccResourceChart_repository(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmChartDestroy,
+		Steps: []resource.TestStep{{
+			Config: testAccHelmChartConfigRepository(testNamespace, testReleaseName),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_chart.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_chart.test", "metadata.0.status", "DEPLOYED"),
+				resource.TestCheckResourceAttrSet("helm_chart.test", "metadata.0.version"),
+			),
+		}, {
+			Config: testAccHelmChartConfigRepository(testNamespace, testReleaseName),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_chart.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_chart.test", "metadata.0.status", "DEPLOYED"),
+				resource.TestCheckResourceAttrSet("helm_chart.test", "metadata.0.version"),
+			),
+		}},
+	})
+}
+
 func testAccHelmChartConfigBasic(ns, name, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_chart" "test" {
@@ -75,6 +97,22 @@ func testAccHelmChartConfigBasic(ns, name, version string) string {
 			}
 		}
 	`, name, ns, version)
+}
+
+func testAccHelmChartConfigRepository(ns, name string) string {
+	return fmt.Sprintf(`
+		resource "helm_repository" "incubator" {
+			name = "incubator"
+			url  = "https://kubernetes-charts-incubator.storage.googleapis.com"
+		}
+
+		resource "helm_chart" "test" {
+ 			name       = %q
+			namespace  = %q
+			repository = "${helm_repository.incubator.metadata.0.name}"
+  			chart      = "redis-cache"
+		}
+	`, name, ns)
 }
 
 func testAccCheckHelmChartDestroy(s *terraform.State) error {
