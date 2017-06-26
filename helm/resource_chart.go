@@ -446,7 +446,9 @@ func locateChartPathInRepository(
 	}
 
 	if _, err := os.Stat(settings.Home.Archive()); os.IsNotExist(err) {
-		os.MkdirAll(settings.Home.Archive(), 0744)
+		if err := os.MkdirAll(settings.Home.Archive(), 0744); err != nil {
+			return "", fmt.Errorf("failed to create archive folder, %s", err)
+		}
 	}
 
 	return downloadChart(name, version, verify, keyring)
