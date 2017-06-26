@@ -1,0 +1,4 @@
+*.tfstate*
+assets
+.terraform
+_output/

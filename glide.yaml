@@ -1,0 +1,47 @@
+package: github.com/mcuadros/terraform-provider-helm
+import:
+- package: github.com/hashicorp/terraform
+  version: ^0.10.0-beta1
+  subpackages:
+  - helper/schema
+  - plugin
+  - terraform
+- package: github.com/BurntSushi/toml
+- package: github.com/Azure/go-ansiterm
+  version: 388960b655244e76e24c75f48631564eaefade62
+- package: github.com/docker/distribution
+  version: b38e5838b7b2f2ad48e06ec4b500011976080621
+- package: github.com/docker/cli
+  version: 30af87981d8d464c385b247f524fcbc503207940
+- package: github.com/docker/docker
+  version: v17.05.0-ce
+- package: github.com/docker/go-units
+  version: 0dadbb0345b35ec7ef35e228dabb8de89a65bf52
+- package: github.com/emicklei/go-restful
+  version: v1.2
+- package: github.com/ghodss/yaml
+- package: github.com/gorilla/websocket
+  version: 7fe3183ee95b29153898356cc2c6026a8cb7afe5
+  repo: https://github.com/bacongobbler/websocket
+  vcs: git
+- package: github.com/julienschmidt/httprouter
+- package: github.com/rjeczalik/notify
+- package: github.com/spf13/cobra
+- package: github.com/technosophos/moniker
+- package: k8s.io/apimachinery
+- package: k8s.io/client-go
+  version: 8aceb98010c1c18b6b54a35b52fd5b46905e3d7f
+- package: k8s.io/helm
+  version: ~2.5.0
+- package: k8s.io/kubernetes
+  version: v1.6.2
+- package: github.com/Sirupsen/logrus
+  version: ~0.11.5
+- package: github.com/pkg/errors
+  version: ~0.8.0
+- package: github.com/Masterminds/sprig
+  version: ~2.12.0
+- package: github.com/facebookgo/atomicfile
+
+- package: github.com/spf13/pflag
+  version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
