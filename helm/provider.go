@@ -2,12 +2,11 @@ package helm
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
-	"path/filepath"
 
+	"github.com/hashicorp/terraform/helper/pathorcontents"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 
@@ -19,7 +18,6 @@ import (
 	"k8s.io/helm/pkg/helm/portforwarder"
 	"k8s.io/helm/pkg/kube"
 	tiller_env "k8s.io/helm/pkg/tiller/environment"
-	"k8s.io/helm/pkg/tlsutil"
 )
 
 // Provider returns the provider schema to Terraform.
@@ -277,59 +275,59 @@ func (m *Meta) buildHelmClient(d *schema.ResourceData) error {
 }
 
 func getTLSConfig(d *schema.ResourceData) (*tls.Config, error) {
-	key, err := getFilename(d, "client_key", "$HELM_HOME/key.pem")
+	var err error
+
+	keyPEMBlock, err := getContent(d, "client_key", "$HELM_HOME/key.pem")
 	if err != nil {
 		return nil, err
 	}
-
-	cert, err := getFilename(d, "client_certificate", "$HELM_HOME/cert.pem")
+	certPEMBlock, err := getContent(d, "client_certificate", "$HELM_HOME/cert.pem")
 	if err != nil {
 		return nil, err
 	}
-
-	if key == "" && cert == "" {
+	if len(keyPEMBlock) == 0 && len(certPEMBlock) == 0 {
 		return nil, nil
 	}
 
-	opts := tlsutil.Options{
-		KeyFile:            key,
-		CertFile:           cert,
+	cfg := &tls.Config{
 		InsecureSkipVerify: d.Get("insecure").(bool),
 	}
 
-	if !opts.InsecureSkipVerify {
-		ca, err := getFilename(d, "ca_certificate", "$HELM_HOME/ca.pem")
-		if err != nil {
-			return nil, err
-		}
-
-		opts.CaCertFile = ca
+	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
+	if err != nil {
+		return nil, fmt.Errorf("could not read x509 key pair: %s", err)
 	}
 
-	return tlsutil.ClientConfig(opts)
+	cfg.Certificates = []tls.Certificate{cert}
+
+	caPEMBlock, err := getContent(d, "ca_certificate", "$HELM_HOME/ca.pem")
+	if err != nil {
+		return nil, err
+	}
+
+	if !cfg.InsecureSkipVerify && len(caPEMBlock) != 0 {
+		cfg.RootCAs = x509.NewCertPool()
+		if !cfg.RootCAs.AppendCertsFromPEM(caPEMBlock) {
+			return nil, fmt.Errorf("failed to parse ca_certificate")
+		}
+	}
+
+	return cfg, nil
 }
 
-func getFilename(d *schema.ResourceData, key, def string) (string, error) {
-	path := d.Get(key).(string)
-	if path == "" {
-		path = def
-	}
+func getContent(d *schema.ResourceData, key, def string) ([]byte, error) {
+	filename := d.Get(key).(string)
 
-	if _, err := os.Stat(path); err == nil {
-		return os.ExpandEnv(path), nil
-	}
-
-	if path == def {
-		return "", nil
-	}
-
-	dir, err := ioutil.TempDir("", key)
+	content, _, err := pathorcontents.Read(filename)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	file := filepath.Join(dir, "content")
-	return file, ioutil.WriteFile(file, []byte(path), 0600)
+	if content == def {
+		return nil, nil
+	}
+
+	return []byte(content), nil
 }
 
 func debug(format string, a ...interface{}) {
