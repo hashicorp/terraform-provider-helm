@@ -116,7 +116,7 @@ func testAccHelmChartConfigRepository(ns, name string) string {
 }
 
 func testAccCheckHelmChartDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(helm.Interface)
+	client := testAccProvider.Meta().(*Meta).HelmClient
 
 	res, err := client.ListReleases(
 		helm.ReleaseListNamespace(testNamespace),

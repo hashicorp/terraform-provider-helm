@@ -46,6 +46,8 @@ func testAccHelmRepositoryConfigBasic(name, url string) string {
 }
 
 func testAccCheckHelmRepositoryDestroy(s *terraform.State) error {
+	settings := testAccProvider.Meta().(*Meta).Settings
+
 	f, err := repo.LoadRepositoriesFile(settings.Home.RepositoryFile())
 	if err != nil {
 		return err

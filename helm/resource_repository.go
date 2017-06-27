@@ -73,12 +73,13 @@ func resourceRepository() *schema.Resource {
 }
 
 func resourceRepositoryCreate(d *schema.ResourceData, meta interface{}) error {
-	name := d.Get("name").(string)
+	m := meta.(*Meta)
 
-	err := addRepository(
+	name := d.Get("name").(string)
+	err := addRepository(m,
 		name,
 		d.Get("url").(string),
-		settings.Home,
+		m.Settings.Home,
 		d.Get("cert_file").(string),
 		d.Get("key_file").(string),
 		d.Get("ca_file").(string),
@@ -94,7 +95,9 @@ func resourceRepositoryCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceRepositoryRead(d *schema.ResourceData, meta interface{}) error {
-	r, err := getRepository(d)
+	m := meta.(*Meta)
+
+	r, err := getRepository(d, m)
 	if err != nil {
 		return err
 	}
@@ -103,9 +106,10 @@ func resourceRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceRepositoryDelete(d *schema.ResourceData, meta interface{}) error {
-	name := d.Get("name").(string)
+	m := meta.(*Meta)
 
-	if err := removeRepoLine(name, settings.Home); err != nil {
+	name := d.Get("name").(string)
+	if err := removeRepoLine(name, m.Settings.Home); err != nil {
 		return err
 	}
 
@@ -122,10 +126,10 @@ func setIdAndMetadataFromRepository(d *schema.ResourceData, r *repo.Entry) error
 	}})
 }
 
-func getRepository(d *schema.ResourceData) (*repo.Entry, error) {
+func getRepository(d *schema.ResourceData, m *Meta) (*repo.Entry, error) {
 	name := d.Get("name").(string)
 
-	f, err := repo.LoadRepositoriesFile(settings.Home.RepositoryFile())
+	f, err := repo.LoadRepositoriesFile(m.Settings.Home.RepositoryFile())
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +145,10 @@ func getRepository(d *schema.ResourceData) (*repo.Entry, error) {
 }
 
 // from helm
-func addRepository(name, url string, home helmpath.Home, certFile, keyFile, caFile string, noUpdate bool) error {
+func addRepository(m *Meta,
+	name, url string, home helmpath.Home, certFile, keyFile, caFile string, noUpdate bool,
+) error {
+
 	f, err := repo.LoadRepositoriesFile(home.RepositoryFile())
 	if err != nil {
 		return err
@@ -161,7 +168,7 @@ func addRepository(name, url string, home helmpath.Home, certFile, keyFile, caFi
 		CAFile:   caFile,
 	}
 
-	r, err := repo.NewChartRepository(&c, getter.All(settings))
+	r, err := repo.NewChartRepository(&c, getter.All(*m.Settings))
 	if err != nil {
 		return err
 	}

@@ -14,7 +14,6 @@ import (
 	"k8s.io/helm/pkg/downloader"
 	"k8s.io/helm/pkg/getter"
 	"k8s.io/helm/pkg/helm"
-	"k8s.io/helm/pkg/kube"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/proto/hapi/release"
 	"k8s.io/helm/pkg/repo"
@@ -74,6 +73,7 @@ func resourceChart() *schema.Resource {
 			"namespace": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				Default:     "default",
 				Description: "Namespace to install the release into.",
 			},
 			"repository_url": {
@@ -157,13 +157,13 @@ func resourceChart() *schema.Resource {
 }
 
 func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(helm.Interface)
+	m := meta.(*Meta)
 
-	if r, err := getRelease(client, d); err == nil {
+	if r, err := getRelease(m.HelmClient, d); err == nil {
 		return setIdAndMetadataFromRelease(d, r)
 	}
 
-	chart, _, err := getChart(d)
+	chart, _, err := getChart(d, m)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,8 @@ func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
 		helm.InstallWait(true),
 	}
 
-	res, err := client.InstallReleaseFromChart(chart, getNamespace(d), opts...)
+	ns := d.Get("namespace").(string)
+	res, err := m.HelmClient.InstallReleaseFromChart(chart, ns, opts...)
 	if err != nil {
 		return err
 	}
@@ -190,9 +191,9 @@ func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceChartRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(helm.Interface)
+	m := meta.(*Meta)
 
-	r, err := getRelease(client, d)
+	r, err := getRelease(m.HelmClient, d)
 	if err != nil {
 		return err
 	}
@@ -214,14 +215,14 @@ func setIdAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 }
 
 func resourceChartUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(helm.Interface)
+	m := meta.(*Meta)
 
 	values, err := getValues(d)
 	if err != nil {
 		return err
 	}
 
-	_, path, err := getChart(d)
+	_, path, err := getChart(d, m)
 	if err != nil {
 		return err
 	}
@@ -236,7 +237,7 @@ func resourceChartUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	name := d.Get("name").(string)
-	res, err := client.UpdateRelease(name, path, opts...)
+	res, err := m.HelmClient.UpdateRelease(name, path, opts...)
 	if err != nil {
 		return err
 	}
@@ -244,7 +245,7 @@ func resourceChartUpdate(d *schema.ResourceData, meta interface{}) error {
 	return setIdAndMetadataFromRelease(d, res.Release)
 }
 func resourceChartDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(helm.Interface)
+	m := meta.(*Meta)
 
 	opts := []helm.DeleteOption{
 		helm.DeleteDisableHooks(d.Get("disable_webhooks").(bool)),
@@ -252,7 +253,7 @@ func resourceChartDelete(d *schema.ResourceData, meta interface{}) error {
 		helm.DeleteTimeout(int64(d.Get("timeout").(int))),
 	}
 
-	_, err := client.DeleteRelease(d.Get("name").(string), opts...)
+	_, err := m.HelmClient.DeleteRelease(d.Get("name").(string), opts...)
 	if err != nil {
 		return err
 	}
@@ -262,9 +263,9 @@ func resourceChartDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceChartExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	client := meta.(helm.Interface)
+	m := meta.(*Meta)
 
-	_, err := getRelease(client, d)
+	_, err := getRelease(m.HelmClient, d)
 	if err == nil {
 		return true, nil
 	}
@@ -276,24 +277,19 @@ func resourceChartExists(d *schema.ResourceData, meta interface{}) (bool, error)
 	return false, err
 }
 
-func getNamespace(d *schema.ResourceData) string {
-	namespace := d.Get("namespace").(string)
-	if namespace != "" {
-		return namespace
-	}
-
-	return defaultNamespace()
-}
-
-func getChart(d *schema.ResourceData) (c *chart.Chart, path string, err error) {
-	path, err = locateChartPath(
+func getChart(d *schema.ResourceData, m *Meta) (c *chart.Chart, path string, err error) {
+	l, err := newChartLocator(m,
 		d.Get("repository").(string),
 		d.Get("chart").(string),
 		d.Get("version").(string),
 		d.Get("verify").(bool),
 		d.Get("keyring").(string),
 	)
+	if err != nil {
+		return
+	}
 
+	path, err = l.Locate()
 	if err != nil {
 		return
 	}
@@ -336,7 +332,7 @@ func getRelease(client helm.Interface, d *schema.ResourceData) (*release.Release
 
 	res, err := client.ListReleases(
 		helm.ReleaseListFilter(name),
-		helm.ReleaseListNamespace(getNamespace(d)),
+		helm.ReleaseListNamespace(d.Get("namespace").(string)),
 	)
 
 	if err != nil {
@@ -352,37 +348,34 @@ func getRelease(client helm.Interface, d *schema.ResourceData) (*release.Release
 	return nil, ErrReleaseNotFound
 }
 
-type chartLocator func(repositoryURL, name, version string, verify bool, keyring string) (string, error)
+type chartLocator struct {
+	meta *Meta
 
-func locateChartPath(repository, name, version string, verify bool, keyring string) (string, error) {
+	name          string
+	version       string
+	repositoryURL string
+	verify        bool
+	keyring       string
+}
+
+func newChartLocator(meta *Meta, repository, name, version string, verify bool, keyring string) (*chartLocator, error) {
 	name = strings.TrimSpace(name)
 	version = strings.TrimSpace(version)
 
 	repositoryURL, name, err := resolveChartName(repository, name)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	pipeline := []chartLocator{
-		locateChartPathInLocal,
-		locateChartPathInLocalRepository,
-		locateChartPathInRepository,
-	}
+	return &chartLocator{
+		meta:          meta,
+		name:          name,
+		version:       version,
+		repositoryURL: repositoryURL,
+		verify:        verify,
+		keyring:       keyring,
+	}, nil
 
-	for _, f := range pipeline {
-		path, err := f(repositoryURL, name, version, verify, keyring)
-		if err != nil {
-			return "", err
-		}
-
-		if path == "" {
-			continue
-		}
-
-		return path, err
-	}
-
-	return "", fmt.Errorf("chart %q not found", name)
 }
 
 func resolveChartName(repository, name string) (string, string, error) {
@@ -398,27 +391,50 @@ func resolveChartName(repository, name string) (string, string, error) {
 	return "", name, nil
 }
 
-func locateChartPathInLocal(repositoryURL, name, version string, verify bool, keyring string) (string, error) {
-	fi, err := os.Stat(name)
+func (l *chartLocator) Locate() (string, error) {
+	pipeline := []func() (string, error){
+		l.locateChartPathInLocal,
+		l.locateChartPathInLocalRepository,
+		l.locateChartPathInRepository,
+	}
+
+	for _, f := range pipeline {
+		path, err := f()
+		if err != nil {
+			return "", err
+		}
+
+		if path == "" {
+			continue
+		}
+
+		return path, err
+	}
+
+	return "", fmt.Errorf("chart %q not found", l.name)
+}
+
+func (l *chartLocator) locateChartPathInLocal() (string, error) {
+	fi, err := os.Stat(l.name)
 	if err != nil {
-		if filepath.IsAbs(name) || strings.HasPrefix(name, ".") {
-			return "", fmt.Errorf("path %q not found", name)
+		if filepath.IsAbs(l.name) || strings.HasPrefix(l.name, ".") {
+			return "", fmt.Errorf("path %q not found", l.name)
 		}
 
 		return "", nil
 	}
 
-	abs, err := filepath.Abs(name)
+	abs, err := filepath.Abs(l.name)
 	if err != nil {
 		return "", err
 	}
 
-	if !verify {
+	if !l.verify {
 		if fi.IsDir() {
 			return "", fmt.Errorf("cannot verify a directory")
 		}
 
-		if _, err := downloader.VerifyChart(abs, keyring); err != nil {
+		if _, err := downloader.VerifyChart(abs, l.keyring); err != nil {
 			return "", err
 		}
 	}
@@ -426,63 +442,59 @@ func locateChartPathInLocal(repositoryURL, name, version string, verify bool, ke
 	return abs, nil
 }
 
-func locateChartPathInLocalRepository(
-	repositoryURL, name, version string, verify bool, keyring string) (string, error) {
-
-	crepo := filepath.Join(settings.Home.Repository(), name)
-	if _, err := os.Stat(crepo); err == nil {
-		return filepath.Abs(crepo)
+func (l *chartLocator) locateChartPathInLocalRepository() (string, error) {
+	repo := filepath.Join(l.meta.Settings.Home.Repository(), l.name)
+	if _, err := os.Stat(repo); err == nil {
+		return filepath.Abs(repo)
 	}
 
 	return "", nil
 }
 
-func locateChartPathInRepository(
-	repositoryURL, name, version string, verify bool, keyring string) (string, error) {
-
-	name, err := retrieveChartURL(repositoryURL, name, version)
+func (l *chartLocator) locateChartPathInRepository() (string, error) {
+	ref, err := l.retrieveChartURL(l.repositoryURL, l.name, l.version)
 	if err != nil {
-		return "", fmt.Errorf("failed to resolve %q, %s", name, err)
+		return "", fmt.Errorf("failed to resolve %q, %s", l.name, err)
 	}
 
-	if _, err := os.Stat(settings.Home.Archive()); os.IsNotExist(err) {
-		if err := os.MkdirAll(settings.Home.Archive(), 0744); err != nil {
+	if _, err := os.Stat(l.meta.Settings.Home.Archive()); os.IsNotExist(err) {
+		if err := os.MkdirAll(l.meta.Settings.Home.Archive(), 0744); err != nil {
 			return "", fmt.Errorf("failed to create archive folder, %s", err)
 		}
 	}
 
-	return downloadChart(name, version, verify, keyring)
+	return l.downloadChart(ref)
 }
 
-func retrieveChartURL(repositoryURL, name, version string) (string, error) {
+func (l *chartLocator) retrieveChartURL(repositoryURL, name, version string) (string, error) {
 	if repositoryURL == "" {
 		return name, nil
 	}
 
 	return repo.FindChartInRepoURL(
 		repositoryURL, name, version,
-		tlsCertFile, tlsKeyFile, tlsCaCertFile, getter.All(settings),
+		tlsCertFile, tlsKeyFile, tlsCaCertFile, getter.All(*l.meta.Settings),
 	)
 }
 
-func downloadChart(name, version string, verify bool, keyring string) (string, error) {
+func (l *chartLocator) downloadChart(ref string) (string, error) {
 	dl := downloader.ChartDownloader{
-		HelmHome: settings.Home,
+		HelmHome: l.meta.Settings.Home,
 		Out:      os.Stdout,
-		Keyring:  keyring,
-		Getters:  getter.All(settings),
+		Keyring:  l.keyring,
+		Getters:  getter.All(*l.meta.Settings),
 	}
 
-	if verify {
+	if l.verify {
 		dl.Verify = downloader.VerifyAlways
 	}
 
-	filename, _, err := dl.DownloadTo(name, version, settings.Home.Archive())
+	filename, _, err := dl.DownloadTo(ref, l.version, l.meta.Settings.Home.Archive())
 	if err != nil {
 		return "", err
 	}
 
-	debug("Fetched %s to %s\n", name, filename)
+	debug("Fetched %s to %s\n", ref, filename)
 	return filepath.Abs(filename)
 }
 
@@ -508,11 +520,4 @@ func checkDependencies(ch *chart.Chart, reqs *chartutil.Requirements) error {
 		return fmt.Errorf("found in requirements.yaml, but missing in charts/ directory: %s", strings.Join(missing, ", "))
 	}
 	return nil
-}
-
-func defaultNamespace() string {
-	if ns, _, err := kube.GetConfig(kubeContext).Namespace(); err == nil {
-		return ns
-	}
-	return "default"
 }
