@@ -30,12 +30,14 @@ $ make build
 ```
 
 Using the provider
-----------------------
+------------------
 
-See the [Helm Provider documentation](https://www.terraform.io/docs/providers/helm/index.html) to get started using the Helm provider.
+- [Provider](docs/index.html.md)
+- [Resource: helm_chart](docs/chart.html.md)
+- [Resource: helm_repository](docs/repository.html.md)
 
 Developing the Provider
----------------------------
+-----------------------
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.8+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
