@@ -78,7 +78,7 @@ func Provider() terraform.ResourceProvider {
 			"kubernetes": {
 				Type:        schema.TypeList,
 				MaxItems:    1,
-				Computed:    true,
+				Optional:    true,
 				Description: "Kubernetes configuration.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
