@@ -7,6 +7,10 @@ PKG_ARCH ?= amd64
 BASE_PATH ?= $(shell pwd)
 BUILD_PATH ?= $(BASE_PATH)/build
 PROVIDER := $(shell basename $(BASE_PATH))
+BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+ifneq ($(origin TRAVIS_TAG), undefined)
+	BRANCH := $(TRAVIS_TAG)
+endif
 
 default: build
 
