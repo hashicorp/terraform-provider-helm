@@ -35,7 +35,7 @@ func resourceRepository() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Description: "Identify HTTPS client using this SSL key file",
+				Description: "Identify HTTPS client using this SSL key file.",
 			},
 			"cert_file": {
 				Type:        schema.TypeString,

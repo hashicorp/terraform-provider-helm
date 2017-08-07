@@ -160,8 +160,19 @@ func resourceChart() *schema.Resource {
 func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 
-	if r, err := getRelease(m.HelmClient, d); err == nil {
-		return setIdAndMetadataFromRelease(d, r)
+	r, err := getRelease(m.HelmClient, d)
+	if err == nil {
+		if r.Info.Status.GetCode() != release.Status_FAILED {
+			return setIdAndMetadataFromRelease(d, r)
+		}
+
+		if err := resourceChartDelete(d, meta); err != nil {
+			return err
+		}
+	}
+
+	if err != ErrReleaseNotFound {
+		return err
 	}
 
 	chart, _, err := getChart(d, m)
@@ -248,14 +259,14 @@ func resourceChartUpdate(d *schema.ResourceData, meta interface{}) error {
 func resourceChartDelete(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 
+	name := d.Get("name").(string)
 	opts := []helm.DeleteOption{
 		helm.DeleteDisableHooks(d.Get("disable_webhooks").(bool)),
 		helm.DeletePurge(true),
 		helm.DeleteTimeout(int64(d.Get("timeout").(int))),
 	}
 
-	_, err := m.HelmClient.DeleteRelease(d.Get("name").(string), opts...)
-	if err != nil {
+	if _, err := m.HelmClient.DeleteRelease(name, opts...); err != nil {
 		return err
 	}
 
@@ -332,12 +343,20 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 	return values, err
 }
 
+var all = []release.Status_Code{
+	release.Status_UNKNOWN,
+	release.Status_DEPLOYED,
+	release.Status_DELETED,
+	release.Status_DELETING,
+	release.Status_FAILED,
+}
+
 func getRelease(client helm.Interface, d *schema.ResourceData) (*release.Release, error) {
 	name := d.Get("name").(string)
 
 	res, err := client.ListReleases(
 		helm.ReleaseListFilter(name),
-		helm.ReleaseListNamespace(d.Get("namespace").(string)),
+		helm.ReleaseListStatuses(all),
 	)
 
 	if err != nil {

@@ -2,6 +2,7 @@ package helm
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform/helper/resource"
@@ -58,8 +59,7 @@ func TestAccResourceChart_update(t *testing.T) {
 
 func TestAccResourceChart_repository(t *testing.T) {
 	resource.Test(t, resource.TestCase{
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckHelmChartDestroy,
+		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
 			Config: testAccHelmChartConfigRepository(testNamespace, testReleaseName),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -73,6 +73,36 @@ func TestAccResourceChart_repository(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_chart.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_chart.test", "metadata.0.status", "DEPLOYED"),
 				resource.TestCheckResourceAttrSet("helm_chart.test", "metadata.0.version"),
+			),
+		}},
+	})
+}
+
+func TestAccResourceChart_updateAfterFail(t *testing.T) {
+	malformed := `
+	resource "helm_chart" "test" {
+	  name        = "malformed"
+	  chart       = "stable/nginx-ingress"
+	  value {
+	      name    = "controller.podAnnotations.\"prometheus\\.io/scrape\""
+	      content = "true"
+	  }
+	}
+	`
+
+	resource.Test(t, resource.TestCase{
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmChartDestroy,
+		Steps: []resource.TestStep{{
+			Config:             malformed,
+			ExpectError:        regexp.MustCompile("failed"),
+			ExpectNonEmptyPlan: true,
+		}, {
+			Config: testAccHelmChartConfigBasic(testNamespace, testReleaseName, "0.6.3"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_chart.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_chart.test", "metadata.0.version", "0.6.3"),
+				resource.TestCheckResourceAttr("helm_chart.test", "metadata.0.status", "DEPLOYED"),
 			),
 		}},
 	})
