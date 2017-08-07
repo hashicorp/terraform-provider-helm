@@ -1,4 +1,5 @@
 *.tfstate*
+build
 assets
 .terraform
 _output/
