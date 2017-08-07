@@ -1,5 +1,5 @@
-hash: 46d6de74e4b0a1df2d55319c40044d0be5d6d6eca95fcce691a46658a8cebd15
-updated: 2017-06-26T02:58:19.774993689+02:00
+hash: d6b1f00a86ceb04cb9e174f62578f402c10ca30fed52350e4624758a5c5398d2
+updated: 2017-08-07T12:07:32.219347699+02:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -187,7 +187,7 @@ imports:
 - name: github.com/hashicorp/go-multierror
   version: 83588e72410abfbe4df460eeb6f30841ae47d4c4
 - name: github.com/hashicorp/go-plugin
-  version: 5ee1a665d1862b865bd2203cdce4f08e39841815
+  version: f72692aebca2008343a9deb06ddb4b17f7051c15
 - name: github.com/hashicorp/go-uuid
   version: 64130c7a86d732268a38cb04cfbaf0cc987fda98
 - name: github.com/hashicorp/go-version
@@ -216,7 +216,7 @@ imports:
 - name: github.com/hashicorp/logutils
   version: 0dc08b1671f34c4250ce212759ebd880f743d883
 - name: github.com/hashicorp/terraform
-  version: a26ff83279df8e632c8366b08653e12aa570f144
+  version: 2041053ee9444fa8175a298093b55a89586a1823
   subpackages:
   - config
   - config/module
@@ -227,6 +227,7 @@ imports:
   - helper/hashcode
   - helper/hilmapstructure
   - helper/logging
+  - helper/pathorcontents
   - helper/resource
   - helper/schema
   - helper/shadow
@@ -540,7 +541,7 @@ imports:
   - util/integer
   - util/jsonpath
 - name: k8s.io/helm
-  version: 012cb0ac1a1b2f888144ef5a67b8dab6c2d45be6
+  version: 7cf31e8d9a026287041bae077b09165be247ae66
   subpackages:
   - pkg/chartutil
   - pkg/downloader

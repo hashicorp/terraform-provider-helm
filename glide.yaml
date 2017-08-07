@@ -1,7 +1,7 @@
 package: github.com/mcuadros/terraform-provider-helm
 import:
 - package: github.com/hashicorp/terraform
-  version: ^0.10.0-beta1
+  version: v0.10.0
   subpackages:
   - helper/schema
   - plugin
@@ -43,5 +43,7 @@ import:
   version: ~2.12.0
 - package: github.com/facebookgo/atomicfile
 
+- package: hashicorp/go-plugin
+  version: f72692aebca2008343a9deb06ddb4b17f7051c15
 - package: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
