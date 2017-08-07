@@ -3,6 +3,7 @@ package helm
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -324,7 +325,11 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 		}
 	}
 
-	return yaml.Marshal(base)
+	values, err := yaml.Marshal(base)
+	if err == nil {
+		log.Printf("---[ values.yaml ]-----------------------------------\n%s\n", string(values))
+	}
+	return values, err
 }
 
 func getRelease(client helm.Interface, d *schema.ResourceData) (*release.Release, error) {
