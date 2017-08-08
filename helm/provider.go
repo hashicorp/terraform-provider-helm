@@ -12,6 +12,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/helm/pkg/helm"
 	helm_env "k8s.io/helm/pkg/helm/environment"
 	"k8s.io/helm/pkg/helm/helmpath"
@@ -195,10 +196,9 @@ func (m *Meta) buildSettings(d *schema.ResourceData) {
 func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	_, hasStatic := d.GetOk("kubernetes")
 
-	ctx := d.Get("kubernetes.0.config_context").(string)
-	cfg, err := kube.GetConfig(ctx).ClientConfig()
+	cfg, err := getK8sConfig(d).ClientConfig()
 	if err != nil {
-		debug("could not get Kubernetes config for context %q: %s", ctx, err)
+		debug("could not get Kubernetes config: %s", err)
 		if hasStatic {
 			return err
 		}
@@ -240,6 +240,21 @@ func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	}
 
 	return nil
+}
+
+func getK8sConfig(d *schema.ResourceData) clientcmd.ClientConfig {
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	rules.ExplicitPath = d.Get("kubernetes.0.config_path").(string)
+	rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+
+	overrides := &clientcmd.ConfigOverrides{ClusterDefaults: clientcmd.ClusterDefaults}
+
+	context := d.Get("kubernetes.0.config_context").(string)
+	if context != "" {
+		overrides.CurrentContext = context
+	}
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
 }
 
 func (m *Meta) buildTunnel(d *schema.ResourceData) error {
