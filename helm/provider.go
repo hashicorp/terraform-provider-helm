@@ -159,9 +159,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 type Meta struct {
 	Settings         *helm_env.EnvSettings
+	TLSConfig        *tls.Config
 	K8sClient        kubernetes.Interface
 	K8sConfig        *rest.Config
-	HelmClient       helm.Interface
 	Tunnel           *kube.Tunnel
 	DefaultNamespace string
 }
@@ -169,15 +169,16 @@ type Meta struct {
 func buildMeta(d *schema.ResourceData) (*Meta, error) {
 	m := &Meta{}
 	m.buildSettings(d)
+
+	if err := m.buildTLSConfig(d); err != nil {
+		return nil, err
+	}
+
 	if err := m.buildK8sClient(d); err != nil {
 		return nil, err
 	}
 
 	if err := m.buildTunnel(d); err != nil {
-		return nil, err
-	}
-
-	if err := m.buildHelmClient(d); err != nil {
 		return nil, err
 	}
 
@@ -272,37 +273,29 @@ func (m *Meta) buildTunnel(d *schema.ResourceData) error {
 	return nil
 }
 
-func (m *Meta) buildHelmClient(d *schema.ResourceData) error {
+func (m *Meta) GetHelmClient() helm.Interface {
 	options := []helm.Option{
 		helm.Host(m.Settings.TillerHost),
 	}
 
-	tlscfg, err := getTLSConfig(d)
+	if m.TLSConfig != nil {
+		options = append(options, helm.WithTLS(m.TLSConfig))
+	}
+
+	return helm.NewClient(options...)
+}
+
+func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {
+	keyPEMBlock, err := getContent(d, "client_key", "$HELM_HOME/key.pem")
 	if err != nil {
 		return err
 	}
-
-	if tlscfg != nil {
-		options = append(options, helm.WithTLS(tlscfg))
-	}
-
-	m.HelmClient = helm.NewClient(options...)
-	return nil
-}
-
-func getTLSConfig(d *schema.ResourceData) (*tls.Config, error) {
-	var err error
-
-	keyPEMBlock, err := getContent(d, "client_key", "$HELM_HOME/key.pem")
-	if err != nil {
-		return nil, err
-	}
 	certPEMBlock, err := getContent(d, "client_certificate", "$HELM_HOME/cert.pem")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(keyPEMBlock) == 0 && len(certPEMBlock) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	cfg := &tls.Config{
@@ -311,24 +304,25 @@ func getTLSConfig(d *schema.ResourceData) (*tls.Config, error) {
 
 	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
 	if err != nil {
-		return nil, fmt.Errorf("could not read x509 key pair: %s", err)
+		return fmt.Errorf("could not read x509 key pair: %s", err)
 	}
 
 	cfg.Certificates = []tls.Certificate{cert}
 
 	caPEMBlock, err := getContent(d, "ca_certificate", "$HELM_HOME/ca.pem")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if !cfg.InsecureSkipVerify && len(caPEMBlock) != 0 {
 		cfg.RootCAs = x509.NewCertPool()
 		if !cfg.RootCAs.AppendCertsFromPEM(caPEMBlock) {
-			return nil, fmt.Errorf("failed to parse ca_certificate")
+			return fmt.Errorf("failed to parse ca_certificate")
 		}
 	}
 
-	return cfg, nil
+	m.TLSConfig = cfg
+	return nil
 }
 
 func getContent(d *schema.ResourceData, key, def string) ([]byte, error) {
