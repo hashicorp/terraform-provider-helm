@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform/helper/pathorcontents"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
+	"github.com/mitchellh/go-homedir"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -197,9 +198,16 @@ func (m *Meta) buildSettings(d *schema.ResourceData) {
 func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	_, hasStatic := d.GetOk("kubernetes")
 
-	cfg, err := getK8sConfig(d).ClientConfig()
+	c, err := getK8sConfig(d)
 	if err != nil {
 		debug("could not get Kubernetes config: %s", err)
+		if hasStatic {
+			return err
+		}
+	}
+	cfg, err := c.ClientConfig()
+	if err != nil {
+		debug("could not get Kubernetes client config: %s", err)
 		if hasStatic {
 			return err
 		}
@@ -243,9 +251,13 @@ func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	return nil
 }
 
-func getK8sConfig(d *schema.ResourceData) clientcmd.ClientConfig {
+func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	rules.ExplicitPath = d.Get("kubernetes.0.config_path").(string)
+	explicitPath, err := homedir.Expand(d.Get("kubernetes.0.config_path").(string))
+	if err != nil {
+		return nil, err
+	}
+	rules.ExplicitPath = explicitPath
 	rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 
 	overrides := &clientcmd.ConfigOverrides{ClusterDefaults: clientcmd.ClusterDefaults}
@@ -255,7 +267,7 @@ func getK8sConfig(d *schema.ResourceData) clientcmd.ClientConfig {
 		overrides.CurrentContext = context
 	}
 
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides), nil
 }
 
 func (m *Meta) buildTunnel(d *schema.ResourceData) error {
