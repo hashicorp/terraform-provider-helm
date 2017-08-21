@@ -453,7 +453,7 @@ func (l *chartLocator) locateChartPathInLocal() (string, error) {
 		return "", err
 	}
 
-	if !l.verify {
+	if l.verify {
 		if fi.IsDir() {
 			return "", fmt.Errorf("cannot verify a directory")
 		}
