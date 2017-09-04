@@ -5,15 +5,20 @@ import (
 	"crypto/x509"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/hashicorp/terraform/helper/pathorcontents"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	"github.com/mitchellh/go-homedir"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/helm/cmd/helm/installer"
 	"k8s.io/helm/pkg/helm"
 	helm_env "k8s.io/helm/pkg/helm/environment"
 	"k8s.io/helm/pkg/helm/helmpath"
@@ -44,6 +49,12 @@ func Provider() terraform.ResourceProvider {
 				Default:     tiller_env.DefaultTillerNamespace,
 				Description: "Set an alternative Tiller namespace.",
 			},
+			"tiller_image": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "gcr.io/kubernetes-helm/tiller:v2.6.0",
+				Description: "Tiller image to install. If Tiller is not already installed.",
+			},
 			"debug": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -58,6 +69,11 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Description: "Whether server should be accessed without verifying the TLS certificate.",
+			},
+			"enable_tls": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Enables TLS communications with the Tiller.",
 			},
 			"client_key": {
 				Type:        schema.TypeString,
@@ -179,6 +195,10 @@ func buildMeta(d *schema.ResourceData) (*Meta, error) {
 		return nil, err
 	}
 
+	if err := m.installTillerIfNeeded(d); err != nil {
+		return nil, err
+	}
+
 	if err := m.buildTunnel(d); err != nil {
 		return nil, err
 	}
@@ -268,6 +288,62 @@ func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 	}
 
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides), nil
+}
+
+func (m *Meta) installTillerIfNeeded(d *schema.ResourceData) error {
+	o := &installer.Options{}
+	o.Namespace = d.Get("namespace").(string)
+	o.ImageSpec = d.Get("tiller_image").(string)
+
+	o.EnableTLS = d.Get("enable_tls").(bool)
+	if o.EnableTLS {
+		o.TLSCertFile = d.Get("client_certificate").(string)
+		o.TLSKeyFile = d.Get("client_key").(string)
+		o.VerifyTLS = !d.Get("insecure").(bool)
+		if o.VerifyTLS {
+			o.TLSCaCertFile = d.Get("ca_certificate").(string)
+		}
+	}
+
+	if err := installer.Install(m.K8sClient, o); err != nil {
+		if errors.IsAlreadyExists(err) {
+			return nil
+		}
+
+		return fmt.Errorf("error installing: %s", err)
+	}
+
+	if err := m.waitForTiller(o); err != nil {
+		return err
+	}
+
+	debug("Tiller has been installed into your Kubernetes Cluster.")
+	return nil
+}
+
+func (m *Meta) waitForTiller(o *installer.Options) error {
+	const deployment = "tiller-deploy"
+	stateConf := &resource.StateChangeConf{
+		Target:  []string{"Running"},
+		Pending: []string{"Pending"},
+		Timeout: 5 * time.Minute,
+		Refresh: func() (interface{}, string, error) {
+			debug("Waiting for tiller-deploy become available.")
+			obj, err := m.K8sClient.Extensions().Deployments(o.Namespace).Get(deployment, metav1.GetOptions{})
+			if err != nil {
+				return obj, "Error", err
+			}
+
+			if obj.Status.ReadyReplicas > 0 {
+				return obj, "Running", nil
+			}
+
+			return obj, "Pending", nil
+		},
+	}
+
+	_, err := stateConf.WaitForState()
+	return err
 }
 
 func (m *Meta) buildTunnel(d *schema.ResourceData) error {

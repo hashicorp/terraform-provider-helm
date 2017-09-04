@@ -74,9 +74,10 @@ The following arguments are supported:
 * `host` - (Required) Set an alternative Tiller host. The format is host:port. Can be sourced from `HELM_HOST`.
 * `home` - (Required) Set an alternative location for Helm files. By default, these are stored in '$HOME/.helm'. Can be sourced from `HELM_HOME`.
 * `namespace` - (Optional) Set an alternative Tiller namespace.
+* `tiller_image` - (Optional) Tiller image to install. If Tiller is not already installed.
 * `debug` - (Optional)
 * `plugins_disable` - (Optional) Disable plugins. Set HELM_NO_PLUGINS=1 to disable plugins.
-
+* `enable_tls` - (Optional) Enables TLS communications with the Tiller.
 * `insecure` - (Optional) Whether server should be accessed without verifying the TLS certificate. Can be sourced from `HELM_HOME`.
 * `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `$HELM_HOME/key.pem`.
 * `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `$HELM_HOME/cert.pem`.
