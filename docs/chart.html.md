@@ -29,7 +29,8 @@ The following arguments are supported:
 * `repository` - (Optional) Repository where to locate the requested chart. If is an URL the chart is installed without install the repository.
 * `chart` - (Required) Chart name to be installed.
 * `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
-* `value` - (Optional) Value block with custom values to be merge with the values.yaml.
+* `values` - (Optional) Values in raw yaml file to pass to helm.
+* `set` - (Optional) Value block with custom values to be merge with the values.yaml.
 * `namespace` - (Optional) Namespace to install the release into.
 * `repository_url` - (Optional) Repository URL where to locate the requested chart without install the repository.
 * `verify` - (Optional) Verify the package before installing it.
@@ -39,10 +40,10 @@ The following arguments are supported:
 * `force_update` - (Optional) Force resource update through delete/recreate if needed.
 * `recreate_pods` - (Optional) On update performs pods restart for the resource if applicable.
 
-The `value` block supports:
+The `set` block supports:
 
-* `content` - (Required)
-* `name` - (Required)
+* `name` - (Required) fullname of the variable to be set.
+* `value` - (Required) value of the variable to be set.
 
 
 ## Attributes Reference

@@ -54,22 +54,22 @@ func resourceChart() *schema.Resource {
 				Optional:    true,
 				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed.",
 			},
-			"raw_values": {
+			"values": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Set raw yaml file to pass to helm.",
+				Description: "Values in raw yaml file to pass to helm.",
 			},
-			"value": {
+			"set": {
 				Type:        schema.TypeSet,
 				Optional:    true,
-				Description: "Custom values to be merge with the values.yaml.",
+				Description: "Custom values to be merge with the values.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						"content": {
+						"value": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
@@ -330,29 +330,30 @@ func getChart(d *schema.ResourceData, m *Meta) (c *chart.Chart, path string, err
 func getValues(d *schema.ResourceData) ([]byte, error) {
 	base := map[string]interface{}{}
 
-	raw_values := d.Get("raw_values").(string)
-	if raw_values != "" {
-		if err := yaml.Unmarshal([]byte(raw_values), &base); err != nil {
+	values := d.Get("values").(string)
+	if values != "" {
+		if err := yaml.Unmarshal([]byte(values), &base); err != nil {
 			return nil, err
 		}
 	}
 
-	for _, raw := range d.Get("value").(*schema.Set).List() {
-		value := raw.(map[string]interface{})
+	for _, raw := range d.Get("set").(*schema.Set).List() {
+		set := raw.(map[string]interface{})
 
-		name := value["name"].(string)
-		content := value["content"].(string)
+		name := set["name"].(string)
+		value := set["value"].(string)
 
-		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, content), base); err != nil {
-			return nil, fmt.Errorf("failed parsing key %q with value %s, %s", name, content, err)
+		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+			return nil, fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
 		}
 	}
 
-	values, err := yaml.Marshal(base)
+	yaml, err := yaml.Marshal(base)
 	if err == nil {
-		log.Printf("---[ values.yaml ]-----------------------------------\n%s\n", string(values))
+		log.Printf("---[ values.yaml ]-----------------------------------\n%s\n", yaml)
 	}
-	return values, err
+
+	return yaml, err
 }
 
 var all = []release.Status_Code{

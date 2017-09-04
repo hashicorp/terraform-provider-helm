@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"testing"
 
+	yaml "gopkg.in/yaml.v1"
+
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 	"k8s.io/helm/pkg/helm"
@@ -83,9 +85,9 @@ func TestAccResourceChart_updateAfterFail(t *testing.T) {
 	resource "helm_chart" "test" {
 	  name        = "malformed"
 	  chart       = "stable/nginx-ingress"
-	  value {
-	      name    = "controller.podAnnotations.\"prometheus\\.io/scrape\""
-	      content = "true"
+	  set {
+	      name = "controller.podAnnotations.\"prometheus\\.io/scrape\""
+	      value = "true"
 	  }
 	}
 	`
@@ -116,17 +118,42 @@ func testAccHelmChartConfigBasic(ns, name, version string) string {
   			chart     = "stable/mariadb"
 			version   = %q
 
-			value {
+			set {
 				name = "foo"
-				content = "qux"
+				value = "qux"
 			}
 
-			value {
+			set {
 				name = "qux.bar"
-				content = 1
+				value = 1
 			}
 		}
 	`, name, ns, version)
+}
+
+func TestGetValues(t *testing.T) {
+	d := resourceChart().Data(nil)
+	d.Set("values", `foo: bar`)
+	d.Set("set", []interface{}{
+		map[string]interface{}{"name": "foo", "value": "qux"},
+	})
+
+	values, err := getValues(d)
+	if err != nil {
+		t.Fatalf("error getValues: %s", err)
+		return
+	}
+
+	base := map[string]string{}
+	err = yaml.Unmarshal([]byte(values), &base)
+	if err != nil {
+		t.Fatalf("error parsing returned yaml: %s", err)
+		return
+	}
+
+	if base["foo"] != "qux" {
+		t.Fatalf("error merging values, expected %q, got %q", "qux", base["foo"])
+	}
 }
 
 func testAccHelmChartConfigRepository(ns, name string) string {
@@ -146,7 +173,12 @@ func testAccHelmChartConfigRepository(ns, name string) string {
 }
 
 func testAccCheckHelmChartDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*Meta).GetHelmClient()
+	m := testAccProvider.Meta()
+	if m == nil {
+		return fmt.Errorf("provider not properly initialized")
+	}
+
+	client := m.(*Meta).GetHelmClient()
 
 	res, err := client.ListReleases(
 		helm.ReleaseListNamespace(testNamespace),
