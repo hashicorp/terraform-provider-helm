@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ghodss/yaml"
 	"github.com/hashicorp/terraform/helper/schema"
-	"gopkg.in/yaml.v1"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/downloader"
 	"k8s.io/helm/pkg/getter"
@@ -53,6 +53,11 @@ func resourceChart() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed.",
+			},
+			"raw_values": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Set raw yaml file to pass to helm.",
 			},
 			"value": {
 				Type:        schema.TypeSet,
@@ -324,6 +329,13 @@ func getChart(d *schema.ResourceData, m *Meta) (c *chart.Chart, path string, err
 
 func getValues(d *schema.ResourceData) ([]byte, error) {
 	base := map[string]interface{}{}
+
+	raw_values := d.Get("raw_values").(string)
+	if raw_values != "" {
+		if err := yaml.Unmarshal([]byte(raw_values), &base); err != nil {
+			return nil, err
+		}
+	}
 
 	for _, raw := range d.Get("value").(*schema.Set).List() {
 		value := raw.(map[string]interface{})
