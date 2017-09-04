@@ -1,5 +1,5 @@
-hash: 99f906850455e6bc55bcab074dc553dfb066286eeed53079561458c110a01092
-updated: 2017-09-04T18:00:32.291230037+02:00
+hash: b66e6be464ecf611a2ee1e1ff617c961ba8f82a947512963afe7ea4c80f4ceff
+updated: 2017-09-05T00:26:31.989233105+02:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -402,6 +402,8 @@ imports:
   version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
   subpackages:
   - bson
+- name: gopkg.in/yaml.v1
+  version: 9f9df34309c04878acc86042b16630b0f696e1de
 - name: gopkg.in/yaml.v2
   version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 - name: k8s.io/api
@@ -424,6 +426,7 @@ imports:
 - name: k8s.io/helm
   version: bbc1f71dc03afc5f00c6ac84b9308f8ecb4f39ac
   subpackages:
+  - cmd/helm/installer
   - pkg/chartutil
   - pkg/downloader
   - pkg/engine

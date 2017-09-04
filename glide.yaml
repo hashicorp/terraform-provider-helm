@@ -8,6 +8,7 @@ import:
   - terraform
 - package: k8s.io/helm
   version: ~2.6.0
+- package: gopkg.in/yaml.v1
 
 # hacks for kubernetes v1.7
 - package: k8s.io/kubernetes
