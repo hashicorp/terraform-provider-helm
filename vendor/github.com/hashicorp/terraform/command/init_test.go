@@ -645,6 +645,49 @@ func TestInit_findVendoredProviders(t *testing.T) {
 	}
 }
 
+// make sure we can locate providers defined in the legacy rc file
+func TestInit_rcProviders(t *testing.T) {
+	// Create a temporary working directory that is empty
+	td := tempDir(t)
+
+	configDirName := "init-legacy-rc"
+	copy.CopyDir(testFixturePath(configDirName), filepath.Join(td, configDirName))
+	defer os.RemoveAll(td)
+	defer testChdir(t, td)()
+
+	pluginDir := filepath.Join(td, "custom")
+	pluginPath := filepath.Join(pluginDir, "terraform-provider-legacy")
+
+	ui := new(cli.MockUi)
+	m := Meta{
+		Ui: ui,
+		PluginOverrides: &PluginOverrides{
+			Providers: map[string]string{
+				"legacy": pluginPath,
+			},
+		},
+	}
+
+	c := &InitCommand{
+		Meta:              m,
+		providerInstaller: &mockProviderInstaller{},
+	}
+
+	// make our plugin paths
+	if err := os.MkdirAll(pluginDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := ioutil.WriteFile(pluginPath, []byte("test bin"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	args := []string{configDirName}
+	if code := c.Run(args); code != 0 {
+		t.Fatalf("bad: \n%s", ui.ErrorWriter.String())
+	}
+}
+
 func TestInit_getUpgradePlugins(t *testing.T) {
 	// Create a temporary working directory that is empty
 	td := tempDir(t)
@@ -809,6 +852,27 @@ func TestInit_getProviderHaveLegacyVersion(t *testing.T) {
 
 	if !strings.Contains(ui.ErrorWriter.String(), "EXPECTED PROVIDER ERROR test") {
 		t.Fatalf("unexpected error output: %s", ui.ErrorWriter)
+	}
+}
+
+func TestInit_getProviderCheckRequiredVersion(t *testing.T) {
+	// Create a temporary working directory that is empty
+	td := tempDir(t)
+	copy.CopyDir(testFixturePath("init-check-required-version"), td)
+	defer os.RemoveAll(td)
+	defer testChdir(t, td)()
+
+	ui := new(cli.MockUi)
+	c := &InitCommand{
+		Meta: Meta{
+			testingOverrides: metaOverridesForProvider(testProvider()),
+			Ui:               ui,
+		},
+	}
+
+	args := []string{}
+	if code := c.Run(args); code != 1 {
+		t.Fatalf("bad: \n%s", ui.ErrorWriter.String())
 	}
 }
 

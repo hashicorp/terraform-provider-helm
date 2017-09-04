@@ -67,14 +67,10 @@ type Parameters struct {
 	TenantID            string
 	Domain              string
 	DomainID            string
-	TenantDomain        string
-	TenantDomainID      string
 	TrustID             string
 	Region              string
-	AuthVersion         int
 	Container           string
 	Prefix              string
-	EndpointType        string
 	InsecureSkipVerify  bool
 	ChunkSize           int
 	SecretKey           string
@@ -91,9 +87,6 @@ type swiftInfo struct {
 	Tempurl struct {
 		Methods []string `mapstructure:"methods"`
 	}
-	BulkDelete struct {
-		MaxDeletesPerRequest int `mapstructure:"max_deletes_per_request"`
-	} `mapstructure:"bulk_delete"`
 }
 
 func init() {
@@ -108,16 +101,15 @@ func (factory *swiftDriverFactory) Create(parameters map[string]interface{}) (st
 }
 
 type driver struct {
-	Conn                 *swift.Connection
-	Container            string
-	Prefix               string
-	BulkDeleteSupport    bool
-	BulkDeleteMaxDeletes int
-	ChunkSize            int
-	SecretKey            string
-	AccessKey            string
-	TempURLContainerKey  bool
-	TempURLMethods       []string
+	Conn                swift.Connection
+	Container           string
+	Prefix              string
+	BulkDeleteSupport   bool
+	ChunkSize           int
+	SecretKey           string
+	AccessKey           string
+	TempURLContainerKey bool
+	TempURLMethods      []string
 }
 
 type baseEmbed struct {
@@ -177,21 +169,17 @@ func New(params Parameters) (*Driver, error) {
 		TLSClientConfig:     &tls.Config{InsecureSkipVerify: params.InsecureSkipVerify},
 	}
 
-	ct := &swift.Connection{
+	ct := swift.Connection{
 		UserName:       params.Username,
 		ApiKey:         params.Password,
 		AuthUrl:        params.AuthURL,
 		Region:         params.Region,
-		AuthVersion:    params.AuthVersion,
 		UserAgent:      "distribution/" + version.Version,
 		Tenant:         params.Tenant,
 		TenantId:       params.TenantID,
 		Domain:         params.Domain,
 		DomainId:       params.DomainID,
-		TenantDomain:   params.TenantDomain,
-		TenantDomainId: params.TenantDomainID,
 		TrustId:        params.TrustID,
-		EndpointType:   swift.EndpointType(params.EndpointType),
 		Transport:      transport,
 		ConnectTimeout: 60 * time.Second,
 		Timeout:        15 * 60 * time.Second,
@@ -225,9 +213,6 @@ func New(params Parameters) (*Driver, error) {
 		if err := mapstructure.Decode(config, &info); err == nil {
 			d.TempURLContainerKey = info.Swift.Version >= "2.3.0"
 			d.TempURLMethods = info.Tempurl.Methods
-			if d.BulkDeleteSupport {
-				d.BulkDeleteMaxDeletes = info.BulkDelete.MaxDeletesPerRequest
-			}
 		}
 	} else {
 		d.TempURLContainerKey = params.TempURLContainerKey
@@ -313,40 +298,14 @@ func (d *driver) Reader(ctx context.Context, path string, offset int64) (io.Read
 	headers := make(swift.Headers)
 	headers["Range"] = "bytes=" + strconv.FormatInt(offset, 10) + "-"
 
-	waitingTime := readAfterWriteWait
-	endTime := time.Now().Add(readAfterWriteTimeout)
-
-	for {
-		file, headers, err := d.Conn.ObjectOpen(d.Container, d.swiftPath(path), false, headers)
-		if err != nil {
-			if err == swift.ObjectNotFound {
-				return nil, storagedriver.PathNotFoundError{Path: path}
-			}
-			if swiftErr, ok := err.(*swift.Error); ok && swiftErr.StatusCode == http.StatusRequestedRangeNotSatisfiable {
-				return ioutil.NopCloser(bytes.NewReader(nil)), nil
-			}
-			return file, err
-		}
-
-		//if this is a DLO and it is clear that segments are still missing,
-		//wait until they show up
-		_, isDLO := headers["X-Object-Manifest"]
-		size, err := file.Length()
-		if err != nil {
-			return file, err
-		}
-		if isDLO && size == 0 {
-			if time.Now().Add(waitingTime).After(endTime) {
-				return nil, fmt.Errorf("Timeout expired while waiting for segments of %s to show up", path)
-			}
-			time.Sleep(waitingTime)
-			waitingTime *= 2
-			continue
-		}
-
-		//if not, then this reader will be fine
-		return file, nil
+	file, _, err := d.Conn.ObjectOpen(d.Container, d.swiftPath(path), false, headers)
+	if err == swift.ObjectNotFound {
+		return nil, storagedriver.PathNotFoundError{Path: path}
 	}
+	if swiftErr, ok := err.(*swift.Error); ok && swiftErr.StatusCode == http.StatusRequestedRangeNotSatisfiable {
+		return ioutil.NopCloser(bytes.NewReader(nil)), nil
+	}
+	return file, err
 }
 
 // Writer returns a FileWriter which will store the content written to it
@@ -376,7 +335,7 @@ func (d *driver) Writer(ctx context.Context, path string, append bool) (storaged
 			if err != nil {
 				return nil, err
 			}
-			if err := d.Conn.ObjectMove(d.Container, d.swiftPath(path), d.Container, getSegmentPath(segmentsPath, len(segments))); err != nil {
+			if err := d.Conn.ObjectMove(d.Container, d.swiftPath(path), d.Container, segmentPath(segmentsPath, len(segments))); err != nil {
 				return nil, err
 			}
 			segments = []swift.Object{info}
@@ -417,45 +376,23 @@ func (d *driver) Stat(ctx context.Context, path string) (storagedriver.FileInfo,
 			fi.IsDir = true
 			return storagedriver.FileInfoInternal{FileInfoFields: fi}, nil
 		} else if obj.Name == swiftPath {
-			// The file exists. But on Swift 1.12, the 'bytes' field is always 0 so
-			// we need to do a separate HEAD request.
-			break
+			// On Swift 1.12, the 'bytes' field is always 0
+			// so we need to do a second HEAD request
+			info, _, err := d.Conn.Object(d.Container, swiftPath)
+			if err != nil {
+				if err == swift.ObjectNotFound {
+					return nil, storagedriver.PathNotFoundError{Path: path}
+				}
+				return nil, err
+			}
+			fi.IsDir = false
+			fi.Size = info.Bytes
+			fi.ModTime = info.LastModified
+			return storagedriver.FileInfoInternal{FileInfoFields: fi}, nil
 		}
 	}
 
-	//Don't trust an empty `objects` slice. A container listing can be
-	//outdated. For files, we can make a HEAD request on the object which
-	//reports existence (at least) much more reliably.
-	waitingTime := readAfterWriteWait
-	endTime := time.Now().Add(readAfterWriteTimeout)
-
-	for {
-		info, headers, err := d.Conn.Object(d.Container, swiftPath)
-		if err != nil {
-			if err == swift.ObjectNotFound {
-				return nil, storagedriver.PathNotFoundError{Path: path}
-			}
-			return nil, err
-		}
-
-		//if this is a DLO and it is clear that segments are still missing,
-		//wait until they show up
-		_, isDLO := headers["X-Object-Manifest"]
-		if isDLO && info.Bytes == 0 {
-			if time.Now().Add(waitingTime).After(endTime) {
-				return nil, fmt.Errorf("Timeout expired while waiting for segments of %s to show up", path)
-			}
-			time.Sleep(waitingTime)
-			waitingTime *= 2
-			continue
-		}
-
-		//otherwise, accept the result
-		fi.IsDir = false
-		fi.Size = info.Bytes
-		fi.ModTime = info.LastModified
-		return storagedriver.FileInfoInternal{FileInfoFields: fi}, nil
-	}
+	return nil, storagedriver.PathNotFoundError{Path: path}
 }
 
 // List returns a list of the objects that are direct descendants of the given path.
@@ -539,26 +476,19 @@ func (d *driver) Delete(ctx context.Context, path string) error {
 		}
 	}
 
-	if d.BulkDeleteSupport && len(objects) > 0 && d.BulkDeleteMaxDeletes > 0 {
+	if d.BulkDeleteSupport && len(objects) > 0 {
 		filenames := make([]string, len(objects))
 		for i, obj := range objects {
 			filenames[i] = obj.Name
 		}
-
-		chunks, err := chunkFilenames(filenames, d.BulkDeleteMaxDeletes)
-		if err != nil {
-			return err
-		}
-		for _, chunk := range chunks {
-			_, err := d.Conn.BulkDelete(d.Container, chunk)
-			// Don't fail on ObjectNotFound because eventual consistency
-			// makes this situation normal.
-			if err != nil && err != swift.Forbidden && err != swift.ObjectNotFound {
-				if err == swift.ContainerNotFound {
-					return storagedriver.PathNotFoundError{Path: path}
-				}
-				return err
+		_, err = d.Conn.BulkDelete(d.Container, filenames)
+		// Don't fail on ObjectNotFound because eventual consistency
+		// makes this situation normal.
+		if err != nil && err != swift.Forbidden && err != swift.ObjectNotFound {
+			if err == swift.ContainerNotFound {
+				return storagedriver.PathNotFoundError{Path: path}
 			}
+			return err
 		}
 	} else {
 		for _, obj := range objects {
@@ -659,52 +589,11 @@ func (d *driver) swiftSegmentPath(path string) (string, error) {
 }
 
 func (d *driver) getAllSegments(path string) ([]swift.Object, error) {
-	//a simple container listing works 99.9% of the time
 	segments, err := d.Conn.ObjectsAll(d.Container, &swift.ObjectsOpts{Prefix: path})
-	if err != nil {
-		if err == swift.ContainerNotFound {
-			return nil, storagedriver.PathNotFoundError{Path: path}
-		}
-		return nil, err
+	if err == swift.ContainerNotFound {
+		return nil, storagedriver.PathNotFoundError{Path: path}
 	}
-
-	//build a lookup table by object name
-	hasObjectName := make(map[string]struct{})
-	for _, segment := range segments {
-		hasObjectName[segment.Name] = struct{}{}
-	}
-
-	//The container listing might be outdated (i.e. not contain all existing
-	//segment objects yet) because of temporary inconsistency (Swift is only
-	//eventually consistent!). Check its completeness.
-	segmentNumber := 0
-	for {
-		segmentNumber++
-		segmentPath := getSegmentPath(path, segmentNumber)
-
-		if _, seen := hasObjectName[segmentPath]; seen {
-			continue
-		}
-
-		//This segment is missing in the container listing. Use a more reliable
-		//request to check its existence. (HEAD requests on segments are
-		//guaranteed to return the correct metadata, except for the pathological
-		//case of an outage of large parts of the Swift cluster or its network,
-		//since every segment is only written once.)
-		segment, _, err := d.Conn.Object(d.Container, segmentPath)
-		switch err {
-		case nil:
-			//found new segment -> keep going, more might be missing
-			segments = append(segments, segment)
-			continue
-		case swift.ObjectNotFound:
-			//This segment is missing. Since we upload segments sequentially,
-			//there won't be any more segments after it.
-			return segments, nil
-		default:
-			return nil, err //unexpected error
-		}
-	}
+	return segments, err
 }
 
 func (d *driver) createManifest(path string, segments string) error {
@@ -726,21 +615,6 @@ func (d *driver) createManifest(path string, segments string) error {
 	return nil
 }
 
-func chunkFilenames(slice []string, maxSize int) (chunks [][]string, err error) {
-	if maxSize > 0 {
-		for offset := 0; offset < len(slice); offset += maxSize {
-			chunkSize := maxSize
-			if offset+chunkSize > len(slice) {
-				chunkSize = len(slice) - offset
-			}
-			chunks = append(chunks, slice[offset:offset+chunkSize])
-		}
-	} else {
-		return nil, fmt.Errorf("Max chunk size must be > 0")
-	}
-	return
-}
-
 func parseManifest(manifest string) (container string, prefix string) {
 	components := strings.SplitN(manifest, "/", 2)
 	container = components[0]
@@ -758,7 +632,7 @@ func generateSecret() (string, error) {
 	return hex.EncodeToString(secretBytes[:]), nil
 }
 
-func getSegmentPath(segmentsPath string, partNumber int) string {
+func segmentPath(segmentsPath string, partNumber int) string {
 	return fmt.Sprintf("%s/%016d", segmentsPath, partNumber)
 }
 
@@ -888,7 +762,7 @@ func (w *writer) waitForSegmentsToShowUp() error {
 }
 
 type segmentWriter struct {
-	conn          *swift.Connection
+	conn          swift.Connection
 	container     string
 	segmentsPath  string
 	segmentNumber int
@@ -902,7 +776,7 @@ func (sw *segmentWriter) Write(p []byte) (int, error) {
 		if offset+chunkSize > len(p) {
 			chunkSize = len(p) - offset
 		}
-		_, err := sw.conn.ObjectPut(sw.container, getSegmentPath(sw.segmentsPath, sw.segmentNumber), bytes.NewReader(p[offset:offset+chunkSize]), false, "", contentType, nil)
+		_, err := sw.conn.ObjectPut(sw.container, segmentPath(sw.segmentsPath, sw.segmentNumber), bytes.NewReader(p[offset:offset+chunkSize]), false, "", contentType, nil)
 		if err != nil {
 			return n, err
 		}

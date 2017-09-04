@@ -2,6 +2,7 @@ package semver
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -291,6 +292,31 @@ func (v *Version) Compare(o *Version) int {
 	return comparePrerelease(ps, po)
 }
 
+// UnmarshalJSON implements JSON.Unmarshaler interface.
+func (v *Version) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	temp, err := NewVersion(s)
+	if err != nil {
+		return err
+	}
+	v.major = temp.major
+	v.minor = temp.minor
+	v.patch = temp.patch
+	v.pre = temp.pre
+	v.metadata = temp.metadata
+	v.original = temp.original
+	temp = nil
+	return nil
+}
+
+// MarshalJSON implements JSON.Marshaler interface.
+func (v *Version) MarshalJSON() ([]byte, error) {
+	return json.Marshal(v.String())
+}
+
 func compareSegment(v, o int64) int {
 	if v < o {
 		return -1
@@ -368,8 +394,29 @@ func comparePrePart(s, o string) int {
 		return -1
 	}
 
-	if s > o {
+	// When comparing strings "99" is greater than "103". To handle
+	// cases like this we need to detect numbers and compare them.
+
+	oi, n1 := strconv.ParseInt(o, 10, 64)
+	si, n2 := strconv.ParseInt(s, 10, 64)
+
+	// The case where both are strings compare the strings
+	if n1 != nil && n2 != nil {
+		if s > o {
+			return 1
+		}
+		return -1
+	} else if n1 != nil {
+		// o is a string and s is a number
+		return -1
+	} else if n2 != nil {
+		// s is a string and o is a number
+		return 1
+	}
+	// Both are numbers
+	if si > oi {
 		return 1
 	}
 	return -1
+
 }

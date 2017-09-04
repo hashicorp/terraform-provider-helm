@@ -3,6 +3,7 @@ package testutil
 import (
 	"archive/tar"
 	"bytes"
+	"crypto/rand"
 	"fmt"
 	"io"
 	mrand "math/rand"
@@ -10,7 +11,7 @@ import (
 
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/context"
-	"github.com/opencontainers/go-digest"
+	"github.com/docker/distribution/digest"
 )
 
 // CreateRandomTarFile creates a random tarfile, returning it as an
@@ -45,7 +46,7 @@ func CreateRandomTarFile() (rs io.ReadSeeker, dgst digest.Digest, err error) {
 		randomData := make([]byte, fileSize)
 
 		// Fill up the buffer with some random data.
-		n, err := mrand.Read(randomData)
+		n, err := rand.Read(randomData)
 
 		if n != len(randomData) {
 			return nil, "", fmt.Errorf("short read creating random reader: %v bytes != %v bytes", n, len(randomData))

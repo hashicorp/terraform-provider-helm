@@ -1,49 +1,51 @@
 package: github.com/mcuadros/terraform-provider-helm
 import:
 - package: github.com/hashicorp/terraform
-  version: v0.10.0
+  version: ~0.10.3
   subpackages:
   - helper/schema
   - plugin
   - terraform
-- package: github.com/BurntSushi/toml
-- package: github.com/Azure/go-ansiterm
-  version: 388960b655244e76e24c75f48631564eaefade62
-- package: github.com/docker/distribution
-  version: b38e5838b7b2f2ad48e06ec4b500011976080621
-- package: github.com/docker/cli
-  version: 30af87981d8d464c385b247f524fcbc503207940
-- package: github.com/docker/docker
-  version: v17.05.0-ce
-- package: github.com/docker/go-units
-  version: 0dadbb0345b35ec7ef35e228dabb8de89a65bf52
-- package: github.com/emicklei/go-restful
-  version: v1.2
-- package: github.com/ghodss/yaml
-- package: github.com/gorilla/websocket
-  version: 7fe3183ee95b29153898356cc2c6026a8cb7afe5
-  repo: https://github.com/bacongobbler/websocket
-  vcs: git
-- package: github.com/julienschmidt/httprouter
-- package: github.com/rjeczalik/notify
-- package: github.com/spf13/cobra
-- package: github.com/technosophos/moniker
-- package: k8s.io/apimachinery
-- package: k8s.io/client-go
-  version: 8aceb98010c1c18b6b54a35b52fd5b46905e3d7f
 - package: k8s.io/helm
-  version: ~2.5.0
-- package: k8s.io/kubernetes
-  version: v1.6.2
-- package: github.com/Sirupsen/logrus
-  version: ~0.11.5
-- package: github.com/pkg/errors
-  version: ~0.8.0
-- package: github.com/Masterminds/sprig
-  version: ~2.12.0
-- package: github.com/facebookgo/atomicfile
+  version: ~2.6.0
 
-- package: hashicorp/go-plugin
-  version: f72692aebca2008343a9deb06ddb4b17f7051c15
-- package: github.com/spf13/pflag
-  version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
+# hacks for kubernetes v1.7
+- package: k8s.io/kubernetes
+  version: v1.7.0
+- package: cloud.google.com/go
+- package: github.com/Azure/go-autorest
+  version: d7c034a8af24eda120dd6460bfcd6d9ed14e43ca
+- package: github.com/dgrijalva/jwt-go
+- package: github.com/docker/spdystream
+- package: github.com/go-openapi/analysis
+  version: b44dc874b601d9e4e2f6e19140e794ba24bead3b
+- package: github.com/go-openapi/errors
+  version: d24ebc2075bad502fac3a8ae27aa6dd58e1952dc
+- package: github.com/go-openapi/loads
+  version: 18441dfa706d924a39a030ee2c3b1d8d81917b38
+- package: github.com/go-openapi/spec
+  version: 6aced65f8501fe1217321abf0749d354824ba2ff
+- package: github.com/google/gofuzz
+- package: github.com/hashicorp/golang-lru
+- package: github.com/howeyc/gopass
+- package: github.com/juju/ratelimit
+  version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
+- package: github.com/pborman/uuid
+- package: golang.org/x/oauth2
+- package: gopkg.in/inf.v0
+- package: github.com/go-openapi/strfmt
+- package: github.com/mitchellh/mapstructure
+- package: gopkg.in/mgo.v2/bson
+
+# hacks for client-go after execute scripts/fix-vendoring.sh
+# https://github.com/kubernetes/client-go/issues/232#issuecomment-321153450
+- package: k8s.io/api
+  version: e532fdb5587debfd7aade56dabe9eb5df9544baf
+- package: k8s.io/apimachinery
+  version: a13245d02534abe88286859b547d041816f9a3f4
+- package: k8s.io/apiextensions-apiserver
+  version: 6d8c23d2e66ce61e2a7e34f92e8eb3eec13279fa
+
+ignore:
+  - k8s.io/client-go
+  - k8s.io/apimachinery

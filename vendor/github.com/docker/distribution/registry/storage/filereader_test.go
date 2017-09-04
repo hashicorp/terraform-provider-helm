@@ -2,20 +2,21 @@ package storage
 
 import (
 	"bytes"
+	"crypto/rand"
 	"io"
 	mrand "math/rand"
 	"os"
 	"testing"
 
 	"github.com/docker/distribution/context"
+	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/registry/storage/driver/inmemory"
-	"github.com/opencontainers/go-digest"
 )
 
 func TestSimpleRead(t *testing.T) {
 	ctx := context.Background()
 	content := make([]byte, 1<<20)
-	n, err := mrand.Read(content)
+	n, err := rand.Read(content)
 	if err != nil {
 		t.Fatalf("unexpected error building random data: %v", err)
 	}
@@ -41,7 +42,11 @@ func TestSimpleRead(t *testing.T) {
 		t.Fatalf("error allocating file reader: %v", err)
 	}
 
-	verifier := dgst.Verifier()
+	verifier, err := digest.NewDigestVerifier(dgst)
+	if err != nil {
+		t.Fatalf("error getting digest verifier: %s", err)
+	}
+
 	io.Copy(verifier, fr)
 
 	if !verifier.Verified() {
@@ -178,7 +183,7 @@ func TestFileReaderNonExistentFile(t *testing.T) {
 // conditions that can arise when reading a layer.
 func TestFileReaderErrors(t *testing.T) {
 	// TODO(stevvooe): We need to cover error return types, driven by the
-	// errors returned via the HTTP API. For now, here is an incomplete list:
+	// errors returned via the HTTP API. For now, here is a incomplete list:
 	//
 	// 	1. Layer Not Found: returned when layer is not found or access is
 	//        denied.

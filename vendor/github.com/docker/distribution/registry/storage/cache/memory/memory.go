@@ -5,9 +5,9 @@ import (
 
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/context"
+	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/storage/cache"
-	"github.com/opencontainers/go-digest"
 )
 
 type inMemoryBlobDescriptorCacheProvider struct {
@@ -26,7 +26,7 @@ func NewInMemoryBlobDescriptorCacheProvider() cache.BlobDescriptorCacheProvider 
 }
 
 func (imbdcp *inMemoryBlobDescriptorCacheProvider) RepositoryScoped(repo string) (distribution.BlobDescriptorService, error) {
-	if _, err := reference.ParseNormalizedNamed(repo); err != nil {
+	if _, err := reference.ParseNamed(repo); err != nil {
 		return nil, err
 	}
 
@@ -77,46 +77,37 @@ type repositoryScopedInMemoryBlobDescriptorCache struct {
 }
 
 func (rsimbdcp *repositoryScopedInMemoryBlobDescriptorCache) Stat(ctx context.Context, dgst digest.Digest) (distribution.Descriptor, error) {
-	rsimbdcp.parent.mu.Lock()
-	repo := rsimbdcp.repository
-	rsimbdcp.parent.mu.Unlock()
-
-	if repo == nil {
+	if rsimbdcp.repository == nil {
 		return distribution.Descriptor{}, distribution.ErrBlobUnknown
 	}
 
-	return repo.Stat(ctx, dgst)
+	return rsimbdcp.repository.Stat(ctx, dgst)
 }
 
 func (rsimbdcp *repositoryScopedInMemoryBlobDescriptorCache) Clear(ctx context.Context, dgst digest.Digest) error {
-	rsimbdcp.parent.mu.Lock()
-	repo := rsimbdcp.repository
-	rsimbdcp.parent.mu.Unlock()
-
-	if repo == nil {
+	if rsimbdcp.repository == nil {
 		return distribution.ErrBlobUnknown
 	}
 
-	return repo.Clear(ctx, dgst)
+	return rsimbdcp.repository.Clear(ctx, dgst)
 }
 
 func (rsimbdcp *repositoryScopedInMemoryBlobDescriptorCache) SetDescriptor(ctx context.Context, dgst digest.Digest, desc distribution.Descriptor) error {
-	rsimbdcp.parent.mu.Lock()
-	repo := rsimbdcp.repository
-	if repo == nil {
+	if rsimbdcp.repository == nil {
 		// allocate map since we are setting it now.
+		rsimbdcp.parent.mu.Lock()
 		var ok bool
 		// have to read back value since we may have allocated elsewhere.
-		repo, ok = rsimbdcp.parent.repositories[rsimbdcp.repo]
+		rsimbdcp.repository, ok = rsimbdcp.parent.repositories[rsimbdcp.repo]
 		if !ok {
-			repo = newMapBlobDescriptorCache()
-			rsimbdcp.parent.repositories[rsimbdcp.repo] = repo
+			rsimbdcp.repository = newMapBlobDescriptorCache()
+			rsimbdcp.parent.repositories[rsimbdcp.repo] = rsimbdcp.repository
 		}
-		rsimbdcp.repository = repo
-	}
-	rsimbdcp.parent.mu.Unlock()
 
-	if err := repo.SetDescriptor(ctx, dgst, desc); err != nil {
+		rsimbdcp.parent.mu.Unlock()
+	}
+
+	if err := rsimbdcp.repository.SetDescriptor(ctx, dgst, desc); err != nil {
 		return err
 	}
 

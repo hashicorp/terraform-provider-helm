@@ -26,20 +26,17 @@ import (
 const (
 	DefaultServiceDNSDomain  = "cluster.local"
 	DefaultServicesSubnet    = "10.96.0.0/12"
-	DefaultKubernetesVersion = "stable-1.6"
+	DefaultKubernetesVersion = "stable-1.7"
 	DefaultAPIBindPort       = 6443
 	DefaultDiscoveryBindPort = 9898
 	DefaultAuthorizationMode = "RBAC"
 	DefaultCACertPath        = "/etc/kubernetes/pki/ca.crt"
 	DefaultCertificatesDir   = "/etc/kubernetes/pki"
+	DefaultEtcdDataDir       = "/var/lib/etcd"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	RegisterDefaults(scheme)
-	return scheme.AddDefaultingFuncs(
-		SetDefaults_MasterConfiguration,
-		SetDefaults_NodeConfiguration,
-	)
+	return RegisterDefaults(scheme)
 }
 
 func SetDefaults_MasterConfiguration(obj *MasterConfiguration) {
@@ -59,8 +56,8 @@ func SetDefaults_MasterConfiguration(obj *MasterConfiguration) {
 		obj.Networking.DNSDomain = DefaultServiceDNSDomain
 	}
 
-	if obj.AuthorizationMode == "" {
-		obj.AuthorizationMode = DefaultAuthorizationMode
+	if len(obj.AuthorizationModes) == 0 {
+		obj.AuthorizationModes = []string{DefaultAuthorizationMode}
 	}
 
 	if obj.CertificatesDir == "" {
@@ -69,6 +66,10 @@ func SetDefaults_MasterConfiguration(obj *MasterConfiguration) {
 
 	if obj.TokenTTL == 0 {
 		obj.TokenTTL = constants.DefaultTokenDuration
+	}
+
+	if obj.Etcd.DataDir == "" {
+		obj.Etcd.DataDir = DefaultEtcdDataDir
 	}
 }
 

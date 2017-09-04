@@ -1,16 +1,16 @@
----
-title: "Image Manifest V 2, Schema 2 "
-description: "image manifest for the Registry."
-keywords: ["registry, on-prem, images, tags, repository, distribution, api, advanced, manifest"]
----
+<!--[metadata]>
++++
+draft = true
++++
+<![end-metadata]-->
 
 # Image Manifest Version 2, Schema 2
 
-This document outlines the format of the V2 image manifest, schema version 2.
+This document outlines the format of of the V2 image manifest, schema version 2.
 The original (and provisional) image manifest for V2 (schema 1), was introduced
 in the Docker daemon in the [v1.3.0
 release](https://github.com/docker/docker/commit/9f482a66ab37ec396ac61ed0c00d59122ac07453)
-and is specified in the [schema 1 manifest definition](manifest-v2-1.md)
+and is specified in the [schema 1 manifest definition](./manifest-v2-1.md)
 
 This second schema version has two primary goals. The first is to allow
 multi-architecture images, through a "fat manifest" which references image
@@ -27,10 +27,8 @@ the resources they reference:
 - `application/vnd.docker.distribution.manifest.v1+json`: schema1 (existing manifest format)
 - `application/vnd.docker.distribution.manifest.v2+json`: New image manifest format (schemaVersion = 2)
 - `application/vnd.docker.distribution.manifest.list.v2+json`: Manifest list, aka "fat manifest"
-- `application/vnd.docker.container.image.v1+json`: Container config JSON
 - `application/vnd.docker.image.rootfs.diff.tar.gzip`: "Layer", as a gzipped tar
-- `application/vnd.docker.image.rootfs.foreign.diff.tar.gzip`: "Layer", as a gzipped tar that should never be pushed
-- `application/vnd.docker.plugin.v1+json`: Plugin config JSON
+- `application/vnd.docker.container.image.v1+json`: Container config JSON
 
 ## Manifest List
 
@@ -42,7 +40,7 @@ image manifest based on the Content-Type returned in the HTTP response.
 ## *Manifest List* Field Descriptions
 
 - **`schemaVersion`** *int*
-
+	
   This field specifies the image manifest schema version as an integer. This
   schema uses the version `2`.
 
@@ -55,38 +53,36 @@ image manifest based on the Content-Type returned in the HTTP response.
 
     The manifests field contains a list of manifests for specific platforms.
 
-    Fields of an object in the manifests list are:
-
+    Fields of a object in the manifests list are:
+    
     - **`mediaType`** *string*
-
+    
         The MIME type of the referenced object. This will generally be
         `application/vnd.docker.image.manifest.v2+json`, but it could also
         be `application/vnd.docker.image.manifest.v1+json` if the manifest
         list references a legacy schema-1 manifest.
-
+    
     - **`size`** *int*
-
+    
         The size in bytes of the object. This field exists so that a client
         will have an expected size for the content before validating. If the
         length of the retrieved content does not match the specified length,
         the content should not be trusted.
-
+    
     - **`digest`** *string*
 
         The digest of the content, as defined by the
-        [Registry V2 HTTP API Specificiation](api.md#digest-parameter).
+        [Registry V2 HTTP API Specificiation](https://docs.docker.com/registry/spec/api/#digest-parameter).
 
     - **`platform`** *object*
 
         The platform object describes the platform which the image in the
-        manifest runs on. A full list of valid operating system and architecture
-        values are listed in the [Go language documentation for `$GOOS` and
-        `$GOARCH`](https://golang.org/doc/install/source#environment)
+        manifest runs on.
 
         - **`architecture`** *string*
 
             The architecture field specifies the CPU architecture, for example
-            `amd64` or `ppc64le`.
+            `amd64` or `ppc64`.
 
         - **`os`** *string*
 
@@ -107,7 +103,8 @@ image manifest based on the Content-Type returned in the HTTP response.
         - **`variant`** *string*
 
             The optional variant field specifies a variant of the CPU, for
-            example `armv6l` to specify a particular CPU variant of the ARM CPU.
+            example `ppc64le` to specify a little-endian version of a PowerPC
+            CPU.
 
         - **`features`** *array*
 
@@ -127,8 +124,9 @@ image manifest based on the Content-Type returned in the HTTP response.
       "size": 7143,
       "digest": "sha256:e692418e4cbaf90ca69d05a66403747baa33ee08806650b51fab815ad7fc331f",
       "platform": {
-        "architecture": "ppc64le",
+        "architecture": "ppc64",
         "os": "linux",
+        "variant": "ppc64le",
       }
     },
     {
@@ -136,7 +134,7 @@ image manifest based on the Content-Type returned in the HTTP response.
       "size": 7682,
       "digest": "sha256:5b0bcabd1ed22e9fb1310cf6c2dec7cdef19f0ad69efa1f392e94a4333501270",
       "platform": {
-        "architecture": "amd64",
+        "architecture": "x86-64",
         "os": "linux",
         "features": [
           "sse4"
@@ -155,7 +153,7 @@ image. It's the direct replacement for the schema-1 manifest.
 ## *Image Manifest* Field Descriptions
 
 - **`schemaVersion`** *int*
-
+	
   This field specifies the image manifest schema version as an integer. This
   schema uses version `2`.
 
@@ -173,55 +171,46 @@ image. It's the direct replacement for the schema-1 manifest.
     daemon side.
 
     Fields of a config object are:
-
+    
     - **`mediaType`** *string*
-
+    
         The MIME type of the referenced object. This should generally be
         `application/vnd.docker.container.image.v1+json`.
-
+    
     - **`size`** *int*
-
+    
         The size in bytes of the object. This field exists so that a client
         will have an expected size for the content before validating. If the
         length of the retrieved content does not match the specified length,
         the content should not be trusted.
-
+    
     - **`digest`** *string*
 
         The digest of the content, as defined by the
-        [Registry V2 HTTP API Specificiation](api.md#digest-parameter).
+        [Registry V2 HTTP API Specificiation](https://docs.docker.com/registry/spec/api/#digest-parameter).
 
 - **`layers`** *array*
 
     The layer list is ordered starting from the base image (opposite order of schema1).
 
     Fields of an item in the layers list are:
-
+    
     - **`mediaType`** *string*
-
+    
         The MIME type of the referenced object. This should
         generally be `application/vnd.docker.image.rootfs.diff.tar.gzip`.
-        Layers of type
-        `application/vnd.docker.image.rootfs.foreign.diff.tar.gzip` may be
-        pulled from a remote location but they should never be pushed.
-
+    
     - **`size`** *int*
-
+    
         The size in bytes of the object. This field exists so that a client
         will have an expected size for the content before validating. If the
         length of the retrieved content does not match the specified length,
         the content should not be trusted.
-
+    
     - **`digest`** *string*
 
         The digest of the content, as defined by the
-        [Registry V2 HTTP API Specificiation](api.md#digest-parameter).
-
-    - **`urls`** *array*
-
-        Provides a list of URLs from which the content may be fetched. Content
-        should be verified against the `digest` and `size`. This field is
-        optional and uncommon.
+        [Registry V2 HTTP API Specificiation](https://docs.docker.com/registry/spec/api/#digest-parameter).
 
 ## Example Image Manifest
 
@@ -251,7 +240,7 @@ image. It's the direct replacement for the schema-1 manifest.
             "size": 73109,
             "digest": "sha256:ec4b8955958665577945c89419d1af06b5f7636b4ac3da7f12184802ad867736"
         }
-    ]
+    ],
 }
 ```
 
@@ -278,7 +267,7 @@ If the manifest being requested uses the new format, and the appropriate media
 type is not present in an `Accept` header, the registry will assume that the
 client cannot handle the manifest as-is, and rewrite it on the fly into the old
 format. If the object that would otherwise be returned is a manifest list, the
-registry will look up the appropriate manifest for the amd64 platform and
+registry will look up the appropriate manifest for the x86-64 platform and
 linux OS, rewrite that manifest into the old format if necessary, and return
 the result to the client. If no suitable manifest is found in the manifest
 list, the registry will return a 404 error.
