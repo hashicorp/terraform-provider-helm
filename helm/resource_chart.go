@@ -164,8 +164,12 @@ func resourceChart() *schema.Resource {
 
 func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
+	c, err := m.GetHelmClient()
+	if err != nil {
+		return err
+	}
 
-	r, err := getRelease(m.GetHelmClient(), d)
+	r, err := getRelease(c, d)
 	if err == nil {
 		if r.Info.Status.GetCode() != release.Status_FAILED {
 			return setIdAndMetadataFromRelease(d, r)
@@ -199,7 +203,7 @@ func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	ns := d.Get("namespace").(string)
-	res, err := m.GetHelmClient().InstallReleaseFromChart(chart, ns, opts...)
+	res, err := c.InstallReleaseFromChart(chart, ns, opts...)
 	if err != nil {
 		return err
 	}
@@ -209,8 +213,12 @@ func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceChartRead(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
+	c, err := m.GetHelmClient()
+	if err != nil {
+		return err
+	}
 
-	r, err := getRelease(m.GetHelmClient(), d)
+	r, err := getRelease(c, d)
 	if err != nil {
 		return err
 	}
@@ -253,8 +261,13 @@ func resourceChartUpdate(d *schema.ResourceData, meta interface{}) error {
 		helm.UpgradeWait(true),
 	}
 
+	c, err := m.GetHelmClient()
+	if err != nil {
+		return err
+	}
+
 	name := d.Get("name").(string)
-	res, err := m.GetHelmClient().UpdateRelease(name, path, opts...)
+	res, err := c.UpdateRelease(name, path, opts...)
 	if err != nil {
 		return err
 	}
@@ -271,7 +284,12 @@ func resourceChartDelete(d *schema.ResourceData, meta interface{}) error {
 		helm.DeleteTimeout(int64(d.Get("timeout").(int))),
 	}
 
-	if _, err := m.GetHelmClient().DeleteRelease(name, opts...); err != nil {
+	c, err := m.GetHelmClient()
+	if err != nil {
+		return err
+	}
+
+	if _, err := c.DeleteRelease(name, opts...); err != nil {
 		return err
 	}
 
@@ -281,8 +299,12 @@ func resourceChartDelete(d *schema.ResourceData, meta interface{}) error {
 
 func resourceChartExists(d *schema.ResourceData, meta interface{}) (bool, error) {
 	m := meta.(*Meta)
+	c, err := m.GetHelmClient()
+	if err != nil {
+		return false, err
+	}
 
-	_, err := getRelease(m.GetHelmClient(), d)
+	_, err = getRelease(c, d)
 	if err == nil {
 		return true, nil
 	}

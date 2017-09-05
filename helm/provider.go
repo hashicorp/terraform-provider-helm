@@ -171,7 +171,7 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	return buildMeta(d)
+	return NewMeta(d)
 }
 
 type Meta struct {
@@ -181,29 +181,47 @@ type Meta struct {
 	K8sConfig        *rest.Config
 	Tunnel           *kube.Tunnel
 	DefaultNamespace string
+
+	data       *schema.ResourceData
+	helmClient helm.Interface
 }
 
-func buildMeta(d *schema.ResourceData) (*Meta, error) {
-	m := &Meta{}
-	m.buildSettings(d)
+func NewMeta(d *schema.ResourceData) (*Meta, error) {
+	m := &Meta{data: d}
+	m.buildSettings(m.data)
 
-	if err := m.buildTLSConfig(d); err != nil {
+	if err := m.buildTLSConfig(m.data); err != nil {
 		return nil, err
 	}
 
-	if err := m.buildK8sClient(d); err != nil {
-		return nil, err
-	}
-
-	if err := m.installTillerIfNeeded(d); err != nil {
-		return nil, err
-	}
-
-	if err := m.buildTunnel(d); err != nil {
+	if err := m.buildK8sClient(m.data); err != nil {
 		return nil, err
 	}
 
 	return m, nil
+}
+
+func (m *Meta) GetHelmClient() (helm.Interface, error) {
+	if m.helmClient == nil {
+		if err := m.connect(); err != nil {
+			return nil, err
+		}
+	}
+
+	return m.helmClient, nil
+}
+
+func (m *Meta) connect() error {
+	if err := m.installTillerIfNeeded(m.data); err != nil {
+		return err
+	}
+
+	if err := m.buildTunnel(m.data); err != nil {
+		return err
+	}
+
+	m.buildHelmClient()
+	return nil
 }
 
 func (m *Meta) buildSettings(d *schema.ResourceData) {
@@ -362,7 +380,7 @@ func (m *Meta) buildTunnel(d *schema.ResourceData) error {
 	return nil
 }
 
-func (m *Meta) GetHelmClient() helm.Interface {
+func (m *Meta) buildHelmClient() {
 	options := []helm.Option{
 		helm.Host(m.Settings.TillerHost),
 	}
@@ -371,7 +389,7 @@ func (m *Meta) GetHelmClient() helm.Interface {
 		options = append(options, helm.WithTLS(m.TLSConfig))
 	}
 
-	return helm.NewClient(options...)
+	m.helmClient = helm.NewClient(options...)
 }
 
 func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {

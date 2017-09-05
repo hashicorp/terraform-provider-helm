@@ -178,7 +178,10 @@ func testAccCheckHelmChartDestroy(s *terraform.State) error {
 		return fmt.Errorf("provider not properly initialized")
 	}
 
-	client := m.(*Meta).GetHelmClient()
+	client, err := m.(*Meta).GetHelmClient()
+	if err != nil {
+		return err
+	}
 
 	res, err := client.ListReleases(
 		helm.ReleaseListNamespace(testNamespace),
