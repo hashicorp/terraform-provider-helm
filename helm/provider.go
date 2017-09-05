@@ -221,14 +221,15 @@ func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	c, err := getK8sConfig(d)
 	if err != nil {
 		debug("could not get Kubernetes config: %s", err)
-		if hasStatic {
+		if !hasStatic {
 			return err
 		}
 	}
+
 	cfg, err := c.ClientConfig()
 	if err != nil {
 		debug("could not get Kubernetes client config: %s", err)
-		if hasStatic {
+		if !hasStatic {
 			return err
 		}
 	}
