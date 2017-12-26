@@ -55,6 +55,12 @@ func Provider() terraform.ResourceProvider {
 				Default:     "gcr.io/kubernetes-helm/tiller:v2.6.0",
 				Description: "Tiller image to install. If Tiller is not already installed.",
 			},
+			"service_account": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "default",
+				Description: "Service account to install Tiller with.",
+			},
 			"debug": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -313,6 +319,7 @@ func (m *Meta) installTillerIfNeeded(d *schema.ResourceData) error {
 	o := &installer.Options{}
 	o.Namespace = d.Get("namespace").(string)
 	o.ImageSpec = d.Get("tiller_image").(string)
+	o.ServiceAccount = d.Get("service_account").(string)
 
 	o.EnableTLS = d.Get("enable_tls").(bool)
 	if o.EnableTLS {
