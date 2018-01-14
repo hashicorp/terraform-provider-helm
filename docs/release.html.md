@@ -33,7 +33,6 @@ The following arguments are supported:
 * `values` - (Optional) Values in raw yaml file to pass to helm.
 * `set` - (Optional) Value block with custom values to be merge with the values.yaml.
 * `namespace` - (Optional) Namespace to install the release into.
-* `repository_url` - (Optional) Repository URL where to locate the requested chart without install the repository.
 * `verify` - (Optional) Verify the package before installing it.
 * `keyring` - (Optional) Location of public keys used for verification.
 * `timeout` - (Optional) Time in seconds to wait for any individual kubernetes operation.

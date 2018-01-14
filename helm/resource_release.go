@@ -82,11 +82,6 @@ func resourceRelease() *schema.Resource {
 				Default:     "default",
 				Description: "Namespace to install the release into.",
 			},
-			"repository_url": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Repository URL where to locate the requested chart without install the repository.",
-			},
 			"verify": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -417,7 +412,10 @@ type chartLocator struct {
 	keyring       string
 }
 
-func newChartLocator(meta *Meta, repository, name, version string, verify bool, keyring string) (*chartLocator, error) {
+func newChartLocator(meta *Meta,
+	repository, name, version string,
+	verify bool, keyring string,
+) (*chartLocator, error) {
 	name = strings.TrimSpace(name)
 	version = strings.TrimSpace(version)
 

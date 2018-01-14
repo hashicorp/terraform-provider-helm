@@ -80,6 +80,27 @@ func TestAccResourceRelease_repository(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_repository_url(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigRepositoryURL(testNamespace, testReleaseName),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
+				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigRepositoryURL(testNamespace, testReleaseName),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
+				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
+			),
+		}},
+	})
+}
+
 func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	malformed := `
 	resource "helm_release" "test" {
@@ -168,6 +189,17 @@ func testAccHelmReleaseConfigRepository(ns, name string) string {
 			namespace  = %q
 			repository = "${helm_repository.incubator.metadata.0.name}"
   			chart      = "redis-cache"
+		}
+	`, name, ns)
+}
+
+func testAccHelmReleaseConfigRepositoryURL(ns, name string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "test" {
+			name       = %q
+			namespace  = %q
+			repository = "https://kubernetes-charts-incubator.storage.googleapis.com"
+			chart      = "redis-cache"
 		}
 	`, name, ns)
 }

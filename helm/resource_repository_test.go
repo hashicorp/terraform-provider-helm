@@ -13,7 +13,7 @@ import (
 func TestAccResourceRepository_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckHelmChartDestroy,
+		CheckDestroy: testAccCheckHelmReleaseDestroy,
 		Steps: []resource.TestStep{{
 			Config: testAccHelmRepositoryConfigBasic(testRepositoryName, testRepositoryURL),
 			Check: resource.ComposeAggregateTestCheckFunc(
