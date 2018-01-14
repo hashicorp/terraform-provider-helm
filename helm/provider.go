@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/terraform/helper/pathorcontents"
@@ -190,6 +191,7 @@ type Meta struct {
 
 	data       *schema.ResourceData
 	helmClient helm.Interface
+	sync.Mutex
 }
 
 func NewMeta(d *schema.ResourceData) (*Meta, error) {
@@ -208,6 +210,9 @@ func NewMeta(d *schema.ResourceData) (*Meta, error) {
 }
 
 func (m *Meta) GetHelmClient() (helm.Interface, error) {
+	m.Lock()
+	defer m.Unlock()
+
 	if m.helmClient == nil {
 		if err := m.connect(); err != nil {
 			return nil, err
