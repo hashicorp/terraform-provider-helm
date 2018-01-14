@@ -20,7 +20,7 @@ resource "helm_repository" "incubator" {
     url  = "https://kubernetes-charts-incubator.storage.googleapis.com"
 }
 
-resource "helm_chart" "my_cache" {
+resource "helm_release" "my_cache" {
     name       = "my_cache"
     repository = "${helm_repository.incubator.metadata.0.name}"
     chart      = "redis-cache"
@@ -51,9 +51,8 @@ The `metadata` block supports:
 
 ## Import
 
-helm_chart can be imported using the , e.g.
+helm_release can be imported using the , e.g.
 
 ```
-$ terraform import helm_chart.example ...
+$ terraform import helm_release.example ...
 ```
-

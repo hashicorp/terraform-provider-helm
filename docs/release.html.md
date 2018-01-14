@@ -1,21 +1,22 @@
 ---
 layout: "helm"
-page_title: "Helm: helm_chart"
+page_title: "Helm: helm_release"
 sidebar_current: "docs-helm-chart"
 description: |-
   A Chart is a Helm package. It contains all of the resource definitions necessary to run an application, tool, or service inside of a Kubernetes cluster.
 ---
 
-# helm_chart
+# helm_release
 
+A Release is an instance of a chart running in a Kubernetes cluster.
 A Chart is a Helm package. It contains all of the resource definitions necessary to run an application, tool, or service inside of a Kubernetes cluster.
 
-`helm_chart` describes the desired status of a chart in a kubernetes cluster.
+`helm_release` describes the desired status of a chart in a kubernetes cluster.
 
 ## Example Usage
 
 ```
-resource "helm_chart" "example" {
+resource "helm_release" "example" {
   name = "my_redis"
   chart = "redis"
 }
@@ -65,8 +66,8 @@ The `metadata` block supports:
 
 ## Import
 
-helm_chart can be imported using the , e.g.
+helm_release can be imported using the , e.g.
 
 ```
-$ terraform import helm_chart.example ...
+$ terraform import helm_release.example ...
 ```

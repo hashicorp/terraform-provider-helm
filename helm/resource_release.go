@@ -23,13 +23,13 @@ import (
 
 var ErrReleaseNotFound = errors.New("release not found")
 
-func resourceChart() *schema.Resource {
+func resourceRelease() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceChartCreate,
-		Read:   resourceChartRead,
-		Delete: resourceChartDelete,
-		Update: resourceChartUpdate,
-		Exists: resourceChartExists,
+		Create: resourceReleaseCreate,
+		Read:   resourceReleaseRead,
+		Delete: resourceReleaseDelete,
+		Update: resourceReleaseUpdate,
+		Exists: resourceReleaseExists,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -162,7 +162,7 @@ func resourceChart() *schema.Resource {
 	}
 }
 
-func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 	c, err := m.GetHelmClient()
 	if err != nil {
@@ -175,7 +175,7 @@ func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
 			return setIdAndMetadataFromRelease(d, r)
 		}
 
-		if err := resourceChartDelete(d, meta); err != nil {
+		if err := resourceReleaseDelete(d, meta); err != nil {
 			return err
 		}
 	}
@@ -211,7 +211,7 @@ func resourceChartCreate(d *schema.ResourceData, meta interface{}) error {
 	return setIdAndMetadataFromRelease(d, res.Release)
 }
 
-func resourceChartRead(d *schema.ResourceData, meta interface{}) error {
+func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 	c, err := m.GetHelmClient()
 	if err != nil {
@@ -239,7 +239,7 @@ func setIdAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 	}})
 }
 
-func resourceChartUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 
 	values, err := getValues(d)
@@ -274,7 +274,7 @@ func resourceChartUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	return setIdAndMetadataFromRelease(d, res.Release)
 }
-func resourceChartDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 
 	name := d.Get("name").(string)
@@ -297,7 +297,7 @@ func resourceChartDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func resourceChartExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, error) {
 	m := meta.(*Meta)
 	c, err := m.GetHelmClient()
 	if err != nil {

@@ -33,7 +33,7 @@ Using the provider
 ------------------
 
 - [Provider](docs/index.html.md)
-- [Resource: helm_chart](docs/chart.html.md)
+- [Resource: helm_release](docs/release.html.md)
 - [Resource: helm_repository](docs/repository.html.md)
 
 Developing the Provider

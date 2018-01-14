@@ -15,7 +15,7 @@ Use the navigation to the left to read about the available resources.
 ## Example Usage
 
 ```hcl
-resource "helm_chart" "my_databsase" {
+resource "helm_release" "my_databsase" {
     name      = "my_databsase"
     chart     = "stable/mariadb"
 
@@ -95,9 +95,3 @@ The `kubernetes` block supports:
 * `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. Can be sourced from `KUBE_CLIENT_KEY_DATA`.
 * `cluster_ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. Can be sourced from `KUBE_CLUSTER_CA_CERT_DATA`.
 * `config_context` - (Optional) Context to choose from the config file. Can be sourced from `KUBE_CTX`.
-
-
-
-
-
-

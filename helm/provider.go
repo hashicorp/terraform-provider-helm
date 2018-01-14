@@ -169,7 +169,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"helm_chart":      resourceChart(),
+			"helm_release":    resourceRelease(),
 			"helm_repository": resourceRepository(),
 		},
 		ConfigureFunc: providerConfigure,
