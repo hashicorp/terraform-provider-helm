@@ -17,18 +17,23 @@ limitations under the License.
 package fuzzer
 
 import (
+	"time"
+
 	"github.com/google/gofuzz"
 
-	apitesting "k8s.io/apimachinery/pkg/api/testing"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm"
 )
 
-func KubeadmFuzzerFuncs(t apitesting.TestingCommon) []interface{} {
+// Funcs returns the fuzzer functions for the kubeadm apis.
+func Funcs(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
 		func(obj *kubeadm.MasterConfiguration, c fuzz.Continue) {
 			c.FuzzNoCustom(obj)
 			obj.KubernetesVersion = "v10"
 			obj.API.BindPort = 20
+			obj.TokenTTL = &metav1.Duration{Duration: 1 * time.Hour}
 			obj.API.AdvertiseAddress = "foo"
 			obj.Networking.ServiceSubnet = "foo"
 			obj.Networking.DNSDomain = "foo"
@@ -36,7 +41,12 @@ func KubeadmFuzzerFuncs(t apitesting.TestingCommon) []interface{} {
 			obj.CertificatesDir = "foo"
 			obj.APIServerCertSANs = []string{}
 			obj.Token = "foo"
+			obj.Etcd.Image = "foo"
 			obj.Etcd.DataDir = "foo"
+			obj.ImageRepository = "foo"
+			obj.CIImageRepository = ""
+			obj.UnifiedControlPlaneImage = "foo"
+			obj.FeatureGates = map[string]bool{}
 		},
 		func(obj *kubeadm.NodeConfiguration, c fuzz.Continue) {
 			c.FuzzNoCustom(obj)

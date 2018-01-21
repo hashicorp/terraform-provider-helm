@@ -1,32 +1,36 @@
-hash: 51202aefdfe9c4a992f96ab58f6cacf21cdbd1b66efe955c9030bca736ac816d
-updated: 2016-10-25T10:45:46.536665-07:00
+hash: 6e0121d946623e7e609280b1b18627e1c8a767fdece54cb97c4447c1167cbc46
+updated: 2017-08-31T13:58:01.034822883+01:00
 imports:
 - name: github.com/dgrijalva/jwt-go
-  version: 24c63f56522a87ec5339cc3567883f1039378fdb
+  version: 2268707a8f0843315e2004ee4f1d021dc08baedf
   subpackages:
   - .
+- name: github.com/dimchansky/utfbom
+  version: 6c6132ff69f0f6c088739067407b5d32c52e1d0f
+- name: github.com/mitchellh/go-homedir
+  version: b8bc1bf767474819792c23f32d8286a45736f1c6
 - name: golang.org/x/crypto
-  version: d3c1194e7ce73913451befd89c26ca6d222f641e
+  version: 81e90905daefcd6fd217b62423c0908922eadb30
   repo: https://github.com/golang/crypto.git
   vcs: git
   subpackages:
   - pkcs12
   - pkcs12/internal/rc2
 - name: golang.org/x/net
-  version: 65dfc08770ce66f74becfdff5f8ab01caef4e946
+  version: 66aacef3dd8a676686c7ae3716979581e8b03c47
   repo: https://github.com/golang/net.git
   vcs: git
   subpackages:
   - .
 - name: golang.org/x/text
-  version: 16e1d1f27f7aba51c74c0aeb7a7ee31a75c5c63c
+  version: 21e35d45962262c8ee80f6cb048dcf95ad0e9d79
   repo: https://github.com/golang/text.git
   vcs: git
   subpackages:
   - .
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
@@ -34,7 +38,7 @@ testImports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: d77da356e56a7428ad25149ca77381849a6a5232
+  version: 890a5c3458b43e6104ff5da8dfa139d013d77544
   subpackages:
-  - require
   - assert
+  - require

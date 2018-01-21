@@ -24,14 +24,21 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/generic"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/kubernetes/pkg/api"
+	appsv1beta1 "k8s.io/kubernetes/pkg/apis/apps/v1beta1"
+	appsv1beta2 "k8s.io/kubernetes/pkg/apis/apps/v1beta2"
+	autoscalingv1 "k8s.io/kubernetes/pkg/apis/autoscaling/v1"
 	"k8s.io/kubernetes/pkg/apis/extensions"
+	extensionsv1beta1 "k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
 	extvalidation "k8s.io/kubernetes/pkg/apis/extensions/validation"
-	"k8s.io/kubernetes/pkg/registry/cachesize"
+	"k8s.io/kubernetes/pkg/printers"
+	printersinternal "k8s.io/kubernetes/pkg/printers/internalversion"
+	printerstorage "k8s.io/kubernetes/pkg/printers/storage"
 	"k8s.io/kubernetes/pkg/registry/extensions/replicaset"
 )
 
@@ -60,16 +67,17 @@ type REST struct {
 // NewREST returns a RESTStorage object that will work against ReplicaSet.
 func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST) {
 	store := &genericregistry.Store{
-		Copier:            api.Scheme,
-		NewFunc:           func() runtime.Object { return &extensions.ReplicaSet{} },
-		NewListFunc:       func() runtime.Object { return &extensions.ReplicaSetList{} },
-		PredicateFunc:     replicaset.MatchReplicaSet,
-		QualifiedResource: extensions.Resource("replicasets"),
-		WatchCacheSize:    cachesize.GetWatchCacheSizeByResource("replicasets"),
+		Copier:                   api.Scheme,
+		NewFunc:                  func() runtime.Object { return &extensions.ReplicaSet{} },
+		NewListFunc:              func() runtime.Object { return &extensions.ReplicaSetList{} },
+		PredicateFunc:            replicaset.MatchReplicaSet,
+		DefaultQualifiedResource: extensions.Resource("replicasets"),
 
 		CreateStrategy: replicaset.Strategy,
 		UpdateStrategy: replicaset.Strategy,
 		DeleteStrategy: replicaset.Strategy,
+
+		TableConvertor: printerstorage.TableConvertor{TablePrinter: printers.NewTablePrinter().With(printersinternal.AddHandlers)},
 	}
 	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: replicaset.GetAttrs}
 	if err := store.CompleteWithOptions(options); err != nil {
@@ -123,6 +131,20 @@ type ScaleREST struct {
 
 // ScaleREST implements Patcher
 var _ = rest.Patcher(&ScaleREST{})
+var _ = rest.GroupVersionKindProvider(&ScaleREST{})
+
+func (r *ScaleREST) GroupVersionKind(containingGV schema.GroupVersion) schema.GroupVersionKind {
+	switch containingGV {
+	case extensionsv1beta1.SchemeGroupVersion:
+		return extensionsv1beta1.SchemeGroupVersion.WithKind("Scale")
+	case appsv1beta1.SchemeGroupVersion:
+		return appsv1beta1.SchemeGroupVersion.WithKind("Scale")
+	case appsv1beta2.SchemeGroupVersion:
+		return appsv1beta2.SchemeGroupVersion.WithKind("Scale")
+	default:
+		return autoscalingv1.SchemeGroupVersion.WithKind("Scale")
+	}
+}
 
 // New creates a new Scale object
 func (r *ScaleREST) New() runtime.Object {

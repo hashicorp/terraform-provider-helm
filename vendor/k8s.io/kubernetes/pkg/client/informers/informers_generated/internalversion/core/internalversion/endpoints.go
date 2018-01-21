@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,26 +41,31 @@ type endpointsInformer struct {
 	factory internalinterfaces.SharedInformerFactory
 }
 
-func newEndpointsInformer(client internalclientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	sharedIndexInformer := cache.NewSharedIndexInformer(
+// NewEndpointsInformer constructs a new informer for Endpoints type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewEndpointsInformer(client internalclientset.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
-				return client.Core().Endpoints(v1.NamespaceAll).List(options)
+				return client.Core().Endpoints(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
-				return client.Core().Endpoints(v1.NamespaceAll).Watch(options)
+				return client.Core().Endpoints(namespace).Watch(options)
 			},
 		},
 		&api.Endpoints{},
 		resyncPeriod,
-		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+		indexers,
 	)
+}
 
-	return sharedIndexInformer
+func defaultEndpointsInformer(client internalclientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewEndpointsInformer(client, v1.NamespaceAll, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 }
 
 func (f *endpointsInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&api.Endpoints{}, newEndpointsInformer)
+	return f.factory.InformerFor(&api.Endpoints{}, defaultEndpointsInformer)
 }
 
 func (f *endpointsInformer) Lister() internalversion.EndpointsLister {

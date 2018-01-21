@@ -289,6 +289,14 @@ func TestLabelErrors(t *testing.T) {
 			args:  []string{"pods"},
 			errFn: func(err error) bool { return strings.Contains(err.Error(), "at least one label update is required") },
 		},
+		"wrong labels": {
+			args:  []string{"pods", "-"},
+			errFn: func(err error) bool { return strings.Contains(err.Error(), "at least one label update is required") },
+		},
+		"wrong labels 2": {
+			args:  []string{"pods", "=bar"},
+			errFn: func(err error) bool { return strings.Contains(err.Error(), "at least one label update is required") },
+		},
 		"no resources": {
 			args:  []string{"pods-"},
 			errFn: func(err error) bool { return strings.Contains(err.Error(), "one or more resources must be specified") },
@@ -349,7 +357,7 @@ func TestLabelForResourceFromFile(t *testing.T) {
 	pods, _, _ := testData()
 	f, tf, codec, _ := cmdtesting.NewAPIFactory()
 	tf.UnstructuredClient = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: unstructuredSerializer,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch req.Method {
@@ -400,7 +408,7 @@ func TestLabelForResourceFromFile(t *testing.T) {
 func TestLabelLocal(t *testing.T) {
 	f, tf, _, _ := cmdtesting.NewAPIFactory()
 	tf.UnstructuredClient = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: unstructuredSerializer,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			t.Fatalf("unexpected request: %s %#v\n%#v", req.Method, req.URL, req)
@@ -434,7 +442,7 @@ func TestLabelMultipleObjects(t *testing.T) {
 	pods, _, _ := testData()
 	f, tf, codec, _ := cmdtesting.NewAPIFactory()
 	tf.UnstructuredClient = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: unstructuredSerializer,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch req.Method {

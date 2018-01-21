@@ -102,7 +102,8 @@
       "errors":[
         {"shape":"LimitExceededFault"},
         {"shape":"AlreadyExistsFault"},
-        {"shape":"ResourceContentionFault"}
+        {"shape":"ResourceContentionFault"},
+        {"shape":"ResourceInUseFault"}
       ]
     },
     "DeleteAutoScalingGroup":{
@@ -186,7 +187,8 @@
       },
       "input":{"shape":"DeleteTagsType"},
       "errors":[
-        {"shape":"ResourceContentionFault"}
+        {"shape":"ResourceContentionFault"},
+        {"shape":"ResourceInUseFault"}
       ]
     },
     "DescribeAccountLimits":{
@@ -874,6 +876,7 @@
         "AutoScalingGroupName":{"shape":"XmlStringMaxLen255"},
         "AutoScalingGroupARN":{"shape":"ResourceName"},
         "LaunchConfigurationName":{"shape":"XmlStringMaxLen255"},
+        "LaunchTemplate":{"shape":"LaunchTemplateSpecification"},
         "MinSize":{"shape":"AutoScalingGroupMinSize"},
         "MaxSize":{"shape":"AutoScalingGroupMaxSize"},
         "DesiredCapacity":{"shape":"AutoScalingGroupDesiredCapacity"},
@@ -930,7 +933,6 @@
         "AvailabilityZone",
         "LifecycleState",
         "HealthStatus",
-        "LaunchConfigurationName",
         "ProtectedFromScaleIn"
       ],
       "members":{
@@ -940,6 +942,7 @@
         "LifecycleState":{"shape":"XmlStringMaxLen32"},
         "HealthStatus":{"shape":"XmlStringMaxLen32"},
         "LaunchConfigurationName":{"shape":"XmlStringMaxLen255"},
+        "LaunchTemplate":{"shape":"LaunchTemplateSpecification"},
         "ProtectedFromScaleIn":{"shape":"InstanceProtected"}
       }
     },
@@ -1029,6 +1032,7 @@
       "members":{
         "AutoScalingGroupName":{"shape":"XmlStringMaxLen255"},
         "LaunchConfigurationName":{"shape":"ResourceName"},
+        "LaunchTemplate":{"shape":"LaunchTemplateSpecification"},
         "InstanceId":{"shape":"XmlStringMaxLen19"},
         "MinSize":{"shape":"AutoScalingGroupMinSize"},
         "MaxSize":{"shape":"AutoScalingGroupMaxSize"},
@@ -1043,6 +1047,7 @@
         "VPCZoneIdentifier":{"shape":"XmlStringMaxLen2047"},
         "TerminationPolicies":{"shape":"TerminationPolicies"},
         "NewInstancesProtectedFromScaleIn":{"shape":"InstanceProtected"},
+        "LifecycleHookSpecificationList":{"shape":"LifecycleHookSpecifications"},
         "Tags":{"shape":"Tags"}
       }
     },
@@ -1075,6 +1080,21 @@
       "required":["Tags"],
       "members":{
         "Tags":{"shape":"Tags"}
+      }
+    },
+    "CustomizedMetricSpecification":{
+      "type":"structure",
+      "required":[
+        "MetricName",
+        "Namespace",
+        "Statistic"
+      ],
+      "members":{
+        "MetricName":{"shape":"MetricName"},
+        "Namespace":{"shape":"MetricNamespace"},
+        "Dimensions":{"shape":"MetricDimensions"},
+        "Statistic":{"shape":"MetricStatistic"},
+        "Unit":{"shape":"MetricUnit"}
       }
     },
     "DeleteAutoScalingGroupType":{
@@ -1344,6 +1364,7 @@
         "Metrics":{"shape":"Metrics"}
       }
     },
+    "DisableScaleIn":{"type":"boolean"},
     "Ebs":{
       "type":"structure",
       "members":{
@@ -1446,7 +1467,6 @@
         "AvailabilityZone",
         "LifecycleState",
         "HealthStatus",
-        "LaunchConfigurationName",
         "ProtectedFromScaleIn"
       ],
       "members":{
@@ -1455,6 +1475,7 @@
         "LifecycleState":{"shape":"LifecycleState"},
         "HealthStatus":{"shape":"XmlStringMaxLen32"},
         "LaunchConfigurationName":{"shape":"XmlStringMaxLen255"},
+        "LaunchTemplate":{"shape":"LaunchTemplateSpecification"},
         "ProtectedFromScaleIn":{"shape":"InstanceProtected"}
       }
     },
@@ -1546,6 +1567,20 @@
         "NextToken":{"shape":"XmlString"}
       }
     },
+    "LaunchTemplateName":{
+      "type":"string",
+      "max":128,
+      "min":3,
+      "pattern":"[a-zA-Z0-9\\(\\)\\.-/_]+"
+    },
+    "LaunchTemplateSpecification":{
+      "type":"structure",
+      "members":{
+        "LaunchTemplateId":{"shape":"XmlStringMaxLen255"},
+        "LaunchTemplateName":{"shape":"LaunchTemplateName"},
+        "Version":{"shape":"XmlStringMaxLen255"}
+      }
+    },
     "LifecycleActionResult":{"type":"string"},
     "LifecycleActionToken":{
       "type":"string",
@@ -1568,7 +1603,28 @@
     },
     "LifecycleHookNames":{
       "type":"list",
-      "member":{"shape":"AsciiStringMaxLen255"}
+      "member":{"shape":"AsciiStringMaxLen255"},
+      "max":50
+    },
+    "LifecycleHookSpecification":{
+      "type":"structure",
+      "required":[
+        "LifecycleHookName",
+        "LifecycleTransition"
+      ],
+      "members":{
+        "LifecycleHookName":{"shape":"AsciiStringMaxLen255"},
+        "LifecycleTransition":{"shape":"LifecycleTransition"},
+        "NotificationMetadata":{"shape":"XmlStringMaxLen1023"},
+        "HeartbeatTimeout":{"shape":"HeartbeatTimeout"},
+        "DefaultResult":{"shape":"LifecycleActionResult"},
+        "NotificationTargetARN":{"shape":"NotificationTargetResourceName"},
+        "RoleARN":{"shape":"ResourceName"}
+      }
+    },
+    "LifecycleHookSpecifications":{
+      "type":"list",
+      "member":{"shape":"LifecycleHookSpecification"}
     },
     "LifecycleHooks":{
       "type":"list",
@@ -1644,6 +1700,23 @@
       "type":"list",
       "member":{"shape":"MetricCollectionType"}
     },
+    "MetricDimension":{
+      "type":"structure",
+      "required":[
+        "Name",
+        "Value"
+      ],
+      "members":{
+        "Name":{"shape":"MetricDimensionName"},
+        "Value":{"shape":"MetricDimensionValue"}
+      }
+    },
+    "MetricDimensionName":{"type":"string"},
+    "MetricDimensionValue":{"type":"string"},
+    "MetricDimensions":{
+      "type":"list",
+      "member":{"shape":"MetricDimension"}
+    },
     "MetricGranularityType":{
       "type":"structure",
       "members":{
@@ -1654,7 +1727,29 @@
       "type":"list",
       "member":{"shape":"MetricGranularityType"}
     },
+    "MetricName":{"type":"string"},
+    "MetricNamespace":{"type":"string"},
     "MetricScale":{"type":"double"},
+    "MetricStatistic":{
+      "type":"string",
+      "enum":[
+        "Average",
+        "Minimum",
+        "Maximum",
+        "SampleCount",
+        "Sum"
+      ]
+    },
+    "MetricType":{
+      "type":"string",
+      "enum":[
+        "ASGAverageCPUUtilization",
+        "ASGAverageNetworkIn",
+        "ASGAverageNetworkOut",
+        "ALBRequestCountPerTarget"
+      ]
+    },
+    "MetricUnit":{"type":"string"},
     "Metrics":{
       "type":"list",
       "member":{"shape":"XmlStringMaxLen255"}
@@ -1696,7 +1791,8 @@
     "PolicyARNType":{
       "type":"structure",
       "members":{
-        "PolicyARN":{"shape":"ResourceName"}
+        "PolicyARN":{"shape":"ResourceName"},
+        "Alarms":{"shape":"Alarms"}
       }
     },
     "PolicyIncrement":{"type":"integer"},
@@ -1707,6 +1803,14 @@
     "PolicyTypes":{
       "type":"list",
       "member":{"shape":"XmlStringMaxLen64"}
+    },
+    "PredefinedMetricSpecification":{
+      "type":"structure",
+      "required":["PredefinedMetricType"],
+      "members":{
+        "PredefinedMetricType":{"shape":"MetricType"},
+        "ResourceLabel":{"shape":"XmlStringMaxLen1023"}
+      }
     },
     "ProcessNames":{
       "type":"list",
@@ -1771,8 +1875,7 @@
       "type":"structure",
       "required":[
         "AutoScalingGroupName",
-        "PolicyName",
-        "AdjustmentType"
+        "PolicyName"
       ],
       "members":{
         "AutoScalingGroupName":{"shape":"ResourceName"},
@@ -1785,7 +1888,8 @@
         "Cooldown":{"shape":"Cooldown"},
         "MetricAggregationType":{"shape":"XmlStringMaxLen32"},
         "StepAdjustments":{"shape":"StepAdjustments"},
-        "EstimatedInstanceWarmup":{"shape":"EstimatedInstanceWarmup"}
+        "EstimatedInstanceWarmup":{"shape":"EstimatedInstanceWarmup"},
+        "TargetTrackingConfiguration":{"shape":"TargetTrackingConfiguration"}
       }
     },
     "PutScheduledUpdateGroupActionType":{
@@ -1902,7 +2006,8 @@
         "StepAdjustments":{"shape":"StepAdjustments"},
         "MetricAggregationType":{"shape":"XmlStringMaxLen32"},
         "EstimatedInstanceWarmup":{"shape":"EstimatedInstanceWarmup"},
-        "Alarms":{"shape":"Alarms"}
+        "Alarms":{"shape":"Alarms"},
+        "TargetTrackingConfiguration":{"shape":"TargetTrackingConfiguration"}
       }
     },
     "ScalingProcessQuery":{
@@ -2072,6 +2177,16 @@
       "type":"list",
       "member":{"shape":"XmlStringMaxLen511"}
     },
+    "TargetTrackingConfiguration":{
+      "type":"structure",
+      "required":["TargetValue"],
+      "members":{
+        "PredefinedMetricSpecification":{"shape":"PredefinedMetricSpecification"},
+        "CustomizedMetricSpecification":{"shape":"CustomizedMetricSpecification"},
+        "TargetValue":{"shape":"MetricScale"},
+        "DisableScaleIn":{"shape":"DisableScaleIn"}
+      }
+    },
     "TerminateInstanceInAutoScalingGroupType":{
       "type":"structure",
       "required":[
@@ -2094,6 +2209,7 @@
       "members":{
         "AutoScalingGroupName":{"shape":"ResourceName"},
         "LaunchConfigurationName":{"shape":"ResourceName"},
+        "LaunchTemplate":{"shape":"LaunchTemplateSpecification"},
         "MinSize":{"shape":"AutoScalingGroupMinSize"},
         "MaxSize":{"shape":"AutoScalingGroupMaxSize"},
         "DesiredCapacity":{"shape":"AutoScalingGroupDesiredCapacity"},

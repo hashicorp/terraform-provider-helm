@@ -17,66 +17,66 @@ import (
 func New() backend.Backend {
 	s := &schema.Backend{
 		Schema: map[string]*schema.Schema{
-			"storage_account_name": &schema.Schema{
+			"storage_account_name": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "The name of the storage account.",
 			},
 
-			"container_name": &schema.Schema{
+			"container_name": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "The container name.",
 			},
 
-			"key": &schema.Schema{
+			"key": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "The blob key.",
 			},
 
-			"environment": &schema.Schema{
+			"environment": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The Azure cloud environment.",
-				Default:     "",
+				DefaultFunc: schema.EnvDefaultFunc("ARM_ENVIRONMENT", ""),
 			},
 
-			"access_key": &schema.Schema{
+			"access_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The access key.",
 				DefaultFunc: schema.EnvDefaultFunc("ARM_ACCESS_KEY", ""),
 			},
 
-			"resource_group_name": &schema.Schema{
+			"resource_group_name": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The resource group name.",
 			},
 
-			"arm_subscription_id": &schema.Schema{
+			"arm_subscription_id": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The Subscription ID.",
 				DefaultFunc: schema.EnvDefaultFunc("ARM_SUBSCRIPTION_ID", ""),
 			},
 
-			"arm_client_id": &schema.Schema{
+			"arm_client_id": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The Client ID.",
 				DefaultFunc: schema.EnvDefaultFunc("ARM_CLIENT_ID", ""),
 			},
 
-			"arm_client_secret": &schema.Schema{
+			"arm_client_secret": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The Client Secret.",
 				DefaultFunc: schema.EnvDefaultFunc("ARM_CLIENT_SECRET", ""),
 			},
 
-			"arm_tenant_id": &schema.Schema{
+			"arm_tenant_id": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The Tenant ID.",
@@ -101,6 +101,17 @@ type Backend struct {
 	leaseID       string
 }
 
+type BackendConfig struct {
+	AccessKey          string
+	Environment        string
+	ClientID           string
+	ClientSecret       string
+	ResourceGroupName  string
+	StorageAccountName string
+	SubscriptionID     string
+	TenantID           string
+}
+
 func (b *Backend) configure(ctx context.Context) error {
 	if b.containerName != "" {
 		return nil
@@ -112,7 +123,18 @@ func (b *Backend) configure(ctx context.Context) error {
 	b.containerName = data.Get("container_name").(string)
 	b.keyName = data.Get("key").(string)
 
-	blobClient, err := getBlobClient(data)
+	config := BackendConfig{
+		AccessKey:          data.Get("access_key").(string),
+		ClientID:           data.Get("arm_client_id").(string),
+		ClientSecret:       data.Get("arm_client_secret").(string),
+		Environment:        data.Get("environment").(string),
+		ResourceGroupName:  data.Get("resource_group_name").(string),
+		StorageAccountName: data.Get("storage_account_name").(string),
+		SubscriptionID:     data.Get("arm_subscription_id").(string),
+		TenantID:           data.Get("arm_tenant_id").(string),
+	}
+
+	blobClient, err := getBlobClient(config)
 	if err != nil {
 		return err
 	}
@@ -121,65 +143,63 @@ func (b *Backend) configure(ctx context.Context) error {
 	return nil
 }
 
-func getBlobClient(d *schema.ResourceData) (storage.BlobStorageClient, error) {
+func getBlobClient(config BackendConfig) (storage.BlobStorageClient, error) {
 	var client storage.BlobStorageClient
 
-	env, err := getAzureEnvironment(d.Get("environment").(string))
+	env, err := getAzureEnvironment(config.Environment)
 	if err != nil {
 		return client, err
 	}
 
-	storageAccountName := d.Get("storage_account_name").(string)
-
-	accessKey, err := getAccessKey(d, storageAccountName, env)
+	accessKey, err := getAccessKey(config, env)
 	if err != nil {
 		return client, err
 	}
 
-	storageClient, err := storage.NewClient(storageAccountName, accessKey, env.StorageEndpointSuffix,
+	storageClient, err := storage.NewClient(config.StorageAccountName, accessKey, env.StorageEndpointSuffix,
 		storage.DefaultAPIVersion, true)
 	if err != nil {
-		return client, fmt.Errorf("Error creating storage client for storage account %q: %s", storageAccountName, err)
+		return client, fmt.Errorf("Error creating storage client for storage account %q: %s", config.StorageAccountName, err)
 	}
 
 	client = storageClient.GetBlobService()
 	return client, nil
 }
 
-func getAccessKey(d *schema.ResourceData, storageAccountName string, env azure.Environment) (string, error) {
-	if key, ok := d.GetOk("access_key"); ok {
-		return key.(string), nil
+func getAccessKey(config BackendConfig, env azure.Environment) (string, error) {
+	if config.AccessKey != "" {
+		return config.AccessKey, nil
 	}
 
-	resourceGroupName, rgOk := d.GetOk("resource_group_name")
-	subscriptionID, subOk := d.GetOk("arm_subscription_id")
-	clientID, clientIDOk := d.GetOk("arm_client_id")
-	clientSecret, clientSecretOK := d.GetOk("arm_client_secret")
-	tenantID, tenantIDOk := d.GetOk("arm_tenant_id")
+	rgOk := config.ResourceGroupName != ""
+	subOk := config.SubscriptionID != ""
+	clientIDOk := config.ClientID != ""
+	clientSecretOK := config.ClientSecret != ""
+	tenantIDOk := config.TenantID != ""
 	if !rgOk || !subOk || !clientIDOk || !clientSecretOK || !tenantIDOk {
 		return "", fmt.Errorf("resource_group_name and credentials must be provided when access_key is absent")
 	}
 
-	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, tenantID.(string))
+	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, config.TenantID)
 	if err != nil {
 		return "", err
 	}
 
-	spt, err := adal.NewServicePrincipalToken(*oauthConfig, clientID.(string), clientSecret.(string), env.ResourceManagerEndpoint)
+	spt, err := adal.NewServicePrincipalToken(*oauthConfig, config.ClientID, config.ClientSecret, env.ResourceManagerEndpoint)
 	if err != nil {
 		return "", err
 	}
 
-	accountsClient := armStorage.NewAccountsClientWithBaseURI(env.ResourceManagerEndpoint, subscriptionID.(string))
+	accountsClient := armStorage.NewAccountsClientWithBaseURI(env.ResourceManagerEndpoint, config.SubscriptionID)
 	accountsClient.Authorizer = autorest.NewBearerAuthorizer(spt)
 
-	keys, err := accountsClient.ListKeys(resourceGroupName.(string), storageAccountName)
+	keys, err := accountsClient.ListKeys(config.ResourceGroupName, config.StorageAccountName)
 	if err != nil {
-		return "", fmt.Errorf("Error retrieving keys for storage account %q: %s", storageAccountName, err)
+		return "", fmt.Errorf("Error retrieving keys for storage account %q: %s", config.StorageAccountName, err)
 	}
 
 	if keys.Keys == nil {
-		return "", fmt.Errorf("Nil key returned for storage account %q", storageAccountName)
+		return "", fmt.Errorf("Nil key returned for storage account %q", config.StorageAccountName)
 	}
 
 	accessKeys := *keys.Keys

@@ -19,10 +19,12 @@ package gce
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"regexp"
 	"strings"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -38,6 +40,13 @@ type gceInstance struct {
 	Disks []*compute.AttachedDisk
 	Type  string
 }
+
+var (
+	autoSubnetIPRange = &net.IPNet{
+		IP:   net.ParseIP("10.128.0.0"),
+		Mask: net.CIDRMask(9, 32),
+	}
+)
 
 var providerIdRE = regexp.MustCompile(`^` + ProviderName + `://([^/]+)/([^/]+)/([^/]+)$`)
 
@@ -56,6 +65,43 @@ func getProjectAndZone() (string, string, error) {
 		return "", "", err
 	}
 	return projectID, zone, nil
+}
+
+func (gce *GCECloud) raiseFirewallChangeNeededEvent(svc *v1.Service, cmd string) {
+	msg := fmt.Sprintf("Firewall change required by network admin: `%v`", cmd)
+	if gce.eventRecorder != nil && svc != nil {
+		gce.eventRecorder.Event(svc, v1.EventTypeNormal, "LoadBalancerManualChange", msg)
+	}
+}
+
+// FirewallToGCloudCreateCmd generates a gcloud command to create a firewall with specified params
+func FirewallToGCloudCreateCmd(fw *compute.Firewall, projectID string) string {
+	args := firewallToGcloudArgs(fw, projectID)
+	return fmt.Sprintf("gcloud compute firewall-rules create %v --network %v %v", fw.Name, getNameFromLink(fw.Network), args)
+}
+
+// FirewallToGCloudCreateCmd generates a gcloud command to update a firewall to specified params
+func FirewallToGCloudUpdateCmd(fw *compute.Firewall, projectID string) string {
+	args := firewallToGcloudArgs(fw, projectID)
+	return fmt.Sprintf("gcloud compute firewall-rules update %v %v", fw.Name, args)
+}
+
+// FirewallToGCloudCreateCmd generates a gcloud command to delete a firewall to specified params
+func FirewallToGCloudDeleteCmd(fwName, projectID string) string {
+	return fmt.Sprintf("gcloud compute firewall-rules delete %v --project %v", fwName, projectID)
+}
+
+func firewallToGcloudArgs(fw *compute.Firewall, projectID string) string {
+	var allPorts []string
+	for _, a := range fw.Allowed {
+		for _, p := range a.Ports {
+			allPorts = append(allPorts, fmt.Sprintf("%v:%v", a.IPProtocol, p))
+		}
+	}
+	allow := strings.Join(allPorts, ",")
+	srcRngs := strings.Join(fw.SourceRanges, ",")
+	targets := strings.Join(fw.TargetTags, ",")
+	return fmt.Sprintf("--description %q --allow %v --source-ranges %v --target-tags %v --project %v", fw.Description, allow, srcRngs, targets, projectID)
 }
 
 // Take a GCE instance 'hostname' and break it down to something that can be fed
@@ -148,4 +194,83 @@ func ignoreNotFound(err error) error {
 
 func isNotFoundOrInUse(err error) bool {
 	return isNotFound(err) || isInUsedByError(err)
+}
+
+func isForbidden(err error) bool {
+	return isHTTPErrorCode(err, http.StatusForbidden)
+}
+
+func makeGoogleAPINotFoundError(message string) error {
+	return &googleapi.Error{Code: http.StatusNotFound, Message: message}
+}
+
+func makeGoogleAPIError(code int, message string) error {
+	return &googleapi.Error{Code: code, Message: message}
+}
+
+// TODO(#51665): Remove this once Network Tiers becomes Beta in GCP.
+func handleAlphaNetworkTierGetError(err error) (string, error) {
+	if isForbidden(err) {
+		// Network tier is still an Alpha feature in GCP, and not every project
+		// is whitelisted to access the API. If we cannot access the API, just
+		// assume the tier is premium.
+		return NetworkTierDefault.ToGCEValue(), nil
+	}
+	// Can't get the network tier, just return an error.
+	return "", err
+}
+
+// containsCIDR returns true if outer contains inner.
+func containsCIDR(outer, inner *net.IPNet) bool {
+	return outer.Contains(firstIPInRange(inner)) && outer.Contains(lastIPInRange(inner))
+}
+
+// firstIPInRange returns the first IP in a given IP range.
+func firstIPInRange(ipNet *net.IPNet) net.IP {
+	return ipNet.IP.Mask(ipNet.Mask)
+}
+
+// lastIPInRange returns the last IP in a given IP range.
+func lastIPInRange(cidr *net.IPNet) net.IP {
+	ip := append([]byte{}, cidr.IP...)
+	for i, b := range cidr.Mask {
+		ip[i] |= ^b
+	}
+	return ip
+}
+
+// subnetsInCIDR takes a list of subnets for a single region and
+// returns subnets which exists in the specified CIDR range.
+func subnetsInCIDR(subnets []*compute.Subnetwork, cidr *net.IPNet) ([]*compute.Subnetwork, error) {
+	var res []*compute.Subnetwork
+	for _, subnet := range subnets {
+		_, subnetRange, err := net.ParseCIDR(subnet.IpCidrRange)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse CIDR %q for subnet %q: %v", subnet.IpCidrRange, subnet.Name, err)
+		}
+		if containsCIDR(cidr, subnetRange) {
+			res = append(res, subnet)
+		}
+	}
+	return res, nil
+}
+
+type netType string
+
+const (
+	netTypeLegacy netType = "LEGACY"
+	netTypeAuto   netType = "AUTO"
+	netTypeCustom netType = "CUSTOM"
+)
+
+func typeOfNetwork(network *compute.Network) netType {
+	if network.IPv4Range != "" {
+		return netTypeLegacy
+	}
+
+	if network.AutoCreateSubnetworks {
+		return netTypeAuto
+	}
+
+	return netTypeCustom
 }

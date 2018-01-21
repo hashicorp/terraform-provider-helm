@@ -1,5 +1,19 @@
 package autorest
 
+// Copyright 2017 Microsoft Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+
 import (
 	"fmt"
 	"io/ioutil"
@@ -149,6 +163,28 @@ func ExampleWithBaseURL_second() {
 	// Output: parse :: missing protocol scheme
 }
 
+func ExampleWithCustomBaseURL() {
+	r, err := Prepare(&http.Request{},
+		WithCustomBaseURL("https://{account}.{service}.core.windows.net/",
+			map[string]interface{}{
+				"account": "myaccount",
+				"service": "blob",
+			}))
+	if err != nil {
+		fmt.Printf("ERROR: %v\n", err)
+	} else {
+		fmt.Println(r.URL)
+	}
+	// Output: https://myaccount.blob.core.windows.net/
+}
+
+func ExampleWithCustomBaseURL_second() {
+	_, err := Prepare(&http.Request{},
+		WithCustomBaseURL(":", map[string]interface{}{}))
+	fmt.Println(err)
+	// Output: parse :: missing protocol scheme
+}
+
 // Create a request with a custom HTTP header
 func ExampleWithHeader() {
 	r, err := Prepare(&http.Request{},
@@ -252,6 +288,31 @@ func ExampleWithQueryParameters() {
 		fmt.Println(r.URL)
 	}
 	// Output: https://microsoft.com/a/b/c/?q1=value1&q2=value2
+}
+
+func TestWithCustomBaseURL(t *testing.T) {
+	r, err := Prepare(&http.Request{}, WithCustomBaseURL("https://{account}.{service}.core.windows.net/",
+		map[string]interface{}{
+			"account": "myaccount",
+			"service": "blob",
+		}))
+	if err != nil {
+		t.Fatalf("autorest: WithCustomBaseURL should not fail")
+	}
+	if r.URL.String() != "https://myaccount.blob.core.windows.net/" {
+		t.Fatalf("autorest: WithCustomBaseURL expected https://myaccount.blob.core.windows.net/, got %s", r.URL)
+	}
+}
+
+func TestWithCustomBaseURLwithInvalidURL(t *testing.T) {
+	_, err := Prepare(&http.Request{}, WithCustomBaseURL("hello/{account}.{service}.core.windows.net/",
+		map[string]interface{}{
+			"account": "myaccount",
+			"service": "blob",
+		}))
+	if err == nil {
+		t.Fatalf("autorest: WithCustomBaseURL should fail fo URL parse error")
+	}
 }
 
 func TestWithPathWithInvalidPath(t *testing.T) {
@@ -422,7 +483,7 @@ func TestPrepareWithNullRequest(t *testing.T) {
 	}
 }
 
-func TestWithFormDataSetsContentLength(t *testing.T) {
+func TestWithFormData(t *testing.T) {
 	v := url.Values{}
 	v.Add("name", "Rob Pike")
 	v.Add("age", "42")
@@ -445,6 +506,10 @@ func TestWithFormDataSetsContentLength(t *testing.T) {
 
 	if r.ContentLength != int64(len(b)) {
 		t.Fatalf("autorest:WithFormData set Content-Length to %v, expected %v", r.ContentLength, len(b))
+	}
+
+	if expected, got := r.Header.Get(http.CanonicalHeaderKey(headerContentType)), mimeTypeFormPost; expected != got {
+		t.Fatalf("autorest:WithFormData Content Type not set or set to wrong value. Expected %v and got %v", expected, got)
 	}
 }
 
@@ -699,20 +764,39 @@ func TestModifyingExistingRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("autorest: Preparing an existing request returned an error (%v)", err)
 	}
-	if r.URL.String() != "https:/search?q=golang" && r.URL.Host != "bing.com" {
-		t.Fatalf("autorest: Preparing an existing request failed (%s)", r.URL)
+	if r.URL.Host != "bing.com" {
+		t.Fatalf("autorest: Preparing an existing request failed when setting the host (%s)", r.URL)
+	}
+
+	if r.URL.Path != "/search" {
+		t.Fatalf("autorest: Preparing an existing request failed when setting the path (%s)", r.URL.Path)
+	}
+
+	if r.URL.RawQuery != "q=golang" {
+		t.Fatalf("autorest: Preparing an existing request failed when setting the query parameters (%s)", r.URL.RawQuery)
 	}
 }
 
-func TestWithAuthorizer(t *testing.T) {
-	r1 := mocks.NewRequest()
-
-	na := &NullAuthorizer{}
-	r2, err := Prepare(r1,
-		na.WithAuthorization())
+func TestModifyingRequestWithExistingQueryParameters(t *testing.T) {
+	r, err := Prepare(
+		mocks.NewRequestForURL("https://bing.com"),
+		WithPath("search"),
+		WithQueryParameters(map[string]interface{}{"q": "golang the best"}),
+		WithQueryParameters(map[string]interface{}{"pq": "golang+encoded"}),
+	)
 	if err != nil {
-		t.Fatalf("autorest: NullAuthorizer#WithAuthorization returned an unexpected error (%v)", err)
-	} else if !reflect.DeepEqual(r1, r2) {
-		t.Fatalf("autorest: NullAuthorizer#WithAuthorization modified the request -- received %v, expected %v", r2, r1)
+		t.Fatalf("autorest: Preparing an existing request returned an error (%v)", err)
+	}
+
+	if r.URL.Host != "bing.com" {
+		t.Fatalf("autorest: Preparing an existing request failed when setting the host (%s)", r.URL)
+	}
+
+	if r.URL.Path != "/search" {
+		t.Fatalf("autorest: Preparing an existing request failed when setting the path (%s)", r.URL.Path)
+	}
+
+	if r.URL.RawQuery != "pq=golang+encoded&q=golang+the+best" {
+		t.Fatalf("autorest: Preparing an existing request failed when setting the query parameters (%s)", r.URL.RawQuery)
 	}
 }

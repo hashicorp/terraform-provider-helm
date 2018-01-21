@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,8 +41,11 @@ type externalAdmissionHookConfigurationInformer struct {
 	factory internalinterfaces.SharedInformerFactory
 }
 
-func newExternalAdmissionHookConfigurationInformer(client internalclientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	sharedIndexInformer := cache.NewSharedIndexInformer(
+// NewExternalAdmissionHookConfigurationInformer constructs a new informer for ExternalAdmissionHookConfiguration type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewExternalAdmissionHookConfigurationInformer(client internalclientset.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				return client.Admissionregistration().ExternalAdmissionHookConfigurations().List(options)
@@ -53,14 +56,16 @@ func newExternalAdmissionHookConfigurationInformer(client internalclientset.Inte
 		},
 		&admissionregistration.ExternalAdmissionHookConfiguration{},
 		resyncPeriod,
-		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+		indexers,
 	)
+}
 
-	return sharedIndexInformer
+func defaultExternalAdmissionHookConfigurationInformer(client internalclientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewExternalAdmissionHookConfigurationInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 }
 
 func (f *externalAdmissionHookConfigurationInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&admissionregistration.ExternalAdmissionHookConfiguration{}, newExternalAdmissionHookConfigurationInformer)
+	return f.factory.InformerFor(&admissionregistration.ExternalAdmissionHookConfiguration{}, defaultExternalAdmissionHookConfigurationInformer)
 }
 
 func (f *externalAdmissionHookConfigurationInformer) Lister() internalversion.ExternalAdmissionHookConfigurationLister {

@@ -7,13 +7,16 @@ description: Explains the use of the source parameter, which tells Terraform whe
 
 # Module Sources
 
-As documented in the [Usage section](/docs/modules/usage.html), the only required parameter when using a module is `source`. The `source` parameter tells Terraform where the module can be found and what constraints to put on the module. Constraints can include a specific version or Git branch.
+As documented in the [Usage section](/docs/modules/usage.html), the only required parameter when using a module is `source`.
 
+The `source` parameter tells Terraform where the module can be found.
 Terraform manages modules for you: it downloads them, organizes them on disk, checks for updates, etc. Terraform uses this `source` parameter to determine where it should retrieve and update modules from.
 
 Terraform supports the following sources:
 
   * Local file paths
+
+  * [Terraform Registry](/docs/registry/index.html)
 
   * GitHub
 
@@ -38,6 +41,27 @@ module "consul" {
 ```
 
 Updates for file paths are automatic: when "downloading" the module using the [get command](/docs/commands/get.html), Terraform will create a symbolic link to the original directory. Therefore, any changes are automatically available.
+
+## Terraform Registry
+
+The [Terraform Registry](https://registry.terraform.io) is an index of modules
+written by the Terraform community.
+The Terraform Registry is the easiest
+way to get started with Terraform and to find modules to start with.
+The registry is integrated directly into Terraform:
+
+```hcl
+module "consul" {
+  source = "hashicorp/consul/aws"
+}
+```
+
+The above example would use the
+[Consul module for AWS](https://registry.terraform.io/modules/hashicorp/consul/aws)
+from the public registry.
+
+You can learn more about the registry at the
+[Terraform Registry documentation section](/docs/registry/index.html).
 
 ## GitHub
 
@@ -73,17 +97,19 @@ You can use the same parameters to GitHub repositories as you can generic Git re
 
 ### Private GitHub Repos
 
-If you need Terraform to be able to fetch modules from private GitHub repos on a remote machine (like Terraform Enterprise or a CI server), you'll need to provide Terraform with credentials that can be used to authenticate as a user with read access to the private repo.
+If you need Terraform to fetch modules from private GitHub repos, you must provide Terraform with credentials to authenticate as a user with read access to those repos.
 
-First, create a [machine user](https://developer.github.com/guides/managing-deploy-keys/#machine-users) on GitHub with read access to the private repo in question, then embed this user's credentials into the `source` parameter:
+- If you run Terraform only on your local machine, you can specify the module source as an SSH URI (like `git@github.com:hashicorp/example.git`) and Terraform will use your default SSH key to authenticate.
+- If you use Terraform Enterprise, you can use SSH URIs. You'll need to add an SSH private key to your organization and assign it to any workspace that fetches modules from private repos. [See the Terraform Enterprise docs about SSH keys for cloning modules.](/docs/enterprise/workspaces/ssh-keys.html)
+- If you need to run Terraform on a remote machine like a CI worker, you either need to write an SSH key to disk and set the `GIT_SSH_COMMAND` environment variable appropriately during the worker's provisioning process, or create a [GitHub machine user](https://developer.github.com/guides/managing-deploy-keys/#machine-users) with read access to the repos in question and embed its credentials into the modules' `source` parameters:
 
-```hcl
-module "private-infra" {
-  source = "git::https://MACHINE-USER:MACHINE-PASS@github.com/org/privatemodules//modules/foo"
-}
-```
+    ```hcl
+    module "private-infra" {
+      source = "git::https://MACHINE-USER:MACHINE-PASS@github.com/org/privatemodules//modules/foo"
+    }
+    ```
 
-**Note:** Terraform does not yet support interpolations in the `source` field, so the machine username and password will have to be embedded directly into the `source` string. You can track [GH-1439](https://github.com/hashicorp/terraform/issues/1439) to learn when this limitation is addressed.
+    Note that Terraform does not support interpolations in the `source` parameter of a module, so you must hardcode the machine username and password if using this method.
 
 ## Bitbucket
 
@@ -112,7 +138,7 @@ Private bitbucket repositories must be specified similar to the Generic Git Resp
 
 ```hcl
 module "consul" {
-  source = "git::https://bitbucket.org/foocompany/module_name.git
+  source = "git::https://bitbucket.org/foocompany/module_name.git"
 }
 ```
 
@@ -120,7 +146,7 @@ You can also specify branches and version withs the ?ref query
 
 ```hcl
 module "consul" {
-  source = "git::https://bitbucket.org/foocompany/module_name.git?ref=hotfix
+  source = "git::https://bitbucket.org/foocompany/module_name.git?ref=hotfix"
 }
 ```
 
@@ -194,7 +220,7 @@ Terraform then looks for the resulting module URL in the following order:
 2. Terraform will look for a `<meta>` tag with the name of `terraform-get`, for example:
 
 ```html
-<meta name="terraform-get” content="github.com/hashicorp/example" />
+<meta name="terraform-get" content="github.com/hashicorp/example" />
 ```
 
 ### S3 Bucket

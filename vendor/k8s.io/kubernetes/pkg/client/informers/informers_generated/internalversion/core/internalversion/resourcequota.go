@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,26 +41,31 @@ type resourceQuotaInformer struct {
 	factory internalinterfaces.SharedInformerFactory
 }
 
-func newResourceQuotaInformer(client internalclientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	sharedIndexInformer := cache.NewSharedIndexInformer(
+// NewResourceQuotaInformer constructs a new informer for ResourceQuota type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewResourceQuotaInformer(client internalclientset.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
-				return client.Core().ResourceQuotas(v1.NamespaceAll).List(options)
+				return client.Core().ResourceQuotas(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
-				return client.Core().ResourceQuotas(v1.NamespaceAll).Watch(options)
+				return client.Core().ResourceQuotas(namespace).Watch(options)
 			},
 		},
 		&api.ResourceQuota{},
 		resyncPeriod,
-		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+		indexers,
 	)
+}
 
-	return sharedIndexInformer
+func defaultResourceQuotaInformer(client internalclientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewResourceQuotaInformer(client, v1.NamespaceAll, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 }
 
 func (f *resourceQuotaInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&api.ResourceQuota{}, newResourceQuotaInformer)
+	return f.factory.InformerFor(&api.ResourceQuota{}, defaultResourceQuotaInformer)
 }
 
 func (f *resourceQuotaInformer) Lister() internalversion.ResourceQuotaLister {

@@ -12,6 +12,7 @@ import (
 	"github.com/docker/distribution/registry/storage/driver"
 	"github.com/docker/distribution/registry/storage/driver/inmemory"
 	"github.com/docker/distribution/testutil"
+	"github.com/docker/libtrust"
 )
 
 type image struct {
@@ -20,9 +21,14 @@ type image struct {
 	layers         map[digest.Digest]io.ReadSeeker
 }
 
-func createRegistry(t *testing.T, driver driver.StorageDriver) distribution.Namespace {
+func createRegistry(t *testing.T, driver driver.StorageDriver, options ...RegistryOption) distribution.Namespace {
 	ctx := context.Background()
-	registry, err := NewRegistry(ctx, driver, EnableDelete)
+	k, err := libtrust.GenerateECP256PrivateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	options = append([]RegistryOption{EnableDelete, Schema1SigningKey(k)}, options...)
+	registry, err := NewRegistry(ctx, driver, options...)
 	if err != nil {
 		t.Fatalf("Failed to construct namespace")
 	}
@@ -145,7 +151,7 @@ func TestNoDeletionNoEffect(t *testing.T) {
 
 	image1 := uploadRandomSchema1Image(t, repo)
 	image2 := uploadRandomSchema1Image(t, repo)
-	image3 := uploadRandomSchema2Image(t, repo)
+	uploadRandomSchema2Image(t, repo)
 
 	// construct manifestlist for fun.
 	blobstatter := registry.BlobStatter()
@@ -160,20 +166,17 @@ func TestNoDeletionNoEffect(t *testing.T) {
 		t.Fatalf("Failed to add manifest list: %v", err)
 	}
 
+	before := allBlobs(t, registry)
+
 	// Run GC
 	err = MarkAndSweep(context.Background(), inmemoryDriver, registry, false)
 	if err != nil {
 		t.Fatalf("Failed mark and sweep: %v", err)
 	}
 
-	blobs := allBlobs(t, registry)
-
-	// the +1 at the end is for the manifestList
-	// the first +3 at the end for each manifest's blob
-	// the second +3 at the end for each manifest's signature/config layer
-	totalBlobCount := len(image1.layers) + len(image2.layers) + len(image3.layers) + 1 + 3 + 3
-	if len(blobs) != totalBlobCount {
-		t.Fatalf("Garbage collection affected storage")
+	after := allBlobs(t, registry)
+	if len(before) != len(after) {
+		t.Fatalf("Garbage collection affected storage: %d != %d", len(before), len(after))
 	}
 }
 

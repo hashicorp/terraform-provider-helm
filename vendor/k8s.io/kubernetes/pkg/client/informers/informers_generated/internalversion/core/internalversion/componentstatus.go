@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,8 +41,11 @@ type componentStatusInformer struct {
 	factory internalinterfaces.SharedInformerFactory
 }
 
-func newComponentStatusInformer(client internalclientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	sharedIndexInformer := cache.NewSharedIndexInformer(
+// NewComponentStatusInformer constructs a new informer for ComponentStatus type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewComponentStatusInformer(client internalclientset.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				return client.Core().ComponentStatuses().List(options)
@@ -53,14 +56,16 @@ func newComponentStatusInformer(client internalclientset.Interface, resyncPeriod
 		},
 		&api.ComponentStatus{},
 		resyncPeriod,
-		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+		indexers,
 	)
+}
 
-	return sharedIndexInformer
+func defaultComponentStatusInformer(client internalclientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewComponentStatusInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 }
 
 func (f *componentStatusInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&api.ComponentStatus{}, newComponentStatusInformer)
+	return f.factory.InformerFor(&api.ComponentStatus{}, defaultComponentStatusInformer)
 }
 
 func (f *componentStatusInformer) Lister() internalversion.ComponentStatusLister {

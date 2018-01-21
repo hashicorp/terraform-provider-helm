@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,14 +25,6 @@ type IngressListerExpansion interface{}
 // IngressNamespaceListerExpansion allows custom methods to be added to
 // IngressNamespaceLister.
 type IngressNamespaceListerExpansion interface{}
-
-// NetworkPolicyListerExpansion allows custom methods to be added to
-// NetworkPolicyLister.
-type NetworkPolicyListerExpansion interface{}
-
-// NetworkPolicyNamespaceListerExpansion allows custom methods to be added to
-// NetworkPolicyNamespaceLister.
-type NetworkPolicyNamespaceListerExpansion interface{}
 
 // PodSecurityPolicyListerExpansion allows custom methods to be added to
 // PodSecurityPolicyLister.

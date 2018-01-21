@@ -25,8 +25,6 @@ import (
 	"github.com/golang/glog"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -40,8 +38,6 @@ import (
 	informers "k8s.io/apiextensions-apiserver/pkg/client/informers/internalversion/apiextensions/internalversion"
 	listers "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/internalversion"
 )
-
-var cloner = conversion.NewCloner()
 
 // This controller is reserving names. To avoid conflicts, be sure to run only one instance of the worker at a time.
 // This could eventually be lifted, but starting simple.
@@ -195,22 +191,20 @@ func (c *NamingConditionController) calculateNamesAndConditions(in *apiextension
 
 	// set EstablishedCondition to true if all names are accepted. Never set it back to false.
 	establishedCondition := apiextensions.CustomResourceDefinitionCondition{
-		Type:               apiextensions.Established,
-		Status:             apiextensions.ConditionFalse,
-		Reason:             "NotAccepted",
-		Message:            "not all names are accepted",
-		LastTransitionTime: metav1.NewTime(time.Now()),
+		Type:    apiextensions.Established,
+		Status:  apiextensions.ConditionFalse,
+		Reason:  "NotAccepted",
+		Message: "not all names are accepted",
 	}
 	if old := apiextensions.FindCRDCondition(in, apiextensions.Established); old != nil {
 		establishedCondition = *old
 	}
 	if establishedCondition.Status != apiextensions.ConditionTrue && namesAcceptedCondition.Status == apiextensions.ConditionTrue {
 		establishedCondition = apiextensions.CustomResourceDefinitionCondition{
-			Type:               apiextensions.Established,
-			Status:             apiextensions.ConditionTrue,
-			Reason:             "InitialNamesAccepted",
-			Message:            "the initial names have been accepted",
-			LastTransitionTime: metav1.NewTime(time.Now()),
+			Type:    apiextensions.Established,
+			Status:  apiextensions.ConditionTrue,
+			Reason:  "InitialNamesAccepted",
+			Message: "the initial names have been accepted",
 		}
 	}
 
@@ -251,11 +245,7 @@ func (c *NamingConditionController) sync(key string) error {
 		return nil
 	}
 
-	crd := &apiextensions.CustomResourceDefinition{}
-	if err := apiextensions.DeepCopy_apiextensions_CustomResourceDefinition(inCustomResourceDefinition, crd, cloner); err != nil {
-		return err
-	}
-
+	crd := inCustomResourceDefinition.DeepCopy()
 	crd.Status.AcceptedNames = acceptedNames
 	apiextensions.SetCRDCondition(crd, namingCondition)
 	apiextensions.SetCRDCondition(crd, establishedCondition)

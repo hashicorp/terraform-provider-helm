@@ -162,7 +162,7 @@ func Example_printReplicationControllerWithNamespace() {
 	printersinternal.AddHandlers(p)
 	tf.Printer = p
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client:               nil,
 	}
@@ -215,7 +215,7 @@ func Example_printMultiContainersReplicationControllerWithWide() {
 	printersinternal.AddHandlers(p)
 	tf.Printer = p
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client:               nil,
 	}
@@ -257,8 +257,8 @@ func Example_printMultiContainersReplicationControllerWithWide() {
 		fmt.Printf("Unexpected error: %v", err)
 	}
 	// Output:
-	// NAME      DESIRED   CURRENT   READY     AGE       CONTAINER(S)   IMAGE(S)               SELECTOR
-	// foo       1         1         0         10y       foo,foo2       someimage,someimage2   foo=bar
+	// NAME      DESIRED   CURRENT   READY     AGE       CONTAINERS   IMAGES                 SELECTOR
+	// foo       1         1         0         10y       foo,foo2     someimage,someimage2   foo=bar
 }
 
 func Example_printReplicationController() {
@@ -269,7 +269,7 @@ func Example_printReplicationController() {
 	printersinternal.AddHandlers(p)
 	tf.Printer = p
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client:               nil,
 	}
@@ -324,7 +324,7 @@ func Example_printPodWithWideFormat() {
 	printersinternal.AddHandlers(p)
 	tf.Printer = p
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client:               nil,
 	}
@@ -367,7 +367,7 @@ func Example_printPodWithShowLabels() {
 	printersinternal.AddHandlers(p)
 	tf.Printer = p
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client:               nil,
 	}
@@ -504,7 +504,7 @@ func Example_printPodHideTerminated() {
 	printersinternal.AddHandlers(p)
 	tf.Printer = p
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client:               nil,
 	}
@@ -540,7 +540,7 @@ func Example_printPodShowAll() {
 	printersinternal.AddHandlers(p)
 	tf.Printer = p
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client:               nil,
 	}
@@ -569,7 +569,7 @@ func Example_printServiceWithNamespacesAndLabels() {
 	printersinternal.AddHandlers(p)
 	tf.Printer = p
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client:               nil,
 	}
@@ -594,6 +594,7 @@ func Example_printServiceWithNamespacesAndLabels() {
 						"s": "magic",
 					},
 					ClusterIP: "10.1.1.1",
+					Type:      api.ServiceTypeClusterIP,
 				},
 				Status: api.ServiceStatus{},
 			},
@@ -615,6 +616,7 @@ func Example_printServiceWithNamespacesAndLabels() {
 						"s": "kazam",
 					},
 					ClusterIP: "10.1.1.2",
+					Type:      api.ServiceTypeClusterIP,
 				},
 				Status: api.ServiceStatus{},
 			}},
@@ -627,9 +629,9 @@ func Example_printServiceWithNamespacesAndLabels() {
 		fmt.Printf("Unexpected error: %v", err)
 	}
 	// Output:
-	// |NAMESPACE   NAME      CLUSTER-IP   EXTERNAL-IP   PORT(S)           AGE       L1|
-	// |ns1         svc1      10.1.1.1     <unknown>     53/UDP,53/TCP     10y       value|
-	// |ns2         svc2      10.1.1.2     <unknown>     80/TCP,8080/TCP   10y       dolla-bill-yall|
+	// |NAMESPACE   NAME      TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)           AGE       L1|
+	// |ns1         svc1      ClusterIP   10.1.1.1     <none>        53/UDP,53/TCP     10y       value|
+	// |ns2         svc2      ClusterIP   10.1.1.2     <none>        80/TCP,8080/TCP   10y       dolla-bill-yall|
 	// ||
 }
 

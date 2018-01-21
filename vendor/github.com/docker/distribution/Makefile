@@ -13,7 +13,7 @@ endif
 
 GO_LDFLAGS=-ldflags "-X `go list ./version`.Version=$(VERSION)"
 
-.PHONY: clean all fmt vet lint build test binaries
+.PHONY: all build binaries clean dep-restore dep-save dep-validate fmt lint test test-full vet
 .DEFAULT: all
 all: fmt vet lint build test binaries
 
@@ -27,25 +27,25 @@ version/version.go:
 # Required for go 1.5 to build
 GO15VENDOREXPERIMENT := 1
 
+# Go files
+GOFILES=$(shell find . -type f -name '*.go')
+
 # Package list
-PKGS := $(shell go list -tags "${DOCKER_BUILDTAGS}" ./... | grep -v ^github.com/docker/distribution/vendor/)
+PKGS=$(shell go list -tags "${DOCKER_BUILDTAGS}" ./... | grep -v ^github.com/docker/distribution/vendor/)
 
 # Resolving binary dependencies for specific targets
-GOLINT_BIN := $(GOPATH)/bin/golint
-GOLINT := $(shell [ -x $(GOLINT_BIN) ] && echo $(GOLINT_BIN) || echo '')
+GOLINT=$(shell which golint || echo '')
+GODEP=$(shell which godep || echo '')
 
-GODEP_BIN := $(GOPATH)/bin/godep
-GODEP := $(shell [ -x $(GODEP_BIN) ] && echo $(GODEP_BIN) || echo '')
-
-${PREFIX}/bin/registry: $(wildcard **/*.go)
+${PREFIX}/bin/registry: $(GOFILES)
 	@echo "+ $@"
 	@go build -tags "${DOCKER_BUILDTAGS}" -o $@ ${GO_LDFLAGS}  ${GO_GCFLAGS} ./cmd/registry
 
-${PREFIX}/bin/digest:  $(wildcard **/*.go)
+${PREFIX}/bin/digest:  $(GOFILES)
 	@echo "+ $@"
 	@go build -tags "${DOCKER_BUILDTAGS}" -o $@ ${GO_LDFLAGS}  ${GO_GCFLAGS} ./cmd/digest
 
-${PREFIX}/bin/registry-api-descriptor-template: $(wildcard **/*.go)
+${PREFIX}/bin/registry-api-descriptor-template: $(GOFILES)
 	@echo "+ $@"
 	@go build -o $@ ${GO_LDFLAGS} ${GO_GCFLAGS} ./cmd/registry-api-descriptor-template
 

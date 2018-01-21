@@ -6,6 +6,7 @@
     "jsonVersion":"1.1",
     "protocol":"json",
     "serviceFullName":"AWS Database Migration Service",
+    "serviceId":"Database Migration Service",
     "signatureVersion":"v4",
     "targetPrefix":"AmazonDMSv20160101",
     "uid":"dms-2016-01-01"
@@ -38,6 +39,22 @@
         {"shape":"InvalidResourceStateFault"},
         {"shape":"ResourceNotFoundFault"},
         {"shape":"AccessDeniedFault"}
+      ]
+    },
+    "CreateEventSubscription":{
+      "name":"CreateEventSubscription",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"CreateEventSubscriptionMessage"},
+      "output":{"shape":"CreateEventSubscriptionResponse"},
+      "errors":[
+        {"shape":"ResourceQuotaExceededFault"},
+        {"shape":"ResourceAlreadyExistsFault"},
+        {"shape":"SNSInvalidTopicFault"},
+        {"shape":"SNSNoAuthorizationFault"},
+        {"shape":"ResourceNotFoundFault"}
       ]
     },
     "CreateReplicationInstance":{
@@ -87,6 +104,7 @@
       "input":{"shape":"CreateReplicationTaskMessage"},
       "output":{"shape":"CreateReplicationTaskResponse"},
       "errors":[
+        {"shape":"AccessDeniedFault"},
         {"shape":"InvalidResourceStateFault"},
         {"shape":"ResourceAlreadyExistsFault"},
         {"shape":"ResourceNotFoundFault"},
@@ -115,6 +133,19 @@
       },
       "input":{"shape":"DeleteEndpointMessage"},
       "output":{"shape":"DeleteEndpointResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundFault"},
+        {"shape":"InvalidResourceStateFault"}
+      ]
+    },
+    "DeleteEventSubscription":{
+      "name":"DeleteEventSubscription",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"DeleteEventSubscriptionMessage"},
+      "output":{"shape":"DeleteEventSubscriptionResponse"},
       "errors":[
         {"shape":"ResourceNotFoundFault"},
         {"shape":"InvalidResourceStateFault"}
@@ -213,6 +244,36 @@
         {"shape":"ResourceNotFoundFault"}
       ]
     },
+    "DescribeEventCategories":{
+      "name":"DescribeEventCategories",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"DescribeEventCategoriesMessage"},
+      "output":{"shape":"DescribeEventCategoriesResponse"}
+    },
+    "DescribeEventSubscriptions":{
+      "name":"DescribeEventSubscriptions",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"DescribeEventSubscriptionsMessage"},
+      "output":{"shape":"DescribeEventSubscriptionsResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundFault"}
+      ]
+    },
+    "DescribeEvents":{
+      "name":"DescribeEvents",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"DescribeEventsMessage"},
+      "output":{"shape":"DescribeEventsResponse"}
+    },
     "DescribeOrderableReplicationInstances":{
       "name":"DescribeOrderableReplicationInstances",
       "http":{
@@ -255,6 +316,18 @@
       },
       "input":{"shape":"DescribeReplicationSubnetGroupsMessage"},
       "output":{"shape":"DescribeReplicationSubnetGroupsResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundFault"}
+      ]
+    },
+    "DescribeReplicationTaskAssessmentResults":{
+      "name":"DescribeReplicationTaskAssessmentResults",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"DescribeReplicationTaskAssessmentResultsMessage"},
+      "output":{"shape":"DescribeReplicationTaskAssessmentResultsResponse"},
       "errors":[
         {"shape":"ResourceNotFoundFault"}
       ]
@@ -334,7 +407,23 @@
         {"shape":"InvalidResourceStateFault"},
         {"shape":"ResourceNotFoundFault"},
         {"shape":"ResourceAlreadyExistsFault"},
-        {"shape":"KMSKeyNotAccessibleFault"}
+        {"shape":"KMSKeyNotAccessibleFault"},
+        {"shape":"AccessDeniedFault"}
+      ]
+    },
+    "ModifyEventSubscription":{
+      "name":"ModifyEventSubscription",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"ModifyEventSubscriptionMessage"},
+      "output":{"shape":"ModifyEventSubscriptionResponse"},
+      "errors":[
+        {"shape":"ResourceQuotaExceededFault"},
+        {"shape":"ResourceNotFoundFault"},
+        {"shape":"SNSInvalidTopicFault"},
+        {"shape":"SNSNoAuthorizationFault"}
       ]
     },
     "ModifyReplicationInstance":{
@@ -401,6 +490,19 @@
         {"shape":"ResourceQuotaExceededFault"}
       ]
     },
+    "ReloadTables":{
+      "name":"ReloadTables",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"ReloadTablesMessage"},
+      "output":{"shape":"ReloadTablesResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundFault"},
+        {"shape":"InvalidResourceStateFault"}
+      ]
+    },
     "RemoveTagsFromResource":{
       "name":"RemoveTagsFromResource",
       "http":{
@@ -424,6 +526,19 @@
       "errors":[
         {"shape":"ResourceNotFoundFault"},
         {"shape":"InvalidResourceStateFault"}
+      ]
+    },
+    "StartReplicationTaskAssessment":{
+      "name":"StartReplicationTaskAssessment",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"StartReplicationTaskAssessmentMessage"},
+      "output":{"shape":"StartReplicationTaskAssessmentResponse"},
+      "errors":[
+        {"shape":"InvalidResourceStateFault"},
+        {"shape":"ResourceNotFoundFault"}
       ]
     },
     "StopReplicationTask":{
@@ -473,10 +588,7 @@
     },
     "AccountQuotaList":{
       "type":"list",
-      "member":{
-        "shape":"AccountQuota",
-        "locationName":"AccountQuota"
-      }
+      "member":{"shape":"AccountQuota"}
     },
     "AddTagsToResourceMessage":{
       "type":"structure",
@@ -493,6 +605,21 @@
       "type":"structure",
       "members":{
       }
+    },
+    "AuthMechanismValue":{
+      "type":"string",
+      "enum":[
+        "default",
+        "mongodb_cr",
+        "scram_sha_1"
+      ]
+    },
+    "AuthTypeValue":{
+      "type":"string",
+      "enum":[
+        "no",
+        "password"
+      ]
     },
     "AvailabilityZone":{
       "type":"structure",
@@ -519,12 +646,16 @@
     },
     "CertificateList":{
       "type":"list",
-      "member":{
-        "shape":"Certificate",
-        "locationName":"Certificate"
-      }
+      "member":{"shape":"Certificate"}
     },
     "CertificateWallet":{"type":"blob"},
+    "CompressionTypeValue":{
+      "type":"string",
+      "enum":[
+        "none",
+        "gzip"
+      ]
+    },
     "Connection":{
       "type":"structure",
       "members":{
@@ -538,10 +669,7 @@
     },
     "ConnectionList":{
       "type":"list",
-      "member":{
-        "shape":"Connection",
-        "locationName":"Connection"
-      }
+      "member":{"shape":"Connection"}
     },
     "CreateEndpointMessage":{
       "type":"structure",
@@ -563,13 +691,38 @@
         "KmsKeyId":{"shape":"String"},
         "Tags":{"shape":"TagList"},
         "CertificateArn":{"shape":"String"},
-        "SslMode":{"shape":"DmsSslModeValue"}
+        "SslMode":{"shape":"DmsSslModeValue"},
+        "DynamoDbSettings":{"shape":"DynamoDbSettings"},
+        "S3Settings":{"shape":"S3Settings"},
+        "MongoDbSettings":{"shape":"MongoDbSettings"}
       }
     },
     "CreateEndpointResponse":{
       "type":"structure",
       "members":{
         "Endpoint":{"shape":"Endpoint"}
+      }
+    },
+    "CreateEventSubscriptionMessage":{
+      "type":"structure",
+      "required":[
+        "SubscriptionName",
+        "SnsTopicArn"
+      ],
+      "members":{
+        "SubscriptionName":{"shape":"String"},
+        "SnsTopicArn":{"shape":"String"},
+        "SourceType":{"shape":"String"},
+        "EventCategories":{"shape":"EventCategoriesList"},
+        "SourceIds":{"shape":"SourceIdsList"},
+        "Enabled":{"shape":"BooleanOptional"},
+        "Tags":{"shape":"TagList"}
+      }
+    },
+    "CreateEventSubscriptionResponse":{
+      "type":"structure",
+      "members":{
+        "EventSubscription":{"shape":"EventSubscription"}
       }
     },
     "CreateReplicationInstanceMessage":{
@@ -672,6 +825,19 @@
       "type":"structure",
       "members":{
         "Endpoint":{"shape":"Endpoint"}
+      }
+    },
+    "DeleteEventSubscriptionMessage":{
+      "type":"structure",
+      "required":["SubscriptionName"],
+      "members":{
+        "SubscriptionName":{"shape":"String"}
+      }
+    },
+    "DeleteEventSubscriptionResponse":{
+      "type":"structure",
+      "members":{
+        "EventSubscription":{"shape":"EventSubscription"}
       }
     },
     "DeleteReplicationInstanceMessage":{
@@ -783,6 +949,56 @@
         "Endpoints":{"shape":"EndpointList"}
       }
     },
+    "DescribeEventCategoriesMessage":{
+      "type":"structure",
+      "members":{
+        "SourceType":{"shape":"String"},
+        "Filters":{"shape":"FilterList"}
+      }
+    },
+    "DescribeEventCategoriesResponse":{
+      "type":"structure",
+      "members":{
+        "EventCategoryGroupList":{"shape":"EventCategoryGroupList"}
+      }
+    },
+    "DescribeEventSubscriptionsMessage":{
+      "type":"structure",
+      "members":{
+        "SubscriptionName":{"shape":"String"},
+        "Filters":{"shape":"FilterList"},
+        "MaxRecords":{"shape":"IntegerOptional"},
+        "Marker":{"shape":"String"}
+      }
+    },
+    "DescribeEventSubscriptionsResponse":{
+      "type":"structure",
+      "members":{
+        "Marker":{"shape":"String"},
+        "EventSubscriptionsList":{"shape":"EventSubscriptionsList"}
+      }
+    },
+    "DescribeEventsMessage":{
+      "type":"structure",
+      "members":{
+        "SourceIdentifier":{"shape":"String"},
+        "SourceType":{"shape":"SourceType"},
+        "StartTime":{"shape":"TStamp"},
+        "EndTime":{"shape":"TStamp"},
+        "Duration":{"shape":"IntegerOptional"},
+        "EventCategories":{"shape":"EventCategoriesList"},
+        "Filters":{"shape":"FilterList"},
+        "MaxRecords":{"shape":"IntegerOptional"},
+        "Marker":{"shape":"String"}
+      }
+    },
+    "DescribeEventsResponse":{
+      "type":"structure",
+      "members":{
+        "Marker":{"shape":"String"},
+        "Events":{"shape":"EventList"}
+      }
+    },
     "DescribeOrderableReplicationInstancesMessage":{
       "type":"structure",
       "members":{
@@ -840,6 +1056,22 @@
         "ReplicationSubnetGroups":{"shape":"ReplicationSubnetGroups"}
       }
     },
+    "DescribeReplicationTaskAssessmentResultsMessage":{
+      "type":"structure",
+      "members":{
+        "ReplicationTaskArn":{"shape":"String"},
+        "MaxRecords":{"shape":"IntegerOptional"},
+        "Marker":{"shape":"String"}
+      }
+    },
+    "DescribeReplicationTaskAssessmentResultsResponse":{
+      "type":"structure",
+      "members":{
+        "Marker":{"shape":"String"},
+        "BucketName":{"shape":"String"},
+        "ReplicationTaskAssessmentResults":{"shape":"ReplicationTaskAssessmentResultList"}
+      }
+    },
     "DescribeReplicationTasksMessage":{
       "type":"structure",
       "members":{
@@ -877,7 +1109,8 @@
       "members":{
         "ReplicationTaskArn":{"shape":"String"},
         "MaxRecords":{"shape":"IntegerOptional"},
-        "Marker":{"shape":"String"}
+        "Marker":{"shape":"String"},
+        "Filters":{"shape":"FilterList"}
       }
     },
     "DescribeTableStatisticsResponse":{
@@ -897,6 +1130,13 @@
         "verify-full"
       ]
     },
+    "DynamoDbSettings":{
+      "type":"structure",
+      "required":["ServiceAccessRoleArn"],
+      "members":{
+        "ServiceAccessRoleArn":{"shape":"String"}
+      }
+    },
     "Endpoint":{
       "type":"structure",
       "members":{
@@ -912,15 +1152,63 @@
         "KmsKeyId":{"shape":"String"},
         "EndpointArn":{"shape":"String"},
         "CertificateArn":{"shape":"String"},
-        "SslMode":{"shape":"DmsSslModeValue"}
+        "SslMode":{"shape":"DmsSslModeValue"},
+        "ExternalId":{"shape":"String"},
+        "DynamoDbSettings":{"shape":"DynamoDbSettings"},
+        "S3Settings":{"shape":"S3Settings"},
+        "MongoDbSettings":{"shape":"MongoDbSettings"}
       }
     },
     "EndpointList":{
       "type":"list",
-      "member":{
-        "shape":"Endpoint",
-        "locationName":"Endpoint"
+      "member":{"shape":"Endpoint"}
+    },
+    "Event":{
+      "type":"structure",
+      "members":{
+        "SourceIdentifier":{"shape":"String"},
+        "SourceType":{"shape":"SourceType"},
+        "Message":{"shape":"String"},
+        "EventCategories":{"shape":"EventCategoriesList"},
+        "Date":{"shape":"TStamp"}
       }
+    },
+    "EventCategoriesList":{
+      "type":"list",
+      "member":{"shape":"String"}
+    },
+    "EventCategoryGroup":{
+      "type":"structure",
+      "members":{
+        "SourceType":{"shape":"String"},
+        "EventCategories":{"shape":"EventCategoriesList"}
+      }
+    },
+    "EventCategoryGroupList":{
+      "type":"list",
+      "member":{"shape":"EventCategoryGroup"}
+    },
+    "EventList":{
+      "type":"list",
+      "member":{"shape":"Event"}
+    },
+    "EventSubscription":{
+      "type":"structure",
+      "members":{
+        "CustomerAwsId":{"shape":"String"},
+        "CustSubscriptionId":{"shape":"String"},
+        "SnsTopicArn":{"shape":"String"},
+        "Status":{"shape":"String"},
+        "SubscriptionCreationTime":{"shape":"String"},
+        "SourceType":{"shape":"String"},
+        "SourceIdsList":{"shape":"SourceIdsList"},
+        "EventCategoriesList":{"shape":"EventCategoriesList"},
+        "Enabled":{"shape":"Boolean"}
+      }
+    },
+    "EventSubscriptionsList":{
+      "type":"list",
+      "member":{"shape":"EventSubscription"}
     },
     "ExceptionMessage":{"type":"string"},
     "Filter":{
@@ -936,17 +1224,11 @@
     },
     "FilterList":{
       "type":"list",
-      "member":{
-        "shape":"Filter",
-        "locationName":"Filter"
-      }
+      "member":{"shape":"Filter"}
     },
     "FilterValueList":{
       "type":"list",
-      "member":{
-        "shape":"String",
-        "locationName":"Value"
-      }
+      "member":{"shape":"String"}
     },
     "ImportCertificateMessage":{
       "type":"structure",
@@ -954,7 +1236,8 @@
       "members":{
         "CertificateIdentifier":{"shape":"String"},
         "CertificatePem":{"shape":"String"},
-        "CertificateWallet":{"shape":"CertificateWallet"}
+        "CertificateWallet":{"shape":"CertificateWallet"},
+        "Tags":{"shape":"TagList"}
       }
     },
     "ImportCertificateResponse":{
@@ -1041,13 +1324,33 @@
         "DatabaseName":{"shape":"String"},
         "ExtraConnectionAttributes":{"shape":"String"},
         "CertificateArn":{"shape":"String"},
-        "SslMode":{"shape":"DmsSslModeValue"}
+        "SslMode":{"shape":"DmsSslModeValue"},
+        "DynamoDbSettings":{"shape":"DynamoDbSettings"},
+        "S3Settings":{"shape":"S3Settings"},
+        "MongoDbSettings":{"shape":"MongoDbSettings"}
       }
     },
     "ModifyEndpointResponse":{
       "type":"structure",
       "members":{
         "Endpoint":{"shape":"Endpoint"}
+      }
+    },
+    "ModifyEventSubscriptionMessage":{
+      "type":"structure",
+      "required":["SubscriptionName"],
+      "members":{
+        "SubscriptionName":{"shape":"String"},
+        "SnsTopicArn":{"shape":"String"},
+        "SourceType":{"shape":"String"},
+        "EventCategories":{"shape":"EventCategoriesList"},
+        "Enabled":{"shape":"BooleanOptional"}
+      }
+    },
+    "ModifyEventSubscriptionResponse":{
+      "type":"structure",
+      "members":{
+        "EventSubscription":{"shape":"EventSubscription"}
       }
     },
     "ModifyReplicationInstanceMessage":{
@@ -1109,6 +1412,29 @@
         "ReplicationTask":{"shape":"ReplicationTask"}
       }
     },
+    "MongoDbSettings":{
+      "type":"structure",
+      "members":{
+        "Username":{"shape":"String"},
+        "Password":{"shape":"SecretString"},
+        "ServerName":{"shape":"String"},
+        "Port":{"shape":"IntegerOptional"},
+        "DatabaseName":{"shape":"String"},
+        "AuthType":{"shape":"AuthTypeValue"},
+        "AuthMechanism":{"shape":"AuthMechanismValue"},
+        "NestingLevel":{"shape":"NestingLevelValue"},
+        "ExtractDocId":{"shape":"String"},
+        "DocsToInvestigate":{"shape":"String"},
+        "AuthSource":{"shape":"String"}
+      }
+    },
+    "NestingLevelValue":{
+      "type":"string",
+      "enum":[
+        "none",
+        "one"
+      ]
+    },
     "OrderableReplicationInstance":{
       "type":"structure",
       "members":{
@@ -1123,10 +1449,7 @@
     },
     "OrderableReplicationInstanceList":{
       "type":"list",
-      "member":{
-        "shape":"OrderableReplicationInstance",
-        "locationName":"OrderableReplicationInstance"
-      }
+      "member":{"shape":"OrderableReplicationInstance"}
     },
     "RefreshSchemasMessage":{
       "type":"structure",
@@ -1162,6 +1485,23 @@
         "failed",
         "refreshing"
       ]
+    },
+    "ReloadTablesMessage":{
+      "type":"structure",
+      "required":[
+        "ReplicationTaskArn",
+        "TablesToReload"
+      ],
+      "members":{
+        "ReplicationTaskArn":{"shape":"String"},
+        "TablesToReload":{"shape":"TableListToReload"}
+      }
+    },
+    "ReloadTablesResponse":{
+      "type":"structure",
+      "members":{
+        "ReplicationTaskArn":{"shape":"String"}
+      }
     },
     "RemoveTagsFromResourceMessage":{
       "type":"structure",
@@ -1220,10 +1560,7 @@
     },
     "ReplicationInstanceList":{
       "type":"list",
-      "member":{
-        "shape":"ReplicationInstance",
-        "locationName":"ReplicationInstance"
-      }
+      "member":{"shape":"ReplicationInstance"}
     },
     "ReplicationInstancePrivateIpAddressList":{
       "type":"list",
@@ -1261,10 +1598,7 @@
     },
     "ReplicationSubnetGroups":{
       "type":"list",
-      "member":{
-        "shape":"ReplicationSubnetGroup",
-        "locationName":"ReplicationSubnetGroup"
-      }
+      "member":{"shape":"ReplicationSubnetGroup"}
     },
     "ReplicationTask":{
       "type":"structure",
@@ -1285,12 +1619,25 @@
         "ReplicationTaskStats":{"shape":"ReplicationTaskStats"}
       }
     },
+    "ReplicationTaskAssessmentResult":{
+      "type":"structure",
+      "members":{
+        "ReplicationTaskIdentifier":{"shape":"String"},
+        "ReplicationTaskArn":{"shape":"String"},
+        "ReplicationTaskLastAssessmentDate":{"shape":"TStamp"},
+        "AssessmentStatus":{"shape":"String"},
+        "AssessmentResultsFile":{"shape":"String"},
+        "AssessmentResults":{"shape":"String"},
+        "S3ObjectUrl":{"shape":"String"}
+      }
+    },
+    "ReplicationTaskAssessmentResultList":{
+      "type":"list",
+      "member":{"shape":"ReplicationTaskAssessmentResult"}
+    },
     "ReplicationTaskList":{
       "type":"list",
-      "member":{
-        "shape":"ReplicationTask",
-        "locationName":"ReplicationTask"
-      }
+      "member":{"shape":"ReplicationTask"}
     },
     "ReplicationTaskStats":{
       "type":"structure",
@@ -1324,6 +1671,32 @@
       },
       "exception":true
     },
+    "S3Settings":{
+      "type":"structure",
+      "members":{
+        "ServiceAccessRoleArn":{"shape":"String"},
+        "ExternalTableDefinition":{"shape":"String"},
+        "CsvRowDelimiter":{"shape":"String"},
+        "CsvDelimiter":{"shape":"String"},
+        "BucketFolder":{"shape":"String"},
+        "BucketName":{"shape":"String"},
+        "CompressionType":{"shape":"CompressionTypeValue"}
+      }
+    },
+    "SNSInvalidTopicFault":{
+      "type":"structure",
+      "members":{
+        "message":{"shape":"ExceptionMessage"}
+      },
+      "exception":true
+    },
+    "SNSNoAuthorizationFault":{
+      "type":"structure",
+      "members":{
+        "message":{"shape":"ExceptionMessage"}
+      },
+      "exception":true
+    },
     "SchemaList":{
       "type":"list",
       "member":{"shape":"String"}
@@ -1331,6 +1704,27 @@
     "SecretString":{
       "type":"string",
       "sensitive":true
+    },
+    "SourceIdsList":{
+      "type":"list",
+      "member":{"shape":"String"}
+    },
+    "SourceType":{
+      "type":"string",
+      "enum":["replication-instance"]
+    },
+    "StartReplicationTaskAssessmentMessage":{
+      "type":"structure",
+      "required":["ReplicationTaskArn"],
+      "members":{
+        "ReplicationTaskArn":{"shape":"String"}
+      }
+    },
+    "StartReplicationTaskAssessmentResponse":{
+      "type":"structure",
+      "members":{
+        "ReplicationTask":{"shape":"ReplicationTask"}
+      }
     },
     "StartReplicationTaskMessage":{
       "type":"structure",
@@ -1396,17 +1790,11 @@
     },
     "SubnetIdentifierList":{
       "type":"list",
-      "member":{
-        "shape":"String",
-        "locationName":"SubnetIdentifier"
-      }
+      "member":{"shape":"String"}
     },
     "SubnetList":{
       "type":"list",
-      "member":{
-        "shape":"Subnet",
-        "locationName":"Subnet"
-      }
+      "member":{"shape":"Subnet"}
     },
     "SupportedEndpointType":{
       "type":"structure",
@@ -1418,12 +1806,13 @@
     },
     "SupportedEndpointTypeList":{
       "type":"list",
-      "member":{
-        "shape":"SupportedEndpointType",
-        "locationName":"SupportedEndpointType"
-      }
+      "member":{"shape":"SupportedEndpointType"}
     },
     "TStamp":{"type":"timestamp"},
+    "TableListToReload":{
+      "type":"list",
+      "member":{"shape":"TableToReload"}
+    },
     "TableStatistics":{
       "type":"structure",
       "members":{
@@ -1434,13 +1823,26 @@
         "Updates":{"shape":"Long"},
         "Ddls":{"shape":"Long"},
         "FullLoadRows":{"shape":"Long"},
+        "FullLoadCondtnlChkFailedRows":{"shape":"Long"},
+        "FullLoadErrorRows":{"shape":"Long"},
         "LastUpdateTime":{"shape":"TStamp"},
-        "TableState":{"shape":"String"}
+        "TableState":{"shape":"String"},
+        "ValidationPendingRecords":{"shape":"Long"},
+        "ValidationFailedRecords":{"shape":"Long"},
+        "ValidationSuspendedRecords":{"shape":"Long"},
+        "ValidationState":{"shape":"String"}
       }
     },
     "TableStatisticsList":{
       "type":"list",
       "member":{"shape":"TableStatistics"}
+    },
+    "TableToReload":{
+      "type":"structure",
+      "members":{
+        "SchemaName":{"shape":"String"},
+        "TableName":{"shape":"String"}
+      }
     },
     "Tag":{
       "type":"structure",
@@ -1451,10 +1853,7 @@
     },
     "TagList":{
       "type":"list",
-      "member":{
-        "shape":"Tag",
-        "locationName":"Tag"
-      }
+      "member":{"shape":"Tag"}
     },
     "TestConnectionMessage":{
       "type":"structure",
@@ -1482,10 +1881,7 @@
     },
     "VpcSecurityGroupIdList":{
       "type":"list",
-      "member":{
-        "shape":"String",
-        "locationName":"VpcSecurityGroupId"
-      }
+      "member":{"shape":"String"}
     },
     "VpcSecurityGroupMembership":{
       "type":"structure",
@@ -1496,10 +1892,7 @@
     },
     "VpcSecurityGroupMembershipList":{
       "type":"list",
-      "member":{
-        "shape":"VpcSecurityGroupMembership",
-        "locationName":"VpcSecurityGroupMembership"
-      }
+      "member":{"shape":"VpcSecurityGroupMembership"}
     }
   }
 }

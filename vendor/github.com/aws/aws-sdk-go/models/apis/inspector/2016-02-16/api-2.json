@@ -207,6 +207,23 @@
         {"shape":"InvalidInputException"}
       ]
     },
+    "GetAssessmentReport":{
+      "name":"GetAssessmentReport",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"GetAssessmentReportRequest"},
+      "output":{"shape":"GetAssessmentReportResponse"},
+      "errors":[
+        {"shape":"InternalException"},
+        {"shape":"InvalidInputException"},
+        {"shape":"AccessDeniedException"},
+        {"shape":"NoSuchEntityException"},
+        {"shape":"AssessmentRunInProgressException"},
+        {"shape":"UnsupportedFeatureException"}
+      ]
+    },
     "GetTelemetryMetadata":{
       "name":"GetTelemetryMetadata",
       "http":{
@@ -559,7 +576,8 @@
       "type":"string",
       "enum":[
         "HEALTHY",
-        "UNHEALTHY"
+        "UNHEALTHY",
+        "UNKNOWN"
       ]
     },
     "AgentHealthCode":{
@@ -600,8 +618,14 @@
       "type":"structure",
       "required":["agentId"],
       "members":{
+        "hostname":{"shape":"Hostname"},
         "agentId":{"shape":"AgentId"},
-        "autoScalingGroup":{"shape":"AutoScalingGroup"}
+        "autoScalingGroup":{"shape":"AutoScalingGroup"},
+        "agentHealth":{"shape":"AgentHealth"},
+        "agentVersion":{"shape":"AgentVersion"},
+        "operatingSystem":{"shape":"OperatingSystem"},
+        "kernelVersion":{"shape":"KernelVersion"},
+        "ipv4Address":{"shape":"Ipv4Address"}
       }
     },
     "AgentPreviewList":{
@@ -609,6 +633,11 @@
       "member":{"shape":"AgentPreview"},
       "max":100,
       "min":0
+    },
+    "AgentVersion":{
+      "type":"string",
+      "max":128,
+      "min":1
     },
     "AgentsAlreadyRunningAssessmentException":{
       "type":"structure",
@@ -636,6 +665,7 @@
       "max":300,
       "min":1
     },
+    "ArnCount":{"type":"integer"},
     "AssessmentRulesPackageArnList":{
       "type":"list",
       "member":{"shape":"Arn"},
@@ -656,7 +686,8 @@
         "stateChangedAt",
         "dataCollected",
         "stateChanges",
-        "notifications"
+        "notifications",
+        "findingCounts"
       ],
       "members":{
         "arn":{"shape":"Arn"},
@@ -672,7 +703,8 @@
         "stateChangedAt":{"shape":"Timestamp"},
         "dataCollected":{"shape":"Bool"},
         "stateChanges":{"shape":"AssessmentRunStateChangeList"},
-        "notifications":{"shape":"AssessmentRunNotificationList"}
+        "notifications":{"shape":"AssessmentRunNotificationList"},
+        "findingCounts":{"shape":"AssessmentRunFindingCounts"}
       }
     },
     "AssessmentRunAgent":{
@@ -716,6 +748,11 @@
         "completionTimeRange":{"shape":"TimestampRange"},
         "stateChangeTimeRange":{"shape":"TimestampRange"}
       }
+    },
+    "AssessmentRunFindingCounts":{
+      "type":"map",
+      "key":{"shape":"Severity"},
+      "value":{"shape":"FindingCount"}
     },
     "AssessmentRunInProgressArnList":{
       "type":"list",
@@ -790,10 +827,13 @@
         "COLLECTING_DATA",
         "STOP_DATA_COLLECTION_PENDING",
         "DATA_COLLECTED",
+        "START_EVALUATING_RULES_PENDING",
         "EVALUATING_RULES",
         "FAILED",
+        "ERROR",
         "COMPLETED",
-        "COMPLETED_WITH_ERRORS"
+        "COMPLETED_WITH_ERRORS",
+        "CANCELED"
       ]
     },
     "AssessmentRunStateChange":{
@@ -862,6 +902,7 @@
         "durationInSeconds",
         "rulesPackageArns",
         "userAttributesForFindings",
+        "assessmentRunCount",
         "createdAt"
       ],
       "members":{
@@ -871,6 +912,8 @@
         "durationInSeconds":{"shape":"AssessmentRunDuration"},
         "rulesPackageArns":{"shape":"AssessmentTemplateRulesPackageArnList"},
         "userAttributesForFindings":{"shape":"UserAttributeList"},
+        "lastAssessmentRunArn":{"shape":"Arn"},
+        "assessmentRunCount":{"shape":"ArnCount"},
         "createdAt":{"shape":"Timestamp"}
       }
     },
@@ -1248,6 +1291,7 @@
         "updatedAt":{"shape":"Timestamp"}
       }
     },
+    "FindingCount":{"type":"integer"},
     "FindingFilter":{
       "type":"structure",
       "members":{
@@ -1269,8 +1313,29 @@
     "FindingList":{
       "type":"list",
       "member":{"shape":"Finding"},
-      "max":10,
+      "max":100,
       "min":0
+    },
+    "GetAssessmentReportRequest":{
+      "type":"structure",
+      "required":[
+        "assessmentRunArn",
+        "reportFileFormat",
+        "reportType"
+      ],
+      "members":{
+        "assessmentRunArn":{"shape":"Arn"},
+        "reportFileFormat":{"shape":"ReportFileFormat"},
+        "reportType":{"shape":"ReportType"}
+      }
+    },
+    "GetAssessmentReportResponse":{
+      "type":"structure",
+      "required":["status"],
+      "members":{
+        "status":{"shape":"ReportStatus"},
+        "url":{"shape":"Url"}
+      }
     },
     "GetTelemetryMetadataRequest":{
       "type":"structure",
@@ -1432,6 +1497,11 @@
       "member":{"shape":"Ipv4Address"},
       "max":50,
       "min":0
+    },
+    "KernelVersion":{
+      "type":"string",
+      "max":128,
+      "min":1
     },
     "LimitExceededErrorCode":{
       "type":"string",
@@ -1657,6 +1727,11 @@
       "type":"integer",
       "min":0
     },
+    "OperatingSystem":{
+      "type":"string",
+      "max":256,
+      "min":1
+    },
     "PaginationToken":{
       "type":"string",
       "max":300,
@@ -1709,6 +1784,28 @@
       "members":{
         "failedItems":{"shape":"FailedItems"}
       }
+    },
+    "ReportFileFormat":{
+      "type":"string",
+      "enum":[
+        "HTML",
+        "PDF"
+      ]
+    },
+    "ReportStatus":{
+      "type":"string",
+      "enum":[
+        "WORK_IN_PROGRESS",
+        "FAILED",
+        "COMPLETED"
+      ]
+    },
+    "ReportType":{
+      "type":"string",
+      "enum":[
+        "FINDING",
+        "FULL"
+      ]
     },
     "ResourceGroup":{
       "type":"structure",
@@ -1824,11 +1921,19 @@
         "assessmentRunArn":{"shape":"Arn"}
       }
     },
+    "StopAction":{
+      "type":"string",
+      "enum":[
+        "START_EVALUATION",
+        "SKIP_EVALUATION"
+      ]
+    },
     "StopAssessmentRunRequest":{
       "type":"structure",
       "required":["assessmentRunArn"],
       "members":{
-        "assessmentRunArn":{"shape":"Arn"}
+        "assessmentRunArn":{"shape":"Arn"},
+        "stopAction":{"shape":"StopAction"}
       }
     },
     "SubscribeToEventRequest":{
@@ -1931,6 +2036,18 @@
         "topicArn":{"shape":"Arn"}
       }
     },
+    "UnsupportedFeatureException":{
+      "type":"structure",
+      "required":[
+        "message",
+        "canRetry"
+      ],
+      "members":{
+        "message":{"shape":"ErrorMessage"},
+        "canRetry":{"shape":"Bool"}
+      },
+      "exception":true
+    },
     "UpdateAssessmentTargetRequest":{
       "type":"structure",
       "required":[
@@ -1943,6 +2060,10 @@
         "assessmentTargetName":{"shape":"AssessmentTargetName"},
         "resourceGroupArn":{"shape":"Arn"}
       }
+    },
+    "Url":{
+      "type":"string",
+      "max":2048
     },
     "UserAttributeKeyList":{
       "type":"list",

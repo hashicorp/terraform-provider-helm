@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import (
 	networking "k8s.io/kubernetes/pkg/apis/networking/install"
 	policy "k8s.io/kubernetes/pkg/apis/policy/install"
 	rbac "k8s.io/kubernetes/pkg/apis/rbac/install"
+	scheduling "k8s.io/kubernetes/pkg/apis/scheduling/install"
 	settings "k8s.io/kubernetes/pkg/apis/settings/install"
 	storage "k8s.io/kubernetes/pkg/apis/storage/install"
 	os "os"
@@ -66,6 +67,7 @@ func Install(groupFactoryRegistry announced.APIGroupFactoryRegistry, registry *r
 	networking.Install(groupFactoryRegistry, registry, scheme)
 	policy.Install(groupFactoryRegistry, registry, scheme)
 	rbac.Install(groupFactoryRegistry, registry, scheme)
+	scheduling.Install(groupFactoryRegistry, registry, scheme)
 	settings.Install(groupFactoryRegistry, registry, scheme)
 	storage.Install(groupFactoryRegistry, registry, scheme)
 

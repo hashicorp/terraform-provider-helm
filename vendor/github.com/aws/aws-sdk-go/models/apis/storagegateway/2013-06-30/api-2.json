@@ -6,6 +6,7 @@
     "jsonVersion":"1.1",
     "protocol":"json",
     "serviceFullName":"AWS Storage Gateway",
+    "serviceId":"Storage Gateway",
     "signatureVersion":"v4",
     "targetPrefix":"StorageGateway_20130630",
     "uid":"storagegateway-2013-06-30"
@@ -611,6 +612,32 @@
         {"shape":"InternalServerError"}
       ]
     },
+    "NotifyWhenUploaded":{
+      "name":"NotifyWhenUploaded",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"NotifyWhenUploadedInput"},
+      "output":{"shape":"NotifyWhenUploadedOutput"},
+      "errors":[
+        {"shape":"InvalidGatewayRequestException"},
+        {"shape":"InternalServerError"}
+      ]
+    },
+    "RefreshCache":{
+      "name":"RefreshCache",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"RefreshCacheInput"},
+      "output":{"shape":"RefreshCacheOutput"},
+      "errors":[
+        {"shape":"InvalidGatewayRequestException"},
+        {"shape":"InternalServerError"}
+      ]
+    },
     "RemoveTagsFromResource":{
       "name":"RemoveTagsFromResource",
       "http":{
@@ -930,7 +957,8 @@
         "VolumeProgress":{"shape":"DoubleObject"},
         "SourceSnapshotId":{"shape":"SnapshotId"},
         "VolumeiSCSIAttributes":{"shape":"VolumeiSCSIAttributes"},
-        "CreatedDate":{"shape":"CreatedDate"}
+        "CreatedDate":{"shape":"CreatedDate"},
+        "VolumeUsedInBytes":{"shape":"VolumeUsedInBytes"}
       }
     },
     "CachediSCSIVolumes":{
@@ -1036,7 +1064,11 @@
         "KMSKey":{"shape":"KMSKey"},
         "Role":{"shape":"Role"},
         "LocationARN":{"shape":"LocationARN"},
-        "DefaultStorageClass":{"shape":"StorageClass"}
+        "DefaultStorageClass":{"shape":"StorageClass"},
+        "ClientList":{"shape":"FileShareClientList"},
+        "Squash":{"shape":"Squash"},
+        "ReadOnly":{"shape":"Boolean"},
+        "GuessMIMETypeEnabled":{"shape":"Boolean"}
       }
     },
     "CreateNFSFileShareOutput":{
@@ -1195,7 +1227,8 @@
       "type":"structure",
       "required":["FileShareARN"],
       "members":{
-        "FileShareARN":{"shape":"FileShareARN"}
+        "FileShareARN":{"shape":"FileShareARN"},
+        "ForceDelete":{"shape":"boolean"}
       }
     },
     "DeleteFileShareOutput":{
@@ -1653,6 +1686,12 @@
       "max":10,
       "min":1
     },
+    "FileShareClientList":{
+      "type":"list",
+      "member":{"shape":"IPV4AddressCIDR"},
+      "max":100,
+      "min":1
+    },
     "FileShareId":{
       "type":"string",
       "max":30,
@@ -1734,6 +1773,10 @@
       "type":"integer",
       "max":23,
       "min":0
+    },
+    "IPV4AddressCIDR":{
+      "type":"string",
+      "pattern":"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))?$"
     },
     "Initiator":{
       "type":"string",
@@ -1944,7 +1987,11 @@
         "Path":{"shape":"Path"},
         "Role":{"shape":"Role"},
         "LocationARN":{"shape":"LocationARN"},
-        "DefaultStorageClass":{"shape":"StorageClass"}
+        "DefaultStorageClass":{"shape":"StorageClass"},
+        "ClientList":{"shape":"FileShareClientList"},
+        "Squash":{"shape":"Squash"},
+        "ReadOnly":{"shape":"Boolean"},
+        "GuessMIMETypeEnabled":{"shape":"Boolean"}
       }
     },
     "NFSFileShareInfoList":{
@@ -1967,6 +2014,25 @@
       "type":"string",
       "max":25,
       "min":1
+    },
+    "NotificationId":{
+      "type":"string",
+      "max":2048,
+      "min":1
+    },
+    "NotifyWhenUploadedInput":{
+      "type":"structure",
+      "required":["FileShareARN"],
+      "members":{
+        "FileShareARN":{"shape":"FileShareARN"}
+      }
+    },
+    "NotifyWhenUploadedOutput":{
+      "type":"structure",
+      "members":{
+        "FileShareARN":{"shape":"FileShareARN"},
+        "NotificationId":{"shape":"NotificationId"}
+      }
     },
     "NumTapesToCreate":{
       "type":"integer",
@@ -1993,6 +2059,19 @@
       "type":"integer",
       "max":24,
       "min":1
+    },
+    "RefreshCacheInput":{
+      "type":"structure",
+      "required":["FileShareARN"],
+      "members":{
+        "FileShareARN":{"shape":"FileShareARN"}
+      }
+    },
+    "RefreshCacheOutput":{
+      "type":"structure",
+      "members":{
+        "FileShareARN":{"shape":"FileShareARN"}
+      }
     },
     "RegionId":{
       "type":"string",
@@ -2120,6 +2199,11 @@
       "type":"string",
       "pattern":"\\Asnap-([0-9A-Fa-f]{8}|[0-9A-Fa-f]{17})\\z"
     },
+    "Squash":{
+      "type":"string",
+      "max":15,
+      "min":5
+    },
     "StartGatewayInput":{
       "type":"structure",
       "required":["GatewayARN"],
@@ -2158,7 +2242,8 @@
         "SourceSnapshotId":{"shape":"SnapshotId"},
         "PreservedExistingData":{"shape":"boolean"},
         "VolumeiSCSIAttributes":{"shape":"VolumeiSCSIAttributes"},
-        "CreatedDate":{"shape":"CreatedDate"}
+        "CreatedDate":{"shape":"CreatedDate"},
+        "VolumeUsedInBytes":{"shape":"VolumeUsedInBytes"}
       }
     },
     "StorediSCSIVolumes":{
@@ -2203,7 +2288,8 @@
         "TapeSizeInBytes":{"shape":"TapeSize"},
         "TapeStatus":{"shape":"TapeStatus"},
         "VTLDevice":{"shape":"VTLDeviceARN"},
-        "Progress":{"shape":"DoubleObject"}
+        "Progress":{"shape":"DoubleObject"},
+        "TapeUsedInBytes":{"shape":"TapeUsage"}
       }
     },
     "TapeARN":{
@@ -2225,7 +2311,8 @@
         "TapeSizeInBytes":{"shape":"TapeSize"},
         "CompletionTime":{"shape":"Time"},
         "RetrievedTo":{"shape":"GatewayARN"},
-        "TapeStatus":{"shape":"TapeArchiveStatus"}
+        "TapeStatus":{"shape":"TapeArchiveStatus"},
+        "TapeUsedInBytes":{"shape":"TapeUsage"}
       }
     },
     "TapeArchiveStatus":{"type":"string"},
@@ -2280,6 +2367,7 @@
     "TapeRecoveryPointStatus":{"type":"string"},
     "TapeSize":{"type":"long"},
     "TapeStatus":{"type":"string"},
+    "TapeUsage":{"type":"long"},
     "Tapes":{
       "type":"list",
       "member":{"shape":"Tape"}
@@ -2390,7 +2478,11 @@
         "KMSEncrypted":{"shape":"Boolean"},
         "KMSKey":{"shape":"KMSKey"},
         "NFSFileShareDefaults":{"shape":"NFSFileShareDefaults"},
-        "DefaultStorageClass":{"shape":"StorageClass"}
+        "DefaultStorageClass":{"shape":"StorageClass"},
+        "ClientList":{"shape":"FileShareClientList"},
+        "Squash":{"shape":"Squash"},
+        "ReadOnly":{"shape":"Boolean"},
+        "GuessMIMETypeEnabled":{"shape":"Boolean"}
       }
     },
     "UpdateNFSFileShareOutput":{
@@ -2514,6 +2606,7 @@
       "max":100,
       "min":3
     },
+    "VolumeUsedInBytes":{"type":"long"},
     "VolumeiSCSIAttributes":{
       "type":"structure",
       "members":{

@@ -41,11 +41,10 @@ func NewREST(scheme *runtime.Scheme, optsGetter generic.RESTOptionsGetter) *REST
 	strategy := NewStrategy(scheme)
 
 	store := &genericregistry.Store{
-		Copier:            scheme,
-		NewFunc:           func() runtime.Object { return &apiextensions.CustomResourceDefinition{} },
-		NewListFunc:       func() runtime.Object { return &apiextensions.CustomResourceDefinitionList{} },
-		PredicateFunc:     MatchCustomResourceDefinition,
-		QualifiedResource: apiextensions.Resource("customresourcedefinitions"),
+		NewFunc:                  func() runtime.Object { return &apiextensions.CustomResourceDefinition{} },
+		NewListFunc:              func() runtime.Object { return &apiextensions.CustomResourceDefinitionList{} },
+		PredicateFunc:            MatchCustomResourceDefinition,
+		DefaultQualifiedResource: apiextensions.Resource("customresourcedefinitions"),
 
 		CreateStrategy: strategy,
 		UpdateStrategy: strategy,
@@ -168,6 +167,6 @@ func (r *StatusREST) New() runtime.Object {
 }
 
 // Update alters the status subset of an object.
-func (r *StatusREST) Update(ctx genericapirequest.Context, name string, objInfo rest.UpdatedObjectInfo) (runtime.Object, bool, error) {
-	return r.store.Update(ctx, name, objInfo)
+func (r *StatusREST) Update(ctx genericapirequest.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
+	return r.store.Update(ctx, name, objInfo, createValidation, updateValidation)
 }

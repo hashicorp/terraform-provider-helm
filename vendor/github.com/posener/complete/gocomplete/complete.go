@@ -28,7 +28,7 @@ func main() {
 			"-asmflags":      complete.PredictAnything,
 			"-buildmode":     complete.PredictAnything,
 			"-compiler":      complete.PredictAnything,
-			"-gccgoflags":    complete.PredictAnything,
+			"-gccgoflags":    complete.PredictSet("gccgo", "gc"),
 			"-gcflags":       complete.PredictAnything,
 			"-installsuffix": complete.PredictAnything,
 			"-ldflags":       complete.PredictAnything,

@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"reflect"
 	"sort"
@@ -161,7 +162,7 @@ func TestCLIRun_prefix(t *testing.T) {
 		t.Fatalf("err: %s", err)
 	}
 
-	if exitCode != 1 {
+	if exitCode != 127 {
 		t.Fatalf("bad: %d", exitCode)
 	}
 
@@ -279,6 +280,38 @@ func TestCLIRun_nested(t *testing.T) {
 	}
 }
 
+func TestCLIRun_nestedTopLevel(t *testing.T) {
+	command := new(MockCommand)
+	cli := &CLI{
+		Args: []string{"foo"},
+		Commands: map[string]CommandFactory{
+			"foo": func() (Command, error) {
+				return command, nil
+			},
+			"foo bar": func() (Command, error) {
+				return new(MockCommand), nil
+			},
+		},
+	}
+
+	exitCode, err := cli.Run()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if exitCode != command.RunResult {
+		t.Fatalf("bad: %d", exitCode)
+	}
+
+	if !command.RunCalled {
+		t.Fatalf("run should be called")
+	}
+
+	if !reflect.DeepEqual(command.RunArgs, []string{}) {
+		t.Fatalf("bad args: %#v", command.RunArgs)
+	}
+}
+
 func TestCLIRun_nestedMissingParent(t *testing.T) {
 	buf := new(bytes.Buffer)
 	cli := &CLI{
@@ -302,6 +335,94 @@ func TestCLIRun_nestedMissingParent(t *testing.T) {
 
 	if buf.String() != testCommandNestedMissingParent {
 		t.Fatalf("bad: %#v", buf.String())
+	}
+}
+
+func TestCLIRun_nestedNoArgs(t *testing.T) {
+	command := new(MockCommand)
+	cli := &CLI{
+		Args: []string{"foo", "bar"},
+		Commands: map[string]CommandFactory{
+			"foo": func() (Command, error) {
+				return new(MockCommand), nil
+			},
+			"foo bar": func() (Command, error) {
+				return command, nil
+			},
+		},
+	}
+
+	exitCode, err := cli.Run()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if exitCode != command.RunResult {
+		t.Fatalf("bad: %d", exitCode)
+	}
+
+	if !command.RunCalled {
+		t.Fatalf("run should be called")
+	}
+
+	if !reflect.DeepEqual(command.RunArgs, []string{}) {
+		t.Fatalf("bad args: %#v", command.RunArgs)
+	}
+}
+
+func TestCLIRun_nestedQuotedCommand(t *testing.T) {
+	command := new(MockCommand)
+	cli := &CLI{
+		Args: []string{"foo bar"},
+		Commands: map[string]CommandFactory{
+			"foo": func() (Command, error) {
+				return new(MockCommand), nil
+			},
+			"foo bar": func() (Command, error) {
+				return command, nil
+			},
+		},
+	}
+
+	exitCode, err := cli.Run()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if exitCode != 127 {
+		t.Fatalf("bad: %d", exitCode)
+	}
+}
+
+func TestCLIRun_nestedQuotedArg(t *testing.T) {
+	command := new(MockCommand)
+	cli := &CLI{
+		Args: []string{"foo", "bar baz"},
+		Commands: map[string]CommandFactory{
+			"foo": func() (Command, error) {
+				return command, nil
+			},
+			"foo bar": func() (Command, error) {
+				return new(MockCommand), nil
+			},
+		},
+	}
+
+	exitCode, err := cli.Run()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if exitCode != command.RunResult {
+		t.Fatalf("bad: %d", exitCode)
+	}
+
+	if !command.RunCalled {
+		t.Fatalf("run should be called")
+	}
+
+	if !reflect.DeepEqual(command.RunArgs, []string{"bar baz"}) {
+		t.Fatalf("bad args: %#v", command.RunArgs)
 	}
 }
 
@@ -346,10 +467,13 @@ func TestCLIRun_printHelp(t *testing.T) {
 }
 
 func TestCLIRun_printHelpIllegal(t *testing.T) {
-	testCases := [][]string{
-		{},
-		{"i-dont-exist"},
-		{"-bad-flag", "foo"},
+	testCases := []struct {
+		args []string
+		exit int
+	}{
+		{nil, 127},
+		{[]string{"i-dont-exist"}, 127},
+		{[]string{"-bad-flag", "foo"}, 1},
 	}
 
 	for _, testCase := range testCases {
@@ -357,7 +481,7 @@ func TestCLIRun_printHelpIllegal(t *testing.T) {
 		helpText := "foo"
 
 		cli := &CLI{
-			Args: testCase,
+			Args: testCase.args,
 			Commands: map[string]CommandFactory{
 				"foo": func() (Command, error) {
 					return &MockCommand{HelpText: helpText}, nil
@@ -389,7 +513,7 @@ func TestCLIRun_printHelpIllegal(t *testing.T) {
 			continue
 		}
 
-		if code != 1 {
+		if code != testCase.exit {
 			t.Errorf("Args: %#v. Code: %d", testCase, code)
 			continue
 		}
@@ -582,6 +706,56 @@ func TestCLIRun_printCommandHelpSubcommandsNestedTwoLevel(t *testing.T) {
 	}
 }
 
+// Test that the root help only prints the root level.
+func TestCLIRun_printHelpRootSubcommands(t *testing.T) {
+	testCases := [][]string{
+		{"--help"},
+		{"-h"},
+	}
+
+	for _, args := range testCases {
+		buf := new(bytes.Buffer)
+		cli := &CLI{
+			Args: args,
+			Commands: map[string]CommandFactory{
+				"bar": func() (Command, error) {
+					return &MockCommand{SynopsisText: "hi!"}, nil
+				},
+				"foo": func() (Command, error) {
+					return &MockCommand{SynopsisText: "hi!"}, nil
+				},
+				"foo bar": func() (Command, error) {
+					return &MockCommand{SynopsisText: "hi!"}, nil
+				},
+				"foo zip": func() (Command, error) {
+					return &MockCommand{SynopsisText: "hi!"}, nil
+				},
+			},
+			HelpWriter: buf,
+		}
+
+		exitCode, err := cli.Run()
+		if err != nil {
+			t.Fatalf("err: %s", err)
+		}
+
+		if exitCode != 0 {
+			t.Fatalf("bad exit code: %d", exitCode)
+		}
+
+		expected := `Usage: app [--version] [--help] <command> [<args>]
+
+Available commands are:
+    bar    hi!
+    foo    hi!
+
+`
+		if buf.String() != expected {
+			t.Fatalf("bad: %#v\n\n'%#v'\n\n'%#v'", args, buf.String(), expected)
+		}
+	}
+}
+
 func TestCLIRun_printCommandHelpTemplate(t *testing.T) {
 	testCases := [][]string{
 		{"--help", "foo"},
@@ -620,6 +794,92 @@ func TestCLIRun_printCommandHelpTemplate(t *testing.T) {
 		if buf.String() != "hello "+command.HelpText+"\n" {
 			t.Fatalf("bad: %#v", buf.String())
 		}
+	}
+}
+
+func TestCLIRun_helpHiddenRoot(t *testing.T) {
+	helpCalled := false
+	buf := new(bytes.Buffer)
+	cli := &CLI{
+		Args:           []string{"--help"},
+		HiddenCommands: []string{"bar"},
+		Commands: map[string]CommandFactory{
+			"foo": func() (Command, error) {
+				return &MockCommand{}, nil
+			},
+			"bar": func() (Command, error) {
+				return &MockCommand{}, nil
+			},
+		},
+		HelpFunc: func(m map[string]CommandFactory) string {
+			helpCalled = true
+
+			if _, ok := m["foo"]; !ok {
+				t.Fatal("should have foo")
+			}
+			if _, ok := m["bar"]; ok {
+				t.Fatal("should not have bar")
+			}
+
+			return ""
+		},
+		HelpWriter: buf,
+	}
+
+	code, err := cli.Run()
+	if err != nil {
+		t.Fatalf("Error: %s", err)
+	}
+
+	if code != 0 {
+		t.Fatalf("Code: %d", code)
+	}
+
+	if !helpCalled {
+		t.Fatal("help not called")
+	}
+}
+
+func TestCLIRun_helpHiddenNested(t *testing.T) {
+	command := &MockCommand{
+		HelpText: "donuts",
+	}
+
+	buf := new(bytes.Buffer)
+	cli := &CLI{
+		Args: []string{"foo", "--help"},
+		Commands: map[string]CommandFactory{
+			"foo": func() (Command, error) {
+				return command, nil
+			},
+			"foo bar": func() (Command, error) {
+				return &MockCommand{SynopsisText: "hi!"}, nil
+			},
+			"foo zip": func() (Command, error) {
+				return &MockCommand{SynopsisText: "hi!"}, nil
+			},
+			"foo longer": func() (Command, error) {
+				return &MockCommand{SynopsisText: "hi!"}, nil
+			},
+			"foo longer longest": func() (Command, error) {
+				return &MockCommand{SynopsisText: "hi!"}, nil
+			},
+		},
+		HiddenCommands: []string{"foo zip", "foo longer longest"},
+		HelpWriter:     buf,
+	}
+
+	exitCode, err := cli.Run()
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if exitCode != 0 {
+		t.Fatalf("bad exit code: %d", exitCode)
+	}
+
+	if buf.String() != testCommandHelpSubcommandsHiddenOutput {
+		t.Fatalf("bad: '%#v'\n\n'%#v'", buf.String(), testCommandHelpSubcommandsOutput)
 	}
 }
 
@@ -853,6 +1113,7 @@ func TestCLIAutocomplete_root(t *testing.T) {
 		{nil, "n", []string{"nodes", "noodles"}},
 		{nil, "noo", []string{"noodles"}},
 		{nil, "su", []string{"sub"}},
+		{nil, "h", nil},
 
 		// Make sure global flags work on subcommands
 		{[]string{"sub"}, "-v", nil},
@@ -870,6 +1131,7 @@ func TestCLIAutocomplete_root(t *testing.T) {
 					"foo":           func() (Command, error) { return command, nil },
 					"nodes":         func() (Command, error) { return command, nil },
 					"noodles":       func() (Command, error) { return command, nil },
+					"hidden":        func() (Command, error) { return command, nil },
 					"sub one":       func() (Command, error) { return command, nil },
 					"sub two":       func() (Command, error) { return command, nil },
 					"sub sub2 one":  func() (Command, error) { return command, nil },
@@ -877,28 +1139,60 @@ func TestCLIAutocomplete_root(t *testing.T) {
 					"deep deep2 a1": func() (Command, error) { return command, nil },
 					"deep deep2 b2": func() (Command, error) { return command, nil },
 				},
+				HiddenCommands: []string{"hidden"},
 
 				Autocomplete: true,
 			}
 
-			// Initialize
-			cli.init()
+			// Setup the autocomplete line
+			var input bytes.Buffer
+			input.WriteString("cli ")
+			if len(tc.Completed) > 0 {
+				input.WriteString(strings.Join(tc.Completed, " "))
+				input.WriteString(" ")
+			}
+			input.WriteString(tc.Last)
+			defer testAutocomplete(t, input.String())()
 
-			// Build All value
-			var all []string
-			all = append(all, tc.Completed...)
-			all = append(all, tc.Last)
+			// Setup the output so that we can read it. We don't need to
+			// reset os.Stdout because testAutocomplete will do that for us.
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+			defer r.Close() // Only defer reader since writer is closed below
+			os.Stdout = w
 
-			// Test the autocompleter
-			actual := cli.autocomplete.Command.Predict(complete.Args{
-				All:       all,
-				Completed: tc.Completed,
-				Last:      tc.Last,
-			})
+			// Run
+			exitCode, err := cli.Run()
+			w.Close()
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+
+			if exitCode != 0 {
+				t.Fatalf("bad: %d", exitCode)
+			}
+
+			// Copy the output and get the autocompletions. We trim the last
+			// element if we have one since we usually output a final newline
+			// which results in a blank.
+			var outBuf bytes.Buffer
+			io.Copy(&outBuf, r)
+			actual := strings.Split(outBuf.String(), "\n")
+			if len(actual) > 0 {
+				actual = actual[:len(actual)-1]
+			}
+			if len(actual) == 0 {
+				// If we have no elements left, make the value nil since
+				// this is what we use in tests.
+				actual = nil
+			}
+
 			sort.Strings(actual)
-
+			sort.Strings(tc.Expected)
 			if !reflect.DeepEqual(actual, tc.Expected) {
-				t.Fatalf("bad prediction: %#v", actual)
+				t.Fatalf("bad:\n\n%#v\n\n%#v", actual, tc.Expected)
 			}
 		})
 	}
@@ -928,18 +1222,55 @@ func TestCLIAutocomplete_rootGlobalFlags(t *testing.T) {
 				},
 			}
 
-			// Initialize
-			cli.init()
+			// Setup the autocomplete line
+			var input bytes.Buffer
+			input.WriteString("cli ")
+			if len(tc.Completed) > 0 {
+				input.WriteString(strings.Join(tc.Completed, " "))
+				input.WriteString(" ")
+			}
+			input.WriteString(tc.Last)
+			defer testAutocomplete(t, input.String())()
 
-			// Test the autocompleter
-			actual := cli.autocomplete.Command.Predict(complete.Args{
-				Completed: tc.Completed,
-				Last:      tc.Last,
-			})
+			// Setup the output so that we can read it. We don't need to
+			// reset os.Stdout because testAutocomplete will do that for us.
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+			defer r.Close() // Only defer reader since writer is closed below
+			os.Stdout = w
+
+			// Run
+			exitCode, err := cli.Run()
+			w.Close()
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+
+			if exitCode != 0 {
+				t.Fatalf("bad: %d", exitCode)
+			}
+
+			// Copy the output and get the autocompletions. We trim the last
+			// element if we have one since we usually output a final newline
+			// which results in a blank.
+			var outBuf bytes.Buffer
+			io.Copy(&outBuf, r)
+			actual := strings.Split(outBuf.String(), "\n")
+			if len(actual) > 0 {
+				actual = actual[:len(actual)-1]
+			}
+			if len(actual) == 0 {
+				// If we have no elements left, make the value nil since
+				// this is what we use in tests.
+				actual = nil
+			}
+
 			sort.Strings(actual)
-
+			sort.Strings(tc.Expected)
 			if !reflect.DeepEqual(actual, tc.Expected) {
-				t.Fatalf("bad prediction: %#v", actual)
+				t.Fatalf("bad:\n\n%#v\n\n%#v", actual, tc.Expected)
 			}
 		})
 	}
@@ -971,19 +1302,55 @@ func TestCLIAutocomplete_rootDisableDefaultFlags(t *testing.T) {
 					"-tubes": complete.PredictNothing,
 				},
 			}
+			// Setup the autocomplete line
+			var input bytes.Buffer
+			input.WriteString("cli ")
+			if len(tc.Completed) > 0 {
+				input.WriteString(strings.Join(tc.Completed, " "))
+				input.WriteString(" ")
+			}
+			input.WriteString(tc.Last)
+			defer testAutocomplete(t, input.String())()
 
-			// Initialize
-			cli.init()
+			// Setup the output so that we can read it. We don't need to
+			// reset os.Stdout because testAutocomplete will do that for us.
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+			defer r.Close() // Only defer reader since writer is closed below
+			os.Stdout = w
 
-			// Test the autocompleter
-			actual := cli.autocomplete.Command.Predict(complete.Args{
-				Completed: tc.Completed,
-				Last:      tc.Last,
-			})
+			// Run
+			exitCode, err := cli.Run()
+			w.Close()
+			if err != nil {
+				t.Fatalf("err: %s", err)
+			}
+
+			if exitCode != 0 {
+				t.Fatalf("bad: %d", exitCode)
+			}
+
+			// Copy the output and get the autocompletions. We trim the last
+			// element if we have one since we usually output a final newline
+			// which results in a blank.
+			var outBuf bytes.Buffer
+			io.Copy(&outBuf, r)
+			actual := strings.Split(outBuf.String(), "\n")
+			if len(actual) > 0 {
+				actual = actual[:len(actual)-1]
+			}
+			if len(actual) == 0 {
+				// If we have no elements left, make the value nil since
+				// this is what we use in tests.
+				actual = nil
+			}
+
 			sort.Strings(actual)
-
+			sort.Strings(tc.Expected)
 			if !reflect.DeepEqual(actual, tc.Expected) {
-				t.Fatalf("bad prediction: %#v", actual)
+				t.Fatalf("bad:\n\n%#v\n\n%#v", actual, tc.Expected)
 			}
 		})
 	}
@@ -1137,6 +1504,13 @@ Subcommands:
     longer    hi!
     zap       hi!
     zip       hi!
+`
+
+const testCommandHelpSubcommandsHiddenOutput = `donuts
+
+Subcommands:
+    bar       hi!
+    longer    hi!
 `
 
 const testCommandHelpSubcommandsTwoLevelOutput = `donuts

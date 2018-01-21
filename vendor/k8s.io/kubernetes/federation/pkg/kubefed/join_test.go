@@ -24,6 +24,9 @@ import (
 	"os"
 	"testing"
 
+	"k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
+	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
@@ -37,9 +40,7 @@ import (
 	"k8s.io/kubernetes/federation/pkg/kubefed/util"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/testapi"
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
-	rbacv1beta1 "k8s.io/kubernetes/pkg/apis/rbac/v1beta1"
+	k8srbacv1beta1 "k8s.io/kubernetes/pkg/apis/rbac/v1beta1"
 	"k8s.io/kubernetes/pkg/kubectl"
 	cmdtesting "k8s.io/kubernetes/pkg/kubectl/cmd/testing"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
@@ -231,7 +232,7 @@ func testJoinFederationFactory(clusterName, secretName, server string, isRBACAPI
 	codec := testapi.Federation.Codec()
 	ns := dynamic.ContentConfig().NegotiatedSerializer
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(v1.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch p, m := req.URL.Path, req.Method; {
@@ -365,7 +366,7 @@ func fakeJoinHostFactory(clusterName, clusterCtx, secretName, server, token, dns
 	ns := dynamic.ContentConfig().NegotiatedSerializer
 	tf.ClientConfig = kubefedtesting.DefaultClientConfig()
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(v1.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch p, m := req.URL.Path, req.Method; {
@@ -486,11 +487,11 @@ func fakeJoinTargetClusterFactory(clusterName, clusterCtx, dnsProvider, tmpDirPa
 			},
 		},
 		Rules: []rbacv1beta1.PolicyRule{
-			rbacv1beta1.NewRule(rbacv1beta1.VerbAll).Groups(rbacv1beta1.APIGroupAll).Resources(rbacv1beta1.ResourceAll).RuleOrDie(),
+			k8srbacv1beta1.NewRule(rbacv1beta1.VerbAll).Groups(rbacv1beta1.APIGroupAll).Resources(rbacv1beta1.ResourceAll).RuleOrDie(),
 		},
 	}
 
-	clusterRoleBinding, err := rbacv1beta1.NewClusterBinding(roleName).SAs(util.DefaultFederationSystemNamespace, saName).Binding()
+	clusterRoleBinding, err := k8srbacv1beta1.NewClusterBinding(roleName).SAs(util.DefaultFederationSystemNamespace, saName).Binding()
 	if err != nil {
 		return nil, err
 	}
@@ -526,7 +527,7 @@ func fakeJoinTargetClusterFactory(clusterName, clusterCtx, dnsProvider, tmpDirPa
 	tf.TmpDir = tmpDirPath
 	tf.ClientConfig = kubefedtesting.DefaultClientConfig()
 	tf.Client = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(v1.GroupName).GroupVersion,
 		NegotiatedSerializer: ns,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch p, m, r := req.URL.Path, req.Method, isRBACAPIAvailable; {

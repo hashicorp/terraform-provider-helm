@@ -17,7 +17,9 @@ limitations under the License.
 package gce
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -25,13 +27,14 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/golang/glog"
-	computealpha "google.golang.org/api/compute/v0.beta"
+	computealpha "google.golang.org/api/compute/v0.alpha"
+	computebeta "google.golang.org/api/compute/v0.beta"
 	compute "google.golang.org/api/compute/v1"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	kubeletapis "k8s.io/kubernetes/pkg/kubelet/apis"
 )
@@ -41,10 +44,7 @@ const (
 )
 
 func newInstancesMetricContext(request, zone string) *metricContext {
-	return &metricContext{
-		start:      time.Now(),
-		attributes: []string{"instances_" + request, unusedMetricLabel, zone},
-	}
+	return newGenericMetricContext("instances", request, unusedMetricLabel, zone, computeV1Version)
 }
 
 func splitNodesByZone(nodes []*v1.Node) map[string][]*v1.Node {
@@ -69,7 +69,7 @@ func getZone(n *v1.Node) string {
 // ToInstanceReferences returns instance references by links
 func (gce *GCECloud) ToInstanceReferences(zone string, instanceNames []string) (refs []*compute.InstanceReference) {
 	for _, ins := range instanceNames {
-		instanceLink := makeHostURL(gce.projectID, zone, ins)
+		instanceLink := makeHostURL(gce.service.BasePath, gce.projectID, zone, ins)
 		refs = append(refs, &compute.InstanceReference{Instance: instanceLink})
 	}
 	return refs
@@ -152,6 +152,12 @@ func (gce *GCECloud) ExternalID(nodeName types.NodeName) (string, error) {
 		return "", err
 	}
 	return strconv.FormatUint(inst.ID, 10), nil
+}
+
+// InstanceExistsByProviderID returns true if the instance with the given provider id still exists and is running.
+// If false is returned with no error, the instance will be immediately deleted by the cloud controller manager.
+func (gce *GCECloud) InstanceExistsByProviderID(providerID string) (bool, error) {
+	return false, errors.New("unimplemented")
 }
 
 // InstanceID returns the cloud provider ID of the node with the specified NodeName.
@@ -244,35 +250,39 @@ func (gce *GCECloud) AddSSHKeyToAllInstances(user string, keyData []byte) error 
 	})
 }
 
-// GetAllZones returns all the zones in which nodes are running
-func (gce *GCECloud) GetAllZones() (sets.String, error) {
-	// Fast-path for non-multizone
-	if len(gce.managedZones) == 1 {
-		return sets.NewString(gce.managedZones...), nil
+// GetAllCurrentZones returns all the zones in which k8s nodes are currently running
+func (gce *GCECloud) GetAllCurrentZones() (sets.String, error) {
+	if gce.nodeInformerSynced == nil {
+		glog.Warningf("GCECloud object does not have informers set, should only happen in E2E binary.")
+		return gce.GetAllZonesFromCloudProvider()
 	}
+	gce.nodeZonesLock.Lock()
+	defer gce.nodeZonesLock.Unlock()
+	if !gce.nodeInformerSynced() {
+		return nil, fmt.Errorf("Node informer is not synced when trying to GetAllCurrentZones")
+	}
+	zones := sets.NewString()
+	for zone, nodes := range gce.nodeZones {
+		if len(nodes) > 0 {
+			zones.Insert(zone)
+		}
+	}
+	return zones, nil
+}
 
-	// TODO: Caching, but this is currently only called when we are creating a volume,
-	// which is a relatively infrequent operation, and this is only # zones API calls
+// GetAllZonesFromCloudProvider returns all the zones in which nodes are running
+// Only use this in E2E tests to get zones, on real clusters this will
+// get all zones with compute instances in them even if not k8s instances!!!
+// ex. I have k8s nodes in us-central1-c and us-central1-b. I also have
+// a non-k8s compute in us-central1-a. This func will return a,b, and c.
+func (gce *GCECloud) GetAllZonesFromCloudProvider() (sets.String, error) {
 	zones := sets.NewString()
 
-	// TODO: Parallelize, although O(zones) so not too bad (N <= 3 typically)
 	for _, zone := range gce.managedZones {
 		mc := newInstancesMetricContext("list", zone)
 		// We only retrieve one page in each zone - we only care about existence
 		listCall := gce.service.Instances.List(gce.projectID, zone)
 
-		// No filter: We assume that a zone is either used or unused
-		// We could only consider running nodes (like we do in List above),
-		// but probably if instances are starting we still want to consider them.
-		// I think we should wait until we have a reason to make the
-		// call one way or the other; we generally can't guarantee correct
-		// volume spreading if the set of zones is changing
-		// (and volume spreading is currently only a heuristic).
-		// Long term we want to replace GetAllZones (which primarily supports volume
-		// spreading) with a scheduler policy that is able to see the global state of
-		// volumes and the health of zones.
-
-		// Just a minimal set of fields - we only care about existence
 		listCall = listCall.Fields("items(name)")
 		res, err := listCall.Do()
 		if err != nil {
@@ -286,6 +296,21 @@ func (gce *GCECloud) GetAllZones() (sets.String, error) {
 	}
 
 	return zones, nil
+}
+
+// InsertInstance creates a new instance on GCP
+func (gce *GCECloud) InsertInstance(project string, zone string, rb *compute.Instance) error {
+	mc := newInstancesMetricContext("create", zone)
+	op, err := gce.service.Instances.Insert(project, zone, rb).Do()
+	if err != nil {
+		return mc.Observe(err)
+	}
+	return gce.waitForZoneOp(op, zone, mc)
+}
+
+// DeleteInstance deletes an instance specified by project, zone, and name
+func (gce *GCECloud) DeleteInstance(project, zone, name string) (*compute.Operation, error) {
+	return gce.service.Instances.Delete(project, zone, name).Do()
 }
 
 // Implementation of Instances.CurrentNodeName
@@ -303,7 +328,7 @@ func (gce *GCECloud) AliasRanges(nodeName types.NodeName) (cidrs []string, err e
 		return
 	}
 
-	var res *computealpha.Instance
+	var res *computebeta.Instance
 	res, err = gce.serviceBeta.Instances.Get(
 		gce.projectID, instance.Zone, instance.Name).Do()
 	if err != nil {
@@ -316,6 +341,43 @@ func (gce *GCECloud) AliasRanges(nodeName types.NodeName) (cidrs []string, err e
 		}
 	}
 	return
+}
+
+// AddAliasToInstance adds an alias to the given instance from the named
+// secondary range.
+func (gce *GCECloud) AddAliasToInstance(nodeName types.NodeName, alias *net.IPNet) error {
+
+	v1instance, err := gce.getInstanceByName(mapNodeNameToInstanceName(nodeName))
+	if err != nil {
+		return err
+	}
+	instance, err := gce.serviceAlpha.Instances.Get(gce.projectID, v1instance.Zone, v1instance.Name).Do()
+	if err != nil {
+		return err
+	}
+
+	switch len(instance.NetworkInterfaces) {
+	case 0:
+		return fmt.Errorf("Instance %q has no network interfaces", nodeName)
+	case 1:
+	default:
+		glog.Warningf("Instance %q has more than one network interface, using only the first (%v)",
+			nodeName, instance.NetworkInterfaces)
+	}
+
+	iface := instance.NetworkInterfaces[0]
+	iface.AliasIpRanges = append(iface.AliasIpRanges, &computealpha.AliasIpRange{
+		IpCidrRange:         alias.String(),
+		SubnetworkRangeName: gce.secondaryRangeName,
+	})
+
+	mc := newInstancesMetricContext("addalias", v1instance.Zone)
+	op, err := gce.serviceAlpha.Instances.UpdateNetworkInterface(
+		gce.projectID, instance.Zone, instance.Name, iface.Name, iface).Do()
+	if err != nil {
+		return mc.Observe(err)
+	}
+	return gce.waitForZoneOp(op, v1instance.Zone, mc)
 }
 
 // Gets the named instances, returning cloudprovider.InstanceNotFound if any instance is not found

@@ -5,6 +5,7 @@
     "endpointPrefix":"polly",
     "protocol":"rest-json",
     "serviceFullName":"Amazon Polly",
+    "serviceId":"Polly",
     "signatureVersion":"v4",
     "uid":"polly-2016-06-10"
   },
@@ -98,7 +99,9 @@
         {"shape":"InvalidSampleRateException"},
         {"shape":"InvalidSsmlException"},
         {"shape":"LexiconNotFoundException"},
-        {"shape":"ServiceFailureException"}
+        {"shape":"ServiceFailureException"},
+        {"shape":"MarksNotSupportedForFormatException"},
+        {"shape":"SsmlMarksNotSupportedForTextTypeException"}
       ]
     }
   },
@@ -222,6 +225,7 @@
         "fr-FR",
         "is-IS",
         "it-IT",
+        "ko-KR",
         "ja-JP",
         "nb-NO",
         "nl-NL",
@@ -311,6 +315,14 @@
         "NextToken":{"shape":"NextToken"}
       }
     },
+    "MarksNotSupportedForFormatException":{
+      "type":"structure",
+      "members":{
+        "message":{"shape":"ErrorMessage"}
+      },
+      "error":{"httpStatusCode":400},
+      "exception":true
+    },
     "MaxLexemeLengthExceededException":{
       "type":"structure",
       "members":{
@@ -331,6 +343,7 @@
     "OutputFormat":{
       "type":"string",
       "enum":[
+        "json",
         "mp3",
         "ogg_vorbis",
         "pcm"
@@ -368,6 +381,28 @@
       "fault":true
     },
     "Size":{"type":"integer"},
+    "SpeechMarkType":{
+      "type":"string",
+      "enum":[
+        "sentence",
+        "ssml",
+        "viseme",
+        "word"
+      ]
+    },
+    "SpeechMarkTypeList":{
+      "type":"list",
+      "member":{"shape":"SpeechMarkType"},
+      "max":4
+    },
+    "SsmlMarksNotSupportedForTextTypeException":{
+      "type":"structure",
+      "members":{
+        "message":{"shape":"ErrorMessage"}
+      },
+      "error":{"httpStatusCode":400},
+      "exception":true
+    },
     "SynthesizeSpeechInput":{
       "type":"structure",
       "required":[
@@ -379,6 +414,7 @@
         "LexiconNames":{"shape":"LexiconNameList"},
         "OutputFormat":{"shape":"OutputFormat"},
         "SampleRate":{"shape":"SampleRate"},
+        "SpeechMarkTypes":{"shape":"SpeechMarkTypeList"},
         "Text":{"shape":"Text"},
         "TextType":{"shape":"TextType"},
         "VoiceId":{"shape":"VoiceId"}
@@ -464,6 +500,7 @@
         "Justin",
         "Kendra",
         "Kimberly",
+        "Matthew",
         "Salli",
         "Conchita",
         "Enrique",
@@ -492,7 +529,11 @@
         "Maxim",
         "Tatyana",
         "Astrid",
-        "Filiz"
+        "Filiz",
+        "Vicki",
+        "Takumi",
+        "Seoyeon",
+        "Aditi"
       ]
     },
     "VoiceList":{

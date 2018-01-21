@@ -33,7 +33,7 @@ func TestPatchObject(t *testing.T) {
 
 	f, tf, codec, _ := cmdtesting.NewAPIFactory()
 	tf.UnstructuredClient = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: unstructuredSerializer,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch p, m := req.URL.Path, req.Method; {
@@ -65,7 +65,7 @@ func TestPatchObjectFromFile(t *testing.T) {
 
 	f, tf, codec, _ := cmdtesting.NewAPIFactory()
 	tf.UnstructuredClient = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: unstructuredSerializer,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch p, m := req.URL.Path, req.Method; {
@@ -100,7 +100,7 @@ func TestPatchNoop(t *testing.T) {
 
 	f, tf, codec, _ := cmdtesting.NewAPIFactory()
 	tf.UnstructuredClient = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: unstructuredSerializer,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch p, m := req.URL.Path, req.Method; {
@@ -130,8 +130,7 @@ func TestPatchNoop(t *testing.T) {
 
 	// Patched
 	{
-		copied, _ := api.Scheme.DeepCopy(patchObject)
-		patchObject = copied.(*api.Service)
+		patchObject = patchObject.DeepCopy()
 		if patchObject.Annotations == nil {
 			patchObject.Annotations = map[string]string{}
 		}
@@ -150,11 +149,7 @@ func TestPatchNoop(t *testing.T) {
 func TestPatchObjectFromFileOutput(t *testing.T) {
 	_, svc, _ := testData()
 
-	svcCopyObj, err := api.Scheme.DeepCopy(&svc.Items[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	svcCopy := svcCopyObj.(*api.Service)
+	svcCopy := svc.Items[0].DeepCopy()
 	if svcCopy.Labels == nil {
 		svcCopy.Labels = map[string]string{}
 	}
@@ -163,7 +158,7 @@ func TestPatchObjectFromFileOutput(t *testing.T) {
 	f, tf, codec, _ := cmdtesting.NewAPIFactory()
 	tf.Printer = &printers.YAMLPrinter{}
 	tf.UnstructuredClient = &fake.RESTClient{
-		APIRegistry:          api.Registry,
+		GroupVersion:         api.Registry.GroupOrDie(api.GroupName).GroupVersion,
 		NegotiatedSerializer: unstructuredSerializer,
 		Client: fake.CreateHTTPClient(func(req *http.Request) (*http.Response, error) {
 			switch p, m := req.URL.Path, req.Method; {

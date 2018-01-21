@@ -10,10 +10,10 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"text/template"
+	"unicode"
 )
 
 // An API defines a service API's definition. and logic to serialize the definition.
@@ -23,6 +23,7 @@ type API struct {
 	Shapes        map[string]*Shape
 	Waiters       []Waiter
 	Documentation string
+	Examples      Examples
 
 	// Set to true to avoid removing unused shapes
 	NoRemoveUnusedShapes bool
@@ -68,6 +69,8 @@ type Metadata struct {
 	Protocol            string
 	UID                 string
 	EndpointsID         string
+
+	NoResolveEndpoint bool
 }
 
 var serviceAliases map[string]string
@@ -91,23 +94,53 @@ func (a *API) InterfacePackageName() string {
 	return a.PackageName() + "iface"
 }
 
-var nameRegex = regexp.MustCompile(`^Amazon|AWS\s*|\(.*|\s+|\W+`)
+var stripServiceNamePrefixes = []string{
+	"Amazon",
+	"AWS",
+}
 
 // StructName returns the struct name for a given API.
 func (a *API) StructName() string {
-	if a.name == "" {
-		name := a.Metadata.ServiceAbbreviation
-		if name == "" {
-			name = a.Metadata.ServiceFullName
-		}
+	if len(a.name) != 0 {
+		return a.name
+	}
 
-		name = nameRegex.ReplaceAllString(name, "")
+	name := a.Metadata.ServiceAbbreviation
+	if len(name) == 0 {
+		name = a.Metadata.ServiceFullName
+	}
 
-		a.name = name
-		if name, ok := serviceAliases[strings.ToLower(name)]; ok {
-			a.name = name
+	name = strings.TrimSpace(name)
+
+	// Strip out prefix names not reflected in service client symbol names.
+	for _, prefix := range stripServiceNamePrefixes {
+		if strings.HasPrefix(name, prefix) {
+			name = name[len(prefix):]
+			break
 		}
 	}
+
+	// Replace all Non-letter/number values with space
+	runes := []rune(name)
+	for i := 0; i < len(runes); i++ {
+		if r := runes[i]; !(unicode.IsNumber(r) || unicode.IsLetter(r)) {
+			runes[i] = ' '
+		}
+	}
+	name = string(runes)
+
+	// Title case name so its readable as a symbol.
+	name = strings.Title(name)
+
+	// Strip out spaces.
+	name = strings.Replace(name, " ", "", -1)
+
+	// Swap out for alias name if one is defined.
+	if alias, ok := serviceAliases[strings.ToLower(name)]; ok {
+		name = alias
+	}
+
+	a.name = name
 	return a.name
 }
 
@@ -185,10 +218,21 @@ func (a *API) ShapeList() []*Shape {
 	list := make([]*Shape, 0, len(a.Shapes))
 	for _, n := range a.ShapeNames() {
 		// Ignore error shapes in list
-		if a.Shapes[n].IsError {
-			continue
+		if s := a.Shapes[n]; !s.IsError {
+			list = append(list, s)
 		}
-		list = append(list, a.Shapes[n])
+	}
+	return list
+}
+
+// ShapeListErrors returns a list of the errors defined by the API model
+func (a *API) ShapeListErrors() []*Shape {
+	list := []*Shape{}
+	for _, n := range a.ShapeNames() {
+		// Ignore error shapes in list
+		if s := a.Shapes[n]; s.IsError {
+			list = append(list, s)
+		}
 	}
 	return list
 }
@@ -252,7 +296,6 @@ var tplAPI = template.Must(template.New("api").Parse(`
 // APIGoCode renders the API in Go code. Returning it as a string
 func (a *API) APIGoCode() string {
 	a.resetImports()
-	delete(a.imports, "github.com/aws/aws-sdk-go/aws")
 	a.imports["github.com/aws/aws-sdk-go/aws/awsutil"] = true
 	a.imports["github.com/aws/aws-sdk-go/aws/request"] = true
 	if a.OperationHasOutputPlaceholder() {
@@ -278,35 +321,100 @@ func (a *API) APIGoCode() string {
 }
 
 var noCrossLinkServices = map[string]struct{}{
-	"apigateway":        struct{}{},
-	"budgets":           struct{}{},
-	"cloudsearch":       struct{}{},
-	"cloudsearchdomain": struct{}{},
-	"discovery":         struct{}{},
-	"elastictranscoder": struct{}{},
-	"es":                struct{}{},
-	"glacier":           struct{}{},
-	"importexport":      struct{}{},
-	"iot":               struct{}{},
-	"iot-data":          struct{}{},
-	"lambda":            struct{}{},
-	"machinelearning":   struct{}{},
-	"rekognition":       struct{}{},
-	"sdb":               struct{}{},
-	"swf":               struct{}{},
+	"apigateway":        {},
+	"budgets":           {},
+	"cloudsearch":       {},
+	"cloudsearchdomain": {},
+	"elastictranscoder": {},
+	"es":                {},
+	"glacier":           {},
+	"importexport":      {},
+	"iot":               {},
+	"iot-data":          {},
+	"machinelearning":   {},
+	"rekognition":       {},
+	"sdb":               {},
+	"swf":               {},
 }
 
-func GetCrosslinkURL(baseURL, name, uid string, params ...string) string {
-	_, ok := noCrossLinkServices[strings.ToLower(name)]
-	if baseURL != "" && !ok {
-		return strings.Join(append([]string{baseURL, "goto", "WebAPI", uid}, params...), "/")
+// HasCrosslinks will return whether or not a service has crosslinking .
+func HasCrosslinks(service string) bool {
+	_, ok := noCrossLinkServices[service]
+	return !ok
+}
+
+// GetCrosslinkURL returns the crosslinking URL for the shape based on the name and
+// uid provided. Empty string is returned if no crosslink link could be determined.
+func GetCrosslinkURL(baseURL, uid string, params ...string) string {
+	if uid == "" || baseURL == "" {
+		return ""
 	}
-	return ""
+
+	if !HasCrosslinks(strings.ToLower(ServiceIDFromUID(uid))) {
+		return ""
+	}
+
+	return strings.Join(append([]string{baseURL, "goto", "WebAPI", uid}, params...), "/")
 }
 
+// ServiceIDFromUID will parse the service id from the uid and return
+// the service id that was found.
+func ServiceIDFromUID(uid string) string {
+	found := 0
+	i := len(uid) - 1
+	for ; i >= 0; i-- {
+		if uid[i] == '-' {
+			found++
+		}
+		// Terminate after the date component is found, e.g. es-2017-11-11
+		if found == 3 {
+			break
+		}
+	}
+
+	return uid[0:i]
+}
+
+// APIName returns the API's service name.
 func (a *API) APIName() string {
 	return a.name
 }
+
+var tplServiceDoc = template.Must(template.New("service docs").Funcs(template.FuncMap{
+	"GetCrosslinkURL": GetCrosslinkURL,
+}).
+	Parse(`
+// Package {{ .PackageName }} provides the client and types for making API
+// requests to {{ .Metadata.ServiceFullName }}.
+{{ if .Documentation -}}
+//
+{{ .Documentation }}
+{{ end -}}
+{{ $crosslinkURL := GetCrosslinkURL $.BaseCrosslinkURL $.Metadata.UID -}}
+{{ if $crosslinkURL -}}
+//
+// See {{ $crosslinkURL }} for more information on this service.
+{{ end -}}
+//
+// See {{ .PackageName }} package documentation for more information.
+// https://docs.aws.amazon.com/sdk-for-go/api/service/{{ .PackageName }}/
+//
+// Using the Client
+//
+// To contact {{ .Metadata.ServiceFullName }} with the SDK use the New function to create
+// a new service client. With that client you can make API requests to the service.
+// These clients are safe to use concurrently.
+//
+// See the SDK's documentation for more information on how to use the SDK.
+// https://docs.aws.amazon.com/sdk-for-go/api/
+// 
+// See aws.Config documentation for more information on configuring SDK clients.
+// https://docs.aws.amazon.com/sdk-for-go/api/aws/#Config
+//
+// See the {{ .Metadata.ServiceFullName }} client {{ .StructName }} for more
+// information on creating client for this service.
+// https://docs.aws.amazon.com/sdk-for-go/api/service/{{ .PackageName }}/#New
+`))
 
 // A tplService defines the template for the service generated code.
 var tplService = template.Must(template.New("service").Funcs(template.FuncMap{
@@ -316,7 +424,6 @@ var tplService = template.Must(template.New("service").Funcs(template.FuncMap{
 		}
 		return "ServiceName"
 	},
-	"GetCrosslinkURL": GetCrosslinkURL,
 	"EndpointsIDConstValue": func(a *API) string {
 		if a.NoConstServiceNames {
 			return fmt.Sprintf("%q", a.Metadata.EndpointPrefix)
@@ -334,12 +441,12 @@ var tplService = template.Must(template.New("service").Funcs(template.FuncMap{
 		return "EndpointsID"
 	},
 }).Parse(`
-{{ .Documentation }}// The service client's operations are safe to be used concurrently.
-// It is not safe to mutate any of the client's properties though.
-{{ $crosslinkURL := GetCrosslinkURL $.BaseCrosslinkURL $.APIName $.Metadata.UID -}}
-{{ if ne $crosslinkURL "" -}} 
-// Please also see {{ $crosslinkURL }}
-{{ end -}}
+// {{ .StructName }} provides the API operation methods for making requests to
+// {{ .Metadata.ServiceFullName }}. See this package's package overview docs
+// for details on the service.
+//
+// {{ .StructName }} methods are safe to use concurrently. It is not safe to
+// modify mutate any of the struct's properties though.
 type {{ .StructName }} struct {
 	*client.Client
 }
@@ -371,7 +478,16 @@ const (
 //     // Create a {{ .StructName }} client with additional configuration
 //     svc := {{ .PackageName }}.New(mySession, aws.NewConfig().WithRegion("us-west-2"))
 func New(p client.ConfigProvider, cfgs ...*aws.Config) *{{ .StructName }} {
-	c := p.ClientConfig({{ EndpointsIDValue . }}, cfgs...)
+	{{ if .Metadata.NoResolveEndpoint -}}
+		var c client.Config
+		if v, ok := p.(client.ConfigNoResolveEndpointProvider); ok {
+			c = v.ClientConfigNoResolveEndpoint(cfgs...)
+		} else {
+			c = p.ClientConfig({{ EndpointsIDValue . }}, cfgs...)
+		}
+	{{- else -}}
+		c := p.ClientConfig({{ EndpointsIDValue . }}, cfgs...)
+	{{- end }}
 	return newClient(*c.Config, c.Handlers, c.Endpoint, c.SigningRegion, c.SigningName)
 }
 
@@ -436,6 +552,20 @@ func (c *{{ .StructName }}) newRequest(op *request.Operation, params, data inter
 }
 `))
 
+// ServicePackageDoc generates the contents of the doc file for the service.
+//
+// Will also read in the custom doc templates for the service if found.
+func (a *API) ServicePackageDoc() string {
+	a.imports = map[string]bool{}
+
+	var buf bytes.Buffer
+	if err := tplServiceDoc.Execute(&buf, a); err != nil {
+		panic(err)
+	}
+
+	return buf.String()
+}
+
 // ServiceGoCode renders service go code. Returning it as a string.
 func (a *API) ServiceGoCode() string {
 	a.resetImports()
@@ -480,7 +610,7 @@ func (a *API) ExampleGoCode() string {
 		"github.com/aws/aws-sdk-go/aws/session",
 		path.Join(a.SvcClientImportPath, a.PackageName()),
 	)
-	for k, _ := range imports {
+	for k := range imports {
 		code += fmt.Sprintf("%q\n", k)
 	}
 	code += ")\n\n"
@@ -498,7 +628,7 @@ var tplInterface = template.Must(template.New("interface").Parse(`
 //
 // The best way to use this interface is so the SDK's service client's calls
 // can be stubbed out for unit testing your code with the SDK without needing
-// to inject custom request handlers into the the SDK's request pipeline.
+// to inject custom request handlers into the SDK's request pipeline.
 //
 //    // myFunc uses an SDK service client to make a request to
 //    // {{.Metadata.ServiceFullName}}. {{ $opts := .OperationList }}{{ $opt := index $opts 0 }}
@@ -523,7 +653,7 @@ var tplInterface = template.Must(template.New("interface").Parse(`
 //        // mock response/functionality
 //    }
 //
-//    TestMyFunc(t *testing.T) {
+//    func TestMyFunc(t *testing.T) {
 //        // Setup Test
 //        mockSvc := &mock{{ .StructName }}Client{}
 //
@@ -554,6 +684,7 @@ var _ {{ .StructName }}API = (*{{ .PackageName }}.{{ .StructName }})(nil)
 func (a *API) InterfaceGoCode() string {
 	a.resetImports()
 	a.imports = map[string]bool{
+		"github.com/aws/aws-sdk-go/aws":                   true,
 		"github.com/aws/aws-sdk-go/aws/request":           true,
 		path.Join(a.SvcClientImportPath, a.PackageName()): true,
 	}
@@ -616,6 +747,12 @@ func resolveShapeValidations(s *Shape, ancestry ...*Shape) {
 	ancestry = append(ancestry, s)
 	for _, name := range children {
 		ref := s.MemberRefs[name]
+		// Since this is a grab bag we will just continue since
+		// we can't validate because we don't know the valued shape.
+		if ref.JSONValue {
+			continue
+		}
+
 		nestedShape := ref.Shape.NestedShape()
 
 		var v *ShapeValidation
@@ -637,4 +774,30 @@ func resolveShapeValidations(s *Shape, ancestry ...*Shape) {
 		}
 	}
 	ancestry = ancestry[:len(ancestry)-1]
+}
+
+// A tplAPIErrors is the top level template for the API
+var tplAPIErrors = template.Must(template.New("api").Parse(`
+const (
+{{ range $_, $s := $.ShapeListErrors }}
+	// {{ $s.ErrorCodeName }} for service response error code
+	// {{ printf "%q" $s.ErrorName }}.
+	{{ if $s.Docstring -}}
+	//
+	{{ $s.Docstring }}
+	{{ end -}}
+	{{ $s.ErrorCodeName }} = {{ printf "%q" $s.ErrorName }}
+{{ end }}
+)
+`))
+
+func (a *API) APIErrorsGoCode() string {
+	var buf bytes.Buffer
+	err := tplAPIErrors.Execute(&buf, a)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return strings.TrimSpace(buf.String())
 }

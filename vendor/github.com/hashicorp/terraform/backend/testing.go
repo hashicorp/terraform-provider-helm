@@ -45,7 +45,7 @@ func TestBackendConfig(t *testing.T, b Backend, c map[string]interface{}) Backen
 // error ErrNamedStatesNotSupported, then it will not test that.
 //
 // If you want to test locking, two backends must be given. If b2 is nil,
-// then state lockign won't be tested.
+// then state locking won't be tested.
 func TestBackend(t *testing.T, b1, b2 Backend) {
 	t.Helper()
 
@@ -279,6 +279,14 @@ func testBackendStateLock(t *testing.T, b1, b2 Backend) {
 	lockIDA, err := lockerA.Lock(infoA)
 	if err != nil {
 		t.Fatal("unable to get initial lock:", err)
+	}
+
+	// Make sure we can still get the state.State from another instance even
+	// when locked.  This should only happen when a state is loaded via the
+	// backend, and as a remote state.
+	_, err = b2.State(DefaultStateName)
+	if err != nil {
+		t.Fatalf("failed to read locked state from another backend instance: %s", err)
 	}
 
 	// If the lock ID is blank, assume locking is disabled
