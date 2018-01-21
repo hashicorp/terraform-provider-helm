@@ -105,68 +105,7 @@ func Provider() terraform.ResourceProvider {
 				MaxItems:    1,
 				Optional:    true,
 				Description: "Kubernetes configuration.",
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"host": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							DefaultFunc: schema.EnvDefaultFunc("KUBE_HOST", ""),
-							Description: "The hostname (in form of URI) of Kubernetes master. Can be sourced from `KUBE_HOST`.",
-						},
-						"username": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							DefaultFunc: schema.EnvDefaultFunc("KUBE_USER", ""),
-							Description: "The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_USER`.",
-						},
-						"password": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							DefaultFunc: schema.EnvDefaultFunc("KUBE_PASSWORD", ""),
-							Description: "The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_PASSWORD`.",
-						},
-						"insecure": {
-							Type:        schema.TypeBool,
-							Optional:    true,
-							DefaultFunc: schema.EnvDefaultFunc("KUBE_INSECURE", false),
-							Description: "Whether server should be accessed without verifying the TLS certificate. Can be sourced from `KUBE_INSECURE`.",
-						},
-						"client_certificate": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							DefaultFunc: schema.EnvDefaultFunc("KUBE_CLIENT_CERT_DATA", ""),
-							Description: "PEM-encoded client certificate for TLS authentication. Can be sourced from `KUBE_CLIENT_CERT_DATA`.",
-						},
-						"client_key": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							DefaultFunc: schema.EnvDefaultFunc("KUBE_CLIENT_KEY_DATA", ""),
-							Description: "PEM-encoded client certificate key for TLS authentication. Can be sourced from `KUBE_CLIENT_KEY_DATA`.",
-						},
-						"cluster_ca_certificate": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							DefaultFunc: schema.EnvDefaultFunc("KUBE_CLUSTER_CA_CERT_DATA", ""),
-							Description: "PEM-encoded root certificates bundle for TLS authentication. Can be sourced from `KUBE_CLUSTER_CA_CERT_DATA`.",
-						},
-						"config_path": {
-							Type:     schema.TypeString,
-							Optional: true,
-							DefaultFunc: schema.MultiEnvDefaultFunc(
-								[]string{
-									"KUBE_CONFIG",
-									"KUBECONFIG",
-								},
-								"~/.kube/config"),
-							Description: "Path to the kube config file, defaults to ~/.kube/config. Can be sourced from `KUBE_CONFIG`.",
-						},
-						"config_context": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX", ""),
-							Description: "Context to choose from the config file. Can be sourced from `KUBE_CTX`.",
-						},
-					}},
+				Elem:        kubernetesResource(),
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -174,6 +113,72 @@ func Provider() terraform.ResourceProvider {
 			"helm_repository": resourceRepository(),
 		},
 		ConfigureFunc: providerConfigure,
+	}
+}
+
+func kubernetesResource() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"host": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_HOST", ""),
+				Description: "The hostname (in form of URI) of Kubernetes master. Can be sourced from `KUBE_HOST`.",
+			},
+			"username": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_USER", ""),
+				Description: "The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_USER`.",
+			},
+			"password": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_PASSWORD", ""),
+				Description: "The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_PASSWORD`.",
+			},
+			"insecure": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_INSECURE", false),
+				Description: "Whether server should be accessed without verifying the TLS certificate. Can be sourced from `KUBE_INSECURE`.",
+			},
+			"client_certificate": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLIENT_CERT_DATA", ""),
+				Description: "PEM-encoded client certificate for TLS authentication. Can be sourced from `KUBE_CLIENT_CERT_DATA`.",
+			},
+			"client_key": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLIENT_KEY_DATA", ""),
+				Description: "PEM-encoded client certificate key for TLS authentication. Can be sourced from `KUBE_CLIENT_KEY_DATA`.",
+			},
+			"cluster_ca_certificate": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLUSTER_CA_CERT_DATA", ""),
+				Description: "PEM-encoded root certificates bundle for TLS authentication. Can be sourced from `KUBE_CLUSTER_CA_CERT_DATA`.",
+			},
+			"config_path": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DefaultFunc: schema.MultiEnvDefaultFunc(
+					[]string{
+						"KUBE_CONFIG",
+						"KUBECONFIG",
+					},
+					"~/.kube/config"),
+				Description: "Path to the kube config file, defaults to ~/.kube/config. Can be sourced from `KUBE_CONFIG`.",
+			},
+			"config_context": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX", ""),
+				Description: "Context to choose from the config file. Can be sourced from `KUBE_CTX`.",
+			},
+		},
 	}
 }
 
@@ -270,25 +275,25 @@ func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	// Overriding with static configuration
 	cfg.UserAgent = fmt.Sprintf("HashiCorp/1.0 Terraform/%s", terraform.VersionString())
 
-	if v, ok := d.GetOk("kubernetes.0.host"); ok {
+	if v, ok := k8sGetOk(d, "host"); ok {
 		cfg.Host = v.(string)
 	}
-	if v, ok := d.GetOk("kubernetes.0.username"); ok {
+	if v, ok := k8sGetOk(d, "username"); ok {
 		cfg.Username = v.(string)
 	}
-	if v, ok := d.GetOk("kubernetes.0.password"); ok {
+	if v, ok := k8sGetOk(d, "password"); ok {
 		cfg.Password = v.(string)
 	}
-	if v, ok := d.GetOk("kubernetes.0.insecure"); ok {
+	if v, ok := k8sGetOk(d, "insecure"); ok {
 		cfg.Insecure = v.(bool)
 	}
-	if v, ok := d.GetOk("kubernetes.0.cluster_ca_certificate"); ok {
+	if v, ok := k8sGetOk(d, "cluster_ca_certificate"); ok {
 		cfg.CAData = []byte(v.(string))
 	}
-	if v, ok := d.GetOk("kubernetes.0.client_certificate"); ok {
+	if v, ok := k8sGetOk(d, "client_certificate"); ok {
 		cfg.CertData = []byte(v.(string))
 	}
-	if v, ok := d.GetOk("kubernetes.0.client_key"); ok {
+	if v, ok := k8sGetOk(d, "client_key"); ok {
 		cfg.KeyData = []byte(v.(string))
 	}
 
@@ -301,18 +306,45 @@ func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	return nil
 }
 
+var k8sPrefix = "kubernetes.0."
+
+func k8sGetOk(d *schema.ResourceData, key string) (interface{}, bool) {
+	value, ok := d.GetOk(k8sPrefix + key)
+
+	// fix: DefaultFunc is not being triggerred on TypeList
+	schema := kubernetesResource().Schema[key]
+	if !ok && schema.DefaultFunc != nil {
+		value, _ = schema.DefaultFunc()
+
+		switch v := value.(type) {
+		case string:
+			ok = len(v) != 0
+		case bool:
+			ok = v
+		}
+	}
+
+	return value, ok
+}
+
+func k8sGet(d *schema.ResourceData, key string) interface{} {
+	value, _ := k8sGetOk(d, key)
+	return value
+}
+
 func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	explicitPath, err := homedir.Expand(d.Get("kubernetes.0.config_path").(string))
+	explicitPath, err := homedir.Expand(k8sGet(d, "config_path").(string))
 	if err != nil {
 		return nil, err
 	}
+
 	rules.ExplicitPath = explicitPath
 	rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 
-	overrides := &clientcmd.ConfigOverrides{ClusterDefaults: clientcmd.ClusterDefaults}
+	overrides := &clientcmd.ConfigOverrides{}
 
-	context := d.Get("kubernetes.0.config_context").(string)
+	context := k8sGet(d, "config_context").(string)
 	if context != "" {
 		overrides.CurrentContext = context
 	}
