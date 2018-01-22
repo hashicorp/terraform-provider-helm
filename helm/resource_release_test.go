@@ -43,6 +43,7 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 	wg.Add(3)
 	for i := 0; i < 3; i++ {
 		go func(name string) {
+			defer wg.Done()
 			resource.Test(t, resource.TestCase{
 				Providers:    testAccProviders,
 				CheckDestroy: testAccCheckHelmReleaseDestroy,
@@ -55,8 +56,6 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 					),
 				}},
 			})
-
-			wg.Done()
 		}(fmt.Sprintf("concurrent-%d", i))
 	}
 
