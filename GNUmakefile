@@ -15,7 +15,7 @@ endif
 default: build
 
 build: fmtcheck
-	go install
+	go build -v .
 
 test: fmtcheck
 	go test -i $(TEST) || exit 1

@@ -1,5 +1,7 @@
+terraform-provider-helm
 *.tfstate*
 build
 assets
 .terraform
 _output/
+.vscode

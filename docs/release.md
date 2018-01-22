@@ -1,12 +1,4 @@
----
-layout: "helm"
-page_title: "Helm: helm_release"
-sidebar_current: "docs-helm-chart"
-description: |-
-  A Chart is a Helm package. It contains all of the resource definitions necessary to run an application, tool, or service inside of a Kubernetes cluster.
----
-
-# helm_release
+# Resource: helm_release
 
 A Release is an instance of a chart running in a Kubernetes cluster.
 A Chart is a Helm package. It contains all of the resource definitions necessary to run an application, tool, or service inside of a Kubernetes cluster.

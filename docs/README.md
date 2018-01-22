@@ -1,32 +1,27 @@
----
-layout: "helm"
-page_title: "Provider: Helm"
-sidebar_current: "docs-helm-index"
-description: |-
-  The Helm provider is used to deploy software packages in Kubernetes. The provider needs to be configured with the proper credentials before it can be used.
----
-
 # Helm Provider
 
 The Helm provider is used to deploy software packages in Kubernetes. The provider needs to be configured with the proper credentials before it can be used.
 
-Use the navigation to the left to read about the available resources.
+## Resources
+
+* [Resource: helm_release](release.md)
+* [Resource: helm_repository](repository.md)
 
 ## Example Usage
 
 ```hcl
-resource "helm_release" "my_databsase" {
-    name      = "my_databsase"
+resource "helm_release" "my_database" {
+    name      = "my_datasase"
     chart     = "stable/mariadb"
 
-    value {
-        name = "mariadbUser"
-        content = "foo"
+    set {
+        name  = "mariadbUser"
+        value = "foo"
     }
 
-    value {
+    set {
         name = "mariadbPassword"
-        content = "qux"
+        value = "qux"
     }
 }
 ```
@@ -35,8 +30,6 @@ resource "helm_release" "my_databsase" {
 
 - You must have Kubernetes installed. We recommend version 1.4.1 or later.
 - You should also have a local configured copy of kubectl.
-- You should also have a local configured copy of [helm](https://docs.helm.sh/using_helm/#installing-helm).
-- You must have [Tiller](https://docs.helm.sh/using_helm/#initialize-helm-and-install-tiller) installed on Kubernetes.
 
 ## Authentication
 
