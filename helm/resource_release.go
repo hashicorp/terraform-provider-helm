@@ -11,6 +11,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/hashicorp/terraform/helper/schema"
+	"google.golang.org/grpc"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/downloader"
 	"k8s.io/helm/pkg/getter"
@@ -384,22 +385,17 @@ var all = []release.Status_Code{
 func getRelease(client helm.Interface, d *schema.ResourceData) (*release.Release, error) {
 	name := d.Get("name").(string)
 
-	res, err := client.ListReleases(
-		helm.ReleaseListFilter(name),
-		helm.ReleaseListStatuses(all),
-	)
-
+	res, err := client.ReleaseContent(name)
 	if err != nil {
-		return nil, err
-	}
-
-	for _, r := range res.Releases {
-		if r.Name == name {
-			return r, nil
+		msg := grpc.ErrorDesc(err)
+		if strings.Contains(msg, "not found") {
+			return nil, ErrReleaseNotFound
 		}
+
+		return nil, errors.New(msg)
 	}
 
-	return nil, ErrReleaseNotFound
+	return res.Release, nil
 }
 
 type chartLocator struct {

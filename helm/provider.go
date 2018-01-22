@@ -194,8 +194,9 @@ type Meta struct {
 	Tunnel           *kube.Tunnel
 	DefaultNamespace string
 
-	data       *schema.ResourceData
-	helmClient helm.Interface
+	data *schema.ResourceData
+
+	// Mutex used for lock the Tiller installation and Tunnel creation.
 	sync.Mutex
 }
 
@@ -212,32 +213,6 @@ func NewMeta(d *schema.ResourceData) (*Meta, error) {
 	}
 
 	return m, nil
-}
-
-func (m *Meta) GetHelmClient() (helm.Interface, error) {
-	m.Lock()
-	defer m.Unlock()
-
-	if m.helmClient == nil {
-		if err := m.connect(); err != nil {
-			return nil, err
-		}
-	}
-
-	return m.helmClient, nil
-}
-
-func (m *Meta) connect() error {
-	if err := m.installTillerIfNeeded(m.data); err != nil {
-		return err
-	}
-
-	if err := m.buildTunnel(m.data); err != nil {
-		return err
-	}
-
-	m.buildHelmClient()
-	return nil
 }
 
 func (m *Meta) buildSettings(d *schema.ResourceData) {
@@ -352,6 +327,29 @@ func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides), nil
 }
 
+func (m *Meta) GetHelmClient() (helm.Interface, error) {
+	if err := m.initialize(); err != nil {
+		return nil, err
+	}
+
+	return m.buildHelmClient(), nil
+}
+
+func (m *Meta) initialize() error {
+	m.Lock()
+	defer m.Unlock()
+
+	if err := m.installTillerIfNeeded(m.data); err != nil {
+		return err
+	}
+
+	if err := m.buildTunnel(m.data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (m *Meta) installTillerIfNeeded(d *schema.ResourceData) error {
 	o := &installer.Options{}
 	o.Namespace = d.Get("namespace").(string)
@@ -414,17 +412,18 @@ func (m *Meta) buildTunnel(d *schema.ResourceData) error {
 		return nil
 	}
 
-	tunnel, err := portforwarder.New(m.Settings.TillerNamespace, m.K8sClient, m.K8sConfig)
+	var err error
+	m.Tunnel, err = portforwarder.New(m.Settings.TillerNamespace, m.K8sClient, m.K8sConfig)
 	if err != nil {
 		return fmt.Errorf("error creating tunnel: %q", err)
 	}
 
-	m.Settings.TillerHost = fmt.Sprintf("localhost:%d", tunnel.Local)
-	debug("Created tunnel using local port: '%d'\n", tunnel.Local)
+	m.Settings.TillerHost = fmt.Sprintf("localhost:%d", m.Tunnel.Local)
+	debug("Created tunnel using local port: '%d'\n", m.Tunnel.Local)
 	return nil
 }
 
-func (m *Meta) buildHelmClient() {
+func (m *Meta) buildHelmClient() helm.Interface {
 	options := []helm.Option{
 		helm.Host(m.Settings.TillerHost),
 	}
@@ -433,7 +432,7 @@ func (m *Meta) buildHelmClient() {
 		options = append(options, helm.WithTLS(m.TLSConfig))
 	}
 
-	m.helmClient = helm.NewClient(options...)
+	return helm.NewClient(options...)
 }
 
 func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {

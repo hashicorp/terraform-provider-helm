@@ -3,12 +3,12 @@ package helm
 import (
 	"fmt"
 	"regexp"
+	"sync"
 	"testing"
-
-	yaml "gopkg.in/yaml.v1"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	"gopkg.in/yaml.v1"
 	"k8s.io/helm/pkg/helm"
 )
 
@@ -17,7 +17,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy,
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigBasic(testNamespace, testReleaseName, "0.6.2"),
+			Config: testAccHelmReleaseConfigBasic(testReleaseName, testNamespace, testReleaseName, "0.6.2"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", testReleaseName),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", testNamespace),
@@ -27,7 +27,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
 			),
 		}, {
-			Config: testAccHelmReleaseConfigBasic(testNamespace, testReleaseName, "0.6.2"),
+			Config: testAccHelmReleaseConfigBasic(testReleaseName, testNamespace, testReleaseName, "0.6.2"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
@@ -37,19 +37,45 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_concurrent(t *testing.T) {
+	var wg sync.WaitGroup
+
+	wg.Add(3)
+	for i := 0; i < 3; i++ {
+		go func(name string) {
+			resource.Test(t, resource.TestCase{
+				Providers:    testAccProviders,
+				CheckDestroy: testAccCheckHelmReleaseDestroy,
+				Steps: []resource.TestStep{{
+					Config: testAccHelmReleaseConfigBasic(name, testNamespace, name, "0.6.2"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(
+							fmt.Sprintf("helm_release.%s", name), "metadata.0.name", name,
+						),
+					),
+				}},
+			})
+
+			wg.Done()
+		}(fmt.Sprintf("concurrent-%d", i))
+	}
+
+	wg.Wait()
+}
+
 func TestAccResourceRelease_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy,
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigBasic(testNamespace, testReleaseName, "0.6.2"),
+			Config: testAccHelmReleaseConfigBasic(testReleaseName, testNamespace, testReleaseName, "0.6.2"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
 			),
 		}, {
-			Config: testAccHelmReleaseConfigBasic(testNamespace, testReleaseName, "0.6.3"),
+			Config: testAccHelmReleaseConfigBasic(testReleaseName, testNamespace, testReleaseName, "0.6.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
@@ -121,7 +147,7 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 			ExpectError:        regexp.MustCompile("failed"),
 			ExpectNonEmptyPlan: true,
 		}, {
-			Config: testAccHelmReleaseConfigBasic(testNamespace, testReleaseName, "0.6.3"),
+			Config: testAccHelmReleaseConfigBasic(testReleaseName, testNamespace, testReleaseName, "0.6.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
@@ -131,9 +157,9 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	})
 }
 
-func testAccHelmReleaseConfigBasic(ns, name, version string) string {
+func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
-		resource "helm_release" "test" {
+		resource "helm_release" "%s" {
  			name      = %q
 			namespace = %q
   			chart     = "stable/mariadb"
@@ -149,7 +175,7 @@ func testAccHelmReleaseConfigBasic(ns, name, version string) string {
 				value = 1
 			}
 		}
-	`, name, ns, version)
+	`, resource, name, ns, version)
 }
 
 func TestGetValues(t *testing.T) {
