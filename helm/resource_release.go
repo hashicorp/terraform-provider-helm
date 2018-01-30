@@ -42,7 +42,7 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Description: "Repository where to locate the requested chart. If is an URL the chart is installed without install the repository.",
+				Description: "Repository where to locate the requested chart. If is an URL the chart is installed without installing the repository.",
 			},
 			"chart": {
 				Type:        schema.TypeString,
@@ -86,6 +86,7 @@ func resourceRelease() *schema.Resource {
 			"verify": {
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Default:     false,
 				Description: "Verify the package before installing it.",
 			},
 			"keyring": {
@@ -103,17 +104,20 @@ func resourceRelease() *schema.Resource {
 			"disable_webhooks": {
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Default:     false,
 				Description: "Prevent hooks from running.",
 			},
 			"force_update": {
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Default:     false,
 				Description: "Force resource update through delete/recreate if needed.",
 			},
 			"recreate_pods": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "On update performs pods restart for the resource if applicable.",
+				Default:     false,
+				Description: "Perform pods restart during upgrade/rollback",
 			},
 			"metadata": {
 				Type:        schema.TypeSet,
