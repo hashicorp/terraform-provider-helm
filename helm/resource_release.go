@@ -57,6 +57,11 @@ func resourceRelease() *schema.Resource {
 				Optional:    true,
 				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed.",
 			},
+			"devel": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored",
+			},
 			"values": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -383,10 +388,17 @@ func deleteRelease(c helm.Interface, name string, disableWebhooks bool, timeout 
 }
 
 func getChart(d *schema.ResourceData, m *Meta) (c *chart.Chart, path string, err error) {
+	version := d.Get("version").(string)
+
+	if version == "" && d.Get("devel").(bool) {
+		debug("setting version to >0.0.0-0")
+		version = ">0.0.0-0"
+	}
+
 	l, err := newChartLocator(m,
 		d.Get("repository").(string),
 		d.Get("chart").(string),
-		d.Get("version").(string),
+		version,
 		d.Get("verify").(bool),
 		d.Get("keyring").(string),
 	)

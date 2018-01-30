@@ -21,6 +21,7 @@ The following arguments are supported:
 * `name` - (Required) Release name.
 * `repository` - (Optional) Repository where to locate the requested chart. If is an URL the chart is installed without install the repository.
 * `chart` - (Required) Chart name to be installed.
+* `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
 * `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
 * `values` - (Optional) Values in raw yaml file to pass to helm.
 * `set` - (Optional) Value block with custom values to be merge with the values.yaml.
