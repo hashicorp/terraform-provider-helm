@@ -16,6 +16,7 @@ script:
   - make test
   - make vendor-status
   - make vet
+  - make errcheck
 
 before_deploy:
   - make packages
