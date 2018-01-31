@@ -8,10 +8,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"google.golang.org/grpc"
 
 	"github.com/ghodss/yaml"
 	"github.com/hashicorp/terraform/helper/schema"
-	"google.golang.org/grpc"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/downloader"
 	"k8s.io/helm/pkg/getter"
@@ -42,7 +44,7 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Description: "Repository where to locate the requested chart. If is an URL the chart is installed without install the repository.",
+				Description: "Repository where to locate the requested chart. If is an URL the chart is installed without installing the repository.",
 			},
 			"chart": {
 				Type:        schema.TypeString,
@@ -86,6 +88,7 @@ func resourceRelease() *schema.Resource {
 			"verify": {
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Default:     false,
 				Description: "Verify the package before installing it.",
 			},
 			"keyring": {
@@ -103,17 +106,26 @@ func resourceRelease() *schema.Resource {
 			"disable_webhooks": {
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Default:     false,
 				Description: "Prevent hooks from running.",
 			},
 			"force_update": {
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Default:     false,
 				Description: "Force resource update through delete/recreate if needed.",
+			},
+			"reuse": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Instruct Tiller to re-use an existing name.",
 			},
 			"recreate_pods": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "On update performs pods restart for the resource if applicable.",
+				Default:     false,
+				Description: "Perform pods restart during upgrade/rollback",
 			},
 			"metadata": {
 				Type:        schema.TypeSet,
@@ -158,25 +170,69 @@ func resourceRelease() *schema.Resource {
 	}
 }
 
+// prepareTillerForNewRelease determines the current status of the given release and
+// waits for Tiller to be ready to create/update a new release.
+// If the release is FAILED then we delete and re-create it.
+func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name string) error {
+	for {
+		r, err := getRelease(c, name)
+		switch err {
+		case ErrReleaseNotFound:
+			// we don't have a release. create it.
+			return nil
+		case nil:
+			// we have a release. check its status.
+			break
+		default:
+			// err is not nil. we can't get a release. abort
+			return err
+		}
+
+		switch r.Info.Status.GetCode() {
+		case release.Status_DEPLOYED:
+			return setIdAndMetadataFromRelease(d, r)
+		case release.Status_FAILED:
+			// delete and recreate it
+			debug("release %s status is FAILED deleting it", name)
+
+			if err := deleteRelease(c,
+				name,
+				d.Get("disable_webhooks").(bool),
+				int64(d.Get("timeout").(int))); err != nil {
+				debug("could not delete release %s: %v", name, err)
+				return err
+			}
+
+			continue
+		case release.Status_DELETED:
+			// re-install it
+			return nil
+		case release.Status_UNKNOWN:
+			// re-install it
+			return nil
+		case release.Status_DELETING,
+			release.Status_PENDING_INSTALL,
+			release.Status_PENDING_ROLLBACK,
+			release.Status_PENDING_UPGRADE:
+			// wait for update?
+			debug("release %s waiting for status change %s", name, r.Info.Status.Code)
+			time.Sleep(1 * time.Second)
+			continue
+		default:
+			return errors.New("unknown release status")
+		}
+	}
+}
+
 func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 	c, err := m.GetHelmClient()
 	if err != nil {
 		return err
 	}
+	name := d.Get("name").(string)
 
-	r, err := getRelease(c, d)
-	if err == nil {
-		if r.Info.Status.GetCode() != release.Status_FAILED {
-			return setIdAndMetadataFromRelease(d, r)
-		}
-
-		if err := resourceReleaseDelete(d, meta); err != nil {
-			return err
-		}
-	}
-
-	if err != ErrReleaseNotFound {
+	if err = prepareTillerForNewRelease(d, c, name); err != nil {
 		return err
 	}
 
@@ -192,6 +248,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	opts := []helm.InstallOption{
 		helm.ReleaseName(d.Get("name").(string)),
+		helm.InstallReuseName(d.Get("reuse").(bool)),
 		helm.ValueOverrides(values),
 		helm.InstallDisableHooks(d.Get("disable_webhooks").(bool)),
 		helm.InstallTimeout(int64(d.Get("timeout").(int))),
@@ -214,7 +271,9 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	r, err := getRelease(c, d)
+	name := d.Get("name").(string)
+
+	r, err := getRelease(c, name)
 	if err != nil {
 		return err
 	}
@@ -270,25 +329,21 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	return setIdAndMetadataFromRelease(d, res.Release)
 }
+
 func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
-
-	name := d.Get("name").(string)
-	opts := []helm.DeleteOption{
-		helm.DeleteDisableHooks(d.Get("disable_webhooks").(bool)),
-		helm.DeletePurge(true),
-		helm.DeleteTimeout(int64(d.Get("timeout").(int))),
-	}
-
 	c, err := m.GetHelmClient()
 	if err != nil {
 		return err
 	}
 
-	if _, err := c.DeleteRelease(name, opts...); err != nil {
+	name := d.Get("name").(string)
+	disableWebhooks := d.Get("disable_webhooks").(bool)
+	timeout := int64(d.Get("timeout").(int))
+
+	if err := deleteRelease(c, name, disableWebhooks, timeout); err != nil {
 		return err
 	}
-
 	d.SetId("")
 	return nil
 }
@@ -299,8 +354,8 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	if err != nil {
 		return false, err
 	}
-
-	_, err = getRelease(c, d)
+	name := d.Get("name").(string)
+	_, err = getRelease(c, name)
 	if err == nil {
 		return true, nil
 	}
@@ -310,6 +365,21 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	}
 
 	return false, err
+}
+
+func deleteRelease(c helm.Interface, name string, disableWebhooks bool, timeout int64) error {
+
+	opts := []helm.DeleteOption{
+		helm.DeleteDisableHooks(disableWebhooks),
+		helm.DeletePurge(true),
+		helm.DeleteTimeout(timeout),
+	}
+
+	if _, err := c.DeleteRelease(name, opts...); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getChart(d *schema.ResourceData, m *Meta) (c *chart.Chart, path string, err error) {
@@ -382,9 +452,7 @@ var all = []release.Status_Code{
 	release.Status_FAILED,
 }
 
-func getRelease(client helm.Interface, d *schema.ResourceData) (*release.Release, error) {
-	name := d.Get("name").(string)
-
+func getRelease(client helm.Interface, name string) (*release.Release, error) {
 	res, err := client.ReleaseContent(name)
 	if err != nil {
 		msg := grpc.ErrorDesc(err)
@@ -392,8 +460,12 @@ func getRelease(client helm.Interface, d *schema.ResourceData) (*release.Release
 			return nil, ErrReleaseNotFound
 		}
 
-		return nil, errors.New(msg)
+		debug("could not get release %s", err)
+
+		return nil, err
 	}
+
+	debug("got release %v", res.Release)
 
 	return res.Release, nil
 }

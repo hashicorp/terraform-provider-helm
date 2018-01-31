@@ -63,8 +63,9 @@ func Provider() terraform.ResourceProvider {
 				Description: "Service account to install Tiller with.",
 			},
 			"debug": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Debug indicates whether or not Helm is running in Debug mode.",
 			},
 			"plugins_disable": {
 				Type:        schema.TypeBool,
