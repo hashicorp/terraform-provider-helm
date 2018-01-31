@@ -24,6 +24,7 @@ import (
 	"k8s.io/helm/pkg/strvals"
 )
 
+// ErrReleaseNotFound is the error when a Helm release is not found
 var ErrReleaseNotFound = errors.New("release not found")
 
 func resourceRelease() *schema.Resource {
@@ -195,7 +196,7 @@ func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name s
 
 		switch r.Info.Status.GetCode() {
 		case release.Status_DEPLOYED:
-			return setIdAndMetadataFromRelease(d, r)
+			return setIDAndMetadataFromRelease(d, r)
 		case release.Status_FAILED:
 			// delete and recreate it
 			debug("release %s status is FAILED deleting it", name)
@@ -266,7 +267,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return setIdAndMetadataFromRelease(d, res.Release)
+	return setIDAndMetadataFromRelease(d, res.Release)
 }
 
 func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
@@ -283,10 +284,10 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return setIdAndMetadataFromRelease(d, r)
+	return setIDAndMetadataFromRelease(d, r)
 }
 
-func setIdAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
+func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
 	d.SetId(r.Name)
 
 	return d.Set("metadata", []map[string]interface{}{{
@@ -332,7 +333,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return setIdAndMetadataFromRelease(d, res.Release)
+	return setIDAndMetadataFromRelease(d, res.Release)
 }
 
 func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {

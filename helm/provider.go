@@ -187,6 +187,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	return NewMeta(d)
 }
 
+// Meta is the meta information structure for the provider
 type Meta struct {
 	Settings         *helm_env.EnvSettings
 	TLSConfig        *tls.Config
@@ -201,6 +202,7 @@ type Meta struct {
 	sync.Mutex
 }
 
+// NewMeta will construct a new Meta from the provided ResourceData
 func NewMeta(d *schema.ResourceData) (*Meta, error) {
 	m := &Meta{data: d}
 	m.buildSettings(m.data)
@@ -328,6 +330,7 @@ func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides), nil
 }
 
+// GetHelmClient will return a new Helm client
 func (m *Meta) GetHelmClient() (helm.Interface, error) {
 	if err := m.initialize(); err != nil {
 		return nil, err
