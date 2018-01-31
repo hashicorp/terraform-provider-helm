@@ -3,6 +3,8 @@ package helm
 import (
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -79,6 +81,54 @@ func TestAccResourceRelease_update(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
+			),
+		}},
+	})
+}
+
+func TestAccResourceRelease_updateValues(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy,
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigValues(testReleaseName, testNamespace, testReleaseName, "0.6.2", []string{"foo: bar"}),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: bar\n"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigValues(testReleaseName, testNamespace, testReleaseName, "0.6.2", []string{"foo: baz"}),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: baz\n"),
+			),
+		}},
+	})
+}
+
+func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy,
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigValues(testReleaseName, testNamespace, testReleaseName, "0.6.2", []string{"foo: bar"}),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: bar\n"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigValues(testReleaseName, testNamespace, testReleaseName, "0.6.2", []string{"foo: bar", "foo:baz"}),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: baz\n"),
 			),
 		}},
 	})
@@ -177,9 +227,29 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	`, resource, name, ns, version)
 }
 
+func testAccHelmReleaseConfigValues(resource, ns, name, version string, values []string) string {
+	vals := make([]string, len(values))
+	for i, v := range values {
+		vals[i] = strconv.Quote(v)
+	}
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name      = %q
+			namespace = %q
+  			chart     = "stable/mariadb"
+			version   = %q
+			values = [ %q ]
+		}
+	`, resource, name, ns, version, strings.Join(vals, ","))
+}
+
 func TestGetValues(t *testing.T) {
 	d := resourceRelease().Data(nil)
-	d.Set("values", `foo: bar`)
+	d.Set("values", []string{
+		"foo: bar\nbaz: corge",
+		"first: present\nbaz: grault",
+		"second: present\nbaz: uier",
+	})
 	d.Set("set", []interface{}{
 		map[string]interface{}{"name": "foo", "value": "qux"},
 	})
@@ -199,6 +269,15 @@ func TestGetValues(t *testing.T) {
 
 	if base["foo"] != "qux" {
 		t.Fatalf("error merging values, expected %q, got %q", "qux", base["foo"])
+	}
+	if base["first"] != "present" {
+		t.Fatalf("error merging values from file, expected value file %q not read", "testdata/get_values_first.yaml")
+	}
+	if base["second"] != "present" {
+		t.Fatalf("error merging values from file, expected value file %q not read", "testdata/get_values_second.yaml")
+	}
+	if base["baz"] != "uier" {
+		t.Fatalf("error merging values from file, expected %q, got %q", "uier", base["baz"])
 	}
 }
 

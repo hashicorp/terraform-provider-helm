@@ -64,9 +64,10 @@ func resourceRelease() *schema.Resource {
 				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored",
 			},
 			"values": {
-				Type:        schema.TypeString,
+				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "Values in raw yaml file to pass to helm.",
+				Description: "List of values in raw yaml file to pass to helm.",
+				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"set": {
 				Type:        schema.TypeSet,
@@ -168,6 +169,11 @@ func resourceRelease() *schema.Resource {
 							Type:        schema.TypeString,
 							Computed:    true,
 							Description: "A SemVer 2 conformant version string of the chart.",
+						},
+						"values": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The raw yaml values used for the chart.",
 						},
 					},
 				},
@@ -284,6 +290,8 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	//	d.Set("values_source_detected_md5", d.Get("values_sources_md5"))
+
 	return setIDAndMetadataFromRelease(d, r)
 }
 
@@ -297,6 +305,7 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 		"status":    r.Info.Status.Code.String(),
 		"chart":     r.Chart.Metadata.Name,
 		"version":   r.Chart.Metadata.Version,
+		"values":    r.Config.Raw,
 	}})
 }
 
@@ -428,13 +437,50 @@ func getChart(d *schema.ResourceData, m *Meta) (c *chart.Chart, path string, err
 	return
 }
 
+// Merges source and destination map, preferring values from the source map
+// Taken from github.com/helm/cmd/install.go
+func mergeValues(dest map[string]interface{}, src map[string]interface{}) map[string]interface{} {
+	for k, v := range src {
+		// If the key doesn't exist already, then just set the key to that value
+		if _, exists := dest[k]; !exists {
+			dest[k] = v
+			continue
+		}
+		nextMap, ok := v.(map[string]interface{})
+		// If it isn't another map, overwrite the value
+		if !ok {
+			dest[k] = v
+			continue
+		}
+		// If the key doesn't exist already, then just set the key to that value
+		if _, exists := dest[k]; !exists {
+			dest[k] = nextMap
+			continue
+		}
+		// Edge case: If the key exists in the destination, but isn't a map
+		destMap, isMap := dest[k].(map[string]interface{})
+		// If the source map has a map for this key, prefer it
+		if !isMap {
+			dest[k] = v
+			continue
+		}
+		// If we got to this point, it is a map in both, so merge them
+		dest[k] = mergeValues(destMap, nextMap)
+	}
+	return dest
+}
+
 func getValues(d *schema.ResourceData) ([]byte, error) {
 	base := map[string]interface{}{}
 
-	values := d.Get("values").(string)
-	if values != "" {
-		if err := yaml.Unmarshal([]byte(values), &base); err != nil {
-			return nil, err
+	for _, raw := range d.Get("values").([]interface{}) {
+		values := raw.(string)
+		if values != "" {
+			currentMap := map[string]interface{}{}
+			if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+				return nil, err
+			}
+			base = mergeValues(base, currentMap)
 		}
 	}
 

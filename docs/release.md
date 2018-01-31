@@ -11,6 +11,9 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 resource "helm_release" "example" {
   name = "my_redis"
   chart = "redis"
+  values = [
+    "${file("values.yaml")}"
+  ]
 }
 ```
 
@@ -23,7 +26,7 @@ The following arguments are supported:
 * `chart` - (Required) Chart name to be installed.
 * `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
 * `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
-* `values` - (Optional) Values in raw yaml file to pass to helm.
+* `values` - (Optional) List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options.
 * `set` - (Optional) Value block with custom values to be merge with the values.yaml.
 * `namespace` - (Optional) Namespace to install the release into.
 * `verify` - (Optional) Verify the package before installing it.
@@ -55,7 +58,7 @@ The `metadata` block supports:
 * `revision` - Version is an int32 which represents the version of the release.
 * `status` - Status of the release.
 * `version` - A SemVer 2 conformant version string of the chart.
-
+* `values` - The compounded values from `values` and `set`
 
 ## Import
 
