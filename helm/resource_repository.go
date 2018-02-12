@@ -11,6 +11,7 @@ import (
 	"k8s.io/helm/pkg/repo"
 )
 
+// ErrRepositoryNotFound is the error when a Helm repository is not found
 var ErrRepositoryNotFound = errors.New("repository not found")
 
 func resourceRepository() *schema.Resource {
@@ -102,7 +103,7 @@ func resourceRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return setIdAndMetadataFromRepository(d, r)
+	return setIDAndMetadataFromRepository(d, r)
 }
 
 func resourceRepositoryDelete(d *schema.ResourceData, meta interface{}) error {
@@ -118,7 +119,7 @@ func resourceRepositoryDelete(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func setIdAndMetadataFromRepository(d *schema.ResourceData, r *repo.Entry) error {
+func setIDAndMetadataFromRepository(d *schema.ResourceData, r *repo.Entry) error {
 	d.SetId(r.Name)
 	return d.Set("metadata", []map[string]interface{}{{
 		"name": r.Name,
