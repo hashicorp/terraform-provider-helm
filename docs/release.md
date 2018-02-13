@@ -59,11 +59,3 @@ The `metadata` block supports:
 * `status` - Status of the release.
 * `version` - A SemVer 2 conformant version string of the chart.
 * `values` - The compounded values from `values` and `set`
-
-## Import
-
-helm_release can be imported using the , e.g.
-
-```
-$ terraform import helm_release.example ...
-```
