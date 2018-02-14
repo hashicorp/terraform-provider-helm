@@ -138,6 +138,12 @@ func kubernetesResource() *schema.Resource {
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_PASSWORD", ""),
 				Description: "The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_PASSWORD`.",
 			},
+			"token": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_BEARER_TOKEN", ""),
+				Description: "The bearer token to use for authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_BEARER_TOKEN`.",
+			},
 			"insecure": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -261,6 +267,9 @@ func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	}
 	if v, ok := k8sGetOk(d, "password"); ok {
 		cfg.Password = v.(string)
+	}
+	if v, ok := k8sGetOk(d, "token"); ok {
+		cfg.BearerToken = v.(string)
 	}
 	if v, ok := k8sGetOk(d, "insecure"); ok {
 		cfg.Insecure = v.(bool)
