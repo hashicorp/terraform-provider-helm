@@ -474,13 +474,15 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 	base := map[string]interface{}{}
 
 	for _, raw := range d.Get("values").([]interface{}) {
-		values := raw.(string)
-		if values != "" {
-			currentMap := map[string]interface{}{}
-			if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
-				return nil, err
+		if raw != nil {
+			values := raw.(string)
+			if values != "" {
+				currentMap := map[string]interface{}{}
+				if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+					return nil, fmt.Errorf("---> %v %s", err, values)
+				}
+				base = mergeValues(base, currentMap)
 			}
-			base = mergeValues(base, currentMap)
 		}
 	}
 
