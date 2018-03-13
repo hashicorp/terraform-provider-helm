@@ -34,7 +34,7 @@ distributions from the [Releases](https://github.com/mcuadros/terraform-provider
 Download and uncompress the latest release for your OS. This example uses the linux binary.
 
 ```sh
-> wget https://github.com/mcuadros/terraform-provider-helm/releases/download/v0.4.0/terraform-provider-helm_v0.4.0_linux_amd64.tar.gz
+> wget https://github.com/mcuadros/terraform-provider-helm/releases/download/v0.5.0/terraform-provider-helm_v0.5.0_linux_amd64.tar.gz
 > tar -xvf terraform-provider-helm*.tar.gz
 ```
 
