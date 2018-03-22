@@ -35,6 +35,7 @@ The following arguments are supported:
 * `disable_webhooks` - (Optional) Prevent hooks from running.
 * `force_update` - (Optional) Force resource update through delete/recreate if needed.
 * `recreate_pods` - (Optional) On update performs pods restart for the resource if applicable.
+* `reuse_values` - (Optional) Reuse values from preveus revision when upgrading a release. Same as `--reuse-values` flag in Helm CLI. Default is false.
 * `reuse` - (Optional) Instructs Tiller to re-use an existing name. Default is true.
 
 The `set` block supports:
