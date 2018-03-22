@@ -68,6 +68,7 @@ The following arguments are supported:
 * `home` - (Required) Set an alternative location for Helm files. By default, these are stored in '$HOME/.helm'. Can be sourced from `HELM_HOME`.
 * `namespace` - (Optional) Set an alternative Tiller namespace.
 * `tiller_image` - (Optional) Tiller image to install. If Tiller is not already installed.
+* `service_account` - (Optional) Service account to install Tiller with.
 * `debug` - (Optional)
 * `plugins_disable` - (Optional) Disable plugins. Set HELM_NO_PLUGINS=1 to disable plugins.
 * `enable_tls` - (Optional) Enables TLS communications with the Tiller.
