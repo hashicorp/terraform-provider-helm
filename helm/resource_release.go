@@ -3,6 +3,7 @@ package helm
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -67,6 +68,12 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeList,
 				Optional:    true,
 				Description: "List of values in raw yaml file to pass to helm.",
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
+			"value_files": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "List of values file paths to pass to helm.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"set": {
@@ -479,6 +486,29 @@ func mergeValues(dest map[string]interface{}, src map[string]interface{}) map[st
 
 func getValues(d *schema.ResourceData) ([]byte, error) {
 	base := map[string]interface{}{}
+
+	// User specified a values files simialar to a -f/--values
+	for _, filePath := range d.Get("value_files").([]interface{}) {
+		currentMap := map[string]interface{}{}
+
+		var bytes []byte
+		var err error
+		if strings.TrimSpace(filePath.(string)) == "-" {
+			bytes, err = ioutil.ReadAll(os.Stdin)
+		} else {
+			bytes, err = ioutil.ReadFile(filePath.(string))
+		}
+
+		if err != nil {
+			return []byte{}, err
+		}
+
+		if err := yaml.Unmarshal(bytes, &currentMap); err != nil {
+			return []byte{}, fmt.Errorf("failed to parse %s: %s", filePath, err)
+		}
+		// Merge with the previous map
+		base = mergeValues(base, currentMap)
+	}
 
 	for _, raw := range d.Get("values").([]interface{}) {
 		if raw != nil {
