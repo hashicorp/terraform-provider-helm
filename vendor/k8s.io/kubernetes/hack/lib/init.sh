@@ -18,6 +18,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# Unset CDPATH so that path interpolation can work correctly
+# https://github.com/kubernetes/kubernetes/issues/52255
+unset CDPATH
+
 # The root of the build/dist directory
 KUBE_ROOT="$(cd "$(dirname "${BASH_SOURCE}")/../.." && pwd -P)"
 
@@ -37,7 +41,7 @@ export no_proxy=127.0.0.1,localhost
 THIS_PLATFORM_BIN="${KUBE_ROOT}/_output/bin"
 
 source "${KUBE_ROOT}/hack/lib/util.sh"
-source "${KUBE_ROOT}/cluster/lib/logging.sh"
+source "${KUBE_ROOT}/hack/lib/logging.sh"
 
 kube::log::install_errexit
 
@@ -53,9 +57,11 @@ KUBE_OUTPUT_HOSTBIN="${KUBE_OUTPUT_BINPATH}/$(kube::util::host_platform)"
 KUBE_AVAILABLE_GROUP_VERSIONS="${KUBE_AVAILABLE_GROUP_VERSIONS:-\
 v1 \
 admissionregistration.k8s.io/v1alpha1 \
-admission.k8s.io/v1alpha1 \
+admissionregistration.k8s.io/v1beta1 \
+admission.k8s.io/v1beta1 \
 apps/v1beta1 \
 apps/v1beta2 \
+apps/v1 \
 authentication.k8s.io/v1 \
 authentication.k8s.io/v1beta1 \
 authorization.k8s.io/v1 \
@@ -67,6 +73,7 @@ batch/v1beta1 \
 batch/v2alpha1 \
 certificates.k8s.io/v1beta1 \
 extensions/v1beta1 \
+events.k8s.io/v1beta1 \
 imagepolicy.k8s.io/v1alpha1 \
 networking.k8s.io/v1 \
 policy/v1beta1 \
@@ -77,6 +84,7 @@ scheduling.k8s.io/v1alpha1 \
 settings.k8s.io/v1alpha1 \
 storage.k8s.io/v1beta1 \
 storage.k8s.io/v1 \
+storage.k8s.io/v1alpha1 \
 }"
 
 # not all group versions are exposed by the server.  This list contains those
@@ -86,7 +94,7 @@ KUBE_NONSERVER_GROUP_VERSIONS="
  abac.authorization.kubernetes.io/v1beta1 \
  componentconfig/v1alpha1 \
  imagepolicy.k8s.io/v1alpha1\
- admission.k8s.io/v1alpha1\
+ admission.k8s.io/v1beta1\
 "
 
 # This emulates "readlink -f" which is not available on MacOS X.
@@ -123,7 +131,7 @@ function kube::readlinkdashf {
       cd "$1"
       pwd -P
     else
-      cd $(dirname "$1")
+      cd "$(dirname "$1")"
       local f
       f=$(basename "$1")
       if [[ -L "$f" ]]; then

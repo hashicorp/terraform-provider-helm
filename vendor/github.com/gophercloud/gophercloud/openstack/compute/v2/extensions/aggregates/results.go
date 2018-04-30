@@ -1,6 +1,12 @@
 package aggregates
 
-import "github.com/gophercloud/gophercloud/pagination"
+import (
+	"encoding/json"
+	"time"
+
+	"github.com/gophercloud/gophercloud"
+	"github.com/gophercloud/gophercloud/pagination"
+)
 
 // Aggregate represents a host aggregate in the OpenStack cloud.
 type Aggregate struct {
@@ -18,6 +24,43 @@ type Aggregate struct {
 
 	// Name of the aggregate.
 	Name string `json:"name"`
+
+	// The date and time when the resource was created.
+	CreatedAt time.Time `json:"-"`
+
+	// The date and time when the resource was updated,
+	// if the resource has not been updated, this field will show as null.
+	UpdatedAt time.Time `json:"-"`
+
+	// The date and time when the resource was deleted,
+	// if the resource has not been deleted yet, this field will be null.
+	DeletedAt time.Time `json:"-"`
+
+	// A boolean indicates whether this aggregate is deleted or not,
+	// if it has not been deleted, false will appear.
+	Deleted bool `json:"deleted"`
+}
+
+// UnmarshalJSON to override default
+func (r *Aggregate) UnmarshalJSON(b []byte) error {
+	type tmp Aggregate
+	var s struct {
+		tmp
+		CreatedAt gophercloud.JSONRFC3339MilliNoZ `json:"created_at"`
+		UpdatedAt gophercloud.JSONRFC3339MilliNoZ `json:"updated_at"`
+		DeletedAt gophercloud.JSONRFC3339MilliNoZ `json:"deleted_at"`
+	}
+	err := json.Unmarshal(b, &s)
+	if err != nil {
+		return err
+	}
+	*r = Aggregate(s.tmp)
+
+	r.CreatedAt = time.Time(s.CreatedAt)
+	r.UpdatedAt = time.Time(s.UpdatedAt)
+	r.DeletedAt = time.Time(s.DeletedAt)
+
+	return nil
 }
 
 // AggregatesPage represents a single page of all Aggregates from a List
@@ -39,4 +82,36 @@ func ExtractAggregates(p pagination.Page) ([]Aggregate, error) {
 	}
 	err := (p.(AggregatesPage)).ExtractInto(&a)
 	return a.Aggregates, err
+}
+
+type aggregatesResult struct {
+	gophercloud.Result
+}
+
+func (r aggregatesResult) Extract() (*Aggregate, error) {
+	var s struct {
+		Aggregate *Aggregate `json:"aggregate"`
+	}
+	err := r.ExtractInto(&s)
+	return s.Aggregate, err
+}
+
+type CreateResult struct {
+	aggregatesResult
+}
+
+type GetResult struct {
+	aggregatesResult
+}
+
+type DeleteResult struct {
+	gophercloud.ErrResult
+}
+
+type UpdateResult struct {
+	aggregatesResult
+}
+
+type ActionResult struct {
+	aggregatesResult
 }

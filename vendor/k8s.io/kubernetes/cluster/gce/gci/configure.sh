@@ -24,8 +24,8 @@ set -o nounset
 set -o pipefail
 
 ### Hardcoded constants
-DEFAULT_CNI_TAR="cni-0799f5732f2a11b329d9e3d51b9c8f2e3759f2ff.tar.gz"
-DEFAULT_CNI_SHA1="1d9788b0f5420e1a219aad2cb8681823fc515e7c" 
+DEFAULT_CNI_VERSION="v0.6.0"
+DEFAULT_CNI_SHA1="d595d3ded6499a64e8dac02466e2f5f2ce257c9f" 
 DEFAULT_NPD_VERSION="v0.4.1"
 DEFAULT_NPD_SHA1="a57a3fe64cab8a18ec654f5cef0aec59dae62568"
 DEFAULT_MOUNTER_TAR_SHA="8003b798cf33c7f91320cd6ee5cec4fa22244571"
@@ -54,6 +54,7 @@ EOF
 
 function download-kube-env {
   # Fetch kube-env from GCE metadata server.
+  (umask 077;
   local -r tmp_kube_env="/tmp/kube-env.yaml"
   curl --fail --retry 5 --retry-delay 3 ${CURL_RETRY_CONNREFUSED} --silent --show-error \
     -H "X-Google-Metadata-Request: True" \
@@ -66,10 +67,12 @@ for k,v in yaml.load(sys.stdin).iteritems():
   print("readonly {var}={value}".format(var = k, value = pipes.quote(str(v))))
 ''' < "${tmp_kube_env}" > "${KUBE_HOME}/kube-env")
   rm -f "${tmp_kube_env}"
+  )
 }
 
 function download-kube-master-certs {
   # Fetch kube-env from GCE metadata server.
+  (umask 077;
   local -r tmp_kube_master_certs="/tmp/kube-master-certs.yaml"
   curl --fail --retry 5 --retry-delay 3 ${CURL_RETRY_CONNREFUSED} --silent --show-error \
     -H "X-Google-Metadata-Request: True" \
@@ -82,6 +85,7 @@ for k,v in yaml.load(sys.stdin).iteritems():
   print("readonly {var}={value}".format(var = k, value = pipes.quote(str(v))))
 ''' < "${tmp_kube_master_certs}" > "${KUBE_HOME}/kube-master-certs")
   rm -f "${tmp_kube_master_certs}"
+  )
 }
 
 function validate-hash {
@@ -154,7 +158,7 @@ function install-gci-mounter-tools {
   chmod a+x "${CONTAINERIZED_MOUNTER_HOME}"
   mkdir -p "${CONTAINERIZED_MOUNTER_HOME}/rootfs"
   download-or-bust "${mounter_tar_sha}" "https://storage.googleapis.com/kubernetes-release/gci-mounter/mounter.tar"
-  cp "${KUBE_HOME}/kube-manifests/kubernetes/gci-trusty/gci-mounter" "${CONTAINERIZED_MOUNTER_HOME}/mounter"
+  cp "${KUBE_HOME}/kubernetes/server/bin/mounter" "${CONTAINERIZED_MOUNTER_HOME}/mounter"
   chmod a+x "${CONTAINERIZED_MOUNTER_HOME}/mounter"
   mv "${KUBE_HOME}/mounter.tar" /tmp/mounter.tar
   tar xf /tmp/mounter.tar -C "${CONTAINERIZED_MOUNTER_HOME}/rootfs"
@@ -191,8 +195,7 @@ function install-node-problem-detector {
 }
 
 function install-cni-binaries {
-  #TODO(andyzheng0831): We should make the cni version number as a k8s env variable.
-  local -r cni_tar="${DEFAULT_CNI_TAR}"
+  local -r cni_tar="cni-plugins-amd64-${DEFAULT_CNI_VERSION}.tgz"
   local -r cni_sha1="${DEFAULT_CNI_SHA1}"
   if is-preloaded "${cni_tar}" "${cni_sha1}"; then
     echo "${cni_tar} is preloaded."
@@ -202,8 +205,8 @@ function install-cni-binaries {
   echo "Downloading cni binaries"
   download-or-bust "${cni_sha1}" "https://storage.googleapis.com/kubernetes-release/network-plugins/${cni_tar}"
   local -r cni_dir="${KUBE_HOME}/cni"
-  mkdir -p "${cni_dir}"
-  tar xzf "${KUBE_HOME}/${cni_tar}" -C "${cni_dir}" --overwrite
+  mkdir -p "${cni_dir}/bin"
+  tar xzf "${KUBE_HOME}/${cni_tar}" -C "${cni_dir}/bin" --overwrite
   mv "${cni_dir}/bin"/* "${KUBE_BIN}"
   rmdir "${cni_dir}/bin"
   rm -f "${KUBE_HOME}/${cni_tar}"
@@ -231,12 +234,12 @@ function install-kube-manifests {
   echo "Downloading k8s manifests tar"
   download-or-bust "${manifests_tar_hash}" "${manifests_tar_urls[@]}"
   tar xzf "${KUBE_HOME}/${manifests_tar}" -C "${dst_dir}" --overwrite
-  local -r kube_addon_registry="${KUBE_ADDON_REGISTRY:-gcr.io/google_containers}"
-  if [[ "${kube_addon_registry}" != "gcr.io/google_containers" ]]; then
+  local -r kube_addon_registry="${KUBE_ADDON_REGISTRY:-k8s.gcr.io}"
+  if [[ "${kube_addon_registry}" != "k8s.gcr.io" ]]; then
     find "${dst_dir}" -name \*.yaml -or -name \*.yaml.in | \
-      xargs sed -ri "s@(image:\s.*)gcr.io/google_containers@\1${kube_addon_registry}@"
+      xargs sed -ri "s@(image:\s.*)k8s.gcr.io@\1${kube_addon_registry}@"
     find "${dst_dir}" -name \*.manifest -or -name \*.json | \
-      xargs sed -ri "s@(image\":\s+\")gcr.io/google_containers@\1${kube_addon_registry}@"
+      xargs sed -ri "s@(image\":\s+\")k8s.gcr.io@\1${kube_addon_registry}@"
   fi
   cp "${dst_dir}/kubernetes/gci-trusty/gci-configure-helper.sh" "${KUBE_BIN}/configure-helper.sh"
   cp "${dst_dir}/kubernetes/gci-trusty/health-monitor.sh" "${KUBE_BIN}/health-monitor.sh"
@@ -255,7 +258,7 @@ function try-load-docker-image {
   set +e
   local -r max_attempts=5
   local -i attempt_num=1
-  until timeout 30 docker load -i "${img}"; do
+  until timeout 30 ${LOAD_IMAGE_COMMAND:-docker load -i} "${img}"; do
     if [[ "${attempt_num}" == "${max_attempts}" ]]; then
       echo "Fail to load docker image file ${img} after ${max_attempts} retries. Exit!!"
       exit 1

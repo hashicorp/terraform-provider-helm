@@ -12,7 +12,7 @@ const opAssociateRoleToGroup = "AssociateRoleToGroup"
 
 // AssociateRoleToGroupRequest generates a "aws/request.Request" representing the
 // client's request for the AssociateRoleToGroup operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -52,9 +52,9 @@ func (c *Greengrass) AssociateRoleToGroupRequest(input *AssociateRoleToGroupInpu
 
 // AssociateRoleToGroup API operation for AWS Greengrass.
 //
-// Associates a role with a group. The role will be used by the AWS Greengrass
-// core in order to access AWS cloud services. The role's permissions will allow
-// Greengrass core Lambda functions to perform actions against the cloud.
+// Associates a role with a group. Your AWS Greengrass core will use the role
+// to access AWS cloud services. The role's permissions should allow Greengrass
+// core Lambda functions to perform actions against the cloud.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -65,10 +65,10 @@ func (c *Greengrass) AssociateRoleToGroupRequest(input *AssociateRoleToGroupInpu
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/AssociateRoleToGroup
 func (c *Greengrass) AssociateRoleToGroup(input *AssociateRoleToGroupInput) (*AssociateRoleToGroupOutput, error) {
@@ -96,7 +96,7 @@ const opAssociateServiceRoleToAccount = "AssociateServiceRoleToAccount"
 
 // AssociateServiceRoleToAccountRequest generates a "aws/request.Request" representing the
 // client's request for the AssociateServiceRoleToAccount operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -136,10 +136,10 @@ func (c *Greengrass) AssociateServiceRoleToAccountRequest(input *AssociateServic
 
 // AssociateServiceRoleToAccount API operation for AWS Greengrass.
 //
-// Associates a role which is used by AWS Greengrass. AWS Greengrass uses the
-// role to access your Lambda functions and AWS IoT resources. This is necessary
-// for deployments to succeed. It needs to have minimum permissions in policy
-// ``AWSGreengrassResourceAccessRolePolicy``
+// Associates a role with your account. AWS Greengrass will use the role to
+// access your Lambda functions and AWS IoT resources. This is necessary for
+// deployments to succeed. The role must have at least minimum permissions in
+// the policy ''AWSGreengrassResourceAccessRolePolicy''.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -150,10 +150,10 @@ func (c *Greengrass) AssociateServiceRoleToAccountRequest(input *AssociateServic
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/AssociateServiceRoleToAccount
 func (c *Greengrass) AssociateServiceRoleToAccount(input *AssociateServiceRoleToAccountInput) (*AssociateServiceRoleToAccountOutput, error) {
@@ -181,7 +181,7 @@ const opCreateCoreDefinition = "CreateCoreDefinition"
 
 // CreateCoreDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateCoreDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -221,9 +221,9 @@ func (c *Greengrass) CreateCoreDefinitionRequest(input *CreateCoreDefinitionInpu
 
 // CreateCoreDefinition API operation for AWS Greengrass.
 //
-// Creates a core definition. You may optionally provide the initial version
-// of the core definition or use ''CreateCoreDefinitionVersion'' at a later
-// time. AWS Greengrass Groups must each contain exactly 1 AWS Greengrass Core.
+// Creates a core definition. You may provide the initial version of the core
+// definition now or use ''CreateCoreDefinitionVersion'' at a later time. AWS
+// Greengrass groups must each contain exactly one AWS Greengrass core.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -234,7 +234,7 @@ func (c *Greengrass) CreateCoreDefinitionRequest(input *CreateCoreDefinitionInpu
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateCoreDefinition
 func (c *Greengrass) CreateCoreDefinition(input *CreateCoreDefinitionInput) (*CreateCoreDefinitionOutput, error) {
@@ -262,7 +262,7 @@ const opCreateCoreDefinitionVersion = "CreateCoreDefinitionVersion"
 
 // CreateCoreDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateCoreDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -303,7 +303,7 @@ func (c *Greengrass) CreateCoreDefinitionVersionRequest(input *CreateCoreDefinit
 // CreateCoreDefinitionVersion API operation for AWS Greengrass.
 //
 // Creates a version of a core definition that has already been defined. AWS
-// Greengrass Groups must each contain exactly 1 AWS Greengrass Core.
+// Greengrass groups must each contain exactly one AWS Greengrass core.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -314,7 +314,7 @@ func (c *Greengrass) CreateCoreDefinitionVersionRequest(input *CreateCoreDefinit
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateCoreDefinitionVersion
 func (c *Greengrass) CreateCoreDefinitionVersion(input *CreateCoreDefinitionVersionInput) (*CreateCoreDefinitionVersionOutput, error) {
@@ -342,7 +342,7 @@ const opCreateDeployment = "CreateDeployment"
 
 // CreateDeploymentRequest generates a "aws/request.Request" representing the
 // client's request for the CreateDeployment operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -393,7 +393,7 @@ func (c *Greengrass) CreateDeploymentRequest(input *CreateDeploymentInput) (req 
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateDeployment
 func (c *Greengrass) CreateDeployment(input *CreateDeploymentInput) (*CreateDeploymentOutput, error) {
@@ -421,7 +421,7 @@ const opCreateDeviceDefinition = "CreateDeviceDefinition"
 
 // CreateDeviceDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateDeviceDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -461,9 +461,8 @@ func (c *Greengrass) CreateDeviceDefinitionRequest(input *CreateDeviceDefinition
 
 // CreateDeviceDefinition API operation for AWS Greengrass.
 //
-// Creates a device definition. You may optinally provide the initial version
-// of the device definition or use ``CreateDeviceDefinitionVersion`` at a later
-// time.
+// Creates a device definition. You may provide the initial version of the device
+// definition now or use ''CreateDeviceDefinitionVersion'' at a later time.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -474,7 +473,7 @@ func (c *Greengrass) CreateDeviceDefinitionRequest(input *CreateDeviceDefinition
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateDeviceDefinition
 func (c *Greengrass) CreateDeviceDefinition(input *CreateDeviceDefinitionInput) (*CreateDeviceDefinitionOutput, error) {
@@ -502,7 +501,7 @@ const opCreateDeviceDefinitionVersion = "CreateDeviceDefinitionVersion"
 
 // CreateDeviceDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateDeviceDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -553,7 +552,7 @@ func (c *Greengrass) CreateDeviceDefinitionVersionRequest(input *CreateDeviceDef
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateDeviceDefinitionVersion
 func (c *Greengrass) CreateDeviceDefinitionVersion(input *CreateDeviceDefinitionVersionInput) (*CreateDeviceDefinitionVersionOutput, error) {
@@ -581,7 +580,7 @@ const opCreateFunctionDefinition = "CreateFunctionDefinition"
 
 // CreateFunctionDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateFunctionDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -624,7 +623,7 @@ func (c *Greengrass) CreateFunctionDefinitionRequest(input *CreateFunctionDefini
 // Creates a Lambda function definition which contains a list of Lambda functions
 // and their configurations to be used in a group. You can create an initial
 // version of the definition by providing a list of Lambda functions and their
-// configurations now, or use ``CreateFunctionDefinitionVersion`` later.
+// configurations now, or use ''CreateFunctionDefinitionVersion'' later.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -635,7 +634,7 @@ func (c *Greengrass) CreateFunctionDefinitionRequest(input *CreateFunctionDefini
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateFunctionDefinition
 func (c *Greengrass) CreateFunctionDefinition(input *CreateFunctionDefinitionInput) (*CreateFunctionDefinitionOutput, error) {
@@ -663,7 +662,7 @@ const opCreateFunctionDefinitionVersion = "CreateFunctionDefinitionVersion"
 
 // CreateFunctionDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateFunctionDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -703,7 +702,7 @@ func (c *Greengrass) CreateFunctionDefinitionVersionRequest(input *CreateFunctio
 
 // CreateFunctionDefinitionVersion API operation for AWS Greengrass.
 //
-// Create a version of a Lambda function definition that has already been defined.
+// Creates a version of a Lambda function definition that has already been defined.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -714,7 +713,7 @@ func (c *Greengrass) CreateFunctionDefinitionVersionRequest(input *CreateFunctio
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateFunctionDefinitionVersion
 func (c *Greengrass) CreateFunctionDefinitionVersion(input *CreateFunctionDefinitionVersionInput) (*CreateFunctionDefinitionVersionOutput, error) {
@@ -742,7 +741,7 @@ const opCreateGroup = "CreateGroup"
 
 // CreateGroupRequest generates a "aws/request.Request" representing the
 // client's request for the CreateGroup operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -782,8 +781,8 @@ func (c *Greengrass) CreateGroupRequest(input *CreateGroupInput) (req *request.R
 
 // CreateGroup API operation for AWS Greengrass.
 //
-// Creates a group. You may optionally provide the initial version of the group
-// or use ''CreateGroupVersion'' at a later time.
+// Creates a group. You may provide the initial version of the group or use
+// ''CreateGroupVersion'' at a later time.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -794,7 +793,7 @@ func (c *Greengrass) CreateGroupRequest(input *CreateGroupInput) (req *request.R
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateGroup
 func (c *Greengrass) CreateGroup(input *CreateGroupInput) (*CreateGroupOutput, error) {
@@ -822,7 +821,7 @@ const opCreateGroupCertificateAuthority = "CreateGroupCertificateAuthority"
 
 // CreateGroupCertificateAuthorityRequest generates a "aws/request.Request" representing the
 // client's request for the CreateGroupCertificateAuthority operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -874,10 +873,10 @@ func (c *Greengrass) CreateGroupCertificateAuthorityRequest(input *CreateGroupCe
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateGroupCertificateAuthority
 func (c *Greengrass) CreateGroupCertificateAuthority(input *CreateGroupCertificateAuthorityInput) (*CreateGroupCertificateAuthorityOutput, error) {
@@ -905,7 +904,7 @@ const opCreateGroupVersion = "CreateGroupVersion"
 
 // CreateGroupVersionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateGroupVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -956,7 +955,7 @@ func (c *Greengrass) CreateGroupVersionRequest(input *CreateGroupVersionInput) (
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateGroupVersion
 func (c *Greengrass) CreateGroupVersion(input *CreateGroupVersionInput) (*CreateGroupVersionOutput, error) {
@@ -984,7 +983,7 @@ const opCreateLoggerDefinition = "CreateLoggerDefinition"
 
 // CreateLoggerDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateLoggerDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1024,9 +1023,8 @@ func (c *Greengrass) CreateLoggerDefinitionRequest(input *CreateLoggerDefinition
 
 // CreateLoggerDefinition API operation for AWS Greengrass.
 //
-// Creates a logger definition. You may optionally provide the initial version
-// of the logger definition or use ``CreateLoggerDefinitionVersion`` at a later
-// time.
+// Creates a logger definition. You may provide the initial version of the logger
+// definition now or use ''CreateLoggerDefinitionVersion'' at a later time.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1037,7 +1035,7 @@ func (c *Greengrass) CreateLoggerDefinitionRequest(input *CreateLoggerDefinition
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateLoggerDefinition
 func (c *Greengrass) CreateLoggerDefinition(input *CreateLoggerDefinitionInput) (*CreateLoggerDefinitionOutput, error) {
@@ -1065,7 +1063,7 @@ const opCreateLoggerDefinitionVersion = "CreateLoggerDefinitionVersion"
 
 // CreateLoggerDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateLoggerDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1116,7 +1114,7 @@ func (c *Greengrass) CreateLoggerDefinitionVersionRequest(input *CreateLoggerDef
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateLoggerDefinitionVersion
 func (c *Greengrass) CreateLoggerDefinitionVersion(input *CreateLoggerDefinitionVersionInput) (*CreateLoggerDefinitionVersionOutput, error) {
@@ -1144,7 +1142,7 @@ const opCreateResourceDefinition = "CreateResourceDefinition"
 
 // CreateResourceDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateResourceDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1186,7 +1184,7 @@ func (c *Greengrass) CreateResourceDefinitionRequest(input *CreateResourceDefini
 //
 // Creates a resource definition which contains a list of resources to be used
 // in a group. You can create an initial version of the definition by providing
-// a list of resources now, or use ``CreateResourceDefinitionVersion`` later.
+// a list of resources now, or use ''CreateResourceDefinitionVersion'' later.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1197,7 +1195,7 @@ func (c *Greengrass) CreateResourceDefinitionRequest(input *CreateResourceDefini
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateResourceDefinition
 func (c *Greengrass) CreateResourceDefinition(input *CreateResourceDefinitionInput) (*CreateResourceDefinitionOutput, error) {
@@ -1225,7 +1223,7 @@ const opCreateResourceDefinitionVersion = "CreateResourceDefinitionVersion"
 
 // CreateResourceDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateResourceDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1265,7 +1263,7 @@ func (c *Greengrass) CreateResourceDefinitionVersionRequest(input *CreateResourc
 
 // CreateResourceDefinitionVersion API operation for AWS Greengrass.
 //
-// Create a version of a resource definition that has already been defined.
+// Creates a version of a resource definition that has already been defined.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1276,7 +1274,7 @@ func (c *Greengrass) CreateResourceDefinitionVersionRequest(input *CreateResourc
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateResourceDefinitionVersion
 func (c *Greengrass) CreateResourceDefinitionVersion(input *CreateResourceDefinitionVersionInput) (*CreateResourceDefinitionVersionOutput, error) {
@@ -1304,7 +1302,7 @@ const opCreateSoftwareUpdateJob = "CreateSoftwareUpdateJob"
 
 // CreateSoftwareUpdateJobRequest generates a "aws/request.Request" representing the
 // client's request for the CreateSoftwareUpdateJob operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1344,8 +1342,10 @@ func (c *Greengrass) CreateSoftwareUpdateJobRequest(input *CreateSoftwareUpdateJ
 
 // CreateSoftwareUpdateJob API operation for AWS Greengrass.
 //
-// Creates an Iot Job that will trigger your Greengrass Cores to update the
-// software they are running.
+// Creates a software update for a core or group of cores (specified as an IoT
+// thing group.) Use this to update the OTA Agent as well as the Greengrass
+// core software. It makes use of the IoT Jobs feature which provides additional
+// commands to manage a Greengrass core software update job.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1356,10 +1356,10 @@ func (c *Greengrass) CreateSoftwareUpdateJobRequest(input *CreateSoftwareUpdateJ
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateSoftwareUpdateJob
 func (c *Greengrass) CreateSoftwareUpdateJob(input *CreateSoftwareUpdateJobInput) (*CreateSoftwareUpdateJobOutput, error) {
@@ -1387,7 +1387,7 @@ const opCreateSubscriptionDefinition = "CreateSubscriptionDefinition"
 
 // CreateSubscriptionDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateSubscriptionDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1427,8 +1427,8 @@ func (c *Greengrass) CreateSubscriptionDefinitionRequest(input *CreateSubscripti
 
 // CreateSubscriptionDefinition API operation for AWS Greengrass.
 //
-// Creates a subscription definition. You may optionally provide the initial
-// version of the subscription definition or use ``CreateSubscriptionDefinitionVersion``
+// Creates a subscription definition. You may provide the initial version of
+// the subscription definition now or use ''CreateSubscriptionDefinitionVersion''
 // at a later time.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -1440,7 +1440,7 @@ func (c *Greengrass) CreateSubscriptionDefinitionRequest(input *CreateSubscripti
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateSubscriptionDefinition
 func (c *Greengrass) CreateSubscriptionDefinition(input *CreateSubscriptionDefinitionInput) (*CreateSubscriptionDefinitionOutput, error) {
@@ -1468,7 +1468,7 @@ const opCreateSubscriptionDefinitionVersion = "CreateSubscriptionDefinitionVersi
 
 // CreateSubscriptionDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateSubscriptionDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1519,7 +1519,7 @@ func (c *Greengrass) CreateSubscriptionDefinitionVersionRequest(input *CreateSub
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateSubscriptionDefinitionVersion
 func (c *Greengrass) CreateSubscriptionDefinitionVersion(input *CreateSubscriptionDefinitionVersionInput) (*CreateSubscriptionDefinitionVersionOutput, error) {
@@ -1547,7 +1547,7 @@ const opDeleteCoreDefinition = "DeleteCoreDefinition"
 
 // DeleteCoreDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteCoreDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1587,8 +1587,7 @@ func (c *Greengrass) DeleteCoreDefinitionRequest(input *DeleteCoreDefinitionInpu
 
 // DeleteCoreDefinition API operation for AWS Greengrass.
 //
-// Deletes a core definition. The core definition must not have been used in
-// a deployment.
+// Deletes a core definition.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1599,7 +1598,7 @@ func (c *Greengrass) DeleteCoreDefinitionRequest(input *DeleteCoreDefinitionInpu
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteCoreDefinition
 func (c *Greengrass) DeleteCoreDefinition(input *DeleteCoreDefinitionInput) (*DeleteCoreDefinitionOutput, error) {
@@ -1627,7 +1626,7 @@ const opDeleteDeviceDefinition = "DeleteDeviceDefinition"
 
 // DeleteDeviceDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteDeviceDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1667,8 +1666,7 @@ func (c *Greengrass) DeleteDeviceDefinitionRequest(input *DeleteDeviceDefinition
 
 // DeleteDeviceDefinition API operation for AWS Greengrass.
 //
-// Deletes a device definition. The device definition must not have been used
-// in a deployment.
+// Deletes a device definition.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1679,7 +1677,7 @@ func (c *Greengrass) DeleteDeviceDefinitionRequest(input *DeleteDeviceDefinition
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteDeviceDefinition
 func (c *Greengrass) DeleteDeviceDefinition(input *DeleteDeviceDefinitionInput) (*DeleteDeviceDefinitionOutput, error) {
@@ -1707,7 +1705,7 @@ const opDeleteFunctionDefinition = "DeleteFunctionDefinition"
 
 // DeleteFunctionDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteFunctionDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1747,8 +1745,7 @@ func (c *Greengrass) DeleteFunctionDefinitionRequest(input *DeleteFunctionDefini
 
 // DeleteFunctionDefinition API operation for AWS Greengrass.
 //
-// Deletes a Lambda function definition. The Lambda function definition must
-// not have been used in a deployment.
+// Deletes a Lambda function definition.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1759,7 +1756,7 @@ func (c *Greengrass) DeleteFunctionDefinitionRequest(input *DeleteFunctionDefini
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteFunctionDefinition
 func (c *Greengrass) DeleteFunctionDefinition(input *DeleteFunctionDefinitionInput) (*DeleteFunctionDefinitionOutput, error) {
@@ -1787,7 +1784,7 @@ const opDeleteGroup = "DeleteGroup"
 
 // DeleteGroupRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteGroup operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1827,7 +1824,7 @@ func (c *Greengrass) DeleteGroupRequest(input *DeleteGroupInput) (req *request.R
 
 // DeleteGroup API operation for AWS Greengrass.
 //
-// Deletes a group. The group must not have been used in deployment.
+// Deletes a group.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1838,7 +1835,7 @@ func (c *Greengrass) DeleteGroupRequest(input *DeleteGroupInput) (req *request.R
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteGroup
 func (c *Greengrass) DeleteGroup(input *DeleteGroupInput) (*DeleteGroupOutput, error) {
@@ -1866,7 +1863,7 @@ const opDeleteLoggerDefinition = "DeleteLoggerDefinition"
 
 // DeleteLoggerDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteLoggerDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1906,8 +1903,7 @@ func (c *Greengrass) DeleteLoggerDefinitionRequest(input *DeleteLoggerDefinition
 
 // DeleteLoggerDefinition API operation for AWS Greengrass.
 //
-// Deletes a logger definition. The logger definition must not have been used
-// in a deployment.
+// Deletes a logger definition.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1918,7 +1914,7 @@ func (c *Greengrass) DeleteLoggerDefinitionRequest(input *DeleteLoggerDefinition
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteLoggerDefinition
 func (c *Greengrass) DeleteLoggerDefinition(input *DeleteLoggerDefinitionInput) (*DeleteLoggerDefinitionOutput, error) {
@@ -1946,7 +1942,7 @@ const opDeleteResourceDefinition = "DeleteResourceDefinition"
 
 // DeleteResourceDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteResourceDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1997,7 +1993,7 @@ func (c *Greengrass) DeleteResourceDefinitionRequest(input *DeleteResourceDefini
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteResourceDefinition
 func (c *Greengrass) DeleteResourceDefinition(input *DeleteResourceDefinitionInput) (*DeleteResourceDefinitionOutput, error) {
@@ -2025,7 +2021,7 @@ const opDeleteSubscriptionDefinition = "DeleteSubscriptionDefinition"
 
 // DeleteSubscriptionDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteSubscriptionDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2065,8 +2061,7 @@ func (c *Greengrass) DeleteSubscriptionDefinitionRequest(input *DeleteSubscripti
 
 // DeleteSubscriptionDefinition API operation for AWS Greengrass.
 //
-// Deletes a subscription definition. The subscription definition must not have
-// been used in a deployment.
+// Deletes a subscription definition.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -2077,7 +2072,7 @@ func (c *Greengrass) DeleteSubscriptionDefinitionRequest(input *DeleteSubscripti
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteSubscriptionDefinition
 func (c *Greengrass) DeleteSubscriptionDefinition(input *DeleteSubscriptionDefinitionInput) (*DeleteSubscriptionDefinitionOutput, error) {
@@ -2105,7 +2100,7 @@ const opDisassociateRoleFromGroup = "DisassociateRoleFromGroup"
 
 // DisassociateRoleFromGroupRequest generates a "aws/request.Request" representing the
 // client's request for the DisassociateRoleFromGroup operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2156,10 +2151,10 @@ func (c *Greengrass) DisassociateRoleFromGroupRequest(input *DisassociateRoleFro
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DisassociateRoleFromGroup
 func (c *Greengrass) DisassociateRoleFromGroup(input *DisassociateRoleFromGroupInput) (*DisassociateRoleFromGroupOutput, error) {
@@ -2187,7 +2182,7 @@ const opDisassociateServiceRoleFromAccount = "DisassociateServiceRoleFromAccount
 
 // DisassociateServiceRoleFromAccountRequest generates a "aws/request.Request" representing the
 // client's request for the DisassociateServiceRoleFromAccount operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2227,7 +2222,7 @@ func (c *Greengrass) DisassociateServiceRoleFromAccountRequest(input *Disassocia
 
 // DisassociateServiceRoleFromAccount API operation for AWS Greengrass.
 //
-// Disassociates the service role from the account. Without a service role,
+// Disassociates the service role from your account. Without a service role,
 // deployments will not work.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -2239,7 +2234,7 @@ func (c *Greengrass) DisassociateServiceRoleFromAccountRequest(input *Disassocia
 //
 // Returned Error Codes:
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DisassociateServiceRoleFromAccount
 func (c *Greengrass) DisassociateServiceRoleFromAccount(input *DisassociateServiceRoleFromAccountInput) (*DisassociateServiceRoleFromAccountOutput, error) {
@@ -2267,7 +2262,7 @@ const opGetAssociatedRole = "GetAssociatedRole"
 
 // GetAssociatedRoleRequest generates a "aws/request.Request" representing the
 // client's request for the GetAssociatedRole operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2318,10 +2313,10 @@ func (c *Greengrass) GetAssociatedRoleRequest(input *GetAssociatedRoleInput) (re
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetAssociatedRole
 func (c *Greengrass) GetAssociatedRole(input *GetAssociatedRoleInput) (*GetAssociatedRoleOutput, error) {
@@ -2349,7 +2344,7 @@ const opGetConnectivityInfo = "GetConnectivityInfo"
 
 // GetConnectivityInfoRequest generates a "aws/request.Request" representing the
 // client's request for the GetConnectivityInfo operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2400,10 +2395,10 @@ func (c *Greengrass) GetConnectivityInfoRequest(input *GetConnectivityInfoInput)
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetConnectivityInfo
 func (c *Greengrass) GetConnectivityInfo(input *GetConnectivityInfoInput) (*GetConnectivityInfoOutput, error) {
@@ -2431,7 +2426,7 @@ const opGetCoreDefinition = "GetCoreDefinition"
 
 // GetCoreDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the GetCoreDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2482,7 +2477,7 @@ func (c *Greengrass) GetCoreDefinitionRequest(input *GetCoreDefinitionInput) (re
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetCoreDefinition
 func (c *Greengrass) GetCoreDefinition(input *GetCoreDefinitionInput) (*GetCoreDefinitionOutput, error) {
@@ -2510,7 +2505,7 @@ const opGetCoreDefinitionVersion = "GetCoreDefinitionVersion"
 
 // GetCoreDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the GetCoreDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2561,7 +2556,7 @@ func (c *Greengrass) GetCoreDefinitionVersionRequest(input *GetCoreDefinitionVer
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetCoreDefinitionVersion
 func (c *Greengrass) GetCoreDefinitionVersion(input *GetCoreDefinitionVersionInput) (*GetCoreDefinitionVersionOutput, error) {
@@ -2589,7 +2584,7 @@ const opGetDeploymentStatus = "GetDeploymentStatus"
 
 // GetDeploymentStatusRequest generates a "aws/request.Request" representing the
 // client's request for the GetDeploymentStatus operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2640,7 +2635,7 @@ func (c *Greengrass) GetDeploymentStatusRequest(input *GetDeploymentStatusInput)
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetDeploymentStatus
 func (c *Greengrass) GetDeploymentStatus(input *GetDeploymentStatusInput) (*GetDeploymentStatusOutput, error) {
@@ -2668,7 +2663,7 @@ const opGetDeviceDefinition = "GetDeviceDefinition"
 
 // GetDeviceDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the GetDeviceDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2719,7 +2714,7 @@ func (c *Greengrass) GetDeviceDefinitionRequest(input *GetDeviceDefinitionInput)
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetDeviceDefinition
 func (c *Greengrass) GetDeviceDefinition(input *GetDeviceDefinitionInput) (*GetDeviceDefinitionOutput, error) {
@@ -2747,7 +2742,7 @@ const opGetDeviceDefinitionVersion = "GetDeviceDefinitionVersion"
 
 // GetDeviceDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the GetDeviceDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2798,7 +2793,7 @@ func (c *Greengrass) GetDeviceDefinitionVersionRequest(input *GetDeviceDefinitio
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetDeviceDefinitionVersion
 func (c *Greengrass) GetDeviceDefinitionVersion(input *GetDeviceDefinitionVersionInput) (*GetDeviceDefinitionVersionOutput, error) {
@@ -2826,7 +2821,7 @@ const opGetFunctionDefinition = "GetFunctionDefinition"
 
 // GetFunctionDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the GetFunctionDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2866,7 +2861,7 @@ func (c *Greengrass) GetFunctionDefinitionRequest(input *GetFunctionDefinitionIn
 
 // GetFunctionDefinition API operation for AWS Greengrass.
 //
-// Retrieves information about a Lambda function definition, such as its creation
+// Retrieves information about a Lambda function definition, including its creation
 // time and latest version.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -2878,7 +2873,7 @@ func (c *Greengrass) GetFunctionDefinitionRequest(input *GetFunctionDefinitionIn
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetFunctionDefinition
 func (c *Greengrass) GetFunctionDefinition(input *GetFunctionDefinitionInput) (*GetFunctionDefinitionOutput, error) {
@@ -2906,7 +2901,7 @@ const opGetFunctionDefinitionVersion = "GetFunctionDefinitionVersion"
 
 // GetFunctionDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the GetFunctionDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2946,7 +2941,7 @@ func (c *Greengrass) GetFunctionDefinitionVersionRequest(input *GetFunctionDefin
 
 // GetFunctionDefinitionVersion API operation for AWS Greengrass.
 //
-// Retrieves information about a Lambda function definition version, such as
+// Retrieves information about a Lambda function definition version, including
 // which Lambda functions are included in the version and their configurations.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -2958,7 +2953,7 @@ func (c *Greengrass) GetFunctionDefinitionVersionRequest(input *GetFunctionDefin
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetFunctionDefinitionVersion
 func (c *Greengrass) GetFunctionDefinitionVersion(input *GetFunctionDefinitionVersionInput) (*GetFunctionDefinitionVersionOutput, error) {
@@ -2986,7 +2981,7 @@ const opGetGroup = "GetGroup"
 
 // GetGroupRequest generates a "aws/request.Request" representing the
 // client's request for the GetGroup operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3037,7 +3032,7 @@ func (c *Greengrass) GetGroupRequest(input *GetGroupInput) (req *request.Request
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroup
 func (c *Greengrass) GetGroup(input *GetGroupInput) (*GetGroupOutput, error) {
@@ -3065,7 +3060,7 @@ const opGetGroupCertificateAuthority = "GetGroupCertificateAuthority"
 
 // GetGroupCertificateAuthorityRequest generates a "aws/request.Request" representing the
 // client's request for the GetGroupCertificateAuthority operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3116,10 +3111,10 @@ func (c *Greengrass) GetGroupCertificateAuthorityRequest(input *GetGroupCertific
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupCertificateAuthority
 func (c *Greengrass) GetGroupCertificateAuthority(input *GetGroupCertificateAuthorityInput) (*GetGroupCertificateAuthorityOutput, error) {
@@ -3147,7 +3142,7 @@ const opGetGroupCertificateConfiguration = "GetGroupCertificateConfiguration"
 
 // GetGroupCertificateConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetGroupCertificateConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3198,10 +3193,10 @@ func (c *Greengrass) GetGroupCertificateConfigurationRequest(input *GetGroupCert
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupCertificateConfiguration
 func (c *Greengrass) GetGroupCertificateConfiguration(input *GetGroupCertificateConfigurationInput) (*GetGroupCertificateConfigurationOutput, error) {
@@ -3229,7 +3224,7 @@ const opGetGroupVersion = "GetGroupVersion"
 
 // GetGroupVersionRequest generates a "aws/request.Request" representing the
 // client's request for the GetGroupVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3280,7 +3275,7 @@ func (c *Greengrass) GetGroupVersionRequest(input *GetGroupVersionInput) (req *r
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupVersion
 func (c *Greengrass) GetGroupVersion(input *GetGroupVersionInput) (*GetGroupVersionOutput, error) {
@@ -3308,7 +3303,7 @@ const opGetLoggerDefinition = "GetLoggerDefinition"
 
 // GetLoggerDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the GetLoggerDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3359,7 +3354,7 @@ func (c *Greengrass) GetLoggerDefinitionRequest(input *GetLoggerDefinitionInput)
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetLoggerDefinition
 func (c *Greengrass) GetLoggerDefinition(input *GetLoggerDefinitionInput) (*GetLoggerDefinitionOutput, error) {
@@ -3387,7 +3382,7 @@ const opGetLoggerDefinitionVersion = "GetLoggerDefinitionVersion"
 
 // GetLoggerDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the GetLoggerDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3438,7 +3433,7 @@ func (c *Greengrass) GetLoggerDefinitionVersionRequest(input *GetLoggerDefinitio
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetLoggerDefinitionVersion
 func (c *Greengrass) GetLoggerDefinitionVersion(input *GetLoggerDefinitionVersionInput) (*GetLoggerDefinitionVersionOutput, error) {
@@ -3466,7 +3461,7 @@ const opGetResourceDefinition = "GetResourceDefinition"
 
 // GetResourceDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the GetResourceDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3506,8 +3501,8 @@ func (c *Greengrass) GetResourceDefinitionRequest(input *GetResourceDefinitionIn
 
 // GetResourceDefinition API operation for AWS Greengrass.
 //
-// Retrieves information about a resource definition, such as its creation time
-// and latest version.
+// Retrieves information about a resource definition, including its creation
+// time and latest version.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -3518,7 +3513,7 @@ func (c *Greengrass) GetResourceDefinitionRequest(input *GetResourceDefinitionIn
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetResourceDefinition
 func (c *Greengrass) GetResourceDefinition(input *GetResourceDefinitionInput) (*GetResourceDefinitionOutput, error) {
@@ -3546,7 +3541,7 @@ const opGetResourceDefinitionVersion = "GetResourceDefinitionVersion"
 
 // GetResourceDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the GetResourceDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3586,7 +3581,7 @@ func (c *Greengrass) GetResourceDefinitionVersionRequest(input *GetResourceDefin
 
 // GetResourceDefinitionVersion API operation for AWS Greengrass.
 //
-// Retrieves information about a resource definition version, such as which
+// Retrieves information about a resource definition version, including which
 // resources are included in the version.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -3598,7 +3593,7 @@ func (c *Greengrass) GetResourceDefinitionVersionRequest(input *GetResourceDefin
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetResourceDefinitionVersion
 func (c *Greengrass) GetResourceDefinitionVersion(input *GetResourceDefinitionVersionInput) (*GetResourceDefinitionVersionOutput, error) {
@@ -3626,7 +3621,7 @@ const opGetServiceRoleForAccount = "GetServiceRoleForAccount"
 
 // GetServiceRoleForAccountRequest generates a "aws/request.Request" representing the
 // client's request for the GetServiceRoleForAccount operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3666,7 +3661,7 @@ func (c *Greengrass) GetServiceRoleForAccountRequest(input *GetServiceRoleForAcc
 
 // GetServiceRoleForAccount API operation for AWS Greengrass.
 //
-// Retrieves the service role that is attached to the account.
+// Retrieves the service role that is attached to your account.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -3677,7 +3672,7 @@ func (c *Greengrass) GetServiceRoleForAccountRequest(input *GetServiceRoleForAcc
 //
 // Returned Error Codes:
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetServiceRoleForAccount
 func (c *Greengrass) GetServiceRoleForAccount(input *GetServiceRoleForAccountInput) (*GetServiceRoleForAccountOutput, error) {
@@ -3705,7 +3700,7 @@ const opGetSubscriptionDefinition = "GetSubscriptionDefinition"
 
 // GetSubscriptionDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the GetSubscriptionDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3756,7 +3751,7 @@ func (c *Greengrass) GetSubscriptionDefinitionRequest(input *GetSubscriptionDefi
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetSubscriptionDefinition
 func (c *Greengrass) GetSubscriptionDefinition(input *GetSubscriptionDefinitionInput) (*GetSubscriptionDefinitionOutput, error) {
@@ -3784,7 +3779,7 @@ const opGetSubscriptionDefinitionVersion = "GetSubscriptionDefinitionVersion"
 
 // GetSubscriptionDefinitionVersionRequest generates a "aws/request.Request" representing the
 // client's request for the GetSubscriptionDefinitionVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3835,7 +3830,7 @@ func (c *Greengrass) GetSubscriptionDefinitionVersionRequest(input *GetSubscript
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetSubscriptionDefinitionVersion
 func (c *Greengrass) GetSubscriptionDefinitionVersion(input *GetSubscriptionDefinitionVersionInput) (*GetSubscriptionDefinitionVersionOutput, error) {
@@ -3863,7 +3858,7 @@ const opListCoreDefinitionVersions = "ListCoreDefinitionVersions"
 
 // ListCoreDefinitionVersionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListCoreDefinitionVersions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3903,7 +3898,7 @@ func (c *Greengrass) ListCoreDefinitionVersionsRequest(input *ListCoreDefinition
 
 // ListCoreDefinitionVersions API operation for AWS Greengrass.
 //
-// Lists versions of a core definition.
+// Lists the versions of a core definition.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -3914,7 +3909,7 @@ func (c *Greengrass) ListCoreDefinitionVersionsRequest(input *ListCoreDefinition
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListCoreDefinitionVersions
 func (c *Greengrass) ListCoreDefinitionVersions(input *ListCoreDefinitionVersionsInput) (*ListCoreDefinitionVersionsOutput, error) {
@@ -3942,7 +3937,7 @@ const opListCoreDefinitions = "ListCoreDefinitions"
 
 // ListCoreDefinitionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListCoreDefinitions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4016,7 +4011,7 @@ const opListDeployments = "ListDeployments"
 
 // ListDeploymentsRequest generates a "aws/request.Request" representing the
 // client's request for the ListDeployments operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4067,7 +4062,7 @@ func (c *Greengrass) ListDeploymentsRequest(input *ListDeploymentsInput) (req *r
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListDeployments
 func (c *Greengrass) ListDeployments(input *ListDeploymentsInput) (*ListDeploymentsOutput, error) {
@@ -4095,7 +4090,7 @@ const opListDeviceDefinitionVersions = "ListDeviceDefinitionVersions"
 
 // ListDeviceDefinitionVersionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListDeviceDefinitionVersions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4146,7 +4141,7 @@ func (c *Greengrass) ListDeviceDefinitionVersionsRequest(input *ListDeviceDefini
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListDeviceDefinitionVersions
 func (c *Greengrass) ListDeviceDefinitionVersions(input *ListDeviceDefinitionVersionsInput) (*ListDeviceDefinitionVersionsOutput, error) {
@@ -4174,7 +4169,7 @@ const opListDeviceDefinitions = "ListDeviceDefinitions"
 
 // ListDeviceDefinitionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListDeviceDefinitions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4248,7 +4243,7 @@ const opListFunctionDefinitionVersions = "ListFunctionDefinitionVersions"
 
 // ListFunctionDefinitionVersionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListFunctionDefinitionVersions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4299,7 +4294,7 @@ func (c *Greengrass) ListFunctionDefinitionVersionsRequest(input *ListFunctionDe
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListFunctionDefinitionVersions
 func (c *Greengrass) ListFunctionDefinitionVersions(input *ListFunctionDefinitionVersionsInput) (*ListFunctionDefinitionVersionsOutput, error) {
@@ -4327,7 +4322,7 @@ const opListFunctionDefinitions = "ListFunctionDefinitions"
 
 // ListFunctionDefinitionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListFunctionDefinitions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4401,7 +4396,7 @@ const opListGroupCertificateAuthorities = "ListGroupCertificateAuthorities"
 
 // ListGroupCertificateAuthoritiesRequest generates a "aws/request.Request" representing the
 // client's request for the ListGroupCertificateAuthorities operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4452,10 +4447,10 @@ func (c *Greengrass) ListGroupCertificateAuthoritiesRequest(input *ListGroupCert
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListGroupCertificateAuthorities
 func (c *Greengrass) ListGroupCertificateAuthorities(input *ListGroupCertificateAuthoritiesInput) (*ListGroupCertificateAuthoritiesOutput, error) {
@@ -4483,7 +4478,7 @@ const opListGroupVersions = "ListGroupVersions"
 
 // ListGroupVersionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListGroupVersions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4523,7 +4518,7 @@ func (c *Greengrass) ListGroupVersionsRequest(input *ListGroupVersionsInput) (re
 
 // ListGroupVersions API operation for AWS Greengrass.
 //
-// List the versions of a group.
+// Lists the versions of a group.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -4534,7 +4529,7 @@ func (c *Greengrass) ListGroupVersionsRequest(input *ListGroupVersionsInput) (re
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListGroupVersions
 func (c *Greengrass) ListGroupVersions(input *ListGroupVersionsInput) (*ListGroupVersionsOutput, error) {
@@ -4562,7 +4557,7 @@ const opListGroups = "ListGroups"
 
 // ListGroupsRequest generates a "aws/request.Request" representing the
 // client's request for the ListGroups operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4636,7 +4631,7 @@ const opListLoggerDefinitionVersions = "ListLoggerDefinitionVersions"
 
 // ListLoggerDefinitionVersionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListLoggerDefinitionVersions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4687,7 +4682,7 @@ func (c *Greengrass) ListLoggerDefinitionVersionsRequest(input *ListLoggerDefini
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListLoggerDefinitionVersions
 func (c *Greengrass) ListLoggerDefinitionVersions(input *ListLoggerDefinitionVersionsInput) (*ListLoggerDefinitionVersionsOutput, error) {
@@ -4715,7 +4710,7 @@ const opListLoggerDefinitions = "ListLoggerDefinitions"
 
 // ListLoggerDefinitionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListLoggerDefinitions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4789,7 +4784,7 @@ const opListResourceDefinitionVersions = "ListResourceDefinitionVersions"
 
 // ListResourceDefinitionVersionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListResourceDefinitionVersions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4840,7 +4835,7 @@ func (c *Greengrass) ListResourceDefinitionVersionsRequest(input *ListResourceDe
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListResourceDefinitionVersions
 func (c *Greengrass) ListResourceDefinitionVersions(input *ListResourceDefinitionVersionsInput) (*ListResourceDefinitionVersionsOutput, error) {
@@ -4868,7 +4863,7 @@ const opListResourceDefinitions = "ListResourceDefinitions"
 
 // ListResourceDefinitionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListResourceDefinitions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4942,7 +4937,7 @@ const opListSubscriptionDefinitionVersions = "ListSubscriptionDefinitionVersions
 
 // ListSubscriptionDefinitionVersionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListSubscriptionDefinitionVersions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4993,7 +4988,7 @@ func (c *Greengrass) ListSubscriptionDefinitionVersionsRequest(input *ListSubscr
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListSubscriptionDefinitionVersions
 func (c *Greengrass) ListSubscriptionDefinitionVersions(input *ListSubscriptionDefinitionVersionsInput) (*ListSubscriptionDefinitionVersionsOutput, error) {
@@ -5021,7 +5016,7 @@ const opListSubscriptionDefinitions = "ListSubscriptionDefinitions"
 
 // ListSubscriptionDefinitionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListSubscriptionDefinitions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5095,7 +5090,7 @@ const opResetDeployments = "ResetDeployments"
 
 // ResetDeploymentsRequest generates a "aws/request.Request" representing the
 // client's request for the ResetDeployments operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5146,7 +5141,7 @@ func (c *Greengrass) ResetDeploymentsRequest(input *ResetDeploymentsInput) (req 
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ResetDeployments
 func (c *Greengrass) ResetDeployments(input *ResetDeploymentsInput) (*ResetDeploymentsOutput, error) {
@@ -5174,7 +5169,7 @@ const opUpdateConnectivityInfo = "UpdateConnectivityInfo"
 
 // UpdateConnectivityInfoRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateConnectivityInfo operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5227,10 +5222,10 @@ func (c *Greengrass) UpdateConnectivityInfoRequest(input *UpdateConnectivityInfo
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateConnectivityInfo
 func (c *Greengrass) UpdateConnectivityInfo(input *UpdateConnectivityInfoInput) (*UpdateConnectivityInfoOutput, error) {
@@ -5258,7 +5253,7 @@ const opUpdateCoreDefinition = "UpdateCoreDefinition"
 
 // UpdateCoreDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateCoreDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5309,7 +5304,7 @@ func (c *Greengrass) UpdateCoreDefinitionRequest(input *UpdateCoreDefinitionInpu
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateCoreDefinition
 func (c *Greengrass) UpdateCoreDefinition(input *UpdateCoreDefinitionInput) (*UpdateCoreDefinitionOutput, error) {
@@ -5337,7 +5332,7 @@ const opUpdateDeviceDefinition = "UpdateDeviceDefinition"
 
 // UpdateDeviceDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateDeviceDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5388,7 +5383,7 @@ func (c *Greengrass) UpdateDeviceDefinitionRequest(input *UpdateDeviceDefinition
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateDeviceDefinition
 func (c *Greengrass) UpdateDeviceDefinition(input *UpdateDeviceDefinitionInput) (*UpdateDeviceDefinitionOutput, error) {
@@ -5416,7 +5411,7 @@ const opUpdateFunctionDefinition = "UpdateFunctionDefinition"
 
 // UpdateFunctionDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateFunctionDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5467,7 +5462,7 @@ func (c *Greengrass) UpdateFunctionDefinitionRequest(input *UpdateFunctionDefini
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateFunctionDefinition
 func (c *Greengrass) UpdateFunctionDefinition(input *UpdateFunctionDefinitionInput) (*UpdateFunctionDefinitionOutput, error) {
@@ -5495,7 +5490,7 @@ const opUpdateGroup = "UpdateGroup"
 
 // UpdateGroupRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateGroup operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5546,7 +5541,7 @@ func (c *Greengrass) UpdateGroupRequest(input *UpdateGroupInput) (req *request.R
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateGroup
 func (c *Greengrass) UpdateGroup(input *UpdateGroupInput) (*UpdateGroupOutput, error) {
@@ -5574,7 +5569,7 @@ const opUpdateGroupCertificateConfiguration = "UpdateGroupCertificateConfigurati
 
 // UpdateGroupCertificateConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateGroupCertificateConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5614,7 +5609,7 @@ func (c *Greengrass) UpdateGroupCertificateConfigurationRequest(input *UpdateGro
 
 // UpdateGroupCertificateConfiguration API operation for AWS Greengrass.
 //
-// Updates the Cert expiry time for a group.
+// Updates the Certificate expiry time for a group.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -5625,10 +5620,10 @@ func (c *Greengrass) UpdateGroupCertificateConfigurationRequest(input *UpdateGro
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 //   * ErrCodeInternalServerErrorException "InternalServerErrorException"
-//   The server encountered an unexpected error.
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateGroupCertificateConfiguration
 func (c *Greengrass) UpdateGroupCertificateConfiguration(input *UpdateGroupCertificateConfigurationInput) (*UpdateGroupCertificateConfigurationOutput, error) {
@@ -5656,7 +5651,7 @@ const opUpdateLoggerDefinition = "UpdateLoggerDefinition"
 
 // UpdateLoggerDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateLoggerDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5707,7 +5702,7 @@ func (c *Greengrass) UpdateLoggerDefinitionRequest(input *UpdateLoggerDefinition
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateLoggerDefinition
 func (c *Greengrass) UpdateLoggerDefinition(input *UpdateLoggerDefinitionInput) (*UpdateLoggerDefinitionOutput, error) {
@@ -5735,7 +5730,7 @@ const opUpdateResourceDefinition = "UpdateResourceDefinition"
 
 // UpdateResourceDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateResourceDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5786,7 +5781,7 @@ func (c *Greengrass) UpdateResourceDefinitionRequest(input *UpdateResourceDefini
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateResourceDefinition
 func (c *Greengrass) UpdateResourceDefinition(input *UpdateResourceDefinitionInput) (*UpdateResourceDefinitionOutput, error) {
@@ -5814,7 +5809,7 @@ const opUpdateSubscriptionDefinition = "UpdateSubscriptionDefinition"
 
 // UpdateSubscriptionDefinitionRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateSubscriptionDefinition operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5865,7 +5860,7 @@ func (c *Greengrass) UpdateSubscriptionDefinitionRequest(input *UpdateSubscripti
 //
 // Returned Error Codes:
 //   * ErrCodeBadRequestException "BadRequestException"
-//   user error
+//   General error information.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateSubscriptionDefinition
 func (c *Greengrass) UpdateSubscriptionDefinition(input *UpdateSubscriptionDefinitionInput) (*UpdateSubscriptionDefinitionOutput, error) {
@@ -5889,14 +5884,13 @@ func (c *Greengrass) UpdateSubscriptionDefinitionWithContext(ctx aws.Context, in
 	return out, req.Send()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/AssociateRoleToGroupRequest
 type AssociateRoleToGroupInput struct {
 	_ struct{} `type:"structure"`
 
 	// GroupId is a required field
 	GroupId *string `location:"uri" locationName:"GroupId" type:"string" required:"true"`
 
-	// Role arn you wish to associate with this group.
+	// The ARN of the role you wish to associate with this group.
 	RoleArn *string `type:"string"`
 }
 
@@ -5935,11 +5929,11 @@ func (s *AssociateRoleToGroupInput) SetRoleArn(v string) *AssociateRoleToGroupIn
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/AssociateRoleToGroupResponse
 type AssociateRoleToGroupOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Time the role arn was associated to your group.
+	// The time, in milliseconds since the epoch, when the role ARN was associated
+	// with the group.
 	AssociatedAt *string `type:"string"`
 }
 
@@ -5959,11 +5953,10 @@ func (s *AssociateRoleToGroupOutput) SetAssociatedAt(v string) *AssociateRoleToG
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/AssociateServiceRoleToAccountRequest
 type AssociateServiceRoleToAccountInput struct {
 	_ struct{} `type:"structure"`
 
-	// Role arn you wish to associate with this account.
+	// The ARN of the service role you wish to associate with your account.
 	RoleArn *string `type:"string"`
 }
 
@@ -5983,11 +5976,10 @@ func (s *AssociateServiceRoleToAccountInput) SetRoleArn(v string) *AssociateServ
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/AssociateServiceRoleToAccountResponse
 type AssociateServiceRoleToAccountOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Time when the service role was associated to the account.
+	// The time when the service role was associated with the account.
 	AssociatedAt *string `type:"string"`
 }
 
@@ -6007,21 +5999,20 @@ func (s *AssociateServiceRoleToAccountOutput) SetAssociatedAt(v string) *Associa
 	return s
 }
 
-// Connectivity Info
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ConnectivityInfo
+// Information about a Greengrass core's connectivity.
 type ConnectivityInfo struct {
 	_ struct{} `type:"structure"`
 
-	// Endpoint for the GGC. Can be an IP address or DNS.
+	// The endpoint for the Greengrass core. Can be an IP address or DNS.
 	HostAddress *string `type:"string"`
 
-	// Element Id for this entry in the list.
+	// The ID of the connectivity information.
 	Id *string `type:"string"`
 
 	// Metadata for this endpoint.
 	Metadata *string `type:"string"`
 
-	// Port of the GGC. Usually 8883.
+	// The port of the Greengrass core. Usually 8883.
 	PortNumber *int64 `type:"integer"`
 }
 
@@ -6059,22 +6050,20 @@ func (s *ConnectivityInfo) SetPortNumber(v int64) *ConnectivityInfo {
 	return s
 }
 
-// Information on the core
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/Core
+// Information about a core.
 type Core struct {
 	_ struct{} `type:"structure"`
 
-	// Certificate arn of the core.
+	// The ARN of the certificate associated with the core.
 	CertificateArn *string `type:"string"`
 
-	// Element Id for this entry in the list.
+	// The ID of the core.
 	Id *string `type:"string"`
 
-	// If true, the local shadow value automatically syncs with the cloud's shadow
-	// state.
+	// If true, the core's local shadow is automatically synced with the cloud.
 	SyncShadow *bool `type:"boolean"`
 
-	// Thing arn of the core.
+	// The ARN of the thing which is the core.
 	ThingArn *string `type:"string"`
 }
 
@@ -6112,12 +6101,11 @@ func (s *Core) SetThingArn(v string) *Core {
 	return s
 }
 
-// Information on core definition version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CoreDefinitionVersion
+// Information about a core definition version.
 type CoreDefinitionVersion struct {
 	_ struct{} `type:"structure"`
 
-	// Cores in the definition version.
+	// A list of cores in the core definition version.
 	Cores []*Core `type:"list"`
 }
 
@@ -6137,13 +6125,12 @@ func (s *CoreDefinitionVersion) SetCores(v []*Core) *CoreDefinitionVersion {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateCoreDefinitionRequest
 type CreateCoreDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
 	AmznClientToken *string `location:"header" locationName:"X-Amzn-Client-Token" type:"string"`
 
-	// Information on core definition version
+	// Information about a core definition version.
 	InitialVersion *CoreDefinitionVersion `type:"structure"`
 
 	Name *string `type:"string"`
@@ -6177,7 +6164,6 @@ func (s *CreateCoreDefinitionInput) SetName(v string) *CreateCoreDefinitionInput
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateCoreDefinitionResponse
 type CreateCoreDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6248,7 +6234,6 @@ func (s *CreateCoreDefinitionOutput) SetName(v string) *CreateCoreDefinitionOutp
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateCoreDefinitionVersionRequest
 type CreateCoreDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6301,7 +6286,6 @@ func (s *CreateCoreDefinitionVersionInput) SetCores(v []*Core) *CreateCoreDefini
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateCoreDefinitionVersionResponse
 type CreateCoreDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6348,24 +6332,23 @@ func (s *CreateCoreDefinitionVersionOutput) SetVersion(v string) *CreateCoreDefi
 	return s
 }
 
-// Information on Deployment
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateDeploymentRequest
+// Information about a deployment.
 type CreateDeploymentInput struct {
 	_ struct{} `type:"structure"`
 
 	AmznClientToken *string `location:"header" locationName:"X-Amzn-Client-Token" type:"string"`
 
-	// Id of the deployment if you wish to redeploy a previous deployment.
+	// The ID of the deployment if you wish to redeploy a previous deployment.
 	DeploymentId *string `type:"string"`
 
-	// Type of deployment. When used in CreateDeployment, only NewDeployment and
-	// Redeployment are valid.
+	// The type of deployment. When used in ''CreateDeployment'', only ''NewDeployment''
+	// and ''Redeployment'' are valid.
 	DeploymentType *string `type:"string" enum:"DeploymentType"`
 
 	// GroupId is a required field
 	GroupId *string `location:"uri" locationName:"GroupId" type:"string" required:"true"`
 
-	// Group Version you wish to deploy.
+	// The ID of the group version to be deployed.
 	GroupVersionId *string `type:"string"`
 }
 
@@ -6422,14 +6405,13 @@ func (s *CreateDeploymentInput) SetGroupVersionId(v string) *CreateDeploymentInp
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateDeploymentResponse
 type CreateDeploymentOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The arn of the deployment.
+	// The ARN of the deployment.
 	DeploymentArn *string `type:"string"`
 
-	// The id of the deployment.
+	// The ID of the deployment.
 	DeploymentId *string `type:"string"`
 }
 
@@ -6455,13 +6437,12 @@ func (s *CreateDeploymentOutput) SetDeploymentId(v string) *CreateDeploymentOutp
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateDeviceDefinitionRequest
 type CreateDeviceDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
 	AmznClientToken *string `location:"header" locationName:"X-Amzn-Client-Token" type:"string"`
 
-	// Information on device definition version
+	// Information about a device definition version.
 	InitialVersion *DeviceDefinitionVersion `type:"structure"`
 
 	Name *string `type:"string"`
@@ -6495,7 +6476,6 @@ func (s *CreateDeviceDefinitionInput) SetName(v string) *CreateDeviceDefinitionI
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateDeviceDefinitionResponse
 type CreateDeviceDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6566,7 +6546,6 @@ func (s *CreateDeviceDefinitionOutput) SetName(v string) *CreateDeviceDefinition
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateDeviceDefinitionVersionRequest
 type CreateDeviceDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6619,7 +6598,6 @@ func (s *CreateDeviceDefinitionVersionInput) SetDevices(v []*Device) *CreateDevi
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateDeviceDefinitionVersionResponse
 type CreateDeviceDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6666,13 +6644,12 @@ func (s *CreateDeviceDefinitionVersionOutput) SetVersion(v string) *CreateDevice
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateFunctionDefinitionRequest
 type CreateFunctionDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
 	AmznClientToken *string `location:"header" locationName:"X-Amzn-Client-Token" type:"string"`
 
-	// Information on the function definition version
+	// Information about a function definition version.
 	InitialVersion *FunctionDefinitionVersion `type:"structure"`
 
 	Name *string `type:"string"`
@@ -6706,7 +6683,6 @@ func (s *CreateFunctionDefinitionInput) SetName(v string) *CreateFunctionDefinit
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateFunctionDefinitionResponse
 type CreateFunctionDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6777,7 +6753,6 @@ func (s *CreateFunctionDefinitionOutput) SetName(v string) *CreateFunctionDefini
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateFunctionDefinitionVersionRequest
 type CreateFunctionDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6830,7 +6805,6 @@ func (s *CreateFunctionDefinitionVersionInput) SetFunctions(v []*Function) *Crea
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateFunctionDefinitionVersionResponse
 type CreateFunctionDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6877,7 +6851,6 @@ func (s *CreateFunctionDefinitionVersionOutput) SetVersion(v string) *CreateFunc
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateGroupCertificateAuthorityRequest
 type CreateGroupCertificateAuthorityInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6922,11 +6895,10 @@ func (s *CreateGroupCertificateAuthorityInput) SetGroupId(v string) *CreateGroup
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateGroupCertificateAuthorityResponse
 type CreateGroupCertificateAuthorityOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the group certificate authority.
+	// The ARN of the group certificate authority.
 	GroupCertificateAuthorityArn *string `type:"string"`
 }
 
@@ -6946,13 +6918,12 @@ func (s *CreateGroupCertificateAuthorityOutput) SetGroupCertificateAuthorityArn(
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateGroupRequest
 type CreateGroupInput struct {
 	_ struct{} `type:"structure"`
 
 	AmznClientToken *string `location:"header" locationName:"X-Amzn-Client-Token" type:"string"`
 
-	// Information on group version
+	// Information about a group version.
 	InitialVersion *GroupVersion `type:"structure"`
 
 	Name *string `type:"string"`
@@ -6986,7 +6957,6 @@ func (s *CreateGroupInput) SetName(v string) *CreateGroupInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateGroupResponse
 type CreateGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7057,7 +7027,6 @@ func (s *CreateGroupOutput) SetName(v string) *CreateGroupOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateGroupVersionRequest
 type CreateGroupVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7150,7 +7119,6 @@ func (s *CreateGroupVersionInput) SetSubscriptionDefinitionVersionArn(v string) 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateGroupVersionResponse
 type CreateGroupVersionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7197,13 +7165,12 @@ func (s *CreateGroupVersionOutput) SetVersion(v string) *CreateGroupVersionOutpu
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateLoggerDefinitionRequest
 type CreateLoggerDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
 	AmznClientToken *string `location:"header" locationName:"X-Amzn-Client-Token" type:"string"`
 
-	// Information on logger definition version
+	// Information about a logger definition version.
 	InitialVersion *LoggerDefinitionVersion `type:"structure"`
 
 	Name *string `type:"string"`
@@ -7237,7 +7204,6 @@ func (s *CreateLoggerDefinitionInput) SetName(v string) *CreateLoggerDefinitionI
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateLoggerDefinitionResponse
 type CreateLoggerDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7308,7 +7274,6 @@ func (s *CreateLoggerDefinitionOutput) SetName(v string) *CreateLoggerDefinition
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateLoggerDefinitionVersionRequest
 type CreateLoggerDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7361,7 +7326,6 @@ func (s *CreateLoggerDefinitionVersionInput) SetLoggers(v []*Logger) *CreateLogg
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateLoggerDefinitionVersionResponse
 type CreateLoggerDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7408,13 +7372,12 @@ func (s *CreateLoggerDefinitionVersionOutput) SetVersion(v string) *CreateLogger
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateResourceDefinitionRequest
 type CreateResourceDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
 	AmznClientToken *string `location:"header" locationName:"X-Amzn-Client-Token" type:"string"`
 
-	// Information on resource definition version
+	// Information about a resource definition version.
 	InitialVersion *ResourceDefinitionVersion `type:"structure"`
 
 	Name *string `type:"string"`
@@ -7448,7 +7411,6 @@ func (s *CreateResourceDefinitionInput) SetName(v string) *CreateResourceDefinit
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateResourceDefinitionResponse
 type CreateResourceDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7519,7 +7481,6 @@ func (s *CreateResourceDefinitionOutput) SetName(v string) *CreateResourceDefini
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateResourceDefinitionVersionRequest
 type CreateResourceDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7572,7 +7533,6 @@ func (s *CreateResourceDefinitionVersionInput) SetResources(v []*Resource) *Crea
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateResourceDefinitionVersionResponse
 type CreateResourceDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7619,8 +7579,7 @@ func (s *CreateResourceDefinitionVersionOutput) SetVersion(v string) *CreateReso
 	return s
 }
 
-// Request for the CreateSoftwareUpdateJob API
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateSoftwareUpdateJobRequest
+// Request for the CreateSoftwareUpdateJob API.
 type CreateSoftwareUpdateJobInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7630,20 +7589,21 @@ type CreateSoftwareUpdateJobInput struct {
 	// towards the update artifact.
 	S3UrlSignerRole *string `type:"string"`
 
-	// The piece of software on the Greengrass Core that will be updated.
+	// The piece of software on the Greengrass core that will be updated.
 	SoftwareToUpdate *string `type:"string" enum:"SoftwareToUpdate"`
 
 	// The minimum level of log statements that should be logged by the OTA Agent
 	// during an update.
 	UpdateAgentLogLevel *string `type:"string" enum:"UpdateAgentLogLevel"`
 
-	// The target arns that this update will be applied to.
+	// The ARNs of the targets (IoT things or IoT thing groups) that this update
+	// will be applied to.
 	UpdateTargets []*string `type:"list"`
 
-	// The architecture of the Cores in the targets of an update
+	// The architecture of the cores which are the targets of an update.
 	UpdateTargetsArchitecture *string `type:"string" enum:"UpdateTargetsArchitecture"`
 
-	// The operating system of the Cores in the targets of an update
+	// The operating system of the cores which are the targets of an update.
 	UpdateTargetsOperatingSystem *string `type:"string" enum:"UpdateTargetsOperatingSystem"`
 }
 
@@ -7699,14 +7659,13 @@ func (s *CreateSoftwareUpdateJobInput) SetUpdateTargetsOperatingSystem(v string)
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateSoftwareUpdateJobResponse
 type CreateSoftwareUpdateJobOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The Iot Job Arn corresponding to this update.
+	// The IoT Job ARN corresponding to this update.
 	IotJobArn *string `type:"string"`
 
-	// The Iot Job Id corresponding to this update.
+	// The IoT Job Id corresponding to this update.
 	IotJobId *string `type:"string"`
 }
 
@@ -7732,13 +7691,12 @@ func (s *CreateSoftwareUpdateJobOutput) SetIotJobId(v string) *CreateSoftwareUpd
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateSubscriptionDefinitionRequest
 type CreateSubscriptionDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
 	AmznClientToken *string `location:"header" locationName:"X-Amzn-Client-Token" type:"string"`
 
-	// Information on subscription definition version
+	// Information about a subscription definition version.
 	InitialVersion *SubscriptionDefinitionVersion `type:"structure"`
 
 	Name *string `type:"string"`
@@ -7772,7 +7730,6 @@ func (s *CreateSubscriptionDefinitionInput) SetName(v string) *CreateSubscriptio
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateSubscriptionDefinitionResponse
 type CreateSubscriptionDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7843,7 +7800,6 @@ func (s *CreateSubscriptionDefinitionOutput) SetName(v string) *CreateSubscripti
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateSubscriptionDefinitionVersionRequest
 type CreateSubscriptionDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7896,7 +7852,6 @@ func (s *CreateSubscriptionDefinitionVersionInput) SetSubscriptions(v []*Subscri
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/CreateSubscriptionDefinitionVersionResponse
 type CreateSubscriptionDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7943,30 +7898,29 @@ func (s *CreateSubscriptionDefinitionVersionOutput) SetVersion(v string) *Create
 	return s
 }
 
-// Information on the Definition
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DefinitionInformation
+// Information about a definition.
 type DefinitionInformation struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the definition.
+	// The ARN of the definition.
 	Arn *string `type:"string"`
 
-	// Timestamp of when the definition was created.
+	// The time, in milliseconds since the epoch, when the definition was created.
 	CreationTimestamp *string `type:"string"`
 
-	// Id of the definition.
+	// The ID of the definition.
 	Id *string `type:"string"`
 
-	// Last updated timestamp of the definition.
+	// The time, in milliseconds since the epoch, when the definition was last updated.
 	LastUpdatedTimestamp *string `type:"string"`
 
-	// Last version of the definition.
+	// The latest version of the definition.
 	LatestVersion *string `type:"string"`
 
-	// Latest version arn of the definition.
+	// The ARN of the latest version of the definition.
 	LatestVersionArn *string `type:"string"`
 
-	// Name of the definition.
+	// The name of the definition.
 	Name *string `type:"string"`
 }
 
@@ -8022,7 +7976,6 @@ func (s *DefinitionInformation) SetName(v string) *DefinitionInformation {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteCoreDefinitionRequest
 type DeleteCoreDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8059,7 +8012,6 @@ func (s *DeleteCoreDefinitionInput) SetCoreDefinitionId(v string) *DeleteCoreDef
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteCoreDefinitionResponse
 type DeleteCoreDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -8074,7 +8026,6 @@ func (s DeleteCoreDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteDeviceDefinitionRequest
 type DeleteDeviceDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8111,7 +8062,6 @@ func (s *DeleteDeviceDefinitionInput) SetDeviceDefinitionId(v string) *DeleteDev
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteDeviceDefinitionResponse
 type DeleteDeviceDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -8126,7 +8076,6 @@ func (s DeleteDeviceDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteFunctionDefinitionRequest
 type DeleteFunctionDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8163,7 +8112,6 @@ func (s *DeleteFunctionDefinitionInput) SetFunctionDefinitionId(v string) *Delet
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteFunctionDefinitionResponse
 type DeleteFunctionDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -8178,7 +8126,6 @@ func (s DeleteFunctionDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteGroupRequest
 type DeleteGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8215,7 +8162,6 @@ func (s *DeleteGroupInput) SetGroupId(v string) *DeleteGroupInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteGroupResponse
 type DeleteGroupOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -8230,7 +8176,6 @@ func (s DeleteGroupOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteLoggerDefinitionRequest
 type DeleteLoggerDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8267,7 +8212,6 @@ func (s *DeleteLoggerDefinitionInput) SetLoggerDefinitionId(v string) *DeleteLog
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteLoggerDefinitionResponse
 type DeleteLoggerDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -8282,7 +8226,6 @@ func (s DeleteLoggerDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteResourceDefinitionRequest
 type DeleteResourceDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8319,7 +8262,6 @@ func (s *DeleteResourceDefinitionInput) SetResourceDefinitionId(v string) *Delet
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteResourceDefinitionResponse
 type DeleteResourceDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -8334,7 +8276,6 @@ func (s DeleteResourceDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteSubscriptionDefinitionRequest
 type DeleteSubscriptionDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8371,7 +8312,6 @@ func (s *DeleteSubscriptionDefinitionInput) SetSubscriptionDefinitionId(v string
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeleteSubscriptionDefinitionResponse
 type DeleteSubscriptionDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -8386,24 +8326,23 @@ func (s DeleteSubscriptionDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// Information on the deployment
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/Deployment
+// Information about a deployment.
 type Deployment struct {
 	_ struct{} `type:"structure"`
 
-	// Timestamp when the deployment was created.
+	// The time, in milliseconds since the epoch, when the deployment was created.
 	CreatedAt *string `type:"string"`
 
-	// Arn of the deployment.
+	// The ARN of the deployment.
 	DeploymentArn *string `type:"string"`
 
-	// Id of the deployment.
+	// The ID of the deployment.
 	DeploymentId *string `type:"string"`
 
-	// The type of deployment.
+	// The type of the deployment.
 	DeploymentType *string `type:"string" enum:"DeploymentType"`
 
-	// Arn of the group for this deployment.
+	// The ARN of the group for this deployment.
 	GroupArn *string `type:"string"`
 }
 
@@ -8447,22 +8386,21 @@ func (s *Deployment) SetGroupArn(v string) *Deployment {
 	return s
 }
 
-// Information on a Device
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/Device
+// Information about a device.
 type Device struct {
 	_ struct{} `type:"structure"`
 
-	// Certificate arn of the device.
+	// The ARN of the certificate associated with the device.
 	CertificateArn *string `type:"string"`
 
-	// Element Id for this entry in the list.
+	// The ID of the device.
 	Id *string `type:"string"`
 
-	// If true, the local shadow value automatically syncs with the cloud's shadow
-	// state.
+	// If true, the device's local shadow will be automatically synced with the
+	// cloud.
 	SyncShadow *bool `type:"boolean"`
 
-	// Thing arn of the device.
+	// The thing ARN of the device.
 	ThingArn *string `type:"string"`
 }
 
@@ -8500,12 +8438,11 @@ func (s *Device) SetThingArn(v string) *Device {
 	return s
 }
 
-// Information on device definition version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DeviceDefinitionVersion
+// Information about a device definition version.
 type DeviceDefinitionVersion struct {
 	_ struct{} `type:"structure"`
 
-	// Devices in the definition version.
+	// A list of devices in the definition version.
 	Devices []*Device `type:"list"`
 }
 
@@ -8525,7 +8462,6 @@ func (s *DeviceDefinitionVersion) SetDevices(v []*Device) *DeviceDefinitionVersi
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DisassociateRoleFromGroupRequest
 type DisassociateRoleFromGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8562,11 +8498,11 @@ func (s *DisassociateRoleFromGroupInput) SetGroupId(v string) *DisassociateRoleF
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DisassociateRoleFromGroupResponse
 type DisassociateRoleFromGroupOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Time when the role was disassociated from the group.
+	// The time, in milliseconds since the epoch, when the role was disassociated
+	// from the group.
 	DisassociatedAt *string `type:"string"`
 }
 
@@ -8586,7 +8522,6 @@ func (s *DisassociateRoleFromGroupOutput) SetDisassociatedAt(v string) *Disassoc
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DisassociateServiceRoleFromAccountRequest
 type DisassociateServiceRoleFromAccountInput struct {
 	_ struct{} `type:"structure"`
 }
@@ -8601,11 +8536,10 @@ func (s DisassociateServiceRoleFromAccountInput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/DisassociateServiceRoleFromAccountResponse
 type DisassociateServiceRoleFromAccountOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Time when the service role was disassociated from the account.
+	// The time when the service role was disassociated from the account.
 	DisassociatedAt *string `type:"string"`
 }
 
@@ -8625,15 +8559,14 @@ func (s *DisassociateServiceRoleFromAccountOutput) SetDisassociatedAt(v string) 
 	return s
 }
 
-// ErrorDetail
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ErrorDetail
+// Details about the error.
 type ErrorDetail struct {
 	_ struct{} `type:"structure"`
 
-	// Detailed Error Code
+	// A detailed error code.
 	DetailedErrorCode *string `type:"string"`
 
-	// Detailed Error Message
+	// A detailed error message.
 	DetailedErrorMessage *string `type:"string"`
 }
 
@@ -8659,18 +8592,17 @@ func (s *ErrorDetail) SetDetailedErrorMessage(v string) *ErrorDetail {
 	return s
 }
 
-// Information on function
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/Function
+// Information about a Lambda function.
 type Function struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the Lambda function.
+	// The ARN of the Lambda function.
 	FunctionArn *string `type:"string"`
 
-	// Configuration of the function
+	// The configuration of the Lambda function.
 	FunctionConfiguration *FunctionConfiguration `type:"structure"`
 
-	// Id of the function in this version.
+	// The ID of the Lambda function.
 	Id *string `type:"string"`
 }
 
@@ -8702,29 +8634,32 @@ func (s *Function) SetId(v string) *Function {
 	return s
 }
 
-// Configuration of the function
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/FunctionConfiguration
+// The configuration of the Lambda function.
 type FunctionConfiguration struct {
 	_ struct{} `type:"structure"`
 
-	// Environment of the function configuration
+	// The expected encoding type of the input payload for the function. The default
+	// is ''json''.
+	EncodingType *string `type:"string" enum:"EncodingType"`
+
+	// The environment configuration of the function.
 	Environment *FunctionConfigurationEnvironment `type:"structure"`
 
-	// Execution Arguments
+	// The execution arguments.
 	ExecArgs *string `type:"string"`
 
-	// Executable
+	// The name of the function executable.
 	Executable *string `type:"string"`
 
-	// The memory size, in KB, you configured for the function.
+	// The memory size, in KB, which the function requires.
 	MemorySize *int64 `type:"integer"`
 
-	// Whether the function is pinned or not. Pinned means the function is long-lived
-	// and starts when the core starts.
+	// True if the function is pinned. Pinned means the function is long-lived and
+	// starts when the core starts.
 	Pinned *bool `type:"boolean"`
 
-	// The function execution time at which Lambda should terminate the function.
-	// This timeout still applies to pinned lambdas for each request.
+	// The allowed function execution time, after which Lambda should terminate
+	// the function. This timeout still applies to pinned lambdas for each request.
 	Timeout *int64 `type:"integer"`
 }
 
@@ -8736,6 +8671,12 @@ func (s FunctionConfiguration) String() string {
 // GoString returns the string representation
 func (s FunctionConfiguration) GoString() string {
 	return s.String()
+}
+
+// SetEncodingType sets the EncodingType field's value.
+func (s *FunctionConfiguration) SetEncodingType(v string) *FunctionConfiguration {
+	s.EncodingType = &v
+	return s
 }
 
 // SetEnvironment sets the Environment field's value.
@@ -8774,17 +8715,19 @@ func (s *FunctionConfiguration) SetTimeout(v int64) *FunctionConfiguration {
 	return s
 }
 
-// Environment of the function configuration
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/FunctionConfigurationEnvironment
+// The environment configuration of the function.
 type FunctionConfigurationEnvironment struct {
 	_ struct{} `type:"structure"`
 
-	// Flag to allow lambda access sys filesystem.
+	// If true, the Lambda function is allowed to access the host's /sys folder.
+	// Use this when the Lambda function needs to read device information from /sys.
 	AccessSysfs *bool `type:"boolean"`
 
-	// Policies for the function to access resources.
+	// A list of the resources, with their permissions, to which the Lambda function
+	// will be granted access. A Lambda function can have at most 10 resources.
 	ResourceAccessPolicies []*ResourceAccessPolicy `type:"list"`
 
+	// Environment variables for the Lambda function's configuration.
 	Variables map[string]*string `type:"map"`
 }
 
@@ -8816,12 +8759,11 @@ func (s *FunctionConfigurationEnvironment) SetVariables(v map[string]*string) *F
 	return s
 }
 
-// Information on the function definition version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/FunctionDefinitionVersion
+// Information about a function definition version.
 type FunctionDefinitionVersion struct {
 	_ struct{} `type:"structure"`
 
-	// Lambda functions in this function definition version.
+	// A list of Lambda functions in this function definition version.
 	Functions []*Function `type:"list"`
 }
 
@@ -8841,7 +8783,6 @@ func (s *FunctionDefinitionVersion) SetFunctions(v []*Function) *FunctionDefinit
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetAssociatedRoleRequest
 type GetAssociatedRoleInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8878,14 +8819,13 @@ func (s *GetAssociatedRoleInput) SetGroupId(v string) *GetAssociatedRoleInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetAssociatedRoleResponse
 type GetAssociatedRoleOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Time when the role was associated for the group.
+	// The time when the role was associated with the group.
 	AssociatedAt *string `type:"string"`
 
-	// Arn of the role that is associated with the group.
+	// The ARN of the role that is associated with the group.
 	RoleArn *string `type:"string"`
 }
 
@@ -8911,7 +8851,6 @@ func (s *GetAssociatedRoleOutput) SetRoleArn(v string) *GetAssociatedRoleOutput 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetConnectivityInfoRequest
 type GetConnectivityInfoInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8948,15 +8887,14 @@ func (s *GetConnectivityInfoInput) SetThingName(v string) *GetConnectivityInfoIn
 	return s
 }
 
-// connectivity info response
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetConnectivityInfoResponse
+// Information about a Greengrass core's connectivity.
 type GetConnectivityInfoOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Connectivity info list
+	// Connectivity info list.
 	ConnectivityInfo []*ConnectivityInfo `type:"list"`
 
-	// Response Text
+	// A message about the connectivity info request.
 	Message *string `locationName:"message" type:"string"`
 }
 
@@ -8982,7 +8920,6 @@ func (s *GetConnectivityInfoOutput) SetMessage(v string) *GetConnectivityInfoOut
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetCoreDefinitionRequest
 type GetCoreDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9019,7 +8956,6 @@ func (s *GetCoreDefinitionInput) SetCoreDefinitionId(v string) *GetCoreDefinitio
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetCoreDefinitionResponse
 type GetCoreDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -9090,7 +9026,6 @@ func (s *GetCoreDefinitionOutput) SetName(v string) *GetCoreDefinitionOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetCoreDefinitionVersionRequest
 type GetCoreDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9139,23 +9074,23 @@ func (s *GetCoreDefinitionVersionInput) SetCoreDefinitionVersionId(v string) *Ge
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetCoreDefinitionVersionResponse
 type GetCoreDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the core definition version.
+	// The ARN of the core definition version.
 	Arn *string `type:"string"`
 
-	// Timestamp of when the core definition version was created.
+	// The time, in milliseconds since the epoch, when the core definition version
+	// was created.
 	CreationTimestamp *string `type:"string"`
 
-	// Information on definition
+	// Information about the core definition version.
 	Definition *CoreDefinitionVersion `type:"structure"`
 
-	// Id of the core definition the version belongs to.
+	// The ID of the core definition version.
 	Id *string `type:"string"`
 
-	// Version of the core definition version.
+	// The version of the core definition version.
 	Version *string `type:"string"`
 }
 
@@ -9199,7 +9134,6 @@ func (s *GetCoreDefinitionVersionOutput) SetVersion(v string) *GetCoreDefinition
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetDeploymentStatusRequest
 type GetDeploymentStatusInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9248,24 +9182,24 @@ func (s *GetDeploymentStatusInput) SetGroupId(v string) *GetDeploymentStatusInpu
 	return s
 }
 
-// The response body contains the status of a deployment for a group.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetDeploymentStatusResponse
+// Information about the status of a deployment for a group.
 type GetDeploymentStatusOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Status of the deployment.
+	// The status of the deployment.
 	DeploymentStatus *string `type:"string"`
 
 	// The type of the deployment.
 	DeploymentType *string `type:"string" enum:"DeploymentType"`
 
-	// The error Details
+	// Error details
 	ErrorDetails []*ErrorDetail `type:"list"`
 
-	// Error Message
+	// Error message
 	ErrorMessage *string `type:"string"`
 
-	// Last time the deployment status was updated.
+	// The time, in milliseconds since the epoch, when the deployment status was
+	// updated.
 	UpdatedAt *string `type:"string"`
 }
 
@@ -9309,7 +9243,6 @@ func (s *GetDeploymentStatusOutput) SetUpdatedAt(v string) *GetDeploymentStatusO
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetDeviceDefinitionRequest
 type GetDeviceDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9346,7 +9279,6 @@ func (s *GetDeviceDefinitionInput) SetDeviceDefinitionId(v string) *GetDeviceDef
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetDeviceDefinitionResponse
 type GetDeviceDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -9417,7 +9349,6 @@ func (s *GetDeviceDefinitionOutput) SetName(v string) *GetDeviceDefinitionOutput
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetDeviceDefinitionVersionRequest
 type GetDeviceDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9466,23 +9397,23 @@ func (s *GetDeviceDefinitionVersionInput) SetDeviceDefinitionVersionId(v string)
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetDeviceDefinitionVersionResponse
 type GetDeviceDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the device definition version.
+	// The ARN of the device definition version.
 	Arn *string `type:"string"`
 
-	// Timestamp of when the device definition version was created.
+	// The time, in milliseconds since the epoch, when the device definition version
+	// was created.
 	CreationTimestamp *string `type:"string"`
 
-	// Device definition version
+	// Information about the device definition version.
 	Definition *DeviceDefinitionVersion `type:"structure"`
 
-	// Id of the device definition the version belongs to.
+	// The ID of the device definition version.
 	Id *string `type:"string"`
 
-	// Version of the device definition version.
+	// The version of the device definition version.
 	Version *string `type:"string"`
 }
 
@@ -9526,7 +9457,6 @@ func (s *GetDeviceDefinitionVersionOutput) SetVersion(v string) *GetDeviceDefini
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetFunctionDefinitionRequest
 type GetFunctionDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9563,7 +9493,6 @@ func (s *GetFunctionDefinitionInput) SetFunctionDefinitionId(v string) *GetFunct
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetFunctionDefinitionResponse
 type GetFunctionDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -9634,7 +9563,6 @@ func (s *GetFunctionDefinitionOutput) SetName(v string) *GetFunctionDefinitionOu
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetFunctionDefinitionVersionRequest
 type GetFunctionDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9683,24 +9611,24 @@ func (s *GetFunctionDefinitionVersionInput) SetFunctionDefinitionVersionId(v str
 	return s
 }
 
-// Function definition version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetFunctionDefinitionVersionResponse
+// Information about a function definition version.
 type GetFunctionDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the function definition version.
+	// The ARN of the function definition version.
 	Arn *string `type:"string"`
 
-	// Timestamp when the funtion definition version was created.
+	// The time, in milliseconds since the epoch, when the function definition version
+	// was created.
 	CreationTimestamp *string `type:"string"`
 
 	// Information on the definition.
 	Definition *FunctionDefinitionVersion `type:"structure"`
 
-	// Id of the function definition the version belongs to.
+	// The ID of the function definition version.
 	Id *string `type:"string"`
 
-	// Version of the function definition version.
+	// The version of the function definition version.
 	Version *string `type:"string"`
 }
 
@@ -9744,7 +9672,6 @@ func (s *GetFunctionDefinitionVersionOutput) SetVersion(v string) *GetFunctionDe
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupCertificateAuthorityRequest
 type GetGroupCertificateAuthorityInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9793,18 +9720,17 @@ func (s *GetGroupCertificateAuthorityInput) SetGroupId(v string) *GetGroupCertif
 	return s
 }
 
-// Certificate authority for the group.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupCertificateAuthorityResponse
+// Information about a certificate authority for a group.
 type GetGroupCertificateAuthorityOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the certificate authority for the group.
+	// The ARN of the certificate authority for the group.
 	GroupCertificateAuthorityArn *string `type:"string"`
 
-	// Id of the certificate authority for the group.
+	// The ID of the certificate authority for the group.
 	GroupCertificateAuthorityId *string `type:"string"`
 
-	// PEM encoded certificate for the group.
+	// The PEM encoded certificate for the group.
 	PemEncodedCertificate *string `type:"string"`
 }
 
@@ -9836,7 +9762,6 @@ func (s *GetGroupCertificateAuthorityOutput) SetPemEncodedCertificate(v string) 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupCertificateConfigurationRequest
 type GetGroupCertificateConfigurationInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9873,7 +9798,6 @@ func (s *GetGroupCertificateConfigurationInput) SetGroupId(v string) *GetGroupCe
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupCertificateConfigurationResponse
 type GetGroupCertificateConfigurationOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -9912,7 +9836,6 @@ func (s *GetGroupCertificateConfigurationOutput) SetGroupId(v string) *GetGroupC
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupRequest
 type GetGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -9949,7 +9872,6 @@ func (s *GetGroupInput) SetGroupId(v string) *GetGroupInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupResponse
 type GetGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -10020,7 +9942,6 @@ func (s *GetGroupOutput) SetName(v string) *GetGroupOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupVersionRequest
 type GetGroupVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -10069,24 +9990,23 @@ func (s *GetGroupVersionInput) SetGroupVersionId(v string) *GetGroupVersionInput
 	return s
 }
 
-// Information on the group version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetGroupVersionResponse
+// Information about a group version.
 type GetGroupVersionOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the group version.
+	// The ARN of the group version.
 	Arn *string `type:"string"`
 
-	// Timestamp when the group version was created.
+	// The time, in milliseconds since the epoch, when the group version was created.
 	CreationTimestamp *string `type:"string"`
 
-	// Information on the definition
+	// Information about the group version definition.
 	Definition *GroupVersion `type:"structure"`
 
-	// Id of the group version.
+	// The ID of the group version.
 	Id *string `type:"string"`
 
-	// Unique Id for a version of the Group.
+	// The unique ID for the version of the group.
 	Version *string `type:"string"`
 }
 
@@ -10130,7 +10050,6 @@ func (s *GetGroupVersionOutput) SetVersion(v string) *GetGroupVersionOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetLoggerDefinitionRequest
 type GetLoggerDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -10167,7 +10086,6 @@ func (s *GetLoggerDefinitionInput) SetLoggerDefinitionId(v string) *GetLoggerDef
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetLoggerDefinitionResponse
 type GetLoggerDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -10238,7 +10156,6 @@ func (s *GetLoggerDefinitionOutput) SetName(v string) *GetLoggerDefinitionOutput
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetLoggerDefinitionVersionRequest
 type GetLoggerDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -10287,24 +10204,24 @@ func (s *GetLoggerDefinitionVersionInput) SetLoggerDefinitionVersionId(v string)
 	return s
 }
 
-// Information on logger definition version response
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetLoggerDefinitionVersionResponse
+// Information about a logger definition version.
 type GetLoggerDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the logger definition version.
+	// The ARN of the logger definition version.
 	Arn *string `type:"string"`
 
-	// Timestamp of when the logger definition version was created.
+	// The time, in milliseconds since the epoch, when the logger definition version
+	// was created.
 	CreationTimestamp *string `type:"string"`
 
-	// Information on definition
+	// Information about the logger definition version.
 	Definition *LoggerDefinitionVersion `type:"structure"`
 
-	// Id of the logger definition the version belongs to.
+	// The ID of the logger definition version.
 	Id *string `type:"string"`
 
-	// Version of the logger definition version.
+	// The version of the logger definition version.
 	Version *string `type:"string"`
 }
 
@@ -10348,7 +10265,6 @@ func (s *GetLoggerDefinitionVersionOutput) SetVersion(v string) *GetLoggerDefini
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetResourceDefinitionRequest
 type GetResourceDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -10385,7 +10301,6 @@ func (s *GetResourceDefinitionInput) SetResourceDefinitionId(v string) *GetResou
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetResourceDefinitionResponse
 type GetResourceDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -10456,7 +10371,6 @@ func (s *GetResourceDefinitionOutput) SetName(v string) *GetResourceDefinitionOu
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetResourceDefinitionVersionRequest
 type GetResourceDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -10505,24 +10419,24 @@ func (s *GetResourceDefinitionVersionInput) SetResourceDefinitionVersionId(v str
 	return s
 }
 
-// Information on resource definition version response
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetResourceDefinitionVersionResponse
+// Information about a resource definition version.
 type GetResourceDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
 	// Arn of the resource definition version.
 	Arn *string `type:"string"`
 
-	// Timestamp of when the resource definition version was created.
+	// The time, in milliseconds since the epoch, when the resource definition version
+	// was created.
 	CreationTimestamp *string `type:"string"`
 
-	// Information on definition.
+	// Information about the definition.
 	Definition *ResourceDefinitionVersion `type:"structure"`
 
-	// Id of the resource definition the version belongs to.
+	// The ID of the resource definition version.
 	Id *string `type:"string"`
 
-	// Version of the resource definition version.
+	// The version of the resource definition version.
 	Version *string `type:"string"`
 }
 
@@ -10566,7 +10480,6 @@ func (s *GetResourceDefinitionVersionOutput) SetVersion(v string) *GetResourceDe
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetServiceRoleForAccountRequest
 type GetServiceRoleForAccountInput struct {
 	_ struct{} `type:"structure"`
 }
@@ -10581,14 +10494,13 @@ func (s GetServiceRoleForAccountInput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetServiceRoleForAccountResponse
 type GetServiceRoleForAccountOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Time when the service role was associated to the account.
+	// The time when the service role was associated with the account.
 	AssociatedAt *string `type:"string"`
 
-	// Role arn which is associated to the account.
+	// The ARN of the role which is associated with the account.
 	RoleArn *string `type:"string"`
 }
 
@@ -10614,7 +10526,6 @@ func (s *GetServiceRoleForAccountOutput) SetRoleArn(v string) *GetServiceRoleFor
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetSubscriptionDefinitionRequest
 type GetSubscriptionDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -10651,7 +10562,6 @@ func (s *GetSubscriptionDefinitionInput) SetSubscriptionDefinitionId(v string) *
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetSubscriptionDefinitionResponse
 type GetSubscriptionDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -10722,7 +10632,6 @@ func (s *GetSubscriptionDefinitionOutput) SetName(v string) *GetSubscriptionDefi
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetSubscriptionDefinitionVersionRequest
 type GetSubscriptionDefinitionVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -10771,24 +10680,24 @@ func (s *GetSubscriptionDefinitionVersionInput) SetSubscriptionDefinitionVersion
 	return s
 }
 
-// Information on the Subscription Definition Version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GetSubscriptionDefinitionVersionResponse
+// Information about a subscription definition version.
 type GetSubscriptionDefinitionVersionOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the subscription definition version.
+	// The ARN of the subscription definition version.
 	Arn *string `type:"string"`
 
-	// Timestamp of when the subscription definition version was created.
+	// The time, in milliseconds since the epoch, when the subscription definition
+	// version was created.
 	CreationTimestamp *string `type:"string"`
 
-	// Information on the definition
+	// Information about the subscription definition version.
 	Definition *SubscriptionDefinitionVersion `type:"structure"`
 
-	// Id of the subscription definition the version belongs to.
+	// The ID of the subscription definition version.
 	Id *string `type:"string"`
 
-	// Version of the subscription definition version.
+	// The version of the subscription definition version.
 	Version *string `type:"string"`
 }
 
@@ -10832,15 +10741,14 @@ func (s *GetSubscriptionDefinitionVersionOutput) SetVersion(v string) *GetSubscr
 	return s
 }
 
-// Information on group certificate authority properties
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GroupCertificateAuthorityProperties
+// Information about a certificate authority for a group.
 type GroupCertificateAuthorityProperties struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the certificate authority for the group.
+	// The ARN of the certificate authority for the group.
 	GroupCertificateAuthorityArn *string `type:"string"`
 
-	// Id of the certificate authority for the group.
+	// The ID of the certificate authority for the group.
 	GroupCertificateAuthorityId *string `type:"string"`
 }
 
@@ -10866,30 +10774,29 @@ func (s *GroupCertificateAuthorityProperties) SetGroupCertificateAuthorityId(v s
 	return s
 }
 
-// Information on the group
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GroupInformation
+// Information about a group.
 type GroupInformation struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of a group.
+	// The ARN of the group.
 	Arn *string `type:"string"`
 
-	// Timestamp of when the group was created.
+	// The time, in milliseconds since the epoch, when the group was created.
 	CreationTimestamp *string `type:"string"`
 
-	// Id of a group.
+	// The ID of the group.
 	Id *string `type:"string"`
 
-	// Last updated timestamp of the group.
+	// The time, in milliseconds since the epoch, when the group was last updated.
 	LastUpdatedTimestamp *string `type:"string"`
 
-	// Last version of the group.
+	// The latest version of the group.
 	LatestVersion *string `type:"string"`
 
-	// Latest version arn of the group.
+	// The ARN of the latest version of the group.
 	LatestVersionArn *string `type:"string"`
 
-	// Name of a group.
+	// The name of the group.
 	Name *string `type:"string"`
 }
 
@@ -10946,14 +10853,16 @@ func (s *GroupInformation) SetName(v string) *GroupInformation {
 }
 
 // Group owner related settings for local resources.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GroupOwnerSetting
 type GroupOwnerSetting struct {
 	_ struct{} `type:"structure"`
 
-	// Eanble the auto added group owner.
+	// If true, GreenGrass automatically adds the specified Linux OS group owner
+	// of the resource to the Lambda process privileges. Thus the Lambda process
+	// will have the file access permissions of the added Linux group.
 	AutoAddGroupOwner *bool `type:"boolean"`
 
-	// Name of the group owner.
+	// The name of the Linux OS group whose privileges will be added to the Lambda
+	// process. This field is optional.
 	GroupOwner *string `type:"string"`
 }
 
@@ -10979,27 +10888,26 @@ func (s *GroupOwnerSetting) SetGroupOwner(v string) *GroupOwnerSetting {
 	return s
 }
 
-// Information on group version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/GroupVersion
+// Information about a group version.
 type GroupVersion struct {
 	_ struct{} `type:"structure"`
 
-	// Core definition version arn for this group.
+	// The ARN of the core definition version for this group.
 	CoreDefinitionVersionArn *string `type:"string"`
 
-	// Device definition version arn for this group.
+	// The ARN of the device definition version for this group.
 	DeviceDefinitionVersionArn *string `type:"string"`
 
-	// Function definition version arn for this group.
+	// The ARN of the function definition version for this group.
 	FunctionDefinitionVersionArn *string `type:"string"`
 
-	// Logger definition version arn for this group.
+	// The ARN of the logger definition version for this group.
 	LoggerDefinitionVersionArn *string `type:"string"`
 
-	// Resource definition version arn for this group.
+	// The resource definition version ARN for this group.
 	ResourceDefinitionVersionArn *string `type:"string"`
 
-	// Subscription definition version arn for this group.
+	// The ARN of the subscription definition version for this group.
 	SubscriptionDefinitionVersionArn *string `type:"string"`
 }
 
@@ -11049,7 +10957,6 @@ func (s *GroupVersion) SetSubscriptionDefinitionVersionArn(v string) *GroupVersi
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListCoreDefinitionVersionsRequest
 type ListCoreDefinitionVersionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11102,7 +11009,6 @@ func (s *ListCoreDefinitionVersionsInput) SetNextToken(v string) *ListCoreDefini
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListCoreDefinitionVersionsResponse
 type ListCoreDefinitionVersionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -11133,7 +11039,6 @@ func (s *ListCoreDefinitionVersionsOutput) SetVersions(v []*VersionInformation) 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListCoreDefinitionsRequest
 type ListCoreDefinitionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11164,7 +11069,6 @@ func (s *ListCoreDefinitionsInput) SetNextToken(v string) *ListCoreDefinitionsIn
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListCoreDefinitionsResponse
 type ListCoreDefinitionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -11195,7 +11099,6 @@ func (s *ListCoreDefinitionsOutput) SetNextToken(v string) *ListCoreDefinitionsO
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListDeploymentsRequest
 type ListDeploymentsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11248,11 +11151,10 @@ func (s *ListDeploymentsInput) SetNextToken(v string) *ListDeploymentsInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListDeploymentsResponse
 type ListDeploymentsOutput struct {
 	_ struct{} `type:"structure"`
 
-	// List of deployments for the requested groups
+	// A list of deployments for the requested groups.
 	Deployments []*Deployment `type:"list"`
 
 	// The token for the next set of results, or ''null'' if there are no additional
@@ -11282,7 +11184,6 @@ func (s *ListDeploymentsOutput) SetNextToken(v string) *ListDeploymentsOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListDeviceDefinitionVersionsRequest
 type ListDeviceDefinitionVersionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11335,7 +11236,6 @@ func (s *ListDeviceDefinitionVersionsInput) SetNextToken(v string) *ListDeviceDe
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListDeviceDefinitionVersionsResponse
 type ListDeviceDefinitionVersionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -11366,7 +11266,6 @@ func (s *ListDeviceDefinitionVersionsOutput) SetVersions(v []*VersionInformation
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListDeviceDefinitionsRequest
 type ListDeviceDefinitionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11397,7 +11296,6 @@ func (s *ListDeviceDefinitionsInput) SetNextToken(v string) *ListDeviceDefinitio
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListDeviceDefinitionsResponse
 type ListDeviceDefinitionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -11428,7 +11326,6 @@ func (s *ListDeviceDefinitionsOutput) SetNextToken(v string) *ListDeviceDefiniti
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListFunctionDefinitionVersionsRequest
 type ListFunctionDefinitionVersionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11481,7 +11378,6 @@ func (s *ListFunctionDefinitionVersionsInput) SetNextToken(v string) *ListFuncti
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListFunctionDefinitionVersionsResponse
 type ListFunctionDefinitionVersionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -11512,7 +11408,6 @@ func (s *ListFunctionDefinitionVersionsOutput) SetVersions(v []*VersionInformati
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListFunctionDefinitionsRequest
 type ListFunctionDefinitionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11543,7 +11438,6 @@ func (s *ListFunctionDefinitionsInput) SetNextToken(v string) *ListFunctionDefin
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListFunctionDefinitionsResponse
 type ListFunctionDefinitionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -11574,7 +11468,6 @@ func (s *ListFunctionDefinitionsOutput) SetNextToken(v string) *ListFunctionDefi
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListGroupCertificateAuthoritiesRequest
 type ListGroupCertificateAuthoritiesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11611,11 +11504,10 @@ func (s *ListGroupCertificateAuthoritiesInput) SetGroupId(v string) *ListGroupCe
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListGroupCertificateAuthoritiesResponse
 type ListGroupCertificateAuthoritiesOutput struct {
 	_ struct{} `type:"structure"`
 
-	// List of certificate authorities associated with the group.
+	// A list of certificate authorities associated with the group.
 	GroupCertificateAuthorities []*GroupCertificateAuthorityProperties `type:"list"`
 }
 
@@ -11635,7 +11527,6 @@ func (s *ListGroupCertificateAuthoritiesOutput) SetGroupCertificateAuthorities(v
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListGroupVersionsRequest
 type ListGroupVersionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11688,7 +11579,6 @@ func (s *ListGroupVersionsInput) SetNextToken(v string) *ListGroupVersionsInput 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListGroupVersionsResponse
 type ListGroupVersionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -11719,7 +11609,6 @@ func (s *ListGroupVersionsOutput) SetVersions(v []*VersionInformation) *ListGrou
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListGroupsRequest
 type ListGroupsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11750,11 +11639,10 @@ func (s *ListGroupsInput) SetNextToken(v string) *ListGroupsInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListGroupsResponse
 type ListGroupsOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Groups
+	// Information about a group.
 	Groups []*GroupInformation `type:"list"`
 
 	// The token for the next set of results, or ''null'' if there are no additional
@@ -11784,7 +11672,6 @@ func (s *ListGroupsOutput) SetNextToken(v string) *ListGroupsOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListLoggerDefinitionVersionsRequest
 type ListLoggerDefinitionVersionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11837,7 +11724,6 @@ func (s *ListLoggerDefinitionVersionsInput) SetNextToken(v string) *ListLoggerDe
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListLoggerDefinitionVersionsResponse
 type ListLoggerDefinitionVersionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -11868,7 +11754,6 @@ func (s *ListLoggerDefinitionVersionsOutput) SetVersions(v []*VersionInformation
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListLoggerDefinitionsRequest
 type ListLoggerDefinitionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11899,7 +11784,6 @@ func (s *ListLoggerDefinitionsInput) SetNextToken(v string) *ListLoggerDefinitio
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListLoggerDefinitionsResponse
 type ListLoggerDefinitionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -11930,7 +11814,6 @@ func (s *ListLoggerDefinitionsOutput) SetNextToken(v string) *ListLoggerDefiniti
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListResourceDefinitionVersionsRequest
 type ListResourceDefinitionVersionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11983,7 +11866,6 @@ func (s *ListResourceDefinitionVersionsInput) SetResourceDefinitionId(v string) 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListResourceDefinitionVersionsResponse
 type ListResourceDefinitionVersionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -12014,7 +11896,6 @@ func (s *ListResourceDefinitionVersionsOutput) SetVersions(v []*VersionInformati
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListResourceDefinitionsRequest
 type ListResourceDefinitionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12045,7 +11926,6 @@ func (s *ListResourceDefinitionsInput) SetNextToken(v string) *ListResourceDefin
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListResourceDefinitionsResponse
 type ListResourceDefinitionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -12076,7 +11956,6 @@ func (s *ListResourceDefinitionsOutput) SetNextToken(v string) *ListResourceDefi
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListSubscriptionDefinitionVersionsRequest
 type ListSubscriptionDefinitionVersionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12129,7 +12008,6 @@ func (s *ListSubscriptionDefinitionVersionsInput) SetSubscriptionDefinitionId(v 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListSubscriptionDefinitionVersionsResponse
 type ListSubscriptionDefinitionVersionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -12160,7 +12038,6 @@ func (s *ListSubscriptionDefinitionVersionsOutput) SetVersions(v []*VersionInfor
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListSubscriptionDefinitionsRequest
 type ListSubscriptionDefinitionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12191,7 +12068,6 @@ func (s *ListSubscriptionDefinitionsInput) SetNextToken(v string) *ListSubscript
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ListSubscriptionDefinitionsResponse
 type ListSubscriptionDefinitionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -12222,15 +12098,15 @@ func (s *ListSubscriptionDefinitionsOutput) SetNextToken(v string) *ListSubscrip
 	return s
 }
 
-// Attributes that define the Local Device Resource.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/LocalDeviceResourceData
+// Attributes that define a local device resource.
 type LocalDeviceResourceData struct {
 	_ struct{} `type:"structure"`
 
-	// Group owner related settings for local resources.
+	// Group/owner related settings for local resources.
 	GroupOwnerSetting *GroupOwnerSetting `type:"structure"`
 
-	// Local source path of the resource.
+	// The local absolute path of the device resource. The source path for a device
+	// resource can refer only to a character device or block device under ''/dev''.
 	SourcePath *string `type:"string"`
 }
 
@@ -12256,18 +12132,19 @@ func (s *LocalDeviceResourceData) SetSourcePath(v string) *LocalDeviceResourceDa
 	return s
 }
 
-// Attributes that define the Local Volume Resource.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/LocalVolumeResourceData
+// Attributes that define a local volume resource.
 type LocalVolumeResourceData struct {
 	_ struct{} `type:"structure"`
 
-	// Local destination path of the resource.
+	// The absolute local path of the resource inside the lambda environment.
 	DestinationPath *string `type:"string"`
 
-	// Group owner related settings for local resources.
+	// Allows you to configure additional group privileges for the Lambda process.
+	// This field is optional.
 	GroupOwnerSetting *GroupOwnerSetting `type:"structure"`
 
-	// Local source path of the resource.
+	// The local absolute path of the volume resource on the host. The source path
+	// for a volume resource type cannot start with ''/proc'' or ''/sys''.
 	SourcePath *string `type:"string"`
 }
 
@@ -12299,25 +12176,24 @@ func (s *LocalVolumeResourceData) SetSourcePath(v string) *LocalVolumeResourceDa
 	return s
 }
 
-// Information on the Logger
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/Logger
+// Information about a logger
 type Logger struct {
 	_ struct{} `type:"structure"`
 
-	// The component that will be subject to logs
+	// The component that will be subject to logging.
 	Component *string `type:"string" enum:"LoggerComponent"`
 
-	// Element Id for this entry in the list.
+	// The id of the logger.
 	Id *string `type:"string"`
 
-	// The level of the logs
+	// The level of the logs.
 	Level *string `type:"string" enum:"LoggerLevel"`
 
-	// Amount of hardware space, in KB, to use if file system is used for logging
-	// purposes.
+	// The amount of file space, in KB, to use if the local file system is used
+	// for logging purposes.
 	Space *int64 `type:"integer"`
 
-	// The type which will be use for log output
+	// The type of log output which will be used.
 	Type *string `type:"string" enum:"LoggerType"`
 }
 
@@ -12361,12 +12237,11 @@ func (s *Logger) SetType(v string) *Logger {
 	return s
 }
 
-// Information on logger definition version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/LoggerDefinitionVersion
+// Information about a logger definition version.
 type LoggerDefinitionVersion struct {
 	_ struct{} `type:"structure"`
 
-	// List of loggers.
+	// A list of loggers.
 	Loggers []*Logger `type:"list"`
 }
 
@@ -12386,14 +12261,13 @@ func (s *LoggerDefinitionVersion) SetLoggers(v []*Logger) *LoggerDefinitionVersi
 	return s
 }
 
-// Information needed to perform a reset of a group's deployments.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ResetDeploymentsRequest
+// Information about a group reset request.
 type ResetDeploymentsInput struct {
 	_ struct{} `type:"structure"`
 
 	AmznClientToken *string `location:"header" locationName:"X-Amzn-Client-Token" type:"string"`
 
-	// When set to true, perform a best-effort only core reset.
+	// If true, performs a best-effort only core reset.
 	Force *bool `type:"boolean"`
 
 	// GroupId is a required field
@@ -12441,14 +12315,13 @@ func (s *ResetDeploymentsInput) SetGroupId(v string) *ResetDeploymentsInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ResetDeploymentsResponse
 type ResetDeploymentsOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The arn of the reset deployment.
+	// The ARN of the deployment.
 	DeploymentArn *string `type:"string"`
 
-	// The id of the reset deployment.
+	// The ID of the deployment.
 	DeploymentId *string `type:"string"`
 }
 
@@ -12474,15 +12347,18 @@ func (s *ResetDeploymentsOutput) SetDeploymentId(v string) *ResetDeploymentsOutp
 	return s
 }
 
-// Information on the resource.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/Resource
+// Information about a resource.
 type Resource struct {
 	_ struct{} `type:"structure"`
 
-	// Resource Id.
+	// The resource ID, used to refer to a resource in the Lambda function configuration.
+	// Max length is 128 characters with pattern ''[a-zA-Z0-9:_-]+''. This must
+	// be unique within a Greengrass group.
 	Id *string `type:"string"`
 
-	// A descriptive resource name.
+	// The descriptive resource name, which is displayed on the Greengrass console.
+	// Max length 128 characters with pattern ''[a-zA-Z0-9:_-]+''. This must be
+	// unique within a Greengrass group.
 	Name *string `type:"string"`
 
 	// A container of data for all resource types.
@@ -12517,15 +12393,16 @@ func (s *Resource) SetResourceDataContainer(v *ResourceDataContainer) *Resource 
 	return s
 }
 
-// Policy for the function to access a resource.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ResourceAccessPolicy
+// A policy used by the function to access a resource.
 type ResourceAccessPolicy struct {
 	_ struct{} `type:"structure"`
 
-	// The function's access permission to the resource.
+	// The permissions that the Lambda function has to the resource. Can be one
+	// of ''rw'' (read/write) or ''ro'' (read-only).
 	Permission *string `type:"string" enum:"Permission"`
 
-	// Id of the resource. A reference to the resource definiton.
+	// The ID of the resource. (This ID is assigned to the resource when you create
+	// the resource definiton.)
 	ResourceId *string `type:"string"`
 }
 
@@ -12551,16 +12428,23 @@ func (s *ResourceAccessPolicy) SetResourceId(v string) *ResourceAccessPolicy {
 	return s
 }
 
-// A container of data for all resource types.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ResourceDataContainer
+// A container for resource data. The container takes only one of the following
+// supported resource data types: ''LocalDeviceResourceData'', ''LocalVolumeResourceData'',
+// ''SageMakerMachineLearningModelResourceData'', ''S3MachineLearningModelResourceData''.
 type ResourceDataContainer struct {
 	_ struct{} `type:"structure"`
 
-	// Attributes that define the Local Device Resource.
+	// Attributes that define the local device resource.
 	LocalDeviceResourceData *LocalDeviceResourceData `type:"structure"`
 
-	// Attributes that define the Local Volume Resource.
+	// Attributes that define the local volume resource.
 	LocalVolumeResourceData *LocalVolumeResourceData `type:"structure"`
+
+	// Attributes that define an S3 machine learning resource.
+	S3MachineLearningModelResourceData *S3MachineLearningModelResourceData `type:"structure"`
+
+	// Attributes that define an SageMaker machine learning resource.
+	SageMakerMachineLearningModelResourceData *SageMakerMachineLearningModelResourceData `type:"structure"`
 }
 
 // String returns the string representation
@@ -12585,12 +12469,23 @@ func (s *ResourceDataContainer) SetLocalVolumeResourceData(v *LocalVolumeResourc
 	return s
 }
 
-// Information on resource definition version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/ResourceDefinitionVersion
+// SetS3MachineLearningModelResourceData sets the S3MachineLearningModelResourceData field's value.
+func (s *ResourceDataContainer) SetS3MachineLearningModelResourceData(v *S3MachineLearningModelResourceData) *ResourceDataContainer {
+	s.S3MachineLearningModelResourceData = v
+	return s
+}
+
+// SetSageMakerMachineLearningModelResourceData sets the SageMakerMachineLearningModelResourceData field's value.
+func (s *ResourceDataContainer) SetSageMakerMachineLearningModelResourceData(v *SageMakerMachineLearningModelResourceData) *ResourceDataContainer {
+	s.SageMakerMachineLearningModelResourceData = v
+	return s
+}
+
+// Information about a resource definition version.
 type ResourceDefinitionVersion struct {
 	_ struct{} `type:"structure"`
 
-	// List of resources.
+	// A list of resources.
 	Resources []*Resource `type:"list"`
 }
 
@@ -12610,21 +12505,89 @@ func (s *ResourceDefinitionVersion) SetResources(v []*Resource) *ResourceDefinit
 	return s
 }
 
-// Information on subscription
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/Subscription
+// Attributes that define an S3 machine learning resource.
+type S3MachineLearningModelResourceData struct {
+	_ struct{} `type:"structure"`
+
+	// The absolute local path of the resource inside the Lambda environment.
+	DestinationPath *string `type:"string"`
+
+	// The URI of the source model in an S3 bucket. The model package must be in
+	// tar.gz or .zip format.
+	S3Uri *string `type:"string"`
+}
+
+// String returns the string representation
+func (s S3MachineLearningModelResourceData) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s S3MachineLearningModelResourceData) GoString() string {
+	return s.String()
+}
+
+// SetDestinationPath sets the DestinationPath field's value.
+func (s *S3MachineLearningModelResourceData) SetDestinationPath(v string) *S3MachineLearningModelResourceData {
+	s.DestinationPath = &v
+	return s
+}
+
+// SetS3Uri sets the S3Uri field's value.
+func (s *S3MachineLearningModelResourceData) SetS3Uri(v string) *S3MachineLearningModelResourceData {
+	s.S3Uri = &v
+	return s
+}
+
+// Attributes that define an SageMaker machine learning resource.
+type SageMakerMachineLearningModelResourceData struct {
+	_ struct{} `type:"structure"`
+
+	// The absolute local path of the resource inside the Lambda environment.
+	DestinationPath *string `type:"string"`
+
+	// The ARN of the SageMaker training job that represents the source model.
+	SageMakerJobArn *string `type:"string"`
+}
+
+// String returns the string representation
+func (s SageMakerMachineLearningModelResourceData) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s SageMakerMachineLearningModelResourceData) GoString() string {
+	return s.String()
+}
+
+// SetDestinationPath sets the DestinationPath field's value.
+func (s *SageMakerMachineLearningModelResourceData) SetDestinationPath(v string) *SageMakerMachineLearningModelResourceData {
+	s.DestinationPath = &v
+	return s
+}
+
+// SetSageMakerJobArn sets the SageMakerJobArn field's value.
+func (s *SageMakerMachineLearningModelResourceData) SetSageMakerJobArn(v string) *SageMakerMachineLearningModelResourceData {
+	s.SageMakerJobArn = &v
+	return s
+}
+
+// Information about a subscription.
 type Subscription struct {
 	_ struct{} `type:"structure"`
 
-	// Element Id for this entry in the list.
+	// The id of the subscription.
 	Id *string `type:"string"`
 
-	// Source of the subscription. Can be a thing arn, lambda arn or word 'cloud'
+	// The source of the subscription. Can be a thing ARN, a Lambda function ARN,
+	// 'cloud' (which represents the IoT cloud), or 'GGShadowService'.
 	Source *string `type:"string"`
 
-	// Subject of the message.
+	// The subject of the message.
 	Subject *string `type:"string"`
 
-	// Where the message is sent to. Can be a thing arn, lambda arn or word 'cloud'.
+	// Where the message is sent to. Can be a thing ARN, a Lambda function ARN,
+	// 'cloud' (which represents the IoT cloud), or 'GGShadowService'.
 	Target *string `type:"string"`
 }
 
@@ -12662,12 +12625,11 @@ func (s *Subscription) SetTarget(v string) *Subscription {
 	return s
 }
 
-// Information on subscription definition version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/SubscriptionDefinitionVersion
+// Information about a subscription definition version.
 type SubscriptionDefinitionVersion struct {
 	_ struct{} `type:"structure"`
 
-	// Subscriptions in the version.
+	// A list of subscriptions.
 	Subscriptions []*Subscription `type:"list"`
 }
 
@@ -12687,12 +12649,11 @@ func (s *SubscriptionDefinitionVersion) SetSubscriptions(v []*Subscription) *Sub
 	return s
 }
 
-// Information on connectivity info
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateConnectivityInfoRequest
+// Information required to update a Greengrass core's connectivity.
 type UpdateConnectivityInfoInput struct {
 	_ struct{} `type:"structure"`
 
-	// Connectivity info list
+	// A list of connectivity info.
 	ConnectivityInfo []*ConnectivityInfo `type:"list"`
 
 	// ThingName is a required field
@@ -12734,14 +12695,13 @@ func (s *UpdateConnectivityInfoInput) SetThingName(v string) *UpdateConnectivity
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateConnectivityInfoResponse
 type UpdateConnectivityInfoOutput struct {
 	_ struct{} `type:"structure"`
 
-	// Response Text
+	// A message about the connectivity info update request.
 	Message *string `locationName:"message" type:"string"`
 
-	// New Version
+	// The new version of the connectivity info.
 	Version *string `type:"string"`
 }
 
@@ -12767,7 +12727,6 @@ func (s *UpdateConnectivityInfoOutput) SetVersion(v string) *UpdateConnectivityI
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateCoreDefinitionRequest
 type UpdateCoreDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12812,7 +12771,6 @@ func (s *UpdateCoreDefinitionInput) SetName(v string) *UpdateCoreDefinitionInput
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateCoreDefinitionResponse
 type UpdateCoreDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -12827,7 +12785,6 @@ func (s UpdateCoreDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateDeviceDefinitionRequest
 type UpdateDeviceDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12872,7 +12829,6 @@ func (s *UpdateDeviceDefinitionInput) SetName(v string) *UpdateDeviceDefinitionI
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateDeviceDefinitionResponse
 type UpdateDeviceDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -12887,7 +12843,6 @@ func (s UpdateDeviceDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateFunctionDefinitionRequest
 type UpdateFunctionDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12932,7 +12887,6 @@ func (s *UpdateFunctionDefinitionInput) SetName(v string) *UpdateFunctionDefinit
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateFunctionDefinitionResponse
 type UpdateFunctionDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -12947,11 +12901,10 @@ func (s UpdateFunctionDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateGroupCertificateConfigurationRequest
 type UpdateGroupCertificateConfigurationInput struct {
 	_ struct{} `type:"structure"`
 
-	// Amount of time when the certificate expires in milliseconds.
+	// The amount of time remaining before the certificate expires, in milliseconds.
 	CertificateExpiryInMilliseconds *string `type:"string"`
 
 	// GroupId is a required field
@@ -12993,7 +12946,6 @@ func (s *UpdateGroupCertificateConfigurationInput) SetGroupId(v string) *UpdateG
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateGroupCertificateConfigurationResponse
 type UpdateGroupCertificateConfigurationOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -13032,7 +12984,6 @@ func (s *UpdateGroupCertificateConfigurationOutput) SetGroupId(v string) *Update
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateGroupRequest
 type UpdateGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13077,7 +13028,6 @@ func (s *UpdateGroupInput) SetName(v string) *UpdateGroupInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateGroupResponse
 type UpdateGroupOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -13092,7 +13042,6 @@ func (s UpdateGroupOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateLoggerDefinitionRequest
 type UpdateLoggerDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13137,7 +13086,6 @@ func (s *UpdateLoggerDefinitionInput) SetName(v string) *UpdateLoggerDefinitionI
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateLoggerDefinitionResponse
 type UpdateLoggerDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -13152,7 +13100,6 @@ func (s UpdateLoggerDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateResourceDefinitionRequest
 type UpdateResourceDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13197,7 +13144,6 @@ func (s *UpdateResourceDefinitionInput) SetResourceDefinitionId(v string) *Updat
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateResourceDefinitionResponse
 type UpdateResourceDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -13212,7 +13158,6 @@ func (s UpdateResourceDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateSubscriptionDefinitionRequest
 type UpdateSubscriptionDefinitionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13257,7 +13202,6 @@ func (s *UpdateSubscriptionDefinitionInput) SetSubscriptionDefinitionId(v string
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/UpdateSubscriptionDefinitionResponse
 type UpdateSubscriptionDefinitionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -13272,21 +13216,20 @@ func (s UpdateSubscriptionDefinitionOutput) GoString() string {
 	return s.String()
 }
 
-// Information on the version
-// See also, https://docs.aws.amazon.com/goto/WebAPI/greengrass-2017-06-07/VersionInformation
+// Information about a version.
 type VersionInformation struct {
 	_ struct{} `type:"structure"`
 
-	// Arn of the version.
+	// The ARN of the version.
 	Arn *string `type:"string"`
 
-	// Timestamp of when the version was created.
+	// The time, in milliseconds since the epoch, when the version was created.
 	CreationTimestamp *string `type:"string"`
 
-	// Id of the resource container.
+	// The ID of the version.
 	Id *string `type:"string"`
 
-	// Unique Id of a version.
+	// The unique ID of the version.
 	Version *string `type:"string"`
 }
 
@@ -13339,6 +13282,14 @@ const (
 )
 
 const (
+	// EncodingTypeBinary is a EncodingType enum value
+	EncodingTypeBinary = "binary"
+
+	// EncodingTypeJson is a EncodingType enum value
+	EncodingTypeJson = "json"
+)
+
+const (
 	// LoggerComponentGreengrassSystem is a LoggerComponent enum value
 	LoggerComponentGreengrassSystem = "GreengrassSystem"
 
@@ -13371,7 +13322,7 @@ const (
 	LoggerTypeAwscloudWatch = "AWSCloudWatch"
 )
 
-// Type of permissions a function could have to access a resource.
+// The type of permission a function has to access a resource.
 const (
 	// PermissionRo is a Permission enum value
 	PermissionRo = "ro"
@@ -13380,7 +13331,7 @@ const (
 	PermissionRw = "rw"
 )
 
-// The piece of software on the Greengrass Core that will be updated.
+// The piece of software on the Greengrass core that will be updated.
 const (
 	// SoftwareToUpdateCore is a SoftwareToUpdate enum value
 	SoftwareToUpdateCore = "core"
@@ -13417,7 +13368,7 @@ const (
 	UpdateAgentLogLevelFatal = "FATAL"
 )
 
-// The architecture of the Cores in the targets of an update
+// The architecture of the cores which are the targets of an update.
 const (
 	// UpdateTargetsArchitectureArmv7l is a UpdateTargetsArchitecture enum value
 	UpdateTargetsArchitectureArmv7l = "armv7l"
@@ -13429,7 +13380,7 @@ const (
 	UpdateTargetsArchitectureAarch64 = "aarch64"
 )
 
-// The operating system of the Cores in the targets of an update
+// The operating system of the cores which are the targets of an update.
 const (
 	// UpdateTargetsOperatingSystemUbuntu is a UpdateTargetsOperatingSystem enum value
 	UpdateTargetsOperatingSystemUbuntu = "ubuntu"

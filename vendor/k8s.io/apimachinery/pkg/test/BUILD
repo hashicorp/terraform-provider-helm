@@ -16,7 +16,7 @@ go_test(
         "runtime_serializer_protobuf_protobuf_test.go",
         "runtime_unversioned_test.go",
     ],
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//vendor/github.com/google/gofuzz:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/equality:go_default_library",
@@ -40,11 +40,11 @@ go_library(
         "util.go",
         "zz_generated.deepcopy.go",
     ],
+    importpath = "k8s.io/apimachinery/pkg/test",
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/testapigroup:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/testapigroup/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/conversion:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime/serializer:go_default_library",

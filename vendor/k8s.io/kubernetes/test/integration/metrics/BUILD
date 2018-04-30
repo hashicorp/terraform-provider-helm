@@ -9,6 +9,7 @@ load(
 go_library(
     name = "go_default_library",
     srcs = ["doc.go"],
+    importpath = "k8s.io/kubernetes/test/integration/metrics",
 )
 
 filegroup(
@@ -31,7 +32,7 @@ go_test(
         "main_test.go",
         "metrics_test.go",
     ],
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     tags = ["integration"],
     deps = [
         "//pkg/api/testapi:go_default_library",

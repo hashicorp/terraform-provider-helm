@@ -1,10 +1,13 @@
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: cockroachdb
 spec:
   serviceName: "cockroachdb"
   replicas: 3
+  selector:
+    matchLabels:
+      app: cockroachdb
   template:
     metadata:
       labels:
@@ -79,7 +82,7 @@ spec:
               # We don't join cockroachdb in order to avoid a node attempting
               # to join itself, which currently doesn't work
               # (https://github.com/cockroachdb/cockroach/issues/9625).
-              CRARGS+=("--join" "cockroachdb-public")
+              CRARGS+=("--join" "cockroachdb-0.cockroachdb,cockroachdb-1.cockroachdb,cockroachdb-2.cockroachdb")
             fi
             exec /cockroach/cockroach ${CRARGS[*]}
       # No pre-stop hook is required, a SIGTERM plus some time is all that's
@@ -92,8 +95,6 @@ spec:
   volumeClaimTemplates:
   - metadata:
       name: datadir
-      annotations:
-        volume.alpha.kubernetes.io/storage-class: anything
     spec:
       accessModes:
         - "ReadWriteOnce"

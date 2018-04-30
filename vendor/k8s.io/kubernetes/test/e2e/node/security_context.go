@@ -32,7 +32,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	imageutils "k8s.io/kubernetes/test/utils/image"
 )
 
 func scTestPod(hostIPC bool, hostPID bool) *v1.Pod {
@@ -50,7 +49,7 @@ func scTestPod(hostIPC bool, hostPID bool) *v1.Pod {
 			Containers: []v1.Container{
 				{
 					Name:  "test-container",
-					Image: imageutils.GetBusyBoxImage(),
+					Image: "busybox",
 				},
 			},
 			RestartPolicy: v1.RestartPolicyNever,
@@ -82,6 +81,20 @@ var _ = SIGDescribe("Security Context [Feature:SecurityContext]", func() {
 		})
 	})
 
+	It("should support pod.Spec.SecurityContext.RunAsUser And pod.Spec.SecurityContext.RunAsGroup [Feature:RunAsGroup]", func() {
+		pod := scTestPod(false, false)
+		userID := int64(1001)
+		groupID := int64(2002)
+		pod.Spec.SecurityContext.RunAsUser = &userID
+		pod.Spec.SecurityContext.RunAsGroup = &groupID
+		pod.Spec.Containers[0].Command = []string{"sh", "-c", "id"}
+
+		f.TestContainerOutput("pod.Spec.SecurityContext.RunAsUser", pod, 0, []string{
+			fmt.Sprintf("uid=%v", userID),
+			fmt.Sprintf("gid=%v", groupID),
+		})
+	})
+
 	It("should support container.SecurityContext.RunAsUser", func() {
 		pod := scTestPod(false, false)
 		userID := int64(1001)
@@ -93,6 +106,25 @@ var _ = SIGDescribe("Security Context [Feature:SecurityContext]", func() {
 
 		f.TestContainerOutput("pod.Spec.SecurityContext.RunAsUser", pod, 0, []string{
 			fmt.Sprintf("%v", overrideUserID),
+		})
+	})
+
+	It("should support container.SecurityContext.RunAsUser And container.SecurityContext.RunAsGroup [Feature:RunAsGroup]", func() {
+		pod := scTestPod(false, false)
+		userID := int64(1001)
+		groupID := int64(2001)
+		overrideUserID := int64(1002)
+		overrideGroupID := int64(2002)
+		pod.Spec.SecurityContext.RunAsUser = &userID
+		pod.Spec.SecurityContext.RunAsGroup = &groupID
+		pod.Spec.Containers[0].SecurityContext = new(v1.SecurityContext)
+		pod.Spec.Containers[0].SecurityContext.RunAsUser = &overrideUserID
+		pod.Spec.Containers[0].SecurityContext.RunAsGroup = &overrideGroupID
+		pod.Spec.Containers[0].Command = []string{"sh", "-c", "id"}
+
+		f.TestContainerOutput("pod.Spec.SecurityContext.RunAsUser", pod, 0, []string{
+			fmt.Sprintf("uid=%v", overrideUserID),
+			fmt.Sprintf("gid=%v", overrideGroupID),
 		})
 	})
 
@@ -168,7 +200,7 @@ func testPodSELinuxLabeling(f *framework.Framework, hostIPC bool, hostPID bool) 
 	}
 	pod.Spec.Containers[0].Command = []string{"sleep", "6000"}
 
-	client := f.ClientSet.Core().Pods(f.Namespace.Name)
+	client := f.ClientSet.CoreV1().Pods(f.Namespace.Name)
 	pod, err := client.Create(pod)
 
 	framework.ExpectNoError(err, "Error creating pod %v", pod)
@@ -182,7 +214,7 @@ func testPodSELinuxLabeling(f *framework.Framework, hostIPC bool, hostPID bool) 
 	Expect(err).To(BeNil())
 	Expect(content).To(ContainSubstring(testContent))
 
-	foundPod, err := f.ClientSet.Core().Pods(f.Namespace.Name).Get(pod.Name, metav1.GetOptions{})
+	foundPod, err := f.ClientSet.CoreV1().Pods(f.Namespace.Name).Get(pod.Name, metav1.GetOptions{})
 	Expect(err).NotTo(HaveOccurred())
 
 	// Confirm that the file can be accessed from a second

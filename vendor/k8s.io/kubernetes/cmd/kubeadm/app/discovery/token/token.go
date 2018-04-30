@@ -26,23 +26,24 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	bootstrapapi "k8s.io/client-go/tools/bootstrap/token/api"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	kubeconfigutil "k8s.io/kubernetes/cmd/kubeadm/app/util/kubeconfig"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/pubkeypin"
 	tokenutil "k8s.io/kubernetes/cmd/kubeadm/app/util/token"
-	bootstrapapi "k8s.io/kubernetes/pkg/bootstrap/api"
 	"k8s.io/kubernetes/pkg/controller/bootstrap"
 )
 
+// BootstrapUser defines bootstrap user name
 const BootstrapUser = "token-bootstrap-client"
 
 // RetrieveValidatedClusterInfo connects to the API Server and tries to fetch the cluster-info ConfigMap
 // It then makes sure it can trust the API Server by looking at the JWS-signed tokens and (if rootCAPubKeys is not empty)
 // validating the cluster CA against a set of pinned public keys
 func RetrieveValidatedClusterInfo(discoveryToken string, tokenAPIServers, rootCAPubKeys []string) (*clientcmdapi.Cluster, error) {
-	tokenId, tokenSecret, err := tokenutil.ParseToken(discoveryToken)
+	tokenID, tokenSecret, err := tokenutil.ParseToken(discoveryToken)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func RetrieveValidatedClusterInfo(discoveryToken string, tokenAPIServers, rootCA
 		insecureBootstrapConfig := buildInsecureBootstrapKubeConfig(endpoint)
 		clusterName := insecureBootstrapConfig.Contexts[insecureBootstrapConfig.CurrentContext].Cluster
 
-		insecureClient, err := kubeconfigutil.KubeConfigToClientSet(insecureBootstrapConfig)
+		insecureClient, err := kubeconfigutil.ToClientSet(insecureBootstrapConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -85,11 +86,11 @@ func RetrieveValidatedClusterInfo(discoveryToken string, tokenAPIServers, rootCA
 		if !ok || len(insecureKubeconfigString) == 0 {
 			return nil, fmt.Errorf("there is no %s key in the %s ConfigMap. This API Server isn't set up for token bootstrapping, can't connect", bootstrapapi.KubeConfigKey, bootstrapapi.ConfigMapClusterInfo)
 		}
-		detachedJWSToken, ok := insecureClusterInfo.Data[bootstrapapi.JWSSignatureKeyPrefix+tokenId]
+		detachedJWSToken, ok := insecureClusterInfo.Data[bootstrapapi.JWSSignatureKeyPrefix+tokenID]
 		if !ok || len(detachedJWSToken) == 0 {
-			return nil, fmt.Errorf("there is no JWS signed token in the %s ConfigMap. This token id %q is invalid for this cluster, can't connect", bootstrapapi.ConfigMapClusterInfo, tokenId)
+			return nil, fmt.Errorf("token id %q is invalid for this cluster or it has expired. Use \"kubeadm token create\" on the master node to creating a new valid token", tokenID)
 		}
-		if !bootstrap.DetachedTokenIsValid(detachedJWSToken, insecureKubeconfigString, tokenId, tokenSecret) {
+		if !bootstrap.DetachedTokenIsValid(detachedJWSToken, insecureKubeconfigString, tokenID, tokenSecret) {
 			return nil, fmt.Errorf("failed to verify JWS signature of received cluster info object, can't trust this API Server")
 		}
 		insecureKubeconfigBytes := []byte(insecureKubeconfigString)
@@ -126,7 +127,7 @@ func RetrieveValidatedClusterInfo(discoveryToken string, tokenAPIServers, rootCA
 
 		// Now that we know the proported cluster CA, connect back a second time validating with that CA
 		secureBootstrapConfig := buildSecureBootstrapKubeConfig(endpoint, clusterCABytes)
-		secureClient, err := kubeconfigutil.KubeConfigToClientSet(secureBootstrapConfig)
+		secureClient, err := kubeconfigutil.ToClientSet(secureBootstrapConfig)
 		if err != nil {
 			return nil, err
 		}

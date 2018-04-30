@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
+	kubeletapis "k8s.io/kubernetes/pkg/kubelet/apis"
 	"k8s.io/kubernetes/test/e2e/framework"
 	imageutils "k8s.io/kubernetes/test/utils/image"
 
@@ -35,14 +36,13 @@ import (
 type Suite string
 
 const (
-	E2E           Suite = "e2e"
-	NodeE2E       Suite = "node e2e"
-	FederationE2E Suite = "federation e2e"
+	E2E     Suite = "e2e"
+	NodeE2E Suite = "node e2e"
 )
 
 var (
 	mountImage   = imageutils.GetE2EImage(imageutils.Mounttest)
-	busyboxImage = imageutils.GetBusyBoxImage()
+	busyboxImage = "busybox"
 )
 
 var CurrentSuite Suite
@@ -52,8 +52,9 @@ var CurrentSuite Suite
 // only used by node e2e test.
 // TODO(random-liu): Change the image puller pod to use similar mechanism.
 var CommonImageWhiteList = sets.NewString(
-	imageutils.GetBusyBoxImage(),
+	"busybox",
 	imageutils.GetE2EImage(imageutils.EntrypointTester),
+	imageutils.GetE2EImage(imageutils.IpcUtils),
 	imageutils.GetE2EImage(imageutils.Liveness),
 	imageutils.GetE2EImage(imageutils.Mounttest),
 	imageutils.GetE2EImage(imageutils.MounttestUser),
@@ -62,9 +63,9 @@ var CommonImageWhiteList = sets.NewString(
 	imageutils.GetE2EImage(imageutils.ServeHostname),
 	imageutils.GetE2EImage(imageutils.TestWebserver),
 	imageutils.GetE2EImage(imageutils.Hostexec),
-	"gcr.io/google_containers/volume-nfs:0.8",
-	"gcr.io/google_containers/volume-gluster:0.2",
-	"gcr.io/google_containers/e2e-net-amd64:1.0",
+	imageutils.GetE2EImage(imageutils.VolumeNFSServer),
+	imageutils.GetE2EImage(imageutils.VolumeGlusterServer),
+	imageutils.GetE2EImage(imageutils.E2ENet),
 )
 
 func svcByName(name string, port int) *v1.Service {
@@ -87,50 +88,56 @@ func svcByName(name string, port int) *v1.Service {
 
 func NewSVCByName(c clientset.Interface, ns, name string) error {
 	const testPort = 9376
-	_, err := c.Core().Services(ns).Create(svcByName(name, testPort))
+	_, err := c.CoreV1().Services(ns).Create(svcByName(name, testPort))
 	return err
 }
 
 // NewRCByName creates a replication controller with a selector by name of name.
 func NewRCByName(c clientset.Interface, ns, name string, replicas int32, gracePeriod *int64) (*v1.ReplicationController, error) {
 	By(fmt.Sprintf("creating replication controller %s", name))
-	return c.Core().ReplicationControllers(ns).Create(framework.RcByNamePort(
+	return c.CoreV1().ReplicationControllers(ns).Create(framework.RcByNamePort(
 		name, replicas, framework.ServeHostnameImage, 9376, v1.ProtocolTCP, map[string]string{}, gracePeriod))
 }
 
-func RestartNodes(c clientset.Interface, nodeNames []string) error {
-	// List old boot IDs.
-	oldBootIDs := make(map[string]string)
-	for _, name := range nodeNames {
-		node, err := c.Core().Nodes().Get(name, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("error getting node info before reboot: %s", err)
+func RestartNodes(c clientset.Interface, nodes []v1.Node) error {
+	// Build mapping from zone to nodes in that zone.
+	nodeNamesByZone := make(map[string][]string)
+	for i := range nodes {
+		node := &nodes[i]
+		zone := framework.TestContext.CloudConfig.Zone
+		if z, ok := node.Labels[kubeletapis.LabelZoneFailureDomain]; ok {
+			zone = z
 		}
-		oldBootIDs[name] = node.Status.NodeInfo.BootID
+		nodeNamesByZone[zone] = append(nodeNamesByZone[zone], node.Name)
 	}
+
 	// Reboot the nodes.
-	args := []string{
-		"compute",
-		fmt.Sprintf("--project=%s", framework.TestContext.CloudConfig.ProjectID),
-		"instances",
-		"reset",
+	for zone, nodeNames := range nodeNamesByZone {
+		args := []string{
+			"compute",
+			fmt.Sprintf("--project=%s", framework.TestContext.CloudConfig.ProjectID),
+			"instances",
+			"reset",
+		}
+		args = append(args, nodeNames...)
+		args = append(args, fmt.Sprintf("--zone=%s", zone))
+		stdout, stderr, err := framework.RunCmd("gcloud", args...)
+		if err != nil {
+			return fmt.Errorf("error restarting nodes: %s\nstdout: %s\nstderr: %s", err, stdout, stderr)
+		}
 	}
-	args = append(args, nodeNames...)
-	args = append(args, fmt.Sprintf("--zone=%s", framework.TestContext.CloudConfig.Zone))
-	stdout, stderr, err := framework.RunCmd("gcloud", args...)
-	if err != nil {
-		return fmt.Errorf("error restarting nodes: %s\nstdout: %s\nstderr: %s", err, stdout, stderr)
-	}
+
 	// Wait for their boot IDs to change.
-	for _, name := range nodeNames {
+	for i := range nodes {
+		node := &nodes[i]
 		if err := wait.Poll(30*time.Second, 5*time.Minute, func() (bool, error) {
-			node, err := c.Core().Nodes().Get(name, metav1.GetOptions{})
+			newNode, err := c.CoreV1().Nodes().Get(node.Name, metav1.GetOptions{})
 			if err != nil {
 				return false, fmt.Errorf("error getting node info after reboot: %s", err)
 			}
-			return node.Status.NodeInfo.BootID != oldBootIDs[name], nil
+			return node.Status.NodeInfo.BootID != newNode.Status.NodeInfo.BootID, nil
 		}); err != nil {
-			return fmt.Errorf("error waiting for node %s boot ID to change: %s", name, err)
+			return fmt.Errorf("error waiting for node %s boot ID to change: %s", node.Name, err)
 		}
 	}
 	return nil

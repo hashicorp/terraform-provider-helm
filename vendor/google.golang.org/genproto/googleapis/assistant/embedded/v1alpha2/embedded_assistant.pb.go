@@ -8,17 +8,17 @@ It is generated from these files:
 	google/assistant/embedded/v1alpha2/embedded_assistant.proto
 
 It has these top-level messages:
+	AssistRequest
+	AssistResponse
 	AssistConfig
 	AudioInConfig
 	AudioOutConfig
 	DialogStateIn
-	AudioOut
-	DialogStateOut
-	AssistRequest
-	AssistResponse
-	SpeechRecognitionResult
 	DeviceConfig
+	AudioOut
 	DeviceAction
+	SpeechRecognitionResult
+	DialogStateOut
 	DeviceLocation
 */
 package embedded
@@ -45,8 +45,37 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Indicates the type of event.
+type AssistResponse_EventType int32
+
+const (
+	// No event specified.
+	AssistResponse_EVENT_TYPE_UNSPECIFIED AssistResponse_EventType = 0
+	// This event indicates that the server has detected the end of the user's
+	// speech utterance and expects no additional speech. Therefore, the server
+	// will not process additional audio (although it may subsequently return
+	// additional results). The client should stop sending additional audio
+	// data, half-close the gRPC connection, and wait for any additional results
+	// until the server closes the gRPC connection.
+	AssistResponse_END_OF_UTTERANCE AssistResponse_EventType = 1
+)
+
+var AssistResponse_EventType_name = map[int32]string{
+	0: "EVENT_TYPE_UNSPECIFIED",
+	1: "END_OF_UTTERANCE",
+}
+var AssistResponse_EventType_value = map[string]int32{
+	"EVENT_TYPE_UNSPECIFIED": 0,
+	"END_OF_UTTERANCE":       1,
+}
+
+func (x AssistResponse_EventType) String() string {
+	return proto.EnumName(AssistResponse_EventType_name, int32(x))
+}
+func (AssistResponse_EventType) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{1, 0} }
+
 // Audio encoding of the data sent in the audio message.
-// Audio must be one-channel (mono). The only language supported is "en-US".
+// Audio must be one-channel (mono).
 type AudioInConfig_Encoding int32
 
 const (
@@ -79,7 +108,7 @@ var AudioInConfig_Encoding_value = map[string]int32{
 func (x AudioInConfig_Encoding) String() string {
 	return proto.EnumName(AudioInConfig_Encoding_name, int32(x))
 }
-func (AudioInConfig_Encoding) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{1, 0} }
+func (AudioInConfig_Encoding) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{3, 0} }
 
 // Audio encoding of the data returned in the audio message. All encodings are
 // raw audio bytes with no header, except as indicated below.
@@ -115,7 +144,7 @@ var AudioOutConfig_Encoding_value = map[string]int32{
 func (x AudioOutConfig_Encoding) String() string {
 	return proto.EnumName(AudioOutConfig_Encoding_name, int32(x))
 }
-func (AudioOutConfig_Encoding) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{2, 0} }
+func (AudioOutConfig_Encoding) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{4, 0} }
 
 // Possible states of the microphone after a `Assist` RPC completes.
 type DialogStateOut_MicrophoneMode int32
@@ -147,37 +176,194 @@ func (x DialogStateOut_MicrophoneMode) String() string {
 	return proto.EnumName(DialogStateOut_MicrophoneMode_name, int32(x))
 }
 func (DialogStateOut_MicrophoneMode) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor0, []int{5, 0}
+	return fileDescriptor0, []int{10, 0}
 }
 
-// Indicates the type of event.
-type AssistResponse_EventType int32
-
-const (
-	// No event specified.
-	AssistResponse_EVENT_TYPE_UNSPECIFIED AssistResponse_EventType = 0
-	// This event indicates that the server has detected the end of the user's
-	// speech utterance and expects no additional speech. Therefore, the server
-	// will not process additional audio (although it may subsequently return
-	// additional results). The client should stop sending additional audio
-	// data, half-close the gRPC connection, and wait for any additional results
-	// until the server closes the gRPC connection.
-	AssistResponse_END_OF_UTTERANCE AssistResponse_EventType = 1
-)
-
-var AssistResponse_EventType_name = map[int32]string{
-	0: "EVENT_TYPE_UNSPECIFIED",
-	1: "END_OF_UTTERANCE",
-}
-var AssistResponse_EventType_value = map[string]int32{
-	"EVENT_TYPE_UNSPECIFIED": 0,
-	"END_OF_UTTERANCE":       1,
+// The top-level message sent by the client. Clients must send at least two, and
+// typically numerous `AssistRequest` messages. The first message must
+// contain a `config` message and must not contain `audio_in` data. All
+// subsequent messages must contain `audio_in` data and must not contain a
+// `config` message.
+type AssistRequest struct {
+	// Exactly one of these fields must be specified in each `AssistRequest`.
+	//
+	// Types that are valid to be assigned to Type:
+	//	*AssistRequest_Config
+	//	*AssistRequest_AudioIn
+	Type isAssistRequest_Type `protobuf_oneof:"type"`
 }
 
-func (x AssistResponse_EventType) String() string {
-	return proto.EnumName(AssistResponse_EventType_name, int32(x))
+func (m *AssistRequest) Reset()                    { *m = AssistRequest{} }
+func (m *AssistRequest) String() string            { return proto.CompactTextString(m) }
+func (*AssistRequest) ProtoMessage()               {}
+func (*AssistRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+type isAssistRequest_Type interface {
+	isAssistRequest_Type()
 }
-func (AssistResponse_EventType) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{7, 0} }
+
+type AssistRequest_Config struct {
+	Config *AssistConfig `protobuf:"bytes,1,opt,name=config,oneof"`
+}
+type AssistRequest_AudioIn struct {
+	AudioIn []byte `protobuf:"bytes,2,opt,name=audio_in,json=audioIn,proto3,oneof"`
+}
+
+func (*AssistRequest_Config) isAssistRequest_Type()  {}
+func (*AssistRequest_AudioIn) isAssistRequest_Type() {}
+
+func (m *AssistRequest) GetType() isAssistRequest_Type {
+	if m != nil {
+		return m.Type
+	}
+	return nil
+}
+
+func (m *AssistRequest) GetConfig() *AssistConfig {
+	if x, ok := m.GetType().(*AssistRequest_Config); ok {
+		return x.Config
+	}
+	return nil
+}
+
+func (m *AssistRequest) GetAudioIn() []byte {
+	if x, ok := m.GetType().(*AssistRequest_AudioIn); ok {
+		return x.AudioIn
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*AssistRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _AssistRequest_OneofMarshaler, _AssistRequest_OneofUnmarshaler, _AssistRequest_OneofSizer, []interface{}{
+		(*AssistRequest_Config)(nil),
+		(*AssistRequest_AudioIn)(nil),
+	}
+}
+
+func _AssistRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*AssistRequest)
+	// type
+	switch x := m.Type.(type) {
+	case *AssistRequest_Config:
+		b.EncodeVarint(1<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Config); err != nil {
+			return err
+		}
+	case *AssistRequest_AudioIn:
+		b.EncodeVarint(2<<3 | proto.WireBytes)
+		b.EncodeRawBytes(x.AudioIn)
+	case nil:
+	default:
+		return fmt.Errorf("AssistRequest.Type has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _AssistRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*AssistRequest)
+	switch tag {
+	case 1: // type.config
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(AssistConfig)
+		err := b.DecodeMessage(msg)
+		m.Type = &AssistRequest_Config{msg}
+		return true, err
+	case 2: // type.audio_in
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeRawBytes(true)
+		m.Type = &AssistRequest_AudioIn{x}
+		return true, err
+	default:
+		return false, nil
+	}
+}
+
+func _AssistRequest_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*AssistRequest)
+	// type
+	switch x := m.Type.(type) {
+	case *AssistRequest_Config:
+		s := proto.Size(x.Config)
+		n += proto.SizeVarint(1<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *AssistRequest_AudioIn:
+		n += proto.SizeVarint(2<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.AudioIn)))
+		n += len(x.AudioIn)
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
+// The top-level message received by the client. A series of one or more
+// `AssistResponse` messages are streamed back to the client.
+type AssistResponse struct {
+	// *Output-only* Indicates the type of event.
+	EventType AssistResponse_EventType `protobuf:"varint,1,opt,name=event_type,json=eventType,enum=google.assistant.embedded.v1alpha2.AssistResponse_EventType" json:"event_type,omitempty"`
+	// *Output-only* The audio containing the Assistant's response to the query.
+	AudioOut *AudioOut `protobuf:"bytes,3,opt,name=audio_out,json=audioOut" json:"audio_out,omitempty"`
+	// *Output-only* Contains the action triggered by the query with the
+	// appropriate payloads and semantic parsing.
+	DeviceAction *DeviceAction `protobuf:"bytes,6,opt,name=device_action,json=deviceAction" json:"device_action,omitempty"`
+	// *Output-only* This repeated list contains zero or more speech recognition
+	// results that correspond to consecutive portions of the audio currently
+	// being processed, starting with the portion corresponding to the earliest
+	// audio (and most stable portion) to the portion corresponding to the most
+	// recent audio. The strings can be concatenated to view the full
+	// in-progress response. When the speech recognition completes, this list
+	// will contain one item with `stability` of `1.0`.
+	SpeechResults []*SpeechRecognitionResult `protobuf:"bytes,2,rep,name=speech_results,json=speechResults" json:"speech_results,omitempty"`
+	// *Output-only* Contains output related to the user's query.
+	DialogStateOut *DialogStateOut `protobuf:"bytes,5,opt,name=dialog_state_out,json=dialogStateOut" json:"dialog_state_out,omitempty"`
+}
+
+func (m *AssistResponse) Reset()                    { *m = AssistResponse{} }
+func (m *AssistResponse) String() string            { return proto.CompactTextString(m) }
+func (*AssistResponse) ProtoMessage()               {}
+func (*AssistResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *AssistResponse) GetEventType() AssistResponse_EventType {
+	if m != nil {
+		return m.EventType
+	}
+	return AssistResponse_EVENT_TYPE_UNSPECIFIED
+}
+
+func (m *AssistResponse) GetAudioOut() *AudioOut {
+	if m != nil {
+		return m.AudioOut
+	}
+	return nil
+}
+
+func (m *AssistResponse) GetDeviceAction() *DeviceAction {
+	if m != nil {
+		return m.DeviceAction
+	}
+	return nil
+}
+
+func (m *AssistResponse) GetSpeechResults() []*SpeechRecognitionResult {
+	if m != nil {
+		return m.SpeechResults
+	}
+	return nil
+}
+
+func (m *AssistResponse) GetDialogStateOut() *DialogStateOut {
+	if m != nil {
+		return m.DialogStateOut
+	}
+	return nil
+}
 
 // Specifies how to process the `AssistRequest` messages.
 type AssistConfig struct {
@@ -196,7 +382,7 @@ type AssistConfig struct {
 func (m *AssistConfig) Reset()                    { *m = AssistConfig{} }
 func (m *AssistConfig) String() string            { return proto.CompactTextString(m) }
 func (*AssistConfig) ProtoMessage()               {}
-func (*AssistConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*AssistConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 type isAssistConfig_Type interface {
 	isAssistConfig_Type()
@@ -341,7 +527,7 @@ type AudioInConfig struct {
 func (m *AudioInConfig) Reset()                    { *m = AudioInConfig{} }
 func (m *AudioInConfig) String() string            { return proto.CompactTextString(m) }
 func (*AudioInConfig) ProtoMessage()               {}
-func (*AudioInConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*AudioInConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 func (m *AudioInConfig) GetEncoding() AudioInConfig_Encoding {
 	if m != nil {
@@ -374,7 +560,7 @@ type AudioOutConfig struct {
 func (m *AudioOutConfig) Reset()                    { *m = AudioOutConfig{} }
 func (m *AudioOutConfig) String() string            { return proto.CompactTextString(m) }
 func (*AudioOutConfig) ProtoMessage()               {}
-func (*AudioOutConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*AudioOutConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 func (m *AudioOutConfig) GetEncoding() AudioOutConfig_Encoding {
 	if m != nil {
@@ -414,12 +600,17 @@ type DialogStateIn struct {
 	LanguageCode string `protobuf:"bytes,2,opt,name=language_code,json=languageCode" json:"language_code,omitempty"`
 	// *Optional* Location of the device where the query originated.
 	DeviceLocation *DeviceLocation `protobuf:"bytes,5,opt,name=device_location,json=deviceLocation" json:"device_location,omitempty"`
+	// *Optional* If true, the server will treat the request as a new conversation
+	// and not use state from the prior request. Set this field to true when the
+	// conversation should be restarted, such as after a device reboot, or after a
+	// significant lapse of time since the prior query.
+	IsNewConversation bool `protobuf:"varint,7,opt,name=is_new_conversation,json=isNewConversation" json:"is_new_conversation,omitempty"`
 }
 
 func (m *DialogStateIn) Reset()                    { *m = DialogStateIn{} }
 func (m *DialogStateIn) String() string            { return proto.CompactTextString(m) }
 func (*DialogStateIn) ProtoMessage()               {}
-func (*DialogStateIn) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*DialogStateIn) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func (m *DialogStateIn) GetConversationState() []byte {
 	if m != nil {
@@ -442,6 +633,57 @@ func (m *DialogStateIn) GetDeviceLocation() *DeviceLocation {
 	return nil
 }
 
+func (m *DialogStateIn) GetIsNewConversation() bool {
+	if m != nil {
+		return m.IsNewConversation
+	}
+	return false
+}
+
+// *Required* Fields that identify the device to the Assistant.
+//
+// See also:
+//
+// *   [Register a Device - REST
+// API](https://developers.google.com/assistant/sdk/reference/device-registration/register-device-manual)
+// *   [Device Model and Instance
+// Schemas](https://developers.google.com/assistant/sdk/reference/device-registration/model-and-instance-schemas)
+// *   [Device
+// Proto](https://developers.google.com/assistant/sdk/reference/rpc/google.assistant.devices.v1alpha2#device)
+type DeviceConfig struct {
+	// *Required* Unique identifier for the device. The id length must be 128
+	// characters or less. Example: DBCDW098234. This MUST match the device_id
+	// returned from device registration. This device_id is used to match against
+	// the user's registered devices to lookup the supported traits and
+	// capabilities of this device. This information should not change across
+	// device reboots. However, it should not be saved across
+	// factory-default resets.
+	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId" json:"device_id,omitempty"`
+	// *Required* Unique identifier for the device model. The combination of
+	// device_model_id and device_id must have been previously associated through
+	// device registration.
+	DeviceModelId string `protobuf:"bytes,3,opt,name=device_model_id,json=deviceModelId" json:"device_model_id,omitempty"`
+}
+
+func (m *DeviceConfig) Reset()                    { *m = DeviceConfig{} }
+func (m *DeviceConfig) String() string            { return proto.CompactTextString(m) }
+func (*DeviceConfig) ProtoMessage()               {}
+func (*DeviceConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+
+func (m *DeviceConfig) GetDeviceId() string {
+	if m != nil {
+		return m.DeviceId
+	}
+	return ""
+}
+
+func (m *DeviceConfig) GetDeviceModelId() string {
+	if m != nil {
+		return m.DeviceModelId
+	}
+	return ""
+}
+
 // The audio containing the Assistant's response to the query. Sequential chunks
 // of audio data are received in sequential `AssistResponse` messages.
 type AudioOut struct {
@@ -454,13 +696,68 @@ type AudioOut struct {
 func (m *AudioOut) Reset()                    { *m = AudioOut{} }
 func (m *AudioOut) String() string            { return proto.CompactTextString(m) }
 func (*AudioOut) ProtoMessage()               {}
-func (*AudioOut) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (*AudioOut) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
 
 func (m *AudioOut) GetAudioData() []byte {
 	if m != nil {
 		return m.AudioData
 	}
 	return nil
+}
+
+// The response returned to the device if the user has triggered a Device
+// Action. For example, a device which supports the query *Turn on the light*
+// would receive a `DeviceAction` with a JSON payload containing the semantics
+// of the request.
+type DeviceAction struct {
+	// JSON containing the device command response generated from the triggered
+	// Device Action grammar. The format is given by the
+	// `action.devices.EXECUTE` intent for a given
+	// [trait](https://developers.google.com/assistant/sdk/reference/traits/).
+	DeviceRequestJson string `protobuf:"bytes,1,opt,name=device_request_json,json=deviceRequestJson" json:"device_request_json,omitempty"`
+}
+
+func (m *DeviceAction) Reset()                    { *m = DeviceAction{} }
+func (m *DeviceAction) String() string            { return proto.CompactTextString(m) }
+func (*DeviceAction) ProtoMessage()               {}
+func (*DeviceAction) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+
+func (m *DeviceAction) GetDeviceRequestJson() string {
+	if m != nil {
+		return m.DeviceRequestJson
+	}
+	return ""
+}
+
+// The estimated transcription of a phrase the user has spoken. This could be
+// a single segment or the full guess of the user's spoken query.
+type SpeechRecognitionResult struct {
+	// *Output-only* Transcript text representing the words that the user spoke.
+	Transcript string `protobuf:"bytes,1,opt,name=transcript" json:"transcript,omitempty"`
+	// *Output-only* An estimate of the likelihood that the Assistant will not
+	// change its guess about this result. Values range from 0.0 (completely
+	// unstable) to 1.0 (completely stable and final). The default of 0.0 is a
+	// sentinel value indicating `stability` was not set.
+	Stability float32 `protobuf:"fixed32,2,opt,name=stability" json:"stability,omitempty"`
+}
+
+func (m *SpeechRecognitionResult) Reset()                    { *m = SpeechRecognitionResult{} }
+func (m *SpeechRecognitionResult) String() string            { return proto.CompactTextString(m) }
+func (*SpeechRecognitionResult) ProtoMessage()               {}
+func (*SpeechRecognitionResult) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
+
+func (m *SpeechRecognitionResult) GetTranscript() string {
+	if m != nil {
+		return m.Transcript
+	}
+	return ""
+}
+
+func (m *SpeechRecognitionResult) GetStability() float32 {
+	if m != nil {
+		return m.Stability
+	}
+	return 0
 }
 
 // The dialog state resulting from the user's query. Multiple of these messages
@@ -496,7 +793,7 @@ type DialogStateOut struct {
 func (m *DialogStateOut) Reset()                    { *m = DialogStateOut{} }
 func (m *DialogStateOut) String() string            { return proto.CompactTextString(m) }
 func (*DialogStateOut) ProtoMessage()               {}
-func (*DialogStateOut) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (*DialogStateOut) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
 
 func (m *DialogStateOut) GetSupplementalDisplayText() string {
 	if m != nil {
@@ -524,288 +821,6 @@ func (m *DialogStateOut) GetVolumePercentage() int32 {
 		return m.VolumePercentage
 	}
 	return 0
-}
-
-// The top-level message sent by the client. Clients must send at least two, and
-// typically numerous `AssistRequest` messages. The first message must
-// contain a `config` message and must not contain `audio_in` data. All
-// subsequent messages must contain `audio_in` data and must not contain a
-// `config` message.
-type AssistRequest struct {
-	// Exactly one of these fields must be specified in each `AssistRequest`.
-	//
-	// Types that are valid to be assigned to Type:
-	//	*AssistRequest_Config
-	//	*AssistRequest_AudioIn
-	Type isAssistRequest_Type `protobuf_oneof:"type"`
-}
-
-func (m *AssistRequest) Reset()                    { *m = AssistRequest{} }
-func (m *AssistRequest) String() string            { return proto.CompactTextString(m) }
-func (*AssistRequest) ProtoMessage()               {}
-func (*AssistRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
-
-type isAssistRequest_Type interface {
-	isAssistRequest_Type()
-}
-
-type AssistRequest_Config struct {
-	Config *AssistConfig `protobuf:"bytes,1,opt,name=config,oneof"`
-}
-type AssistRequest_AudioIn struct {
-	AudioIn []byte `protobuf:"bytes,2,opt,name=audio_in,json=audioIn,proto3,oneof"`
-}
-
-func (*AssistRequest_Config) isAssistRequest_Type()  {}
-func (*AssistRequest_AudioIn) isAssistRequest_Type() {}
-
-func (m *AssistRequest) GetType() isAssistRequest_Type {
-	if m != nil {
-		return m.Type
-	}
-	return nil
-}
-
-func (m *AssistRequest) GetConfig() *AssistConfig {
-	if x, ok := m.GetType().(*AssistRequest_Config); ok {
-		return x.Config
-	}
-	return nil
-}
-
-func (m *AssistRequest) GetAudioIn() []byte {
-	if x, ok := m.GetType().(*AssistRequest_AudioIn); ok {
-		return x.AudioIn
-	}
-	return nil
-}
-
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*AssistRequest) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _AssistRequest_OneofMarshaler, _AssistRequest_OneofUnmarshaler, _AssistRequest_OneofSizer, []interface{}{
-		(*AssistRequest_Config)(nil),
-		(*AssistRequest_AudioIn)(nil),
-	}
-}
-
-func _AssistRequest_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*AssistRequest)
-	// type
-	switch x := m.Type.(type) {
-	case *AssistRequest_Config:
-		b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Config); err != nil {
-			return err
-		}
-	case *AssistRequest_AudioIn:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.AudioIn)
-	case nil:
-	default:
-		return fmt.Errorf("AssistRequest.Type has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _AssistRequest_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*AssistRequest)
-	switch tag {
-	case 1: // type.config
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(AssistConfig)
-		err := b.DecodeMessage(msg)
-		m.Type = &AssistRequest_Config{msg}
-		return true, err
-	case 2: // type.audio_in
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Type = &AssistRequest_AudioIn{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _AssistRequest_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*AssistRequest)
-	// type
-	switch x := m.Type.(type) {
-	case *AssistRequest_Config:
-		s := proto.Size(x.Config)
-		n += proto.SizeVarint(1<<3 | proto.WireBytes)
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AssistRequest_AudioIn:
-		n += proto.SizeVarint(2<<3 | proto.WireBytes)
-		n += proto.SizeVarint(uint64(len(x.AudioIn)))
-		n += len(x.AudioIn)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
-}
-
-// The top-level message received by the client. A series of one or more
-// `AssistResponse` messages are streamed back to the client.
-type AssistResponse struct {
-	// *Output-only* Indicates the type of event.
-	EventType AssistResponse_EventType `protobuf:"varint,1,opt,name=event_type,json=eventType,enum=google.assistant.embedded.v1alpha2.AssistResponse_EventType" json:"event_type,omitempty"`
-	// *Output-only* The audio containing the Assistant's response to the query.
-	AudioOut *AudioOut `protobuf:"bytes,3,opt,name=audio_out,json=audioOut" json:"audio_out,omitempty"`
-	// *Output-only* Contains the action triggered by the query with the
-	// appropriate payloads and semantic parsing.
-	DeviceAction *DeviceAction `protobuf:"bytes,6,opt,name=device_action,json=deviceAction" json:"device_action,omitempty"`
-	// *Output-only* This repeated list contains zero or more speech recognition
-	// results that correspond to consecutive portions of the audio currently
-	// being processed, starting with the portion corresponding to the earliest
-	// audio (and most stable portion) to the portion corresponding to the most
-	// recent audio. The strings can be concatenated to view the full
-	// in-progress response. When the speech recognition completes, this list
-	// will contain one item with `stability` of `1.0`.
-	SpeechResults []*SpeechRecognitionResult `protobuf:"bytes,2,rep,name=speech_results,json=speechResults" json:"speech_results,omitempty"`
-	// *Output-only* Contains output related to the user's query.
-	DialogStateOut *DialogStateOut `protobuf:"bytes,5,opt,name=dialog_state_out,json=dialogStateOut" json:"dialog_state_out,omitempty"`
-}
-
-func (m *AssistResponse) Reset()                    { *m = AssistResponse{} }
-func (m *AssistResponse) String() string            { return proto.CompactTextString(m) }
-func (*AssistResponse) ProtoMessage()               {}
-func (*AssistResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
-
-func (m *AssistResponse) GetEventType() AssistResponse_EventType {
-	if m != nil {
-		return m.EventType
-	}
-	return AssistResponse_EVENT_TYPE_UNSPECIFIED
-}
-
-func (m *AssistResponse) GetAudioOut() *AudioOut {
-	if m != nil {
-		return m.AudioOut
-	}
-	return nil
-}
-
-func (m *AssistResponse) GetDeviceAction() *DeviceAction {
-	if m != nil {
-		return m.DeviceAction
-	}
-	return nil
-}
-
-func (m *AssistResponse) GetSpeechResults() []*SpeechRecognitionResult {
-	if m != nil {
-		return m.SpeechResults
-	}
-	return nil
-}
-
-func (m *AssistResponse) GetDialogStateOut() *DialogStateOut {
-	if m != nil {
-		return m.DialogStateOut
-	}
-	return nil
-}
-
-// The estimated transcription of a phrase the user has spoken. This could be
-// a single segment or the full guess of the user's spoken query.
-type SpeechRecognitionResult struct {
-	// *Output-only* Transcript text representing the words that the user spoke.
-	Transcript string `protobuf:"bytes,1,opt,name=transcript" json:"transcript,omitempty"`
-	// *Output-only* An estimate of the likelihood that the Assistant will not
-	// change its guess about this result. Values range from 0.0 (completely
-	// unstable) to 1.0 (completely stable and final). The default of 0.0 is a
-	// sentinel value indicating `stability` was not set.
-	Stability float32 `protobuf:"fixed32,2,opt,name=stability" json:"stability,omitempty"`
-}
-
-func (m *SpeechRecognitionResult) Reset()                    { *m = SpeechRecognitionResult{} }
-func (m *SpeechRecognitionResult) String() string            { return proto.CompactTextString(m) }
-func (*SpeechRecognitionResult) ProtoMessage()               {}
-func (*SpeechRecognitionResult) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
-
-func (m *SpeechRecognitionResult) GetTranscript() string {
-	if m != nil {
-		return m.Transcript
-	}
-	return ""
-}
-
-func (m *SpeechRecognitionResult) GetStability() float32 {
-	if m != nil {
-		return m.Stability
-	}
-	return 0
-}
-
-// *Required* Fields that identify the device to the Assistant.
-//
-// See also:
-//
-// *   [Register a Device - REST API](https://developers.google.com/assistant/sdk/reference/device-registration/register-device-manual)
-// *   [Device Model and Instance Schemas](https://developers.google.com/assistant/sdk/reference/device-registration/model-and-instance-schemas)
-// *   [Device Proto](https://developers.google.com/assistant/sdk/reference/rpc/google.assistant.devices.v1alpha2#device)
-type DeviceConfig struct {
-	// *Required* Unique identifier for the device. The id length must be 128
-	// characters or less. Example: DBCDW098234. This MUST match the device_id
-	// returned from device registration. This device_id is used to match against
-	// the user's registered devices to lookup the supported traits and
-	// capabilities of this device. This information should not change across
-	// device reboots. However, it should not be saved across
-	// factory-default resets.
-	DeviceId string `protobuf:"bytes,1,opt,name=device_id,json=deviceId" json:"device_id,omitempty"`
-	// *Required* Unique identifier for the device model. The combination of
-	// device_model_id and device_id must have been previously associated through
-	// device registration.
-	DeviceModelId string `protobuf:"bytes,3,opt,name=device_model_id,json=deviceModelId" json:"device_model_id,omitempty"`
-}
-
-func (m *DeviceConfig) Reset()                    { *m = DeviceConfig{} }
-func (m *DeviceConfig) String() string            { return proto.CompactTextString(m) }
-func (*DeviceConfig) ProtoMessage()               {}
-func (*DeviceConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
-
-func (m *DeviceConfig) GetDeviceId() string {
-	if m != nil {
-		return m.DeviceId
-	}
-	return ""
-}
-
-func (m *DeviceConfig) GetDeviceModelId() string {
-	if m != nil {
-		return m.DeviceModelId
-	}
-	return ""
-}
-
-// The response returned to the device if the user has triggered a Device
-// Action. For example, a device which supports the query *Turn on the light*
-// would receive a `DeviceAction` with a JSON payload containing the semantics
-// of the request.
-type DeviceAction struct {
-	// JSON containing the device command response generated from the triggered
-	// Device Action grammar. The format is given by the
-	// `action.devices.EXECUTE` intent for a given
-	// [trait](https://developers.google.com/assistant/sdk/reference/traits/).
-	DeviceRequestJson string `protobuf:"bytes,1,opt,name=device_request_json,json=deviceRequestJson" json:"device_request_json,omitempty"`
-}
-
-func (m *DeviceAction) Reset()                    { *m = DeviceAction{} }
-func (m *DeviceAction) String() string            { return proto.CompactTextString(m) }
-func (*DeviceAction) ProtoMessage()               {}
-func (*DeviceAction) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
-
-func (m *DeviceAction) GetDeviceRequestJson() string {
-	if m != nil {
-		return m.DeviceRequestJson
-	}
-	return ""
 }
 
 // There are three sources of locations. They are used with this precedence:
@@ -907,22 +922,22 @@ func _DeviceLocation_OneofSizer(msg proto.Message) (n int) {
 }
 
 func init() {
+	proto.RegisterType((*AssistRequest)(nil), "google.assistant.embedded.v1alpha2.AssistRequest")
+	proto.RegisterType((*AssistResponse)(nil), "google.assistant.embedded.v1alpha2.AssistResponse")
 	proto.RegisterType((*AssistConfig)(nil), "google.assistant.embedded.v1alpha2.AssistConfig")
 	proto.RegisterType((*AudioInConfig)(nil), "google.assistant.embedded.v1alpha2.AudioInConfig")
 	proto.RegisterType((*AudioOutConfig)(nil), "google.assistant.embedded.v1alpha2.AudioOutConfig")
 	proto.RegisterType((*DialogStateIn)(nil), "google.assistant.embedded.v1alpha2.DialogStateIn")
-	proto.RegisterType((*AudioOut)(nil), "google.assistant.embedded.v1alpha2.AudioOut")
-	proto.RegisterType((*DialogStateOut)(nil), "google.assistant.embedded.v1alpha2.DialogStateOut")
-	proto.RegisterType((*AssistRequest)(nil), "google.assistant.embedded.v1alpha2.AssistRequest")
-	proto.RegisterType((*AssistResponse)(nil), "google.assistant.embedded.v1alpha2.AssistResponse")
-	proto.RegisterType((*SpeechRecognitionResult)(nil), "google.assistant.embedded.v1alpha2.SpeechRecognitionResult")
 	proto.RegisterType((*DeviceConfig)(nil), "google.assistant.embedded.v1alpha2.DeviceConfig")
+	proto.RegisterType((*AudioOut)(nil), "google.assistant.embedded.v1alpha2.AudioOut")
 	proto.RegisterType((*DeviceAction)(nil), "google.assistant.embedded.v1alpha2.DeviceAction")
+	proto.RegisterType((*SpeechRecognitionResult)(nil), "google.assistant.embedded.v1alpha2.SpeechRecognitionResult")
+	proto.RegisterType((*DialogStateOut)(nil), "google.assistant.embedded.v1alpha2.DialogStateOut")
 	proto.RegisterType((*DeviceLocation)(nil), "google.assistant.embedded.v1alpha2.DeviceLocation")
+	proto.RegisterEnum("google.assistant.embedded.v1alpha2.AssistResponse_EventType", AssistResponse_EventType_name, AssistResponse_EventType_value)
 	proto.RegisterEnum("google.assistant.embedded.v1alpha2.AudioInConfig_Encoding", AudioInConfig_Encoding_name, AudioInConfig_Encoding_value)
 	proto.RegisterEnum("google.assistant.embedded.v1alpha2.AudioOutConfig_Encoding", AudioOutConfig_Encoding_name, AudioOutConfig_Encoding_value)
 	proto.RegisterEnum("google.assistant.embedded.v1alpha2.DialogStateOut_MicrophoneMode", DialogStateOut_MicrophoneMode_name, DialogStateOut_MicrophoneMode_value)
-	proto.RegisterEnum("google.assistant.embedded.v1alpha2.AssistResponse_EventType", AssistResponse_EventType_name, AssistResponse_EventType_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1120,77 +1135,79 @@ func init() {
 }
 
 var fileDescriptor0 = []byte{
-	// 1141 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0xdd, 0x6e, 0xdb, 0x36,
-	0x14, 0x8e, 0xec, 0x34, 0xb5, 0x4f, 0x62, 0xc5, 0x61, 0x8b, 0xd5, 0x4b, 0xbb, 0xb5, 0xd0, 0x80,
-	0x22, 0xfb, 0xb3, 0x9b, 0x14, 0xd8, 0x80, 0xb6, 0x1b, 0xe0, 0xda, 0x4a, 0xa2, 0xc2, 0xb1, 0x5c,
-	0xc6, 0x69, 0xd1, 0xfd, 0x80, 0x60, 0x24, 0x4e, 0x51, 0x21, 0x93, 0xaa, 0x44, 0x07, 0xcd, 0xae,
-	0x76, 0x35, 0xec, 0xb2, 0x0f, 0xb1, 0x07, 0xd9, 0x2b, 0xec, 0x59, 0xf6, 0x02, 0x03, 0x29, 0xc9,
-	0xb5, 0xb6, 0x66, 0xb3, 0xb7, 0x3b, 0xf1, 0x1c, 0x9e, 0x8f, 0xe4, 0x39, 0xe7, 0xfb, 0x8e, 0xe0,
-	0x61, 0x20, 0x44, 0x10, 0xb1, 0x0e, 0x4d, 0xd3, 0x30, 0x95, 0x94, 0xcb, 0x0e, 0x9b, 0x9c, 0x32,
-	0xdf, 0x67, 0x7e, 0xe7, 0x7c, 0x97, 0x46, 0xf1, 0x19, 0xdd, 0x9b, 0x59, 0xc8, 0x6c, 0x53, 0x3b,
-	0x4e, 0x84, 0x14, 0xc8, 0xca, 0x82, 0xdb, 0x6f, 0xed, 0xc5, 0xd6, 0x76, 0x11, 0xbc, 0x7d, 0xab,
-	0x38, 0x20, 0x0e, 0x3b, 0x94, 0x73, 0x21, 0xa9, 0x0c, 0x05, 0x4f, 0x33, 0x84, 0xed, 0x56, 0xee,
-	0x95, 0x17, 0x31, 0xeb, 0x44, 0x54, 0x46, 0x3c, 0xc8, 0x3c, 0xd6, 0xaf, 0x55, 0xd8, 0xe8, 0x6a,
-	0xdc, 0x9e, 0xe0, 0x3f, 0x84, 0x01, 0xfa, 0x16, 0x36, 0xe9, 0xd4, 0x0f, 0x05, 0x09, 0x39, 0xf1,
-	0xb4, 0xa9, 0x65, 0xdc, 0x31, 0x76, 0xd6, 0xf7, 0x76, 0xdb, 0xff, 0x7e, 0x8d, 0x76, 0x57, 0x85,
-	0x3a, 0x3c, 0xc3, 0x3a, 0x5c, 0xc1, 0x0d, 0x3a, 0x6f, 0x40, 0xb7, 0x01, 0x24, 0x7b, 0x2d, 0xc9,
-	0xab, 0x29, 0x4b, 0x2e, 0x5a, 0x6b, 0x77, 0x8c, 0x9d, 0xfa, 0xe1, 0x0a, 0xae, 0x2b, 0xdb, 0x53,
-	0x65, 0x42, 0xdf, 0x41, 0x33, 0x3b, 0x5d, 0x4c, 0x65, 0x71, 0x7c, 0x45, 0x1f, 0xbf, 0xb7, 0xf0,
-	0xf1, 0xee, 0x34, 0x7f, 0x0b, 0x36, 0x69, 0x69, 0x8d, 0x5e, 0xc0, 0xa6, 0x1f, 0xd2, 0x48, 0x04,
-	0x24, 0x95, 0x54, 0x32, 0x12, 0xf2, 0x56, 0x75, 0xf1, 0xb7, 0xf5, 0x75, 0xe8, 0xb1, 0x8a, 0x74,
-	0x38, 0x6e, 0xf8, 0xf3, 0x4b, 0x74, 0x02, 0x0d, 0x9f, 0x9d, 0x87, 0x1e, 0x2b, 0x6e, 0xbd, 0xaa,
-	0x81, 0xef, 0x2d, 0x04, 0xac, 0x03, 0xf3, 0x3b, 0x6f, 0xf8, 0x73, 0xab, 0xc7, 0x6b, 0xb0, 0xaa,
-	0x6a, 0x66, 0xfd, 0x6e, 0x40, 0xa3, 0x94, 0x5b, 0xf4, 0x0c, 0x6a, 0x8c, 0x7b, 0xc2, 0x0f, 0x79,
-	0x56, 0x20, 0x73, 0xef, 0xc1, 0xd2, 0x05, 0x6a, 0xdb, 0x39, 0x02, 0x9e, 0x61, 0xa1, 0x4f, 0x60,
-	0x2b, 0xa5, 0x93, 0x38, 0x62, 0x24, 0x51, 0x29, 0x3a, 0x63, 0x89, 0xfc, 0x51, 0x97, 0xe0, 0x0a,
-	0xde, 0xcc, 0x1c, 0x98, 0x4a, 0x76, 0xa8, 0xcc, 0xd6, 0x23, 0xa8, 0x15, 0x08, 0xa8, 0x05, 0xd7,
-	0xed, 0x61, 0xcf, 0xed, 0x3b, 0xc3, 0x03, 0x72, 0x32, 0x3c, 0x1e, 0xd9, 0x3d, 0x67, 0xdf, 0xb1,
-	0xfb, 0xcd, 0x15, 0xb4, 0x01, 0xb5, 0x81, 0x33, 0xb4, 0xbb, 0x78, 0xf7, 0x8b, 0xa6, 0x81, 0x6a,
-	0xb0, 0xba, 0x3f, 0xe8, 0xf6, 0x9a, 0x15, 0xeb, 0x4d, 0x05, 0xcc, 0x72, 0xc1, 0xd0, 0xf3, 0xbf,
-	0x3d, 0xea, 0xe1, 0xf2, 0x65, 0xff, 0x9f, 0xaf, 0x42, 0x9f, 0xc2, 0xd6, 0xb9, 0x88, 0xa6, 0x13,
-	0x46, 0x62, 0x96, 0x78, 0x8c, 0x4b, 0x1a, 0x30, 0xdd, 0x27, 0x57, 0x70, 0x33, 0x73, 0x8c, 0x66,
-	0x76, 0x6b, 0xf0, 0x1f, 0x52, 0x70, 0x15, 0xaa, 0x47, 0xa3, 0xfb, 0xcd, 0x0a, 0xda, 0x84, 0x75,
-	0x77, 0x74, 0x72, 0x4c, 0x9c, 0x21, 0x71, 0x0f, 0x0e, 0x9a, 0x55, 0xeb, 0x37, 0x03, 0x1a, 0xa5,
-	0x36, 0x43, 0x9f, 0x03, 0xf2, 0x04, 0x3f, 0x67, 0x49, 0xaa, 0x09, 0x9d, 0x35, 0xae, 0xce, 0xcd,
-	0x06, 0xde, 0x9a, 0xf7, 0xe8, 0x00, 0xf4, 0x11, 0x34, 0x22, 0xca, 0x83, 0x29, 0x0d, 0x54, 0x23,
-	0xfa, 0x4c, 0xbf, 0xb1, 0x8e, 0x37, 0x0a, 0x63, 0x4f, 0xf8, 0x4c, 0x51, 0x3c, 0xef, 0xd5, 0x48,
-	0x78, 0x3a, 0xb8, 0x75, 0x65, 0x71, 0x8e, 0x65, 0xdd, 0x3a, 0xc8, 0x23, 0xb1, 0xe9, 0x97, 0xd6,
-	0xd6, 0xc7, 0x50, 0x2b, 0xca, 0x81, 0x3e, 0x00, 0xc8, 0xd8, 0xec, 0x53, 0x49, 0xf3, 0x4b, 0xd7,
-	0xb5, 0xa5, 0x4f, 0x25, 0xb5, 0xfe, 0xa8, 0x80, 0x39, 0xf7, 0x5a, 0x15, 0xf1, 0x00, 0xde, 0x4f,
-	0xa7, 0x71, 0x1c, 0xb1, 0x89, 0xca, 0x6f, 0x44, 0xfc, 0x30, 0x8d, 0x23, 0x7a, 0x41, 0x94, 0x42,
-	0x68, 0x80, 0x3a, 0xbe, 0x31, 0xbf, 0xa1, 0x9f, 0xf9, 0xc7, 0xec, 0xb5, 0xbc, 0x24, 0x55, 0x95,
-	0xcb, 0x52, 0xf5, 0x12, 0x36, 0x27, 0xa1, 0x97, 0x88, 0xf8, 0x4c, 0x70, 0x46, 0x26, 0x2a, 0x59,
-	0x55, 0xdd, 0x72, 0xdd, 0x25, 0xc5, 0xc0, 0x9d, 0xca, 0xf6, 0xd1, 0x0c, 0xe9, 0x48, 0xf8, 0x0c,
-	0x9b, 0x93, 0xd2, 0xfa, 0xdd, 0x2d, 0xb5, 0x7a, 0x49, 0x4b, 0x7d, 0x0f, 0x66, 0x19, 0x0e, 0xdd,
-	0x86, 0x9b, 0x47, 0x4e, 0x0f, 0xbb, 0xa3, 0x43, 0x77, 0x68, 0x93, 0x23, 0xb7, 0x6f, 0xff, 0xa5,
-	0xbf, 0xae, 0x43, 0xb3, 0x37, 0x70, 0x8f, 0x6d, 0xf2, 0x76, 0x5b, 0xd3, 0x50, 0xd6, 0xbe, 0xd3,
-	0x1d, 0xb8, 0x07, 0x64, 0xdf, 0x1d, 0x0c, 0xdc, 0xe7, 0xc4, 0x1d, 0x36, 0x2b, 0xd6, 0x4f, 0x4a,
-	0x4a, 0xf4, 0xcb, 0x30, 0x7b, 0x35, 0x65, 0xa9, 0x44, 0x4f, 0x60, 0xad, 0xa4, 0xf4, 0x0b, 0x89,
-	0xd6, 0xfc, 0xd0, 0x38, 0x5c, 0xc1, 0x39, 0x02, 0xba, 0x09, 0xb5, 0x62, 0x7c, 0x64, 0xa9, 0x3f,
-	0x5c, 0xc1, 0x57, 0xf3, 0x21, 0x30, 0x53, 0xb3, 0x37, 0xab, 0x60, 0x16, 0x57, 0x48, 0x63, 0xc1,
-	0x53, 0xd5, 0x93, 0xc0, 0xce, 0x19, 0x97, 0x44, 0x6d, 0xc8, 0xb9, 0xff, 0x68, 0xf1, 0x7b, 0x14,
-	0x38, 0x6d, 0x5b, 0x81, 0x8c, 0x2f, 0x62, 0x86, 0xeb, 0xac, 0xf8, 0x44, 0x0e, 0xd4, 0x67, 0x53,
-	0x25, 0x57, 0xfc, 0xcf, 0x96, 0xd1, 0x15, 0x5c, 0x2b, 0x06, 0xc9, 0x9c, 0xce, 0x53, 0x4f, 0x33,
-	0x67, 0x6d, 0x59, 0x9d, 0xef, 0xea, 0xb8, 0x42, 0xe7, 0xb3, 0x15, 0x3a, 0x05, 0x33, 0x8d, 0x19,
-	0xf3, 0xce, 0x48, 0xc2, 0xd2, 0x69, 0x24, 0xd3, 0x56, 0xe5, 0x4e, 0x75, 0x67, 0x7d, 0x31, 0xf9,
-	0x3b, 0xd6, 0x91, 0x98, 0x79, 0x22, 0xe0, 0xa1, 0x06, 0xd7, 0x18, 0xb8, 0x91, 0xe6, 0x0e, 0x8d,
-	0xa8, 0x66, 0x6b, 0x69, 0xfa, 0xa9, 0x64, 0x2c, 0xc3, 0xfb, 0x52, 0xc7, 0x63, 0xd3, 0x2f, 0xad,
-	0xad, 0xaf, 0xa0, 0x3e, 0xcb, 0x3d, 0xda, 0x86, 0xf7, 0xec, 0x67, 0xf6, 0x70, 0x4c, 0xc6, 0x2f,
-	0x46, 0xef, 0xe8, 0x55, 0x7b, 0xd8, 0x27, 0xee, 0x3e, 0x39, 0x19, 0x8f, 0x6d, 0xdc, 0x1d, 0xf6,
-	0xec, 0xa6, 0x61, 0x3d, 0x87, 0x1b, 0x97, 0x3c, 0x03, 0x7d, 0x08, 0x20, 0x13, 0xca, 0x53, 0x2f,
-	0x09, 0xe3, 0x42, 0x04, 0xe6, 0x2c, 0xe8, 0x16, 0xd4, 0x53, 0x49, 0x4f, 0xc3, 0x28, 0x94, 0x17,
-	0xba, 0xe7, 0x2a, 0xf8, 0xad, 0xc1, 0x3a, 0x86, 0x8d, 0xf9, 0xf9, 0x8a, 0x6e, 0x42, 0x3d, 0x2f,
-	0x60, 0xe8, 0xe7, 0x60, 0xb5, 0xcc, 0xe0, 0xf8, 0xe8, 0xee, 0x4c, 0x19, 0x95, 0x1e, 0x44, 0x6a,
-	0x4b, 0x55, 0x6f, 0xc9, 0x8b, 0xae, 0xd8, 0x18, 0x39, 0xbe, 0xf5, 0x75, 0x01, 0x9a, 0x97, 0xaf,
-	0x0d, 0xd7, 0xf2, 0xb8, 0x24, 0xe3, 0x14, 0x79, 0x99, 0x0a, 0x9e, 0xc3, 0x6f, 0x65, 0xae, 0x9c,
-	0x6d, 0x4f, 0x52, 0xc1, 0xad, 0xa7, 0x60, 0x96, 0x65, 0x14, 0x7d, 0x09, 0xeb, 0x9e, 0x10, 0x89,
-	0x1f, 0x72, 0x2a, 0x59, 0x9a, 0x13, 0xf1, 0x5a, 0x51, 0x17, 0x45, 0x8a, 0xf6, 0x80, 0xca, 0x01,
-	0x57, 0x5c, 0x9b, 0xdf, 0x59, 0x70, 0x6a, 0xef, 0x17, 0x03, 0xb6, 0xec, 0xbc, 0x68, 0xdd, 0xa2,
-	0x8c, 0x28, 0x85, 0xb5, 0x6c, 0x81, 0x76, 0x97, 0x21, 0x93, 0xbe, 0xe9, 0xf6, 0xde, 0xf2, 0xfc,
-	0xdb, 0x31, 0xee, 0x19, 0x8f, 0x7f, 0x36, 0xe0, 0xae, 0x27, 0x26, 0x0b, 0x44, 0x3f, 0x36, 0x67,
-	0x57, 0x1d, 0xa9, 0xdf, 0xd1, 0x91, 0xf1, 0xcd, 0x93, 0x3c, 0x2a, 0x10, 0x6a, 0x66, 0xb5, 0x45,
-	0x12, 0x74, 0x02, 0xc6, 0xf5, 0xcf, 0x6a, 0x27, 0x73, 0xd1, 0x38, 0x4c, 0xff, 0xe9, 0x47, 0xfa,
-	0x61, 0x61, 0x39, 0x5d, 0xd3, 0x61, 0xf7, 0xff, 0x0c, 0x00, 0x00, 0xff, 0xff, 0x3d, 0x7a, 0x00,
-	0x97, 0x7e, 0x0b, 0x00, 0x00,
+	// 1176 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0x6f, 0x6f, 0xdb, 0xb6,
+	0x13, 0x8e, 0x9c, 0x34, 0xb5, 0x2f, 0xb6, 0xe3, 0xb0, 0xc5, 0xaf, 0xfe, 0xa5, 0xdd, 0x1a, 0x68,
+	0x40, 0x91, 0xfd, 0xb3, 0x1b, 0x17, 0xd8, 0x80, 0xa6, 0x1b, 0xe0, 0xda, 0x4a, 0xa2, 0xce, 0xb1,
+	0x5c, 0xd9, 0x69, 0xd1, 0x75, 0x03, 0xc1, 0x48, 0x9c, 0xa2, 0x42, 0x26, 0x55, 0x91, 0x4e, 0x9b,
+	0xbd, 0xda, 0xcb, 0xbd, 0x5b, 0x3f, 0xc3, 0xb0, 0x2f, 0xb4, 0x6f, 0x32, 0x60, 0x5f, 0x60, 0x20,
+	0x25, 0xb9, 0xf6, 0xd6, 0x6c, 0xf6, 0xf6, 0x4e, 0xbc, 0xe3, 0x3d, 0x3c, 0x3e, 0xf7, 0xe8, 0x8e,
+	0xb0, 0x1f, 0x70, 0x1e, 0x44, 0xb4, 0x49, 0x84, 0x08, 0x85, 0x24, 0x4c, 0x36, 0xe9, 0xf8, 0x94,
+	0xfa, 0x3e, 0xf5, 0x9b, 0xe7, 0x7b, 0x24, 0x8a, 0xcf, 0x48, 0x6b, 0x6a, 0xc1, 0xd3, 0x4d, 0x8d,
+	0x38, 0xe1, 0x92, 0x23, 0x33, 0x0d, 0x6e, 0xbc, 0xb5, 0xe7, 0x5b, 0x1b, 0x79, 0xf0, 0xf6, 0xad,
+	0xfc, 0x80, 0x38, 0x6c, 0x12, 0xc6, 0xb8, 0x24, 0x32, 0xe4, 0x4c, 0xa4, 0x08, 0xdb, 0xf5, 0xcc,
+	0x2b, 0x2f, 0x62, 0xda, 0x8c, 0x88, 0x8c, 0x58, 0x90, 0x7a, 0xcc, 0x1f, 0x0c, 0xa8, 0xb4, 0x35,
+	0xae, 0x4b, 0x5f, 0x4e, 0xa8, 0x90, 0xe8, 0x11, 0xac, 0x7b, 0x9c, 0x7d, 0x17, 0x06, 0x75, 0x63,
+	0xc7, 0xd8, 0xdd, 0x68, 0xdd, 0x6d, 0xfc, 0xf3, 0xf1, 0x8d, 0x14, 0xa2, 0xa3, 0xe3, 0x8e, 0x56,
+	0xdc, 0x0c, 0x01, 0xdd, 0x84, 0x22, 0x99, 0xf8, 0x21, 0xc7, 0x21, 0xab, 0x17, 0x76, 0x8c, 0xdd,
+	0xf2, 0xd1, 0x8a, 0x7b, 0x55, 0x5b, 0x6c, 0xf6, 0x70, 0x1d, 0xd6, 0x54, 0x3e, 0xe6, 0x9b, 0x35,
+	0xa8, 0xe6, 0x29, 0x88, 0x98, 0x33, 0x41, 0xd1, 0x73, 0x00, 0x7a, 0x4e, 0x99, 0xc4, 0x6a, 0x83,
+	0xce, 0xa3, 0xda, 0x7a, 0xb0, 0x78, 0x1e, 0x39, 0x4e, 0xc3, 0x52, 0x20, 0xa3, 0x8b, 0x98, 0xba,
+	0x25, 0x9a, 0x7f, 0x22, 0x1b, 0x4a, 0x69, 0x52, 0x7c, 0x22, 0xeb, 0xab, 0xfa, 0x8e, 0x9f, 0x2c,
+	0x84, 0xad, 0x82, 0x9c, 0x89, 0x74, 0xd3, 0x3b, 0x39, 0x13, 0x89, 0x4e, 0xa0, 0xe2, 0xd3, 0xf3,
+	0xd0, 0xa3, 0x98, 0x78, 0x8a, 0xef, 0xfa, 0xfa, 0xe2, 0x94, 0x75, 0x75, 0x60, 0x5b, 0xc7, 0xb9,
+	0x65, 0x7f, 0x66, 0x85, 0x4e, 0xa1, 0x2a, 0x62, 0x4a, 0xbd, 0x33, 0x9c, 0x50, 0x31, 0x89, 0xa4,
+	0xa8, 0x17, 0x76, 0x56, 0x77, 0x37, 0x5a, 0xfb, 0x8b, 0xe0, 0x0e, 0x75, 0xa4, 0x4b, 0x3d, 0x1e,
+	0xb0, 0x50, 0x83, 0x6b, 0x0c, 0xb7, 0x22, 0x32, 0x87, 0x46, 0x44, 0xdf, 0x40, 0xcd, 0x0f, 0x49,
+	0xc4, 0x03, 0x2c, 0x24, 0x91, 0x54, 0x93, 0x71, 0x45, 0x67, 0xdf, 0x5a, 0x28, 0x7b, 0x1d, 0x3b,
+	0x54, 0xa1, 0x8a, 0x92, 0xaa, 0x3f, 0xb7, 0x36, 0xbf, 0x80, 0xd2, 0x94, 0x7b, 0xb4, 0x0d, 0xff,
+	0xb3, 0x9e, 0x58, 0xfd, 0x11, 0x1e, 0x3d, 0x1b, 0x58, 0xf8, 0xa4, 0x3f, 0x1c, 0x58, 0x1d, 0xfb,
+	0xc0, 0xb6, 0xba, 0xb5, 0x15, 0x74, 0x1d, 0x6a, 0x56, 0xbf, 0x8b, 0x9d, 0x03, 0x7c, 0x32, 0x1a,
+	0x59, 0x6e, 0xbb, 0xdf, 0xb1, 0x6a, 0x86, 0xf9, 0xcb, 0x2a, 0x94, 0x67, 0x25, 0x85, 0x9e, 0xc3,
+	0x66, 0x2e, 0x24, 0x3c, 0xa7, 0xce, 0xbd, 0x85, 0x2b, 0x67, 0xb3, 0xa9, 0x3c, 0x2b, 0x64, 0xd6,
+	0x80, 0x6e, 0x03, 0x48, 0xfa, 0x5a, 0xe2, 0x97, 0x13, 0x9a, 0x5c, 0xe8, 0x12, 0x96, 0x8e, 0x56,
+	0xdc, 0x92, 0xb2, 0x3d, 0x56, 0x26, 0xc5, 0xd5, 0x54, 0x31, 0xf9, 0xf1, 0x85, 0xc5, 0xb9, 0xca,
+	0x85, 0x93, 0x1e, 0xe7, 0x56, 0xc9, 0xdc, 0x1a, 0x3d, 0x83, 0xcd, 0xb9, 0x4a, 0x84, 0x2c, 0x53,
+	0xe5, 0xde, 0x92, 0x85, 0xb0, 0x99, 0x5b, 0xf1, 0x67, 0x97, 0x33, 0xfa, 0xcc, 0xb2, 0x5e, 0x5b,
+	0x56, 0x9f, 0x59, 0xce, 0x99, 0x3e, 0xd3, 0xd5, 0xf4, 0xcf, 0xfd, 0x55, 0x35, 0x8f, 0x39, 0x2a,
+	0x9f, 0x40, 0x91, 0x32, 0x8f, 0xfb, 0x21, 0x0b, 0xb2, 0xdf, 0xf6, 0xfe, 0xd2, 0x05, 0x6a, 0x58,
+	0x19, 0x82, 0x3b, 0xc5, 0x42, 0x1f, 0xc1, 0x96, 0x20, 0xe3, 0x38, 0xa2, 0x38, 0x51, 0x14, 0x9d,
+	0xd1, 0x44, 0x7e, 0xaf, 0x4b, 0x70, 0xc5, 0xdd, 0x4c, 0x1d, 0x2e, 0x91, 0xf4, 0x48, 0x99, 0xcd,
+	0x07, 0x50, 0xcc, 0x11, 0x50, 0x1d, 0xae, 0x5b, 0xfd, 0x8e, 0xd3, 0xb5, 0xfb, 0x87, 0x7f, 0x12,
+	0x5e, 0x19, 0x8a, 0x3d, 0xbb, 0x6f, 0xb5, 0xdd, 0xbd, 0xcf, 0x6a, 0x06, 0x2a, 0xc2, 0xda, 0x41,
+	0xaf, 0xdd, 0xa9, 0x15, 0xcc, 0x37, 0x05, 0xa8, 0xce, 0x17, 0x0c, 0x3d, 0xfd, 0xcb, 0xa5, 0xf6,
+	0x97, 0x2f, 0xfb, 0x7f, 0xbc, 0x15, 0xfa, 0x18, 0xb6, 0xce, 0x79, 0x34, 0x19, 0x53, 0x1c, 0xd3,
+	0xc4, 0xa3, 0x4c, 0x92, 0x80, 0x6a, 0x9d, 0x5c, 0x71, 0x6b, 0xa9, 0x63, 0x30, 0xb5, 0x9b, 0xbd,
+	0x7f, 0x41, 0xc1, 0x55, 0x58, 0x3d, 0x1e, 0xdc, 0xab, 0x15, 0xd0, 0x26, 0x6c, 0x38, 0x83, 0x93,
+	0x21, 0xb6, 0xfb, 0xd8, 0x39, 0x3c, 0xac, 0xad, 0x9a, 0xbf, 0x19, 0x50, 0x99, 0x93, 0x19, 0xfa,
+	0x14, 0x90, 0xc7, 0xd9, 0x39, 0x4d, 0x84, 0x1e, 0x33, 0xa9, 0x70, 0x35, 0x37, 0x65, 0x77, 0x6b,
+	0xd6, 0xa3, 0x03, 0xd0, 0x07, 0x50, 0x89, 0x08, 0x0b, 0x26, 0x24, 0x50, 0x42, 0xf4, 0xa9, 0xbe,
+	0x63, 0xc9, 0x2d, 0xe7, 0xc6, 0x0e, 0xf7, 0x55, 0xcf, 0xdf, 0xcc, 0xb4, 0x1a, 0x71, 0x4f, 0x07,
+	0x2f, 0xd5, 0x8f, 0x74, 0x68, 0x2f, 0x8b, 0x74, 0xab, 0xfe, 0xdc, 0x1a, 0x35, 0xe0, 0x5a, 0x28,
+	0x30, 0xa3, 0xaf, 0xf0, 0x6c, 0x76, 0xf5, 0xab, 0x3b, 0xc6, 0x6e, 0xd1, 0xdd, 0x0a, 0x45, 0x9f,
+	0xbe, 0xea, 0xcc, 0x38, 0xcc, 0x21, 0x94, 0x67, 0xf5, 0x8f, 0x6e, 0x42, 0x29, 0x4b, 0x2e, 0xf4,
+	0xf5, 0x3d, 0x4b, 0x6e, 0x31, 0x35, 0xd8, 0x3e, 0xba, 0x33, 0xcd, 0x7c, 0xcc, 0x7d, 0x1a, 0xa9,
+	0x2d, 0xab, 0x7a, 0x4b, 0xf6, 0xf3, 0x1d, 0x2b, 0xab, 0xed, 0x9b, 0x1f, 0x42, 0x31, 0xd7, 0x04,
+	0x7a, 0x0f, 0x20, 0x6d, 0x29, 0x3e, 0x91, 0x24, 0x63, 0x2e, 0x1d, 0x4b, 0x5d, 0x22, 0x89, 0xf9,
+	0x65, 0x7e, 0x7e, 0x36, 0x11, 0x1a, 0x70, 0x2d, 0x3b, 0x22, 0x49, 0xc7, 0x34, 0x7e, 0x21, 0x38,
+	0xcb, 0x32, 0xd9, 0x4a, 0x5d, 0xd9, 0x00, 0x7f, 0x24, 0x38, 0x33, 0x9f, 0xc2, 0x8d, 0x4b, 0xe6,
+	0x00, 0x7a, 0x1f, 0x40, 0x26, 0x84, 0x09, 0x2f, 0x09, 0x63, 0x99, 0x21, 0xcc, 0x58, 0xd0, 0x2d,
+	0x28, 0x09, 0x49, 0x4e, 0xc3, 0x28, 0x94, 0x17, 0xba, 0x50, 0x05, 0xf7, 0xad, 0xc1, 0xfc, 0xbd,
+	0x00, 0xd5, 0xf9, 0xde, 0x8f, 0xee, 0xc3, 0xff, 0xc5, 0x24, 0x8e, 0x23, 0x3a, 0x56, 0xea, 0x8b,
+	0xb0, 0x1f, 0x8a, 0x38, 0x22, 0x17, 0x58, 0xf5, 0xcf, 0x0c, 0xff, 0xc6, 0xec, 0x86, 0x6e, 0xea,
+	0x1f, 0xd1, 0xd7, 0xf2, 0x12, 0x21, 0x15, 0x2e, 0x13, 0xd2, 0x0b, 0xd8, 0x1c, 0x87, 0x5e, 0xc2,
+	0xe3, 0x33, 0xce, 0x52, 0xb6, 0x35, 0xd3, 0xd5, 0x56, 0x7b, 0xf9, 0x99, 0xd5, 0x38, 0x9e, 0x22,
+	0xa9, 0x02, 0xb9, 0xd5, 0xf1, 0xdc, 0xfa, 0xdd, 0x3f, 0xdc, 0xda, 0x25, 0x3f, 0xdc, 0xb7, 0x50,
+	0x9d, 0x87, 0x43, 0xb7, 0xe1, 0xe6, 0xb1, 0xdd, 0x71, 0x9d, 0xc1, 0x91, 0xd3, 0xb7, 0xf0, 0xb1,
+	0xd3, 0x7d, 0xc7, 0xe4, 0xeb, 0xf4, 0x9c, 0xa1, 0x85, 0xdf, 0x6e, 0xab, 0x19, 0xca, 0xda, 0xb5,
+	0xdb, 0x3d, 0xe7, 0x10, 0x1f, 0x38, 0xbd, 0x9e, 0xf3, 0x14, 0x3b, 0xfd, 0x5a, 0xc1, 0x7c, 0x0c,
+	0xd5, 0x79, 0x81, 0xa3, 0xcf, 0x61, 0xc3, 0xe3, 0x3c, 0xf1, 0x43, 0x46, 0x24, 0x15, 0xd9, 0x30,
+	0xbc, 0x96, 0xb3, 0xa0, 0xba, 0x73, 0xa3, 0x47, 0x64, 0x8f, 0xa9, 0x71, 0x37, 0xbb, 0x33, 0xef,
+	0xdd, 0xad, 0x1f, 0x0d, 0xd8, 0xb2, 0x32, 0x8a, 0xda, 0x39, 0x69, 0x48, 0xc0, 0x7a, 0xba, 0x40,
+	0x7b, 0xcb, 0x3c, 0xb7, 0xb4, 0xf0, 0xb6, 0x5b, 0xcb, 0xbf, 0xd0, 0x76, 0x8d, 0xbb, 0xc6, 0xc3,
+	0x9f, 0x0c, 0xb8, 0xe3, 0xf1, 0xf1, 0x02, 0xd1, 0x0f, 0xab, 0xd3, 0x54, 0x07, 0xea, 0xf9, 0x3a,
+	0x30, 0xbe, 0x7e, 0x94, 0x45, 0x05, 0x5c, 0x75, 0x93, 0x06, 0x4f, 0x82, 0x66, 0x40, 0x99, 0x7e,
+	0xdc, 0x36, 0x53, 0x17, 0x89, 0x43, 0xf1, 0x77, 0x0f, 0xef, 0xfd, 0xdc, 0xf2, 0x73, 0x61, 0xbd,
+	0x3d, 0x1c, 0x0d, 0xbb, 0x5f, 0x9d, 0xae, 0xeb, 0xf8, 0x7b, 0x7f, 0x04, 0x00, 0x00, 0xff, 0xff,
+	0xd1, 0x40, 0x85, 0x41, 0xb7, 0x0b, 0x00, 0x00,
 }

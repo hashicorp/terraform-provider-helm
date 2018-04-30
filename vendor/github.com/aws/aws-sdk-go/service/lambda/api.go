@@ -17,7 +17,7 @@ const opAddPermission = "AddPermission"
 
 // AddPermissionRequest generates a "aws/request.Request" representing the
 // client's request for the AddPermission operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -64,7 +64,7 @@ func (c *Lambda) AddPermissionRequest(input *AddPermissionInput) (req *request.R
 // you add to the resource policy allows an event source, permission to invoke
 // the Lambda function.
 //
-// For information about the push model, see AWS Lambda: How it Works (http://docs.aws.amazon.com/lambda/latest/dg/lambda-introduction.html).
+// For information about the push model, see Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/lambda-introduction.html).
 //
 // If you are using versioning, the permissions you add are specific to the
 // Lambda function version or alias you specify in the AddPermission request
@@ -101,6 +101,11 @@ func (c *Lambda) AddPermissionRequest(input *AddPermissionInput) (req *request.R
 //
 //   * ErrCodeTooManyRequestsException "TooManyRequestsException"
 //
+//   * ErrCodePreconditionFailedException "PreconditionFailedException"
+//   The RevisionId provided does not match the latest RevisionId for the Lambda
+//   function or alias. Call the GetFunction or the GetAlias API to retrieve the
+//   latest RevisionId for your resource.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/AddPermission
 func (c *Lambda) AddPermission(input *AddPermissionInput) (*AddPermissionOutput, error) {
 	req, out := c.AddPermissionRequest(input)
@@ -127,7 +132,7 @@ const opCreateAlias = "CreateAlias"
 
 // CreateAliasRequest generates a "aws/request.Request" representing the
 // client's request for the CreateAlias operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -224,7 +229,7 @@ const opCreateEventSourceMapping = "CreateEventSourceMapping"
 
 // CreateEventSourceMappingRequest generates a "aws/request.Request" representing the
 // client's request for the CreateEventSourceMapping operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -271,16 +276,11 @@ func (c *Lambda) CreateEventSourceMappingRequest(input *CreateEventSourceMapping
 // This association between a stream source and a Lambda function is called
 // the event source mapping.
 //
-// This event source mapping is relevant only in the AWS Lambda pull model,
-// where AWS Lambda invokes the function. For more information, see AWS Lambda:
-// How it Works (http://docs.aws.amazon.com/lambda/latest/dg/lambda-introduction.html)
-// in the AWS Lambda Developer Guide.
-//
 // You provide mapping information (for example, which stream to read from and
 // which Lambda function to invoke) in the request body.
 //
 // Each event source, such as an Amazon Kinesis or a DynamoDB stream, can be
-// associated with multiple AWS Lambda function. A given Lambda function can
+// associated with multiple AWS Lambda functions. A given Lambda function can
 // be associated with multiple AWS event sources.
 //
 // If you are using versioning, you can specify a specific function version
@@ -341,7 +341,7 @@ const opCreateFunction = "CreateFunction"
 
 // CreateFunctionRequest generates a "aws/request.Request" representing the
 // client's request for the CreateFunction operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -446,7 +446,7 @@ const opDeleteAlias = "DeleteAlias"
 
 // DeleteAliasRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteAlias operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -537,7 +537,7 @@ const opDeleteEventSourceMapping = "DeleteEventSourceMapping"
 
 // DeleteEventSourceMappingRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteEventSourceMapping operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -631,7 +631,7 @@ const opDeleteFunction = "DeleteFunction"
 
 // DeleteFunctionRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteFunction operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -738,7 +738,7 @@ const opDeleteFunctionConcurrency = "DeleteFunctionConcurrency"
 
 // DeleteFunctionConcurrencyRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteFunctionConcurrency operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -831,7 +831,7 @@ const opGetAccountSettings = "GetAccountSettings"
 
 // GetAccountSettingsRequest generates a "aws/request.Request" representing the
 // client's request for the GetAccountSettings operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -918,7 +918,7 @@ const opGetAlias = "GetAlias"
 
 // GetAliasRequest generates a "aws/request.Request" representing the
 // client's request for the GetAlias operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1012,7 +1012,7 @@ const opGetEventSourceMapping = "GetEventSourceMapping"
 
 // GetEventSourceMappingRequest generates a "aws/request.Request" representing the
 // client's request for the GetEventSourceMapping operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1105,7 +1105,7 @@ const opGetFunction = "GetFunction"
 
 // GetFunctionRequest generates a "aws/request.Request" representing the
 // client's request for the GetFunction operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1207,7 +1207,7 @@ const opGetFunctionConfiguration = "GetFunctionConfiguration"
 
 // GetFunctionConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the GetFunctionConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1309,7 +1309,7 @@ const opGetPolicy = "GetPolicy"
 
 // GetPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the GetPolicy operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1406,7 +1406,7 @@ const opInvoke = "Invoke"
 
 // InvokeRequest generates a "aws/request.Request" representing the
 // client's request for the Invoke operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1572,7 +1572,7 @@ const opInvokeAsync = "InvokeAsync"
 
 // InvokeAsyncRequest generates a "aws/request.Request" representing the
 // client's request for the InvokeAsync operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1670,7 +1670,7 @@ const opListAliases = "ListAliases"
 
 // ListAliasesRequest generates a "aws/request.Request" representing the
 // client's request for the ListAliases operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1765,7 +1765,7 @@ const opListEventSourceMappings = "ListEventSourceMappings"
 
 // ListEventSourceMappingsRequest generates a "aws/request.Request" representing the
 // client's request for the ListEventSourceMappings operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1923,7 +1923,7 @@ const opListFunctions = "ListFunctions"
 
 // ListFunctionsRequest generates a "aws/request.Request" representing the
 // client's request for the ListFunctions operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2073,7 +2073,7 @@ const opListTags = "ListTags"
 
 // ListTagsRequest generates a "aws/request.Request" representing the
 // client's request for the ListTags operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2114,7 +2114,9 @@ func (c *Lambda) ListTagsRequest(input *ListTagsInput) (req *request.Request, ou
 // ListTags API operation for AWS Lambda.
 //
 // Returns a list of tags assigned to a function when supplied the function
-// ARN (Amazon Resource Name).
+// ARN (Amazon Resource Name). For more information on Tagging, see Tagging
+// Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+// in the AWS Lambda Developer Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -2164,7 +2166,7 @@ const opListVersionsByFunction = "ListVersionsByFunction"
 
 // ListVersionsByFunctionRequest generates a "aws/request.Request" representing the
 // client's request for the ListVersionsByFunction operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2255,7 +2257,7 @@ const opPublishVersion = "PublishVersion"
 
 // PublishVersionRequest generates a "aws/request.Request" representing the
 // client's request for the PublishVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2326,6 +2328,11 @@ func (c *Lambda) PublishVersionRequest(input *PublishVersionInput) (req *request
 //   * ErrCodeCodeStorageExceededException "CodeStorageExceededException"
 //   You have exceeded your maximum total code size per account. Limits (http://docs.aws.amazon.com/lambda/latest/dg/limits.html)
 //
+//   * ErrCodePreconditionFailedException "PreconditionFailedException"
+//   The RevisionId provided does not match the latest RevisionId for the Lambda
+//   function or alias. Call the GetFunction or the GetAlias API to retrieve the
+//   latest RevisionId for your resource.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/PublishVersion
 func (c *Lambda) PublishVersion(input *PublishVersionInput) (*FunctionConfiguration, error) {
 	req, out := c.PublishVersionRequest(input)
@@ -2352,7 +2359,7 @@ const opPutFunctionConcurrency = "PutFunctionConcurrency"
 
 // PutFunctionConcurrencyRequest generates a "aws/request.Request" representing the
 // client's request for the PutFunctionConcurrency operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2447,7 +2454,7 @@ const opRemovePermission = "RemovePermission"
 
 // RemovePermissionRequest generates a "aws/request.Request" representing the
 // client's request for the RemovePermission operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2525,6 +2532,11 @@ func (c *Lambda) RemovePermissionRequest(input *RemovePermissionInput) (req *req
 //
 //   * ErrCodeTooManyRequestsException "TooManyRequestsException"
 //
+//   * ErrCodePreconditionFailedException "PreconditionFailedException"
+//   The RevisionId provided does not match the latest RevisionId for the Lambda
+//   function or alias. Call the GetFunction or the GetAlias API to retrieve the
+//   latest RevisionId for your resource.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/RemovePermission
 func (c *Lambda) RemovePermission(input *RemovePermissionInput) (*RemovePermissionOutput, error) {
 	req, out := c.RemovePermissionRequest(input)
@@ -2551,7 +2563,7 @@ const opTagResource = "TagResource"
 
 // TagResourceRequest generates a "aws/request.Request" representing the
 // client's request for the TagResource operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2596,6 +2608,8 @@ func (c *Lambda) TagResourceRequest(input *TagResourceInput) (req *request.Reque
 // Creates a list of tags (key-value pairs) on the Lambda function. Requires
 // the Lambda function ARN (Amazon Resource Name). If a key is specified without
 // a value, Lambda creates a tag with the specified key and a value of null.
+// For more information, see Tagging Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+// in the AWS Lambda Developer Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -2645,7 +2659,7 @@ const opUntagResource = "UntagResource"
 
 // UntagResourceRequest generates a "aws/request.Request" representing the
 // client's request for the UntagResource operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2688,7 +2702,8 @@ func (c *Lambda) UntagResourceRequest(input *UntagResourceInput) (req *request.R
 // UntagResource API operation for AWS Lambda.
 //
 // Removes tags from a Lambda function. Requires the function ARN (Amazon Resource
-// Name).
+// Name). For more information, see Tagging Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+// in the AWS Lambda Developer Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -2738,7 +2753,7 @@ const opUpdateAlias = "UpdateAlias"
 
 // UpdateAliasRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateAlias operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2806,6 +2821,11 @@ func (c *Lambda) UpdateAliasRequest(input *UpdateAliasInput) (req *request.Reque
 //
 //   * ErrCodeTooManyRequestsException "TooManyRequestsException"
 //
+//   * ErrCodePreconditionFailedException "PreconditionFailedException"
+//   The RevisionId provided does not match the latest RevisionId for the Lambda
+//   function or alias. Call the GetFunction or the GetAlias API to retrieve the
+//   latest RevisionId for your resource.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/UpdateAlias
 func (c *Lambda) UpdateAlias(input *UpdateAliasInput) (*AliasConfiguration, error) {
 	req, out := c.UpdateAliasRequest(input)
@@ -2832,7 +2852,7 @@ const opUpdateEventSourceMapping = "UpdateEventSourceMapping"
 
 // UpdateEventSourceMappingRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateEventSourceMapping operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2941,7 +2961,7 @@ const opUpdateFunctionCode = "UpdateFunctionCode"
 
 // UpdateFunctionCodeRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateFunctionCode operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3016,6 +3036,11 @@ func (c *Lambda) UpdateFunctionCodeRequest(input *UpdateFunctionCodeInput) (req 
 //   * ErrCodeCodeStorageExceededException "CodeStorageExceededException"
 //   You have exceeded your maximum total code size per account. Limits (http://docs.aws.amazon.com/lambda/latest/dg/limits.html)
 //
+//   * ErrCodePreconditionFailedException "PreconditionFailedException"
+//   The RevisionId provided does not match the latest RevisionId for the Lambda
+//   function or alias. Call the GetFunction or the GetAlias API to retrieve the
+//   latest RevisionId for your resource.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/UpdateFunctionCode
 func (c *Lambda) UpdateFunctionCode(input *UpdateFunctionCodeInput) (*FunctionConfiguration, error) {
 	req, out := c.UpdateFunctionCodeRequest(input)
@@ -3042,7 +3067,7 @@ const opUpdateFunctionConfiguration = "UpdateFunctionConfiguration"
 
 // UpdateFunctionConfigurationRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateFunctionConfiguration operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3119,6 +3144,11 @@ func (c *Lambda) UpdateFunctionConfigurationRequest(input *UpdateFunctionConfigu
 //   * ErrCodeResourceConflictException "ResourceConflictException"
 //   The resource already exists.
 //
+//   * ErrCodePreconditionFailedException "PreconditionFailedException"
+//   The RevisionId provided does not match the latest RevisionId for the Lambda
+//   function or alias. Call the GetFunction or the GetAlias API to retrieve the
+//   latest RevisionId for your resource.
+//
 // See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/UpdateFunctionConfiguration
 func (c *Lambda) UpdateFunctionConfiguration(input *UpdateFunctionConfigurationInput) (*FunctionConfiguration, error) {
 	req, out := c.UpdateFunctionConfigurationRequest(input)
@@ -3143,7 +3173,6 @@ func (c *Lambda) UpdateFunctionConfigurationWithContext(ctx aws.Context, input *
 
 // Provides limits of code size and concurrency associated with the current
 // account and region.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/AccountLimit
 type AccountLimit struct {
 	_ struct{} `type:"structure"`
 
@@ -3213,7 +3242,6 @@ func (s *AccountLimit) SetUnreservedConcurrentExecutions(v int64) *AccountLimit 
 
 // Provides code size usage and function count associated with the current account
 // and region.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/AccountUsage
 type AccountUsage struct {
 	_ struct{} `type:"structure"`
 
@@ -3246,7 +3274,6 @@ func (s *AccountUsage) SetTotalCodeSize(v int64) *AccountUsage {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/AddPermissionRequest
 type AddPermissionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3302,6 +3329,13 @@ type AddPermissionInput struct {
 	//
 	// arn:aws:lambda:aws-region:acct-id:function:function-name
 	Qualifier *string `location:"querystring" locationName:"Qualifier" min:"1" type:"string"`
+
+	// An optional value you can use to ensure you are updating the latest update
+	// of the function version or alias. If the RevisionID you pass doesn't match
+	// the latest RevisionId of the function or alias, it will fail with an error
+	// message, advising you to retrieve the latest function version or alias RevisionID
+	// using either or .
+	RevisionId *string `type:"string"`
 
 	// This parameter is used for S3 and SES. The AWS account ID (without a hyphen)
 	// of the source owner. For example, if the SourceArn identifies a bucket, then
@@ -3399,6 +3433,12 @@ func (s *AddPermissionInput) SetQualifier(v string) *AddPermissionInput {
 	return s
 }
 
+// SetRevisionId sets the RevisionId field's value.
+func (s *AddPermissionInput) SetRevisionId(v string) *AddPermissionInput {
+	s.RevisionId = &v
+	return s
+}
+
 // SetSourceAccount sets the SourceAccount field's value.
 func (s *AddPermissionInput) SetSourceAccount(v string) *AddPermissionInput {
 	s.SourceAccount = &v
@@ -3417,7 +3457,6 @@ func (s *AddPermissionInput) SetStatementId(v string) *AddPermissionInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/AddPermissionResponse
 type AddPermissionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3444,7 +3483,6 @@ func (s *AddPermissionOutput) SetStatement(v string) *AddPermissionOutput {
 }
 
 // Provides configuration information about a Lambda function version alias.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/AliasConfiguration
 type AliasConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -3461,6 +3499,9 @@ type AliasConfiguration struct {
 
 	// Alias name.
 	Name *string `min:"1" type:"string"`
+
+	// Represents the latest updated revision of the function or alias.
+	RevisionId *string `type:"string"`
 
 	// Specifies an additional function versions the alias points to, allowing you
 	// to dictate what percentage of traffic will invoke each version. For more
@@ -3502,6 +3543,12 @@ func (s *AliasConfiguration) SetName(v string) *AliasConfiguration {
 	return s
 }
 
+// SetRevisionId sets the RevisionId field's value.
+func (s *AliasConfiguration) SetRevisionId(v string) *AliasConfiguration {
+	s.RevisionId = &v
+	return s
+}
+
 // SetRoutingConfig sets the RoutingConfig field's value.
 func (s *AliasConfiguration) SetRoutingConfig(v *AliasRoutingConfiguration) *AliasConfiguration {
 	s.RoutingConfig = v
@@ -3510,7 +3557,6 @@ func (s *AliasConfiguration) SetRoutingConfig(v *AliasRoutingConfiguration) *Ali
 
 // The parent object that implements what percentage of traffic will invoke
 // each function version. For more information, see lambda-traffic-shifting-using-aliases.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/AliasRoutingConfiguration
 type AliasRoutingConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -3536,7 +3582,6 @@ func (s *AliasRoutingConfiguration) SetAdditionalVersionWeights(v map[string]*fl
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/CreateAliasRequest
 type CreateAliasInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3634,7 +3679,6 @@ func (s *CreateAliasInput) SetRoutingConfig(v *AliasRoutingConfiguration) *Creat
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/CreateEventSourceMappingRequest
 type CreateEventSourceMappingInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3675,9 +3719,11 @@ type CreateEventSourceMappingInput struct {
 	// FunctionName is a required field
 	FunctionName *string `min:"1" type:"string" required:"true"`
 
-	// The position in the stream where AWS Lambda should start reading. Valid only
-	// for Kinesis streams. For more information, see ShardIteratorType (http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html#Kinesis-GetShardIterator-request-ShardIteratorType)
-	// in the Amazon Kinesis API Reference.
+	// The position in the DynamoDB or Kinesis stream where AWS Lambda should start
+	// reading. For more information, see GetShardIterator (http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetShardIterator.html#Kinesis-GetShardIterator-request-ShardIteratorType)
+	// in the Amazon Kinesis API Reference Guide or GetShardIterator (http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_streams_GetShardIterator.html)
+	// in the Amazon DynamoDB API Reference Guide. The AT_TIMESTAMP value is supported
+	// only for Kinesis streams (http://docs.aws.amazon.com/streams/latest/dev/amazon-kinesis-streams.html).
 	//
 	// StartingPosition is a required field
 	StartingPosition *string `type:"string" required:"true" enum:"EventSourcePosition"`
@@ -3687,7 +3733,7 @@ type CreateEventSourceMappingInput struct {
 	// AT_TIMESTAMP. If a record with this exact timestamp does not exist, the iterator
 	// returned is for the next (later) record. If the timestamp is older than the
 	// current trim horizon, the iterator returned is for the oldest untrimmed data
-	// record (TRIM_HORIZON). Valid only for Kinesis streams.
+	// record (TRIM_HORIZON). Valid only for Kinesis streams (http://docs.aws.amazon.com/streams/latest/dev/amazon-kinesis-streams.html).
 	StartingPositionTimestamp *time.Time `type:"timestamp" timestampFormat:"unix"`
 }
 
@@ -3762,7 +3808,6 @@ func (s *CreateEventSourceMappingInput) SetStartingPositionTimestamp(v time.Time
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/CreateFunctionRequest
 type CreateFunctionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3772,7 +3817,7 @@ type CreateFunctionInput struct {
 	Code *FunctionCode `type:"structure" required:"true"`
 
 	// The parent object that contains the target ARN (Amazon Resource Name) of
-	// an Amazon SQS queue or Amazon SNS topic.
+	// an Amazon SQS queue or Amazon SNS topic. For more information, see dlq.
 	DeadLetterConfig *DeadLetterConfig `type:"structure"`
 
 	// A short, user-defined function description. Lambda does not use this value.
@@ -3828,18 +3873,21 @@ type CreateFunctionInput struct {
 	// To use the Python runtime v3.6, set the value to "python3.6". To use the
 	// Python runtime v2.7, set the value to "python2.7". To use the Node.js runtime
 	// v6.10, set the value to "nodejs6.10". To use the Node.js runtime v4.3, set
-	// the value to "nodejs4.3".
+	// the value to "nodejs4.3". To use the .NET Core runtime v1.0, set the value
+	// to "dotnetcore1.0". To use the .NET Core runtime v2.0, set the value to "dotnetcore2.0".
 	//
 	// Node v0.10.42 is currently marked as deprecated. You must migrate existing
 	// functions to the newer Node.js runtime versions available on AWS Lambda (nodejs4.3
 	// or nodejs6.10) as soon as possible. Failure to do so will result in an invalid
-	// parmaeter error being returned. Note that you will have to follow this procedure
+	// parameter error being returned. Note that you will have to follow this procedure
 	// for each region that contains functions written in the Node v0.10.42 runtime.
 	//
 	// Runtime is a required field
 	Runtime *string `type:"string" required:"true" enum:"Runtime"`
 
-	// The list of tags (key-value pairs) assigned to the new function.
+	// The list of tags (key-value pairs) assigned to the new function. For more
+	// information, see Tagging Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+	// in the AWS Lambda Developer Guide.
 	Tags map[string]*string `type:"map"`
 
 	// The function execution time at which Lambda should terminate the function.
@@ -3996,14 +4044,14 @@ func (s *CreateFunctionInput) SetVpcConfig(v *VpcConfig) *CreateFunctionInput {
 	return s
 }
 
-// The parent object that contains the target ARN (Amazon Resource Name) of
-// an Amazon SQS queue or Amazon SNS topic.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/DeadLetterConfig
+// The Amazon Resource Name (ARN) of an Amazon SQS queue or Amazon SNS topic
+// you specify as your Dead Letter Queue (DLQ). For more information, see dlq.
 type DeadLetterConfig struct {
 	_ struct{} `type:"structure"`
 
 	// The Amazon Resource Name (ARN) of an Amazon SQS queue or Amazon SNS topic
-	// you specify as your Dead Letter Queue (DLQ).
+	// you specify as your Dead Letter Queue (DLQ). dlq. For more information, see
+	// dlq.
 	TargetArn *string `type:"string"`
 }
 
@@ -4023,7 +4071,6 @@ func (s *DeadLetterConfig) SetTargetArn(v string) *DeadLetterConfig {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/DeleteAliasRequest
 type DeleteAliasInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4085,7 +4132,6 @@ func (s *DeleteAliasInput) SetName(v string) *DeleteAliasInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/DeleteAliasOutput
 type DeleteAliasOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4100,7 +4146,6 @@ func (s DeleteAliasOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/DeleteEventSourceMappingRequest
 type DeleteEventSourceMappingInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4139,7 +4184,6 @@ func (s *DeleteEventSourceMappingInput) SetUUID(v string) *DeleteEventSourceMapp
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/DeleteFunctionConcurrencyRequest
 type DeleteFunctionConcurrencyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4182,7 +4226,6 @@ func (s *DeleteFunctionConcurrencyInput) SetFunctionName(v string) *DeleteFuncti
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/DeleteFunctionConcurrencyOutput
 type DeleteFunctionConcurrencyOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4197,7 +4240,6 @@ func (s DeleteFunctionConcurrencyOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/DeleteFunctionRequest
 type DeleteFunctionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4272,7 +4314,6 @@ func (s *DeleteFunctionInput) SetQualifier(v string) *DeleteFunctionInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/DeleteFunctionOutput
 type DeleteFunctionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4288,7 +4329,6 @@ func (s DeleteFunctionOutput) GoString() string {
 }
 
 // The parent object that contains your environment's configuration settings.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/Environment
 type Environment struct {
 	_ struct{} `type:"structure"`
 
@@ -4314,7 +4354,6 @@ func (s *Environment) SetVariables(v map[string]*string) *Environment {
 
 // The parent object that contains error information associated with your configuration
 // settings.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/EnvironmentError
 type EnvironmentError struct {
 	_ struct{} `type:"structure"`
 
@@ -4349,7 +4388,6 @@ func (s *EnvironmentError) SetMessage(v string) *EnvironmentError {
 
 // The parent object returned that contains your environment's configuration
 // settings or any error information associated with your configuration settings.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/EnvironmentResponse
 type EnvironmentResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -4385,7 +4423,6 @@ func (s *EnvironmentResponse) SetVariables(v map[string]*string) *EnvironmentRes
 }
 
 // Describes mapping between an Amazon Kinesis stream and a Lambda function.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/EventSourceMappingConfiguration
 type EventSourceMappingConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -4478,7 +4515,6 @@ func (s *EventSourceMappingConfiguration) SetUUID(v string) *EventSourceMappingC
 }
 
 // The code for the Lambda function.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/FunctionCode
 type FunctionCode struct {
 	_ struct{} `type:"structure"`
 
@@ -4558,7 +4594,6 @@ func (s *FunctionCode) SetZipFile(v []byte) *FunctionCode {
 }
 
 // The object for the Lambda function location.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/FunctionCodeLocation
 type FunctionCodeLocation struct {
 	_ struct{} `type:"structure"`
 
@@ -4593,7 +4628,6 @@ func (s *FunctionCodeLocation) SetRepositoryType(v string) *FunctionCodeLocation
 }
 
 // A complex type that describes function metadata.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/FunctionConfiguration
 type FunctionConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -4604,7 +4638,7 @@ type FunctionConfiguration struct {
 	CodeSize *int64 `type:"long"`
 
 	// The parent object that contains the target ARN (Amazon Resource Name) of
-	// an Amazon SQS queue or Amazon SNS topic.
+	// an Amazon SQS queue or Amazon SNS topic. For more information, see dlq.
 	DeadLetterConfig *DeadLetterConfig `type:"structure"`
 
 	// The user-provided description.
@@ -4641,6 +4675,9 @@ type FunctionConfiguration struct {
 	// The memory size, in MB, you configured for the function. Must be a multiple
 	// of 64 MB.
 	MemorySize *int64 `min:"128" type:"integer"`
+
+	// Represents the latest updated revision of the function or alias.
+	RevisionId *string `type:"string"`
 
 	// The Amazon Resource Name (ARN) of the IAM role that Lambda assumes when it
 	// executes your function to access any other Amazon Web Services (AWS) resources.
@@ -4746,6 +4783,12 @@ func (s *FunctionConfiguration) SetMemorySize(v int64) *FunctionConfiguration {
 	return s
 }
 
+// SetRevisionId sets the RevisionId field's value.
+func (s *FunctionConfiguration) SetRevisionId(v string) *FunctionConfiguration {
+	s.RevisionId = &v
+	return s
+}
+
 // SetRole sets the Role field's value.
 func (s *FunctionConfiguration) SetRole(v string) *FunctionConfiguration {
 	s.Role = &v
@@ -4782,7 +4825,6 @@ func (s *FunctionConfiguration) SetVpcConfig(v *VpcConfigResponse) *FunctionConf
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/GetAccountSettingsRequest
 type GetAccountSettingsInput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4797,7 +4839,6 @@ func (s GetAccountSettingsInput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/GetAccountSettingsResponse
 type GetAccountSettingsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4832,7 +4873,6 @@ func (s *GetAccountSettingsOutput) SetAccountUsage(v *AccountUsage) *GetAccountS
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/GetAliasRequest
 type GetAliasInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4895,7 +4935,6 @@ func (s *GetAliasInput) SetName(v string) *GetAliasInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/GetEventSourceMappingRequest
 type GetEventSourceMappingInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4934,7 +4973,6 @@ func (s *GetEventSourceMappingInput) SetUUID(v string) *GetEventSourceMappingInp
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/GetFunctionConfigurationRequest
 type GetFunctionConfigurationInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5002,7 +5040,6 @@ func (s *GetFunctionConfigurationInput) SetQualifier(v string) *GetFunctionConfi
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/GetFunctionRequest
 type GetFunctionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5069,7 +5106,6 @@ func (s *GetFunctionInput) SetQualifier(v string) *GetFunctionInput {
 }
 
 // This response contains the object for the Lambda function location (see FunctionCodeLocation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/GetFunctionResponse
 type GetFunctionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5083,7 +5119,9 @@ type GetFunctionOutput struct {
 	// A complex type that describes function metadata.
 	Configuration *FunctionConfiguration `type:"structure"`
 
-	// Returns the list of tags associated with the function.
+	// Returns the list of tags associated with the function. For more information,
+	// see Tagging Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+	// in the AWS Lambda Developer Guide.
 	Tags map[string]*string `type:"map"`
 }
 
@@ -5121,7 +5159,6 @@ func (s *GetFunctionOutput) SetTags(v map[string]*string) *GetFunctionOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/GetPolicyRequest
 type GetPolicyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5187,7 +5224,6 @@ func (s *GetPolicyInput) SetQualifier(v string) *GetPolicyInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/GetPolicyResponse
 type GetPolicyOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5195,6 +5231,9 @@ type GetPolicyOutput struct {
 	// returns the same as a string using a backslash ("\") as an escape character
 	// in the JSON.
 	Policy *string `type:"string"`
+
+	// Represents the latest updated revision of the function or alias.
+	RevisionId *string `type:"string"`
 }
 
 // String returns the string representation
@@ -5213,7 +5252,12 @@ func (s *GetPolicyOutput) SetPolicy(v string) *GetPolicyOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/InvokeAsyncRequest
+// SetRevisionId sets the RevisionId field's value.
+func (s *GetPolicyOutput) SetRevisionId(v string) *GetPolicyOutput {
+	s.RevisionId = &v
+	return s
+}
+
 type InvokeAsyncInput struct {
 	_ struct{} `deprecated:"true" type:"structure" payload:"InvokeArgs"`
 
@@ -5272,7 +5316,6 @@ func (s *InvokeAsyncInput) SetInvokeArgs(v io.ReadSeeker) *InvokeAsyncInput {
 }
 
 // Upon success, it returns empty response. Otherwise, throws an exception.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/InvokeAsyncResponse
 type InvokeAsyncOutput struct {
 	_ struct{} `deprecated:"true" type:"structure"`
 
@@ -5296,7 +5339,6 @@ func (s *InvokeAsyncOutput) SetStatus(v int64) *InvokeAsyncOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/InvocationRequest
 type InvokeInput struct {
 	_ struct{} `type:"structure" payload:"Payload"`
 
@@ -5416,7 +5458,6 @@ func (s *InvokeInput) SetQualifier(v string) *InvokeInput {
 }
 
 // Upon success, returns an empty response. Otherwise, throws an exception.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/InvocationResponse
 type InvokeOutput struct {
 	_ struct{} `type:"structure" payload:"Payload"`
 
@@ -5492,7 +5533,6 @@ func (s *InvokeOutput) SetStatusCode(v int64) *InvokeOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/ListAliasesRequest
 type ListAliasesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5573,7 +5613,6 @@ func (s *ListAliasesInput) SetMaxItems(v int64) *ListAliasesInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/ListAliasesResponse
 type ListAliasesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5606,7 +5645,6 @@ func (s *ListAliasesOutput) SetNextMarker(v string) *ListAliasesOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/ListEventSourceMappingsRequest
 type ListEventSourceMappingsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5687,7 +5725,6 @@ func (s *ListEventSourceMappingsInput) SetMaxItems(v int64) *ListEventSourceMapp
 }
 
 // Contains a list of event sources (see EventSourceMappingConfiguration)
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/ListEventSourceMappingsResponse
 type ListEventSourceMappingsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5720,7 +5757,6 @@ func (s *ListEventSourceMappingsOutput) SetNextMarker(v string) *ListEventSource
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/ListFunctionsRequest
 type ListFunctionsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5802,7 +5838,6 @@ func (s *ListFunctionsInput) SetMaxItems(v int64) *ListFunctionsInput {
 }
 
 // Contains a list of AWS Lambda function configurations (see FunctionConfiguration.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/ListFunctionsResponse
 type ListFunctionsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5835,11 +5870,12 @@ func (s *ListFunctionsOutput) SetNextMarker(v string) *ListFunctionsOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/ListTagsRequest
 type ListTagsInput struct {
 	_ struct{} `type:"structure"`
 
-	// The ARN (Amazon Resource Name) of the function.
+	// The ARN (Amazon Resource Name) of the function. For more information, see
+	// Tagging Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+	// in the AWS Lambda Developer Guide.
 	//
 	// Resource is a required field
 	Resource *string `location:"uri" locationName:"ARN" type:"string" required:"true"`
@@ -5874,11 +5910,12 @@ func (s *ListTagsInput) SetResource(v string) *ListTagsInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/ListTagsResponse
 type ListTagsOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The list of tags assigned to the function.
+	// The list of tags assigned to the function. For more information, see Tagging
+	// Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+	// in the AWS Lambda Developer Guide.
 	Tags map[string]*string `type:"map"`
 }
 
@@ -5898,7 +5935,6 @@ func (s *ListTagsOutput) SetTags(v map[string]*string) *ListTagsOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/ListVersionsByFunctionRequest
 type ListVersionsByFunctionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5968,7 +6004,6 @@ func (s *ListVersionsByFunctionInput) SetMaxItems(v int64) *ListVersionsByFuncti
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/ListVersionsByFunctionResponse
 type ListVersionsByFunctionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6001,7 +6036,6 @@ func (s *ListVersionsByFunctionOutput) SetVersions(v []*FunctionConfiguration) *
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/PublishVersionRequest
 type PublishVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6025,6 +6059,13 @@ type PublishVersionInput struct {
 	//
 	// FunctionName is a required field
 	FunctionName *string `location:"uri" locationName:"FunctionName" min:"1" type:"string" required:"true"`
+
+	// An optional value you can use to ensure you are updating the latest update
+	// of the function version or alias. If the RevisionID you pass doesn't match
+	// the latest RevisionId of the function or alias, it will fail with an error
+	// message, advising you to retrieve the latest function version or alias RevisionID
+	// using either or .
+	RevisionId *string `type:"string"`
 }
 
 // String returns the string representation
@@ -6071,7 +6112,12 @@ func (s *PublishVersionInput) SetFunctionName(v string) *PublishVersionInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/PutFunctionConcurrencyRequest
+// SetRevisionId sets the RevisionId field's value.
+func (s *PublishVersionInput) SetRevisionId(v string) *PublishVersionInput {
+	s.RevisionId = &v
+	return s
+}
+
 type PutFunctionConcurrencyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6129,7 +6175,6 @@ func (s *PutFunctionConcurrencyInput) SetReservedConcurrentExecutions(v int64) *
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/Concurrency
 type PutFunctionConcurrencyOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6154,7 +6199,6 @@ func (s *PutFunctionConcurrencyOutput) SetReservedConcurrentExecutions(v int64) 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/RemovePermissionRequest
 type RemovePermissionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6174,6 +6218,13 @@ type RemovePermissionInput struct {
 	// parameter, the API removes permission associated with the unqualified function
 	// ARN.
 	Qualifier *string `location:"querystring" locationName:"Qualifier" min:"1" type:"string"`
+
+	// An optional value you can use to ensure you are updating the latest update
+	// of the function version or alias. If the RevisionID you pass doesn't match
+	// the latest RevisionId of the function or alias, it will fail with an error
+	// message, advising you to retrieve the latest function version or alias RevisionID
+	// using either or .
+	RevisionId *string `location:"querystring" locationName:"RevisionId" type:"string"`
 
 	// Statement ID of the permission to remove.
 	//
@@ -6228,13 +6279,18 @@ func (s *RemovePermissionInput) SetQualifier(v string) *RemovePermissionInput {
 	return s
 }
 
+// SetRevisionId sets the RevisionId field's value.
+func (s *RemovePermissionInput) SetRevisionId(v string) *RemovePermissionInput {
+	s.RevisionId = &v
+	return s
+}
+
 // SetStatementId sets the StatementId field's value.
 func (s *RemovePermissionInput) SetStatementId(v string) *RemovePermissionInput {
 	s.StatementId = &v
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/RemovePermissionOutput
 type RemovePermissionOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -6249,16 +6305,19 @@ func (s RemovePermissionOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/TagResourceRequest
 type TagResourceInput struct {
 	_ struct{} `type:"structure"`
 
-	// The ARN (Amazon Resource Name) of the Lambda function.
+	// The ARN (Amazon Resource Name) of the Lambda function. For more information,
+	// see Tagging Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+	// in the AWS Lambda Developer Guide.
 	//
 	// Resource is a required field
 	Resource *string `location:"uri" locationName:"ARN" type:"string" required:"true"`
 
 	// The list of tags (key-value pairs) you are assigning to the Lambda function.
+	// For more information, see Tagging Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+	// in the AWS Lambda Developer Guide.
 	//
 	// Tags is a required field
 	Tags map[string]*string `type:"map" required:"true"`
@@ -6302,7 +6361,6 @@ func (s *TagResourceInput) SetTags(v map[string]*string) *TagResourceInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/TagResourceOutput
 type TagResourceOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -6318,7 +6376,6 @@ func (s TagResourceOutput) GoString() string {
 }
 
 // The parent object that contains your function's tracing settings.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/TracingConfig
 type TracingConfig struct {
 	_ struct{} `type:"structure"`
 
@@ -6347,7 +6404,6 @@ func (s *TracingConfig) SetMode(v string) *TracingConfig {
 }
 
 // Parent object of the tracing information associated with your Lambda function.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/TracingConfigResponse
 type TracingConfigResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -6371,16 +6427,19 @@ func (s *TracingConfigResponse) SetMode(v string) *TracingConfigResponse {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/UntagResourceRequest
 type UntagResourceInput struct {
 	_ struct{} `type:"structure"`
 
-	// The ARN (Amazon Resource Name) of the function.
+	// The ARN (Amazon Resource Name) of the function. For more information, see
+	// Tagging Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+	// in the AWS Lambda Developer Guide.
 	//
 	// Resource is a required field
 	Resource *string `location:"uri" locationName:"ARN" type:"string" required:"true"`
 
-	// The list of tag keys to be deleted from the function.
+	// The list of tag keys to be deleted from the function. For more information,
+	// see Tagging Lambda Functions (http://docs.aws.amazon.com/lambda/latest/dg/tagging.html)
+	// in the AWS Lambda Developer Guide.
 	//
 	// TagKeys is a required field
 	TagKeys []*string `location:"querystring" locationName:"tagKeys" type:"list" required:"true"`
@@ -6424,7 +6483,6 @@ func (s *UntagResourceInput) SetTagKeys(v []*string) *UntagResourceInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/UntagResourceOutput
 type UntagResourceOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -6439,7 +6497,6 @@ func (s UntagResourceOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/UpdateAliasRequest
 type UpdateAliasInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6461,6 +6518,13 @@ type UpdateAliasInput struct {
 	//
 	// Name is a required field
 	Name *string `location:"uri" locationName:"Name" min:"1" type:"string" required:"true"`
+
+	// An optional value you can use to ensure you are updating the latest update
+	// of the function version or alias. If the RevisionID you pass doesn't match
+	// the latest RevisionId of the function or alias, it will fail with an error
+	// message, advising you to retrieve the latest function version or alias RevisionID
+	// using either or .
+	RevisionId *string `type:"string"`
 
 	// Specifies an additional version your alias can point to, allowing you to
 	// dictate what percentage of traffic will invoke each version. For more information,
@@ -6527,13 +6591,18 @@ func (s *UpdateAliasInput) SetName(v string) *UpdateAliasInput {
 	return s
 }
 
+// SetRevisionId sets the RevisionId field's value.
+func (s *UpdateAliasInput) SetRevisionId(v string) *UpdateAliasInput {
+	s.RevisionId = &v
+	return s
+}
+
 // SetRoutingConfig sets the RoutingConfig field's value.
 func (s *UpdateAliasInput) SetRoutingConfig(v *AliasRoutingConfiguration) *UpdateAliasInput {
 	s.RoutingConfig = v
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/UpdateEventSourceMappingRequest
 type UpdateEventSourceMappingInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6621,7 +6690,6 @@ func (s *UpdateEventSourceMappingInput) SetUUID(v string) *UpdateEventSourceMapp
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/UpdateFunctionCodeRequest
 type UpdateFunctionCodeInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6648,6 +6716,13 @@ type UpdateFunctionCodeInput struct {
 	// function and publish a version as an atomic operation.
 	Publish *bool `type:"boolean"`
 
+	// An optional value you can use to ensure you are updating the latest update
+	// of the function version or alias. If the RevisionID you pass doesn't match
+	// the latest RevisionId of the function or alias, it will fail with an error
+	// message, advising you to retrieve the latest function version or alias RevisionID
+	// using either or .
+	RevisionId *string `type:"string"`
+
 	// Amazon S3 bucket name where the .zip file containing your deployment package
 	// is stored. This bucket must reside in the same AWS Region where you are creating
 	// the Lambda function.
@@ -6663,8 +6738,7 @@ type UpdateFunctionCodeInput struct {
 	// are using the web API directly, the contents of the zip file must be base64-encoded.
 	// If you are using the AWS SDKs or the AWS CLI, the SDKs or CLI will do the
 	// encoding for you. For more information about creating a .zip file, see Execution
-	// Permissions (http://docs.aws.amazon.com/lambda/latest/dg/intro-permission-model.html#lambda-intro-execution-role.html)
-	// in the AWS Lambda Developer Guide.
+	// Permissions (http://docs.aws.amazon.com/lambda/latest/dg/intro-permission-model.html#lambda-intro-execution-role.html).
 	//
 	// ZipFile is automatically base64 encoded/decoded by the SDK.
 	ZipFile []byte `type:"blob"`
@@ -6723,6 +6797,12 @@ func (s *UpdateFunctionCodeInput) SetPublish(v bool) *UpdateFunctionCodeInput {
 	return s
 }
 
+// SetRevisionId sets the RevisionId field's value.
+func (s *UpdateFunctionCodeInput) SetRevisionId(v string) *UpdateFunctionCodeInput {
+	s.RevisionId = &v
+	return s
+}
+
 // SetS3Bucket sets the S3Bucket field's value.
 func (s *UpdateFunctionCodeInput) SetS3Bucket(v string) *UpdateFunctionCodeInput {
 	s.S3Bucket = &v
@@ -6747,12 +6827,11 @@ func (s *UpdateFunctionCodeInput) SetZipFile(v []byte) *UpdateFunctionCodeInput 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/UpdateFunctionConfigurationRequest
 type UpdateFunctionConfigurationInput struct {
 	_ struct{} `type:"structure"`
 
 	// The parent object that contains the target ARN (Amazon Resource Name) of
-	// an Amazon SQS queue or Amazon SNS topic.
+	// an Amazon SQS queue or Amazon SNS topic. For more information, see dlq.
 	DeadLetterConfig *DeadLetterConfig `type:"structure"`
 
 	// A short user-defined function description. AWS Lambda does not use this value.
@@ -6790,6 +6869,13 @@ type UpdateFunctionConfigurationInput struct {
 	// MB.
 	MemorySize *int64 `min:"128" type:"integer"`
 
+	// An optional value you can use to ensure you are updating the latest update
+	// of the function version or alias. If the RevisionID you pass doesn't match
+	// the latest RevisionId of the function or alias, it will fail with an error
+	// message, advising you to retrieve the latest function version or alias RevisionID
+	// using either or .
+	RevisionId *string `type:"string"`
+
 	// The Amazon Resource Name (ARN) of the IAM role that Lambda will assume when
 	// it executes your function.
 	Role *string `type:"string"`
@@ -6799,8 +6885,8 @@ type UpdateFunctionConfigurationInput struct {
 	// To use the Python runtime v3.6, set the value to "python3.6". To use the
 	// Python runtime v2.7, set the value to "python2.7". To use the Node.js runtime
 	// v6.10, set the value to "nodejs6.10". To use the Node.js runtime v4.3, set
-	// the value to "nodejs4.3". To use the Python runtime v3.6, set the value to
-	// "python3.6".
+	// the value to "nodejs4.3". To use the .NET Core runtime v1.0, set the value
+	// to "dotnetcore1.0". To use the .NET Core runtime v2.0, set the value to "dotnetcore2.0".
 	//
 	// Node v0.10.42 is currently marked as deprecated. You must migrate existing
 	// functions to the newer Node.js runtime versions available on AWS Lambda (nodejs4.3
@@ -6898,6 +6984,12 @@ func (s *UpdateFunctionConfigurationInput) SetMemorySize(v int64) *UpdateFunctio
 	return s
 }
 
+// SetRevisionId sets the RevisionId field's value.
+func (s *UpdateFunctionConfigurationInput) SetRevisionId(v string) *UpdateFunctionConfigurationInput {
+	s.RevisionId = &v
+	return s
+}
+
 // SetRole sets the Role field's value.
 func (s *UpdateFunctionConfigurationInput) SetRole(v string) *UpdateFunctionConfigurationInput {
 	s.Role = &v
@@ -6932,7 +7024,6 @@ func (s *UpdateFunctionConfigurationInput) SetVpcConfig(v *VpcConfig) *UpdateFun
 // identifying the list of security group IDs and subnet IDs. These must belong
 // to the same VPC. You must provide at least one security group and one subnet
 // ID.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/VpcConfig
 type VpcConfig struct {
 	_ struct{} `type:"structure"`
 
@@ -6966,7 +7057,6 @@ func (s *VpcConfig) SetSubnetIds(v []*string) *VpcConfig {
 }
 
 // VPC configuration associated with your Lambda function.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/lambda-2015-03-31/VpcConfigResponse
 type VpcConfigResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -7052,6 +7142,9 @@ const (
 
 	// RuntimeNodejs610 is a Runtime enum value
 	RuntimeNodejs610 = "nodejs6.10"
+
+	// RuntimeNodejs810 is a Runtime enum value
+	RuntimeNodejs810 = "nodejs8.10"
 
 	// RuntimeJava8 is a Runtime enum value
 	RuntimeJava8 = "java8"

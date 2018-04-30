@@ -15,7 +15,7 @@ go_test(
     ],
     tags = ["integration"],
     deps = [
-        "//pkg/api:go_default_library",
+        "//pkg/api/legacyscheme:go_default_library",
         "//pkg/api/testapi:go_default_library",
         "//pkg/version:go_default_library",
         "//test/e2e/framework:go_default_library",

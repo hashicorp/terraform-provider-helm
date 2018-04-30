@@ -8,12 +8,13 @@ load(
 
 go_binary(
     name = "liveness",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
 )
 
 go_library(
     name = "go_default_library",
     srcs = ["server.go"],
+    importpath = "k8s.io/kubernetes/test/images/liveness",
 )
 
 filegroup(

@@ -296,6 +296,19 @@
         {"shape":"ResourceNotFoundFault"}
       ]
     },
+    "DescribeReplicationInstanceTaskLogs":{
+      "name":"DescribeReplicationInstanceTaskLogs",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"DescribeReplicationInstanceTaskLogsMessage"},
+      "output":{"shape":"DescribeReplicationInstanceTaskLogsResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundFault"},
+        {"shape":"InvalidResourceStateFault"}
+      ]
+    },
     "DescribeReplicationInstances":{
       "name":"DescribeReplicationInstances",
       "http":{
@@ -380,7 +393,8 @@
       "output":{"shape":"ImportCertificateResponse"},
       "errors":[
         {"shape":"ResourceAlreadyExistsFault"},
-        {"shape":"InvalidCertificateFault"}
+        {"shape":"InvalidCertificateFault"},
+        {"shape":"ResourceQuotaExceededFault"}
       ]
     },
     "ListTagsForResource":{
@@ -475,6 +489,19 @@
         {"shape":"KMSKeyNotAccessibleFault"}
       ]
     },
+    "RebootReplicationInstance":{
+      "name":"RebootReplicationInstance",
+      "http":{
+        "method":"POST",
+        "requestUri":"/"
+      },
+      "input":{"shape":"RebootReplicationInstanceMessage"},
+      "output":{"shape":"RebootReplicationInstanceResponse"},
+      "errors":[
+        {"shape":"ResourceNotFoundFault"},
+        {"shape":"InvalidResourceStateFault"}
+      ]
+    },
     "RefreshSchemas":{
       "name":"RefreshSchemas",
       "http":{
@@ -525,7 +552,8 @@
       "output":{"shape":"StartReplicationTaskResponse"},
       "errors":[
         {"shape":"ResourceNotFoundFault"},
-        {"shape":"InvalidResourceStateFault"}
+        {"shape":"InvalidResourceStateFault"},
+        {"shape":"AccessDeniedFault"}
       ]
     },
     "StartReplicationTaskAssessment":{
@@ -692,6 +720,8 @@
         "Tags":{"shape":"TagList"},
         "CertificateArn":{"shape":"String"},
         "SslMode":{"shape":"DmsSslModeValue"},
+        "ServiceAccessRoleArn":{"shape":"String"},
+        "ExternalTableDefinition":{"shape":"String"},
         "DynamoDbSettings":{"shape":"DynamoDbSettings"},
         "S3Settings":{"shape":"S3Settings"},
         "MongoDbSettings":{"shape":"MongoDbSettings"}
@@ -792,6 +822,8 @@
         "TableMappings":{"shape":"String"},
         "ReplicationTaskSettings":{"shape":"String"},
         "CdcStartTime":{"shape":"TStamp"},
+        "CdcStartPosition":{"shape":"String"},
+        "CdcStopPosition":{"shape":"String"},
         "Tags":{"shape":"TagList"}
       }
     },
@@ -1026,6 +1058,23 @@
         "RefreshSchemasStatus":{"shape":"RefreshSchemasStatus"}
       }
     },
+    "DescribeReplicationInstanceTaskLogsMessage":{
+      "type":"structure",
+      "required":["ReplicationInstanceArn"],
+      "members":{
+        "ReplicationInstanceArn":{"shape":"String"},
+        "MaxRecords":{"shape":"IntegerOptional"},
+        "Marker":{"shape":"String"}
+      }
+    },
+    "DescribeReplicationInstanceTaskLogsResponse":{
+      "type":"structure",
+      "members":{
+        "ReplicationInstanceArn":{"shape":"String"},
+        "ReplicationInstanceTaskLogs":{"shape":"ReplicationInstanceTaskLogsList"},
+        "Marker":{"shape":"String"}
+      }
+    },
     "DescribeReplicationInstancesMessage":{
       "type":"structure",
       "members":{
@@ -1143,6 +1192,7 @@
         "EndpointIdentifier":{"shape":"String"},
         "EndpointType":{"shape":"ReplicationEndpointTypeValue"},
         "EngineName":{"shape":"String"},
+        "EngineDisplayName":{"shape":"String"},
         "Username":{"shape":"String"},
         "ServerName":{"shape":"String"},
         "Port":{"shape":"IntegerOptional"},
@@ -1153,6 +1203,8 @@
         "EndpointArn":{"shape":"String"},
         "CertificateArn":{"shape":"String"},
         "SslMode":{"shape":"DmsSslModeValue"},
+        "ServiceAccessRoleArn":{"shape":"String"},
+        "ExternalTableDefinition":{"shape":"String"},
         "ExternalId":{"shape":"String"},
         "DynamoDbSettings":{"shape":"DynamoDbSettings"},
         "S3Settings":{"shape":"S3Settings"},
@@ -1325,6 +1377,8 @@
         "ExtraConnectionAttributes":{"shape":"String"},
         "CertificateArn":{"shape":"String"},
         "SslMode":{"shape":"DmsSslModeValue"},
+        "ServiceAccessRoleArn":{"shape":"String"},
+        "ExternalTableDefinition":{"shape":"String"},
         "DynamoDbSettings":{"shape":"DynamoDbSettings"},
         "S3Settings":{"shape":"S3Settings"},
         "MongoDbSettings":{"shape":"MongoDbSettings"}
@@ -1403,7 +1457,9 @@
         "MigrationType":{"shape":"MigrationTypeValue"},
         "TableMappings":{"shape":"String"},
         "ReplicationTaskSettings":{"shape":"String"},
-        "CdcStartTime":{"shape":"TStamp"}
+        "CdcStartTime":{"shape":"TStamp"},
+        "CdcStartPosition":{"shape":"String"},
+        "CdcStopPosition":{"shape":"String"}
       }
     },
     "ModifyReplicationTaskResponse":{
@@ -1425,7 +1481,8 @@
         "NestingLevel":{"shape":"NestingLevelValue"},
         "ExtractDocId":{"shape":"String"},
         "DocsToInvestigate":{"shape":"String"},
-        "AuthSource":{"shape":"String"}
+        "AuthSource":{"shape":"String"},
+        "KmsKeyId":{"shape":"String"}
       }
     },
     "NestingLevelValue":{
@@ -1450,6 +1507,20 @@
     "OrderableReplicationInstanceList":{
       "type":"list",
       "member":{"shape":"OrderableReplicationInstance"}
+    },
+    "RebootReplicationInstanceMessage":{
+      "type":"structure",
+      "required":["ReplicationInstanceArn"],
+      "members":{
+        "ReplicationInstanceArn":{"shape":"String"},
+        "ForceFailover":{"shape":"BooleanOptional"}
+      }
+    },
+    "RebootReplicationInstanceResponse":{
+      "type":"structure",
+      "members":{
+        "ReplicationInstance":{"shape":"ReplicationInstance"}
+      }
     },
     "RefreshSchemasMessage":{
       "type":"structure",
@@ -1555,7 +1626,8 @@
         "ReplicationInstancePublicIpAddresses":{"shape":"ReplicationInstancePublicIpAddressList"},
         "ReplicationInstancePrivateIpAddresses":{"shape":"ReplicationInstancePrivateIpAddressList"},
         "PubliclyAccessible":{"shape":"Boolean"},
-        "SecondaryAvailabilityZone":{"shape":"String"}
+        "SecondaryAvailabilityZone":{"shape":"String"},
+        "FreeUntil":{"shape":"TStamp"}
       }
     },
     "ReplicationInstanceList":{
@@ -1569,6 +1641,18 @@
     "ReplicationInstancePublicIpAddressList":{
       "type":"list",
       "member":{"shape":"String"}
+    },
+    "ReplicationInstanceTaskLog":{
+      "type":"structure",
+      "members":{
+        "ReplicationTaskName":{"shape":"String"},
+        "ReplicationTaskArn":{"shape":"String"},
+        "ReplicationInstanceTaskLogSize":{"shape":"Long"}
+      }
+    },
+    "ReplicationInstanceTaskLogsList":{
+      "type":"list",
+      "member":{"shape":"ReplicationInstanceTaskLog"}
     },
     "ReplicationPendingModifiedValues":{
       "type":"structure",
@@ -1615,6 +1699,9 @@
         "StopReason":{"shape":"String"},
         "ReplicationTaskCreationDate":{"shape":"TStamp"},
         "ReplicationTaskStartDate":{"shape":"TStamp"},
+        "CdcStartPosition":{"shape":"String"},
+        "CdcStopPosition":{"shape":"String"},
+        "RecoveryCheckpoint":{"shape":"String"},
         "ReplicationTaskArn":{"shape":"String"},
         "ReplicationTaskStats":{"shape":"ReplicationTaskStats"}
       }
@@ -1735,7 +1822,9 @@
       "members":{
         "ReplicationTaskArn":{"shape":"String"},
         "StartReplicationTaskType":{"shape":"StartReplicationTaskTypeValue"},
-        "CdcStartTime":{"shape":"TStamp"}
+        "CdcStartTime":{"shape":"TStamp"},
+        "CdcStartPosition":{"shape":"String"},
+        "CdcStopPosition":{"shape":"String"}
       }
     },
     "StartReplicationTaskResponse":{
@@ -1801,7 +1890,8 @@
       "members":{
         "EngineName":{"shape":"String"},
         "SupportsCDC":{"shape":"Boolean"},
-        "EndpointType":{"shape":"ReplicationEndpointTypeValue"}
+        "EndpointType":{"shape":"ReplicationEndpointTypeValue"},
+        "EngineDisplayName":{"shape":"String"}
       }
     },
     "SupportedEndpointTypeList":{

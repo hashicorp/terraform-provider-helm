@@ -3,6 +3,8 @@
 package guardduty
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -12,7 +14,7 @@ const opAcceptInvitation = "AcceptInvitation"
 
 // AcceptInvitationRequest generates a "aws/request.Request" representing the
 // client's request for the AcceptInvitation operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -94,7 +96,7 @@ const opArchiveFindings = "ArchiveFindings"
 
 // ArchiveFindingsRequest generates a "aws/request.Request" representing the
 // client's request for the ArchiveFindings operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -176,7 +178,7 @@ const opCreateDetector = "CreateDetector"
 
 // CreateDetectorRequest generates a "aws/request.Request" representing the
 // client's request for the CreateDetector operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -260,7 +262,7 @@ const opCreateIPSet = "CreateIPSet"
 
 // CreateIPSetRequest generates a "aws/request.Request" representing the
 // client's request for the CreateIPSet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -343,7 +345,7 @@ const opCreateMembers = "CreateMembers"
 
 // CreateMembersRequest generates a "aws/request.Request" representing the
 // client's request for the CreateMembers operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -427,7 +429,7 @@ const opCreateSampleFindings = "CreateSampleFindings"
 
 // CreateSampleFindingsRequest generates a "aws/request.Request" representing the
 // client's request for the CreateSampleFindings operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -511,7 +513,7 @@ const opCreateThreatIntelSet = "CreateThreatIntelSet"
 
 // CreateThreatIntelSetRequest generates a "aws/request.Request" representing the
 // client's request for the CreateThreatIntelSet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -594,7 +596,7 @@ const opDeclineInvitations = "DeclineInvitations"
 
 // DeclineInvitationsRequest generates a "aws/request.Request" representing the
 // client's request for the DeclineInvitations operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -677,7 +679,7 @@ const opDeleteDetector = "DeleteDetector"
 
 // DeleteDetectorRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteDetector operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -759,7 +761,7 @@ const opDeleteIPSet = "DeleteIPSet"
 
 // DeleteIPSetRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteIPSet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -841,7 +843,7 @@ const opDeleteInvitations = "DeleteInvitations"
 
 // DeleteInvitationsRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteInvitations operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -924,7 +926,7 @@ const opDeleteMembers = "DeleteMembers"
 
 // DeleteMembersRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteMembers operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1007,7 +1009,7 @@ const opDeleteThreatIntelSet = "DeleteThreatIntelSet"
 
 // DeleteThreatIntelSetRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteThreatIntelSet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1089,7 +1091,7 @@ const opDisassociateFromMasterAccount = "DisassociateFromMasterAccount"
 
 // DisassociateFromMasterAccountRequest generates a "aws/request.Request" representing the
 // client's request for the DisassociateFromMasterAccount operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1171,7 +1173,7 @@ const opDisassociateMembers = "DisassociateMembers"
 
 // DisassociateMembersRequest generates a "aws/request.Request" representing the
 // client's request for the DisassociateMembers operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1254,7 +1256,7 @@ const opGetDetector = "GetDetector"
 
 // GetDetectorRequest generates a "aws/request.Request" representing the
 // client's request for the GetDetector operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1336,7 +1338,7 @@ const opGetFindings = "GetFindings"
 
 // GetFindingsRequest generates a "aws/request.Request" representing the
 // client's request for the GetFindings operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1418,7 +1420,7 @@ const opGetFindingsStatistics = "GetFindingsStatistics"
 
 // GetFindingsStatisticsRequest generates a "aws/request.Request" representing the
 // client's request for the GetFindingsStatistics operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1500,7 +1502,7 @@ const opGetIPSet = "GetIPSet"
 
 // GetIPSetRequest generates a "aws/request.Request" representing the
 // client's request for the GetIPSet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1582,7 +1584,7 @@ const opGetInvitationsCount = "GetInvitationsCount"
 
 // GetInvitationsCountRequest generates a "aws/request.Request" representing the
 // client's request for the GetInvitationsCount operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1665,7 +1667,7 @@ const opGetMasterAccount = "GetMasterAccount"
 
 // GetMasterAccountRequest generates a "aws/request.Request" representing the
 // client's request for the GetMasterAccount operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1748,7 +1750,7 @@ const opGetMembers = "GetMembers"
 
 // GetMembersRequest generates a "aws/request.Request" representing the
 // client's request for the GetMembers operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1831,7 +1833,7 @@ const opGetThreatIntelSet = "GetThreatIntelSet"
 
 // GetThreatIntelSetRequest generates a "aws/request.Request" representing the
 // client's request for the GetThreatIntelSet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1913,7 +1915,7 @@ const opInviteMembers = "InviteMembers"
 
 // InviteMembersRequest generates a "aws/request.Request" representing the
 // client's request for the InviteMembers operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1998,7 +2000,7 @@ const opListDetectors = "ListDetectors"
 
 // ListDetectorsRequest generates a "aws/request.Request" representing the
 // client's request for the ListDetectors operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2136,7 +2138,7 @@ const opListFindings = "ListFindings"
 
 // ListFindingsRequest generates a "aws/request.Request" representing the
 // client's request for the ListFindings operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2274,7 +2276,7 @@ const opListIPSets = "ListIPSets"
 
 // ListIPSetsRequest generates a "aws/request.Request" representing the
 // client's request for the ListIPSets operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2412,7 +2414,7 @@ const opListInvitations = "ListInvitations"
 
 // ListInvitationsRequest generates a "aws/request.Request" representing the
 // client's request for the ListInvitations operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2551,7 +2553,7 @@ const opListMembers = "ListMembers"
 
 // ListMembersRequest generates a "aws/request.Request" representing the
 // client's request for the ListMembers operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2690,7 +2692,7 @@ const opListThreatIntelSets = "ListThreatIntelSets"
 
 // ListThreatIntelSetsRequest generates a "aws/request.Request" representing the
 // client's request for the ListThreatIntelSets operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2829,7 +2831,7 @@ const opStartMonitoringMembers = "StartMonitoringMembers"
 
 // StartMonitoringMembersRequest generates a "aws/request.Request" representing the
 // client's request for the StartMonitoringMembers operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2913,7 +2915,7 @@ const opStopMonitoringMembers = "StopMonitoringMembers"
 
 // StopMonitoringMembersRequest generates a "aws/request.Request" representing the
 // client's request for the StopMonitoringMembers operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2955,7 +2957,7 @@ func (c *GuardDuty) StopMonitoringMembersRequest(input *StopMonitoringMembersInp
 //
 // Disables GuardDuty from monitoring findings of the member accounts specified
 // by the account IDs. After running this command, a master GuardDuty account
-// can run StartMonitoringMembers to re-enable GuardDuty to monitor these members'
+// can run StartMonitoringMembers to re-enable GuardDuty to monitor these members’
 // findings.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -2998,7 +3000,7 @@ const opUnarchiveFindings = "UnarchiveFindings"
 
 // UnarchiveFindingsRequest generates a "aws/request.Request" representing the
 // client's request for the UnarchiveFindings operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3080,7 +3082,7 @@ const opUpdateDetector = "UpdateDetector"
 
 // UpdateDetectorRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateDetector operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3162,7 +3164,7 @@ const opUpdateFindingsFeedback = "UpdateFindingsFeedback"
 
 // UpdateFindingsFeedbackRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateFindingsFeedback operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3244,7 +3246,7 @@ const opUpdateIPSet = "UpdateIPSet"
 
 // UpdateIPSetRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateIPSet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3326,7 +3328,7 @@ const opUpdateThreatIntelSet = "UpdateThreatIntelSet"
 
 // UpdateThreatIntelSetRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateThreatIntelSet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3405,7 +3407,6 @@ func (c *GuardDuty) UpdateThreatIntelSetWithContext(ctx aws.Context, input *Upda
 }
 
 // AcceptInvitation request body.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/AcceptInvitationRequest
 type AcceptInvitationInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3460,7 +3461,6 @@ func (s *AcceptInvitationInput) SetMasterId(v string) *AcceptInvitationInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/AcceptInvitationResponse
 type AcceptInvitationOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -3475,16 +3475,71 @@ func (s AcceptInvitationOutput) GoString() string {
 	return s.String()
 }
 
+// The IAM access key details (IAM user information) of a user that engaged
+// in the activity that prompted GuardDuty to generate a finding.
+type AccessKeyDetails struct {
+	_ struct{} `type:"structure"`
+
+	// Access key ID of the user.
+	AccessKeyId *string `locationName:"accessKeyId" type:"string"`
+
+	// The principal ID of the user.
+	PrincipalId *string `locationName:"principalId" type:"string"`
+
+	// The name of the user.
+	UserName *string `locationName:"userName" type:"string"`
+
+	// The type of the user.
+	UserType *string `locationName:"userType" type:"string"`
+}
+
+// String returns the string representation
+func (s AccessKeyDetails) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s AccessKeyDetails) GoString() string {
+	return s.String()
+}
+
+// SetAccessKeyId sets the AccessKeyId field's value.
+func (s *AccessKeyDetails) SetAccessKeyId(v string) *AccessKeyDetails {
+	s.AccessKeyId = &v
+	return s
+}
+
+// SetPrincipalId sets the PrincipalId field's value.
+func (s *AccessKeyDetails) SetPrincipalId(v string) *AccessKeyDetails {
+	s.PrincipalId = &v
+	return s
+}
+
+// SetUserName sets the UserName field's value.
+func (s *AccessKeyDetails) SetUserName(v string) *AccessKeyDetails {
+	s.UserName = &v
+	return s
+}
+
+// SetUserType sets the UserType field's value.
+func (s *AccessKeyDetails) SetUserType(v string) *AccessKeyDetails {
+	s.UserType = &v
+	return s
+}
+
 // An object containing the member's accountId and email address.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/AccountDetail
 type AccountDetail struct {
 	_ struct{} `type:"structure"`
 
 	// Member account ID.
-	AccountId *string `locationName:"accountId" type:"string"`
+	//
+	// AccountId is a required field
+	AccountId *string `locationName:"accountId" type:"string" required:"true"`
 
 	// Member account's email address.
-	Email *string `locationName:"email" type:"string"`
+	//
+	// Email is a required field
+	Email *string `locationName:"email" type:"string" required:"true"`
 }
 
 // String returns the string representation
@@ -3495,6 +3550,22 @@ func (s AccountDetail) String() string {
 // GoString returns the string representation
 func (s AccountDetail) GoString() string {
 	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *AccountDetail) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "AccountDetail"}
+	if s.AccountId == nil {
+		invalidParams.Add(request.NewErrParamRequired("AccountId"))
+	}
+	if s.Email == nil {
+		invalidParams.Add(request.NewErrParamRequired("Email"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
 // SetAccountId sets the AccountId field's value.
@@ -3510,7 +3581,6 @@ func (s *AccountDetail) SetEmail(v string) *AccountDetail {
 }
 
 // Information about the activity described in a finding.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Action
 type Action struct {
 	_ struct{} `type:"structure"`
 
@@ -3525,6 +3595,9 @@ type Action struct {
 
 	// Information about the NETWORK_CONNECTION action described in this finding.
 	NetworkConnectionAction *NetworkConnectionAction `locationName:"networkConnectionAction" type:"structure"`
+
+	// Information about the PORT_PROBE action described in this finding.
+	PortProbeAction *PortProbeAction `locationName:"portProbeAction" type:"structure"`
 }
 
 // String returns the string representation
@@ -3561,8 +3634,13 @@ func (s *Action) SetNetworkConnectionAction(v *NetworkConnectionAction) *Action 
 	return s
 }
 
+// SetPortProbeAction sets the PortProbeAction field's value.
+func (s *Action) SetPortProbeAction(v *PortProbeAction) *Action {
+	s.PortProbeAction = v
+	return s
+}
+
 // Archive Findings Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ArchiveFindingsRequest
 type ArchiveFindingsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3608,7 +3686,6 @@ func (s *ArchiveFindingsInput) SetFindingIds(v []*string) *ArchiveFindingsInput 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ArchiveFindingsResponse
 type ArchiveFindingsOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -3624,7 +3701,6 @@ func (s ArchiveFindingsOutput) GoString() string {
 }
 
 // Information about the AWS_API_CALL action described in this finding.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/AwsApiCallAction
 type AwsApiCallAction struct {
 	_ struct{} `type:"structure"`
 
@@ -3685,7 +3761,6 @@ func (s *AwsApiCallAction) SetServiceName(v string) *AwsApiCallAction {
 }
 
 // City information of the remote IP address.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/City
 type City struct {
 	_ struct{} `type:"structure"`
 
@@ -3711,7 +3786,6 @@ func (s *City) SetCityName(v string) *City {
 
 // Finding attribute (for example, accountId) for which conditions and values
 // must be specified when querying findings.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Condition
 type Condition struct {
 	_ struct{} `type:"structure"`
 
@@ -3787,7 +3861,6 @@ func (s *Condition) SetNeq(v []*string) *Condition {
 }
 
 // Country information of the remote IP address.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Country
 type Country struct {
 	_ struct{} `type:"structure"`
 
@@ -3821,7 +3894,6 @@ func (s *Country) SetCountryName(v string) *Country {
 }
 
 // Create Detector Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/CreateDetectorRequest
 type CreateDetectorInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3846,7 +3918,6 @@ func (s *CreateDetectorInput) SetEnable(v bool) *CreateDetectorInput {
 }
 
 // CreateDetector response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/CreateDetectorResponse
 type CreateDetectorOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3871,7 +3942,6 @@ func (s *CreateDetectorOutput) SetDetectorId(v string) *CreateDetectorOutput {
 }
 
 // Create IP Set Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/CreateIPSetRequest
 type CreateIPSetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3948,7 +4018,6 @@ func (s *CreateIPSetInput) SetName(v string) *CreateIPSetInput {
 }
 
 // CreateIPSet response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/CreateIPSetResponse
 type CreateIPSetOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3973,7 +4042,6 @@ func (s *CreateIPSetOutput) SetIpSetId(v string) *CreateIPSetOutput {
 }
 
 // CreateMembers body
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/CreateMembersRequest
 type CreateMembersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4001,6 +4069,16 @@ func (s *CreateMembersInput) Validate() error {
 	if s.DetectorId == nil {
 		invalidParams.Add(request.NewErrParamRequired("DetectorId"))
 	}
+	if s.AccountDetails != nil {
+		for i, v := range s.AccountDetails {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "AccountDetails", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
 
 	if invalidParams.Len() > 0 {
 		return invalidParams
@@ -4021,7 +4099,6 @@ func (s *CreateMembersInput) SetDetectorId(v string) *CreateMembersInput {
 }
 
 // CreateMembers response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/CreateMembersResponse
 type CreateMembersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4047,7 +4124,6 @@ func (s *CreateMembersOutput) SetUnprocessedAccounts(v []*UnprocessedAccount) *C
 }
 
 // Create Sample Findings Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/CreateSampleFindingsRequest
 type CreateSampleFindingsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4093,7 +4169,6 @@ func (s *CreateSampleFindingsInput) SetFindingTypes(v []*string) *CreateSampleFi
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/CreateSampleFindingsResponse
 type CreateSampleFindingsOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4109,7 +4184,6 @@ func (s CreateSampleFindingsOutput) GoString() string {
 }
 
 // Create Threat Intel Set Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/CreateThreatIntelSetRequest
 type CreateThreatIntelSetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4185,7 +4259,6 @@ func (s *CreateThreatIntelSetInput) SetName(v string) *CreateThreatIntelSetInput
 }
 
 // CreateThreatIntelSet response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/CreateThreatIntelSetResponse
 type CreateThreatIntelSetOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4210,7 +4283,6 @@ func (s *CreateThreatIntelSetOutput) SetThreatIntelSetId(v string) *CreateThreat
 }
 
 // DeclineInvitations request body.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeclineInvitationsRequest
 type DeclineInvitationsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4236,7 +4308,6 @@ func (s *DeclineInvitationsInput) SetAccountIds(v []*string) *DeclineInvitations
 }
 
 // DeclineInvitations response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeclineInvitationsResponse
 type DeclineInvitationsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4261,7 +4332,6 @@ func (s *DeclineInvitationsOutput) SetUnprocessedAccounts(v []*UnprocessedAccoun
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeleteDetectorRequest
 type DeleteDetectorInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4298,7 +4368,6 @@ func (s *DeleteDetectorInput) SetDetectorId(v string) *DeleteDetectorInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeleteDetectorResponse
 type DeleteDetectorOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4313,7 +4382,6 @@ func (s DeleteDetectorOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeleteIPSetRequest
 type DeleteIPSetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4362,7 +4430,6 @@ func (s *DeleteIPSetInput) SetIpSetId(v string) *DeleteIPSetInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeleteIPSetResponse
 type DeleteIPSetOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4378,7 +4445,6 @@ func (s DeleteIPSetOutput) GoString() string {
 }
 
 // DeleteInvitations request body.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeleteInvitationsRequest
 type DeleteInvitationsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4404,7 +4470,6 @@ func (s *DeleteInvitationsInput) SetAccountIds(v []*string) *DeleteInvitationsIn
 }
 
 // DeleteInvitations response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeleteInvitationsResponse
 type DeleteInvitationsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4430,7 +4495,6 @@ func (s *DeleteInvitationsOutput) SetUnprocessedAccounts(v []*UnprocessedAccount
 }
 
 // DeleteMembers request body.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeleteMembersRequest
 type DeleteMembersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4477,7 +4541,6 @@ func (s *DeleteMembersInput) SetDetectorId(v string) *DeleteMembersInput {
 }
 
 // DeleteMembers response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeleteMembersResponse
 type DeleteMembersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4502,7 +4565,6 @@ func (s *DeleteMembersOutput) SetUnprocessedAccounts(v []*UnprocessedAccount) *D
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeleteThreatIntelSetRequest
 type DeleteThreatIntelSetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4551,7 +4613,6 @@ func (s *DeleteThreatIntelSetInput) SetThreatIntelSetId(v string) *DeleteThreatI
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DeleteThreatIntelSetResponse
 type DeleteThreatIntelSetOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4566,7 +4627,6 @@ func (s DeleteThreatIntelSetOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DisassociateFromMasterAccountRequest
 type DisassociateFromMasterAccountInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4603,7 +4663,6 @@ func (s *DisassociateFromMasterAccountInput) SetDetectorId(v string) *Disassocia
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DisassociateFromMasterAccountResponse
 type DisassociateFromMasterAccountOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4619,7 +4678,6 @@ func (s DisassociateFromMasterAccountOutput) GoString() string {
 }
 
 // DisassociateMembers request body.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DisassociateMembersRequest
 type DisassociateMembersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4667,7 +4725,6 @@ func (s *DisassociateMembersInput) SetDetectorId(v string) *DisassociateMembersI
 }
 
 // DisassociateMembers response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DisassociateMembersResponse
 type DisassociateMembersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4693,7 +4750,6 @@ func (s *DisassociateMembersOutput) SetUnprocessedAccounts(v []*UnprocessedAccou
 }
 
 // Information about the DNS_REQUEST action described in this finding.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DnsRequestAction
 type DnsRequestAction struct {
 	_ struct{} `type:"structure"`
 
@@ -4718,7 +4774,6 @@ func (s *DnsRequestAction) SetDomain(v string) *DnsRequestAction {
 }
 
 // Domain information for the AWS API call.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/DomainDetails
 type DomainDetails struct {
 	_ struct{} `type:"structure"`
 }
@@ -4734,57 +4789,76 @@ func (s DomainDetails) GoString() string {
 }
 
 // Representation of a abnormal or suspicious activity.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Finding
 type Finding struct {
 	_ struct{} `type:"structure"`
 
 	// AWS account ID where the activity occurred that prompted GuardDuty to generate
 	// a finding.
-	AccountId *string `locationName:"accountId" type:"string"`
+	//
+	// AccountId is a required field
+	AccountId *string `locationName:"accountId" type:"string" required:"true"`
 
 	// The ARN of a finding described by the action.
-	Arn *string `locationName:"arn" type:"string"`
+	//
+	// Arn is a required field
+	Arn *string `locationName:"arn" type:"string" required:"true"`
 
 	// The confidence level of a finding.
 	Confidence *float64 `locationName:"confidence" type:"double"`
 
 	// The time stamp at which a finding was generated.
-	CreatedAt *string `locationName:"createdAt" type:"string"`
+	//
+	// CreatedAt is a required field
+	CreatedAt *string `locationName:"createdAt" type:"string" required:"true"`
 
 	// The description of a finding.
 	Description *string `locationName:"description" type:"string"`
 
 	// The identifier that corresponds to a finding described by the action.
-	Id *string `locationName:"id" type:"string"`
+	//
+	// Id is a required field
+	Id *string `locationName:"id" type:"string" required:"true"`
 
 	// The AWS resource partition.
 	Partition *string `locationName:"partition" type:"string"`
 
 	// The AWS region where the activity occurred that prompted GuardDuty to generate
 	// a finding.
-	Region *string `locationName:"region" type:"string"`
+	//
+	// Region is a required field
+	Region *string `locationName:"region" type:"string" required:"true"`
 
 	// The AWS resource associated with the activity that prompted GuardDuty to
 	// generate a finding.
-	Resource *Resource `locationName:"resource" type:"structure"`
+	//
+	// Resource is a required field
+	Resource *Resource `locationName:"resource" type:"structure" required:"true"`
 
 	// Findings' schema version.
-	SchemaVersion *string `locationName:"schemaVersion" type:"string"`
+	//
+	// SchemaVersion is a required field
+	SchemaVersion *string `locationName:"schemaVersion" type:"string" required:"true"`
 
 	// Additional information assigned to the generated finding by GuardDuty.
 	Service *Service `locationName:"service" type:"structure"`
 
 	// The severity of a finding.
-	Severity *float64 `locationName:"severity" type:"double"`
+	//
+	// Severity is a required field
+	Severity *float64 `locationName:"severity" type:"double" required:"true"`
 
 	// The title of a finding.
 	Title *string `locationName:"title" type:"string"`
 
 	// The type of a finding described by the action.
-	Type *string `locationName:"type" type:"string"`
+	//
+	// Type is a required field
+	Type *string `locationName:"type" type:"string" required:"true"`
 
 	// The time stamp at which a finding was last updated.
-	UpdatedAt *string `locationName:"updatedAt" type:"string"`
+	//
+	// UpdatedAt is a required field
+	UpdatedAt *string `locationName:"updatedAt" type:"string" required:"true"`
 }
 
 // String returns the string representation
@@ -4888,7 +4962,6 @@ func (s *Finding) SetUpdatedAt(v string) *Finding {
 }
 
 // Represents the criteria used for querying findings.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/FindingCriteria
 type FindingCriteria struct {
 	_ struct{} `type:"structure"`
 
@@ -4914,7 +4987,6 @@ func (s *FindingCriteria) SetCriterion(v map[string]*Condition) *FindingCriteria
 }
 
 // Finding statistics object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/FindingStatistics
 type FindingStatistics struct {
 	_ struct{} `type:"structure"`
 
@@ -4939,7 +5011,6 @@ func (s *FindingStatistics) SetCountBySeverity(v map[string]*int64) *FindingStat
 }
 
 // Location information of the remote IP address.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GeoLocation
 type GeoLocation struct {
 	_ struct{} `type:"structure"`
 
@@ -4972,7 +5043,6 @@ func (s *GeoLocation) SetLon(v float64) *GeoLocation {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetDetectorRequest
 type GetDetectorInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5010,7 +5080,6 @@ func (s *GetDetectorInput) SetDetectorId(v string) *GetDetectorInput {
 }
 
 // GetDetector response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetDetectorResponse
 type GetDetectorOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5062,7 +5131,6 @@ func (s *GetDetectorOutput) SetUpdatedAt(v string) *GetDetectorOutput {
 }
 
 // Get Findings Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetFindingsRequest
 type GetFindingsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5118,7 +5186,6 @@ func (s *GetFindingsInput) SetSortCriteria(v *SortCriteria) *GetFindingsInput {
 }
 
 // GetFindings response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetFindingsResponse
 type GetFindingsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5143,7 +5210,6 @@ func (s *GetFindingsOutput) SetFindings(v []*Finding) *GetFindingsOutput {
 }
 
 // Get Findings Statistics Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetFindingsStatisticsRequest
 type GetFindingsStatisticsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5199,7 +5265,6 @@ func (s *GetFindingsStatisticsInput) SetFindingStatisticTypes(v []*string) *GetF
 }
 
 // GetFindingsStatistics response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetFindingsStatisticsResponse
 type GetFindingsStatisticsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5223,7 +5288,6 @@ func (s *GetFindingsStatisticsOutput) SetFindingStatistics(v *FindingStatistics)
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetIPSetRequest
 type GetIPSetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5273,7 +5337,6 @@ func (s *GetIPSetInput) SetIpSetId(v string) *GetIPSetInput {
 }
 
 // GetIPSet response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetIPSetResponse
 type GetIPSetOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5326,7 +5389,6 @@ func (s *GetIPSetOutput) SetStatus(v string) *GetIPSetOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetInvitationsCountRequest
 type GetInvitationsCountInput struct {
 	_ struct{} `type:"structure"`
 }
@@ -5342,7 +5404,6 @@ func (s GetInvitationsCountInput) GoString() string {
 }
 
 // GetInvitationsCount response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetInvitationsCountResponse
 type GetInvitationsCountOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5366,7 +5427,6 @@ func (s *GetInvitationsCountOutput) SetInvitationsCount(v int64) *GetInvitations
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetMasterAccountRequest
 type GetMasterAccountInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5404,7 +5464,6 @@ func (s *GetMasterAccountInput) SetDetectorId(v string) *GetMasterAccountInput {
 }
 
 // GetMasterAccount response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetMasterAccountResponse
 type GetMasterAccountOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5429,7 +5488,6 @@ func (s *GetMasterAccountOutput) SetMaster(v *Master) *GetMasterAccountOutput {
 }
 
 // GetMembers request body.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetMembersRequest
 type GetMembersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5476,7 +5534,6 @@ func (s *GetMembersInput) SetDetectorId(v string) *GetMembersInput {
 }
 
 // GetMembers response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetMembersResponse
 type GetMembersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5510,7 +5567,6 @@ func (s *GetMembersOutput) SetUnprocessedAccounts(v []*UnprocessedAccount) *GetM
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetThreatIntelSetRequest
 type GetThreatIntelSetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5560,7 +5616,6 @@ func (s *GetThreatIntelSetInput) SetThreatIntelSetId(v string) *GetThreatIntelSe
 }
 
 // GetThreatIntelSet response object
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/GetThreatIntelSetResponse
 type GetThreatIntelSetOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5613,7 +5668,6 @@ func (s *GetThreatIntelSetOutput) SetStatus(v string) *GetThreatIntelSetOutput {
 }
 
 // The profile information of the EC2 instance.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/IamInstanceProfile
 type IamInstanceProfile struct {
 	_ struct{} `type:"structure"`
 
@@ -5648,7 +5702,6 @@ func (s *IamInstanceProfile) SetId(v string) *IamInstanceProfile {
 
 // The information about the EC2 instance associated with the activity that
 // prompted GuardDuty to generate a finding.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/InstanceDetails
 type InstanceDetails struct {
 	_ struct{} `type:"structure"`
 
@@ -5763,7 +5816,6 @@ func (s *InstanceDetails) SetTags(v []*Tag) *InstanceDetails {
 }
 
 // Invitation from an AWS account to become the current account's master.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Invitation
 type Invitation struct {
 	_ struct{} `type:"structure"`
 
@@ -5815,7 +5867,6 @@ func (s *Invitation) SetRelationshipStatus(v string) *Invitation {
 }
 
 // InviteMembers request body.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/InviteMembersRequest
 type InviteMembersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5826,7 +5877,10 @@ type InviteMembersInput struct {
 	// DetectorId is a required field
 	DetectorId *string `location:"uri" locationName:"detectorId" type:"string" required:"true"`
 
-	// The invitation message that you want to send to the accounts that you're
+	// Indicates whether invite member email notification is disabled
+	DisableEmailNotification *bool `locationName:"disableEmailNotification" type:"boolean"`
+
+	// The invitation message that you want to send to the accounts that you’re
 	// inviting to GuardDuty as members.
 	Message *string `locationName:"message" type:"string"`
 }
@@ -5866,6 +5920,12 @@ func (s *InviteMembersInput) SetDetectorId(v string) *InviteMembersInput {
 	return s
 }
 
+// SetDisableEmailNotification sets the DisableEmailNotification field's value.
+func (s *InviteMembersInput) SetDisableEmailNotification(v bool) *InviteMembersInput {
+	s.DisableEmailNotification = &v
+	return s
+}
+
 // SetMessage sets the Message field's value.
 func (s *InviteMembersInput) SetMessage(v string) *InviteMembersInput {
 	s.Message = &v
@@ -5873,7 +5933,6 @@ func (s *InviteMembersInput) SetMessage(v string) *InviteMembersInput {
 }
 
 // InviteMembers response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/InviteMembersResponse
 type InviteMembersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5898,7 +5957,6 @@ func (s *InviteMembersOutput) SetUnprocessedAccounts(v []*UnprocessedAccount) *I
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListDetectorsRequest
 type ListDetectorsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5945,7 +6003,6 @@ func (s *ListDetectorsInput) SetNextToken(v string) *ListDetectorsInput {
 }
 
 // ListDetectors response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListDetectorsResponse
 type ListDetectorsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5982,7 +6039,6 @@ func (s *ListDetectorsOutput) SetNextToken(v string) *ListDetectorsOutput {
 }
 
 // List Findings Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListFindingsRequest
 type ListFindingsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6063,7 +6119,6 @@ func (s *ListFindingsInput) SetSortCriteria(v *SortCriteria) *ListFindingsInput 
 }
 
 // ListFindings response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListFindingsResponse
 type ListFindingsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6099,7 +6154,6 @@ func (s *ListFindingsOutput) SetNextToken(v string) *ListFindingsOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListIPSetsRequest
 type ListIPSetsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6158,7 +6212,6 @@ func (s *ListIPSetsInput) SetNextToken(v string) *ListIPSetsInput {
 }
 
 // ListIPSets response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListIPSetsResponse
 type ListIPSetsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6194,7 +6247,6 @@ func (s *ListIPSetsOutput) SetNextToken(v string) *ListIPSetsOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListInvitationsRequest
 type ListInvitationsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6241,7 +6293,6 @@ func (s *ListInvitationsInput) SetNextToken(v string) *ListInvitationsInput {
 }
 
 // ListInvitations response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListInvitationsResponse
 type ListInvitationsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6277,7 +6328,6 @@ func (s *ListInvitationsOutput) SetNextToken(v string) *ListInvitationsOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListMembersRequest
 type ListMembersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6344,7 +6394,6 @@ func (s *ListMembersInput) SetOnlyAssociated(v string) *ListMembersInput {
 }
 
 // ListMembers response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListMembersResponse
 type ListMembersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6380,7 +6429,6 @@ func (s *ListMembersOutput) SetNextToken(v string) *ListMembersOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListThreatIntelSetsRequest
 type ListThreatIntelSetsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6439,7 +6487,6 @@ func (s *ListThreatIntelSetsInput) SetNextToken(v string) *ListThreatIntelSetsIn
 }
 
 // ListThreatIntelSets response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ListThreatIntelSetsResponse
 type ListThreatIntelSetsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6476,7 +6523,6 @@ func (s *ListThreatIntelSetsOutput) SetThreatIntelSetIds(v []*string) *ListThrea
 }
 
 // Local port information of the connection.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/LocalPortDetails
 type LocalPortDetails struct {
 	_ struct{} `type:"structure"`
 
@@ -6510,7 +6556,6 @@ func (s *LocalPortDetails) SetPortName(v string) *LocalPortDetails {
 }
 
 // Contains details about the master account.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Master
 type Master struct {
 	_ struct{} `type:"structure"`
 
@@ -6562,30 +6607,39 @@ func (s *Master) SetRelationshipStatus(v string) *Master {
 }
 
 // Contains details about the member account.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Member
 type Member struct {
 	_ struct{} `type:"structure"`
 
 	// AWS account ID.
-	AccountId *string `locationName:"accountId" type:"string"`
+	//
+	// AccountId is a required field
+	AccountId *string `locationName:"accountId" type:"string" required:"true"`
 
 	// The unique identifier for a detector.
 	DetectorId *string `locationName:"detectorId" type:"string"`
 
 	// Member account's email address.
-	Email *string `locationName:"email" type:"string"`
+	//
+	// Email is a required field
+	Email *string `locationName:"email" type:"string" required:"true"`
 
 	// Timestamp at which the invitation was sent
 	InvitedAt *string `locationName:"invitedAt" type:"string"`
 
 	// The master account ID.
-	MasterId *string `locationName:"masterId" type:"string"`
+	//
+	// MasterId is a required field
+	MasterId *string `locationName:"masterId" type:"string" required:"true"`
 
 	// The status of the relationship between the member and the master.
-	RelationshipStatus *string `locationName:"relationshipStatus" type:"string"`
+	//
+	// RelationshipStatus is a required field
+	RelationshipStatus *string `locationName:"relationshipStatus" type:"string" required:"true"`
 
 	// The first time a resource was created. The format will be ISO-8601.
-	UpdatedAt *string `locationName:"updatedAt" type:"string"`
+	//
+	// UpdatedAt is a required field
+	UpdatedAt *string `locationName:"updatedAt" type:"string" required:"true"`
 }
 
 // String returns the string representation
@@ -6641,7 +6695,6 @@ func (s *Member) SetUpdatedAt(v string) *Member {
 }
 
 // Information about the NETWORK_CONNECTION action described in this finding.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/NetworkConnectionAction
 type NetworkConnectionAction struct {
 	_ struct{} `type:"structure"`
 
@@ -6711,7 +6764,6 @@ func (s *NetworkConnectionAction) SetRemotePortDetails(v *RemotePortDetails) *Ne
 }
 
 // The network interface information of the EC2 instance.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/NetworkInterface
 type NetworkInterface struct {
 	_ struct{} `type:"structure"`
 
@@ -6808,7 +6860,6 @@ func (s *NetworkInterface) SetVpcId(v string) *NetworkInterface {
 }
 
 // ISP Organization information of the remote IP address.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Organization
 type Organization struct {
 	_ struct{} `type:"structure"`
 
@@ -6859,8 +6910,73 @@ func (s *Organization) SetOrg(v string) *Organization {
 	return s
 }
 
+// Information about the PORT_PROBE action described in this finding.
+type PortProbeAction struct {
+	_ struct{} `type:"structure"`
+
+	// Port probe blocked information.
+	Blocked *bool `locationName:"blocked" type:"boolean"`
+
+	// A list of port probe details objects.
+	PortProbeDetails []*PortProbeDetail `locationName:"portProbeDetails" type:"list"`
+}
+
+// String returns the string representation
+func (s PortProbeAction) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PortProbeAction) GoString() string {
+	return s.String()
+}
+
+// SetBlocked sets the Blocked field's value.
+func (s *PortProbeAction) SetBlocked(v bool) *PortProbeAction {
+	s.Blocked = &v
+	return s
+}
+
+// SetPortProbeDetails sets the PortProbeDetails field's value.
+func (s *PortProbeAction) SetPortProbeDetails(v []*PortProbeDetail) *PortProbeAction {
+	s.PortProbeDetails = v
+	return s
+}
+
+// Details about the port probe finding.
+type PortProbeDetail struct {
+	_ struct{} `type:"structure"`
+
+	// Local port information of the connection.
+	LocalPortDetails *LocalPortDetails `locationName:"localPortDetails" type:"structure"`
+
+	// Remote IP information of the connection.
+	RemoteIpDetails *RemoteIpDetails `locationName:"remoteIpDetails" type:"structure"`
+}
+
+// String returns the string representation
+func (s PortProbeDetail) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PortProbeDetail) GoString() string {
+	return s.String()
+}
+
+// SetLocalPortDetails sets the LocalPortDetails field's value.
+func (s *PortProbeDetail) SetLocalPortDetails(v *LocalPortDetails) *PortProbeDetail {
+	s.LocalPortDetails = v
+	return s
+}
+
+// SetRemoteIpDetails sets the RemoteIpDetails field's value.
+func (s *PortProbeDetail) SetRemoteIpDetails(v *RemoteIpDetails) *PortProbeDetail {
+	s.RemoteIpDetails = v
+	return s
+}
+
 // Other private IP address information of the EC2 instance.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/PrivateIpAddressDetails
 type PrivateIpAddressDetails struct {
 	_ struct{} `type:"structure"`
 
@@ -6894,7 +7010,6 @@ func (s *PrivateIpAddressDetails) SetPrivateIpAddress(v string) *PrivateIpAddres
 }
 
 // The product code of the EC2 instance.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/ProductCode
 type ProductCode struct {
 	_ struct{} `type:"structure"`
 
@@ -6928,7 +7043,6 @@ func (s *ProductCode) SetProductType(v string) *ProductCode {
 }
 
 // Remote IP information of the connection.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/RemoteIpDetails
 type RemoteIpDetails struct {
 	_ struct{} `type:"structure"`
 
@@ -6989,7 +7103,6 @@ func (s *RemoteIpDetails) SetOrganization(v *Organization) *RemoteIpDetails {
 }
 
 // Remote port information of the connection.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/RemotePortDetails
 type RemotePortDetails struct {
 	_ struct{} `type:"structure"`
 
@@ -7024,9 +7137,12 @@ func (s *RemotePortDetails) SetPortName(v string) *RemotePortDetails {
 
 // The AWS resource associated with the activity that prompted GuardDuty to
 // generate a finding.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Resource
 type Resource struct {
 	_ struct{} `type:"structure"`
+
+	// The IAM access key details (IAM user information) of a user that engaged
+	// in the activity that prompted GuardDuty to generate a finding.
+	AccessKeyDetails *AccessKeyDetails `locationName:"accessKeyDetails" type:"structure"`
 
 	// The information about the EC2 instance associated with the activity that
 	// prompted GuardDuty to generate a finding.
@@ -7046,6 +7162,12 @@ func (s Resource) GoString() string {
 	return s.String()
 }
 
+// SetAccessKeyDetails sets the AccessKeyDetails field's value.
+func (s *Resource) SetAccessKeyDetails(v *AccessKeyDetails) *Resource {
+	s.AccessKeyDetails = v
+	return s
+}
+
 // SetInstanceDetails sets the InstanceDetails field's value.
 func (s *Resource) SetInstanceDetails(v *InstanceDetails) *Resource {
 	s.InstanceDetails = v
@@ -7059,7 +7181,6 @@ func (s *Resource) SetResourceType(v string) *Resource {
 }
 
 // Security groups associated with the EC2 instance.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/SecurityGroup
 type SecurityGroup struct {
 	_ struct{} `type:"structure"`
 
@@ -7093,7 +7214,6 @@ func (s *SecurityGroup) SetGroupName(v string) *SecurityGroup {
 }
 
 // Additional information assigned to the generated finding by GuardDuty.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Service
 type Service struct {
 	_ struct{} `type:"structure"`
 
@@ -7192,7 +7312,6 @@ func (s *Service) SetUserFeedback(v string) *Service {
 }
 
 // Represents the criteria used for sorting findings.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/SortCriteria
 type SortCriteria struct {
 	_ struct{} `type:"structure"`
 
@@ -7227,7 +7346,6 @@ func (s *SortCriteria) SetOrderBy(v string) *SortCriteria {
 }
 
 // StartMonitoringMembers request body.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/StartMonitoringMembersRequest
 type StartMonitoringMembersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7275,7 +7393,6 @@ func (s *StartMonitoringMembersInput) SetDetectorId(v string) *StartMonitoringMe
 }
 
 // StartMonitoringMembers response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/StartMonitoringMembersResponse
 type StartMonitoringMembersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7301,7 +7418,6 @@ func (s *StartMonitoringMembersOutput) SetUnprocessedAccounts(v []*UnprocessedAc
 }
 
 // StopMonitoringMembers request body.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/StopMonitoringMembersRequest
 type StopMonitoringMembersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7349,7 +7465,6 @@ func (s *StopMonitoringMembersInput) SetDetectorId(v string) *StopMonitoringMemb
 }
 
 // StopMonitoringMembers response object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/StopMonitoringMembersResponse
 type StopMonitoringMembersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7375,7 +7490,6 @@ func (s *StopMonitoringMembersOutput) SetUnprocessedAccounts(v []*UnprocessedAcc
 }
 
 // A tag of the EC2 instance.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/Tag
 type Tag struct {
 	_ struct{} `type:"structure"`
 
@@ -7409,7 +7523,6 @@ func (s *Tag) SetValue(v string) *Tag {
 }
 
 // Unrchive Findings Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UnarchiveFindingsRequest
 type UnarchiveFindingsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7455,7 +7568,6 @@ func (s *UnarchiveFindingsInput) SetFindingIds(v []*string) *UnarchiveFindingsIn
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UnarchiveFindingsResponse
 type UnarchiveFindingsOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -7472,15 +7584,18 @@ func (s UnarchiveFindingsOutput) GoString() string {
 
 // An object containing the unprocessed account and a result string explaining
 // why it was unprocessed.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UnprocessedAccount
 type UnprocessedAccount struct {
 	_ struct{} `type:"structure"`
 
 	// AWS Account ID.
-	AccountId *string `locationName:"accountId" type:"string"`
+	//
+	// AccountId is a required field
+	AccountId *string `locationName:"accountId" type:"string" required:"true"`
 
 	// A reason why the account hasn't been processed.
-	Result *string `locationName:"result" type:"string"`
+	//
+	// Result is a required field
+	Result *string `locationName:"result" type:"string" required:"true"`
 }
 
 // String returns the string representation
@@ -7506,7 +7621,6 @@ func (s *UnprocessedAccount) SetResult(v string) *UnprocessedAccount {
 }
 
 // Update Detector Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UpdateDetectorRequest
 type UpdateDetectorInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7553,7 +7667,6 @@ func (s *UpdateDetectorInput) SetEnable(v bool) *UpdateDetectorInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UpdateDetectorResponse
 type UpdateDetectorOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -7569,7 +7682,6 @@ func (s UpdateDetectorOutput) GoString() string {
 }
 
 // Update findings feedback body
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UpdateFindingsFeedbackRequest
 type UpdateFindingsFeedbackInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7633,7 +7745,6 @@ func (s *UpdateFindingsFeedbackInput) SetFindingIds(v []*string) *UpdateFindings
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UpdateFindingsFeedbackResponse
 type UpdateFindingsFeedbackOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -7649,7 +7760,6 @@ func (s UpdateFindingsFeedbackOutput) GoString() string {
 }
 
 // Update IP Set Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UpdateIPSetRequest
 type UpdateIPSetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7725,7 +7835,6 @@ func (s *UpdateIPSetInput) SetName(v string) *UpdateIPSetInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UpdateIPSetResponse
 type UpdateIPSetOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -7741,7 +7850,6 @@ func (s UpdateIPSetOutput) GoString() string {
 }
 
 // Update Threat Intel Set Request
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UpdateThreatIntelSetRequest
 type UpdateThreatIntelSetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7819,7 +7927,6 @@ func (s *UpdateThreatIntelSetInput) SetThreatIntelSetId(v string) *UpdateThreatI
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/guardduty-2017-11-28/UpdateThreatIntelSetResponse
 type UpdateThreatIntelSetOutput struct {
 	_ struct{} `type:"structure"`
 }

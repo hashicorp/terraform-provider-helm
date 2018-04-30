@@ -20,8 +20,12 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"net"
+	"strconv"
 	"strings"
 	"time"
+
+	compute "google.golang.org/api/compute/v1"
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +61,7 @@ var _ = SIGDescribe("Services", func() {
 		}
 		for _, lb := range serviceLBNames {
 			framework.Logf("cleaning gce resource for %s", lb)
-			framework.CleanupServiceGCEResources(cs, lb, framework.TestContext.CloudConfig.Zone)
+			framework.CleanupServiceGCEResources(cs, lb, framework.TestContext.CloudConfig.Region, framework.TestContext.CloudConfig.Zone)
 		}
 		//reset serviceLBNames
 		serviceLBNames = []string{}
@@ -65,12 +69,21 @@ var _ = SIGDescribe("Services", func() {
 
 	// TODO: We get coverage of TCP/UDP and multi-port services through the DNS test. We should have a simpler test for multi-port TCP here.
 
-	It("should provide secure master service [Conformance]", func() {
+	/*
+	   Testname: service-kubernetes-exists
+	   Description: Make sure kubernetes service does exist.
+	*/
+	framework.ConformanceIt("should provide secure master service ", func() {
 		_, err := cs.CoreV1().Services(metav1.NamespaceDefault).Get("kubernetes", metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should serve a basic endpoint from pods [Conformance]", func() {
+	/*
+		    Testname: service-valid-endpoints
+		    Description: Ensure a service with no pod, one pod or two pods has
+			valid/accessible endpoints (same port number for service and pods).
+	*/
+	framework.ConformanceIt("should serve a basic endpoint from pods ", func() {
 		// TODO: use the ServiceTestJig here
 		serviceName := "endpoint-test2"
 		ns := f.Namespace.Name
@@ -130,7 +143,12 @@ var _ = SIGDescribe("Services", func() {
 		framework.ValidateEndpointsOrFail(cs, ns, serviceName, framework.PortsByPodName{})
 	})
 
-	It("should serve multiport endpoints from pods [Conformance]", func() {
+	/*
+		    Testname: service-valid-endpoints-multiple-ports
+		    Description: Ensure a service with no pod, one pod or two pods has
+			valid/accessible endpoints (different port number for pods).
+	*/
+	framework.ConformanceIt("should serve multiport endpoints from pods ", func() {
 		// TODO: use the ServiceTestJig here
 		// repacking functionality is intentionally not tested here - it's better to test it in an integration test.
 		serviceName := "multi-endpoint-test"
@@ -410,7 +428,7 @@ var _ = SIGDescribe("Services", func() {
 
 		// Restart apiserver
 		By("Restarting apiserver")
-		if err := framework.RestartApiserver(cs.Discovery()); err != nil {
+		if err := framework.RestartApiserver(cs); err != nil {
 			framework.Failf("error restarting apiserver: %v", err)
 		}
 		By("Waiting for apiserver to come up by polling /healthz")
@@ -467,7 +485,8 @@ var _ = SIGDescribe("Services", func() {
 		}
 	})
 
-	It("should be able to change the type and ports of a service [Slow]", func() {
+	// TODO: Get rid of [DisabledForLargeClusters] tag when issue #52495 is fixed.
+	It("should be able to change the type and ports of a service [Slow] [DisabledForLargeClusters]", func() {
 		// requires cloud load-balancer support
 		framework.SkipUnlessProviderIs("gce", "gke", "aws")
 
@@ -555,16 +574,23 @@ var _ = SIGDescribe("Services", func() {
 		if framework.ProviderIs("gce", "gke") {
 			By("creating a static load balancer IP")
 			staticIPName = fmt.Sprintf("e2e-external-lb-test-%s", framework.RunId)
-			requestedIP, err = framework.CreateGCEStaticIP(staticIPName)
+			gceCloud, err := framework.GetGCECloud()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = gceCloud.ReserveRegionAddress(&compute.Address{Name: staticIPName}, gceCloud.Region())
 			defer func() {
 				if staticIPName != "" {
 					// Release GCE static IP - this is not kube-managed and will not be automatically released.
-					if err := framework.DeleteGCEStaticIP(staticIPName); err != nil {
+					if err := gceCloud.DeleteRegionAddress(staticIPName, gceCloud.Region()); err != nil {
 						framework.Logf("failed to release static IP %s: %v", staticIPName, err)
 					}
 				}
 			}()
 			Expect(err).NotTo(HaveOccurred())
+			reservedAddr, err := gceCloud.GetRegionAddress(staticIPName, gceCloud.Region())
+			Expect(err).NotTo(HaveOccurred())
+
+			requestedIP = reservedAddr.Address
 			framework.Logf("Allocated static load balancer IP: %s", requestedIP)
 		}
 
@@ -605,9 +631,11 @@ var _ = SIGDescribe("Services", func() {
 			// coming from, so this is first-aid rather than surgery).
 			By("demoting the static IP to ephemeral")
 			if staticIPName != "" {
+				gceCloud, err := framework.GetGCECloud()
+				Expect(err).NotTo(HaveOccurred())
 				// Deleting it after it is attached "demotes" it to an
 				// ephemeral IP, which can be auto-released.
-				if err := framework.DeleteGCEStaticIP(staticIPName); err != nil {
+				if err := gceCloud.DeleteRegionAddress(staticIPName, gceCloud.Region()); err != nil {
 					framework.Failf("failed to release static IP %s: %v", staticIPName, err)
 				}
 				staticIPName = ""
@@ -798,7 +826,7 @@ var _ = SIGDescribe("Services", func() {
 		tcpService := jig.CreateTCPServiceOrFail(ns, nil)
 		defer func() {
 			framework.Logf("Cleaning up the updating NodePorts test service")
-			err := cs.Core().Services(ns).Delete(serviceName, nil)
+			err := cs.CoreV1().Services(ns).Delete(serviceName, nil)
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		jig.SanityCheckService(tcpService, v1.ServiceTypeClusterIP)
@@ -1248,7 +1276,7 @@ var _ = SIGDescribe("Services", func() {
 		}
 
 		By("Scaling down replication controller to zero")
-		framework.ScaleRC(f.ClientSet, f.InternalClientset, t.Namespace, rcSpec.Name, 0, false)
+		framework.ScaleRC(f.ClientSet, f.InternalClientset, f.ScalesGetter, t.Namespace, rcSpec.Name, 0, false)
 
 		By("Update service to not tolerate unready services")
 		_, err = framework.UpdateService(f.ClientSet, t.Namespace, t.ServiceName, func(s *v1.Service) {
@@ -1293,7 +1321,7 @@ var _ = SIGDescribe("Services", func() {
 		By("Remove pods immediately")
 		label := labels.SelectorFromSet(labels.Set(t.Labels))
 		options := metav1.ListOptions{LabelSelector: label.String()}
-		podClient := t.Client.Core().Pods(f.Namespace.Name)
+		podClient := t.Client.CoreV1().Pods(f.Namespace.Name)
 		pods, err := podClient.List(options)
 		if err != nil {
 			framework.Logf("warning: error retrieving pods: %s", err)
@@ -1384,10 +1412,15 @@ var _ = SIGDescribe("Services", func() {
 		framework.CheckReachabilityFromPod(true, normalReachabilityTimeout, namespace, dropPodName, svcIP)
 	})
 
-	It("should be able to create an internal type load balancer [Slow]", func() {
+	// TODO: Get rid of [DisabledForLargeClusters] tag when issue #52495 is fixed.
+	It("should be able to create an internal type load balancer [Slow] [DisabledForLargeClusters]", func() {
 		framework.SkipUnlessProviderIs("azure", "gke", "gce")
 
 		createTimeout := framework.LoadBalancerCreateTimeoutDefault
+		if nodes := framework.GetReadySchedulableNodesOrDie(cs); len(nodes.Items) > framework.LargeClusterMinNodesNumber {
+			createTimeout = framework.LoadBalancerCreateTimeoutLarge
+		}
+
 		pollInterval := framework.Poll * 10
 
 		namespace := f.Namespace.Name
@@ -1413,8 +1446,36 @@ var _ = SIGDescribe("Services", func() {
 		svc = jig.WaitForLoadBalancerOrFail(namespace, serviceName, createTimeout)
 		jig.SanityCheckService(svc, v1.ServiceTypeLoadBalancer)
 		lbIngress := &svc.Status.LoadBalancer.Ingress[0]
+		svcPort := int(svc.Spec.Ports[0].Port)
 		// should have an internal IP.
 		Expect(isInternalEndpoint(lbIngress)).To(BeTrue())
+
+		// ILBs are not accessible from the test orchestrator, so it's necessary to use
+		//  a pod to test the service.
+		By("hitting the internal load balancer from pod")
+		framework.Logf("creating pod with host network")
+		hostExec := framework.LaunchHostExecPod(f.ClientSet, f.Namespace.Name, "ilb-host-exec")
+
+		framework.Logf("Waiting up to %v for service %q's internal LB to respond to requests", createTimeout, serviceName)
+		tcpIngressIP := framework.GetIngressPoint(lbIngress)
+		if pollErr := wait.PollImmediate(pollInterval, createTimeout, func() (bool, error) {
+			cmd := fmt.Sprintf(`curl -m 5 'http://%v:%v/echo?msg=hello'`, tcpIngressIP, svcPort)
+			stdout, err := framework.RunHostCmd(hostExec.Namespace, hostExec.Name, cmd)
+			if err != nil {
+				framework.Logf("error curling; stdout: %v. err: %v", stdout, err)
+				return false, nil
+			}
+
+			if !strings.Contains(stdout, "hello") {
+				framework.Logf("Expected output to contain 'hello', got %q; retrying...", stdout)
+				return false, nil
+			}
+
+			framework.Logf("Successful curl; stdout: %v", stdout)
+			return true, nil
+		}); pollErr != nil {
+			framework.Failf("Failed to hit ILB IP, err: %v", pollErr)
+		}
 
 		By("switching to external type LoadBalancer")
 		svc = jig.UpdateServiceOrFail(namespace, serviceName, func(svc *v1.Service) {
@@ -1422,7 +1483,7 @@ var _ = SIGDescribe("Services", func() {
 		})
 		framework.Logf("Waiting up to %v for service %q to have an external LoadBalancer", createTimeout, serviceName)
 		if pollErr := wait.PollImmediate(pollInterval, createTimeout, func() (bool, error) {
-			svc, err := jig.Client.Core().Services(namespace).Get(serviceName, metav1.GetOptions{})
+			svc, err := jig.Client.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
 			if err != nil {
 				return false, err
 			}
@@ -1435,6 +1496,11 @@ var _ = SIGDescribe("Services", func() {
 		jig.SanityCheckService(svc, v1.ServiceTypeLoadBalancer)
 		Expect(isInternalEndpoint(lbIngress)).To(BeFalse())
 
+		By("hitting the external load balancer")
+		framework.Logf("Waiting up to %v for service %q's external LB to respond to requests", createTimeout, serviceName)
+		tcpIngressIP = framework.GetIngressPoint(lbIngress)
+		jig.TestReachableHTTP(tcpIngressIP, svcPort, framework.LoadBalancerLagTimeoutDefault)
+
 		// GCE cannot test a specific IP because the test may not own it. This cloud specific condition
 		// will be removed when GCP supports similar functionality.
 		if framework.ProviderIs("azure") {
@@ -1446,7 +1512,7 @@ var _ = SIGDescribe("Services", func() {
 			})
 			framework.Logf("Waiting up to %v for service %q to have an internal LoadBalancer", createTimeout, serviceName)
 			if pollErr := wait.PollImmediate(pollInterval, createTimeout, func() (bool, error) {
-				svc, err := jig.Client.Core().Services(namespace).Get(serviceName, metav1.GetOptions{})
+				svc, err := jig.Client.CoreV1().Services(namespace).Get(serviceName, metav1.GetOptions{})
 				if err != nil {
 					return false, err
 				}
@@ -1465,7 +1531,8 @@ var _ = SIGDescribe("Services", func() {
 	})
 })
 
-var _ = SIGDescribe("ESIPP [Slow]", func() {
+// TODO: Get rid of [DisabledForLargeClusters] tag when issue #52495 is fixed.
+var _ = SIGDescribe("ESIPP [Slow] [DisabledForLargeClusters]", func() {
 	f := framework.NewDefaultFramework("esipp")
 	loadBalancerCreateTimeout := framework.LoadBalancerCreateTimeoutDefault
 
@@ -1488,7 +1555,7 @@ var _ = SIGDescribe("ESIPP [Slow]", func() {
 		}
 		for _, lb := range serviceLBNames {
 			framework.Logf("cleaning gce resource for %s", lb)
-			framework.CleanupServiceGCEResources(cs, lb, framework.TestContext.CloudConfig.Zone)
+			framework.CleanupServiceGCEResources(cs, lb, framework.TestContext.CloudConfig.Region, framework.TestContext.CloudConfig.Zone)
 		}
 		//reset serviceLBNames
 		serviceLBNames = []string{}
@@ -1611,7 +1678,9 @@ var _ = SIGDescribe("ESIPP [Slow]", func() {
 				// Confirm traffic can reach backend through LB before checking healthcheck nodeport.
 				jig.TestReachableHTTP(ingressIP, svcTCPPort, framework.KubeProxyLagTimeout)
 				expectedSuccess := nodes.Items[n].Name == endpointNodeName
-				framework.Logf("Health checking %s, http://%s:%d%s, expectedSuccess %v", nodes.Items[n].Name, publicIP, healthCheckNodePort, path, expectedSuccess)
+				port := strconv.Itoa(healthCheckNodePort)
+				ipPort := net.JoinHostPort(publicIP, port)
+				framework.Logf("Health checking %s, http://%s%s, expectedSuccess %v", nodes.Items[n].Name, ipPort, path, expectedSuccess)
 				Expect(jig.TestHTTPHealthCheckNodePort(publicIP, healthCheckNodePort, path, framework.KubeProxyEndpointLagTimeout, expectedSuccess, threshold)).NotTo(HaveOccurred())
 			}
 			framework.ExpectNoError(framework.DeleteRCAndPods(f.ClientSet, f.InternalClientset, namespace, serviceName))
@@ -1632,7 +1701,9 @@ var _ = SIGDescribe("ESIPP [Slow]", func() {
 		}()
 
 		ingressIP := framework.GetIngressPoint(&svc.Status.LoadBalancer.Ingress[0])
-		path := fmt.Sprintf("%s:%d/clientip", ingressIP, int(svc.Spec.Ports[0].Port))
+		port := strconv.Itoa(int(svc.Spec.Ports[0].Port))
+		ipPort := net.JoinHostPort(ingressIP, port)
+		path := fmt.Sprintf("%s/clientip", ipPort)
 		nodeName := nodes.Items[0].Name
 		podName := "execpod-sourceip"
 
@@ -1644,7 +1715,7 @@ var _ = SIGDescribe("ESIPP [Slow]", func() {
 			err := cs.CoreV1().Pods(namespace).Delete(execPodName, nil)
 			Expect(err).NotTo(HaveOccurred())
 		}()
-		execPod, err := f.ClientSet.Core().Pods(namespace).Get(execPodName, metav1.GetOptions{})
+		execPod, err := f.ClientSet.CoreV1().Pods(namespace).Get(execPodName, metav1.GetOptions{})
 		framework.ExpectNoError(err)
 
 		framework.Logf("Waiting up to %v wget %v", framework.KubeProxyLagTimeout, path)
@@ -1776,16 +1847,17 @@ func execSourceipTest(f *framework.Framework, c clientset.Interface, ns, nodeNam
 	})
 	defer func() {
 		framework.Logf("Cleaning up the exec pod")
-		err := c.Core().Pods(ns).Delete(execPodName, nil)
+		err := c.CoreV1().Pods(ns).Delete(execPodName, nil)
 		Expect(err).NotTo(HaveOccurred())
 	}()
-	execPod, err := f.ClientSet.Core().Pods(ns).Get(execPodName, metav1.GetOptions{})
+	execPod, err := f.ClientSet.CoreV1().Pods(ns).Get(execPodName, metav1.GetOptions{})
 	framework.ExpectNoError(err)
 
 	var stdout string
+	serviceIPPort := net.JoinHostPort(serviceIP, strconv.Itoa(servicePort))
 	timeout := 2 * time.Minute
-	framework.Logf("Waiting up to %v wget %s:%d", timeout, serviceIP, servicePort)
-	cmd := fmt.Sprintf(`wget -T 30 -qO- %s:%d | grep client_address`, serviceIP, servicePort)
+	framework.Logf("Waiting up to %v wget %s", timeout, serviceIPPort)
+	cmd := fmt.Sprintf(`wget -T 30 -qO- %s | grep client_address`, serviceIPPort)
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(2) {
 		stdout, err = framework.RunHostCmd(execPod.Namespace, execPod.Name, cmd)
 		if err != nil {

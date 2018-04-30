@@ -14,11 +14,12 @@ go_test(
         "portfoward_test.go",
         "remotecommand_test.go",
     ],
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
-        "//pkg/api:go_default_library",
-        "//pkg/api/install:go_default_library",
+        "//pkg/api/legacyscheme:go_default_library",
         "//pkg/api/testapi:go_default_library",
+        "//pkg/apis/core:go_default_library",
+        "//pkg/apis/core/install:go_default_library",
         "//pkg/client/clientset_generated/internalclientset:go_default_library",
         "//pkg/client/clientset_generated/internalclientset/fake:go_default_library",
         "//pkg/kubelet/server/portforward:go_default_library",
@@ -45,6 +46,7 @@ go_test(
 go_library(
     name = "go_default_library",
     srcs = ["doc.go"],
+    importpath = "k8s.io/kubernetes/pkg/client/tests",
 )
 
 filegroup(

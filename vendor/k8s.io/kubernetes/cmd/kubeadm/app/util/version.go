@@ -22,6 +22,8 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+
+	netutil "k8s.io/apimachinery/pkg/util/net"
 )
 
 var (
@@ -49,17 +51,22 @@ var (
 //  latest-1    (latest release in 1.x, including alpha/beta)
 //  latest-1.0  (and similarly 1.1, 1.2, 1.3, ...)
 func KubernetesReleaseVersion(version string) (string, error) {
-	if kubeReleaseRegex.MatchString(version) {
-		if strings.HasPrefix(version, "v") {
-			return version, nil
-		}
-		return "v" + version, nil
+	ver := normalizedBuildVersion(version)
+	if len(ver) != 0 {
+		return ver, nil
 	}
 
 	bucketURL, versionLabel, err := splitVersion(version)
 	if err != nil {
 		return "", err
 	}
+
+	// revalidate, if exact build from e.g. CI bucket requested.
+	ver = normalizedBuildVersion(versionLabel)
+	if len(ver) != 0 {
+		return ver, nil
+	}
+
 	if kubeReleaseLabelRegex.MatchString(versionLabel) {
 		url := fmt.Sprintf("%s/%s.txt", bucketURL, versionLabel)
 		body, err := fetchFromURL(url)
@@ -92,6 +99,18 @@ func KubernetesIsCIVersion(version string) bool {
 	return false
 }
 
+// Internal helper: returns normalized build version (with "v" prefix if needed)
+// If input doesn't match known version pattern, returns empty string.
+func normalizedBuildVersion(version string) string {
+	if kubeReleaseRegex.MatchString(version) {
+		if strings.HasPrefix(version, "v") {
+			return version
+		}
+		return "v" + version
+	}
+	return ""
+}
+
 // Internal helper: split version parts,
 // Return base URL and cleaned-up version
 func splitVersion(version string) (string, string, error) {
@@ -114,7 +133,8 @@ func splitVersion(version string) (string, string, error) {
 
 // Internal helper: return content of URL
 func fetchFromURL(url string) (string, error) {
-	resp, err := http.Get(url)
+	client := &http.Client{Transport: netutil.SetOldTransportDefaults(&http.Transport{})}
+	resp, err := client.Get(url)
 	if err != nil {
 		return "", fmt.Errorf("unable to get URL %q: %s", url, err.Error())
 	}

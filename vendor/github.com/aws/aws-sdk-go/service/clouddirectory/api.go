@@ -17,7 +17,7 @@ const opAddFacetToObject = "AddFacetToObject"
 
 // AddFacetToObjectRequest generates a "aws/request.Request" representing the
 // client's request for the AddFacetToObject operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -57,7 +57,8 @@ func (c *CloudDirectory) AddFacetToObjectRequest(input *AddFacetToObjectInput) (
 
 // AddFacetToObject API operation for Amazon CloudDirectory.
 //
-// Adds a new Facet to an object.
+// Adds a new Facet to an object. An object can have more than one facet applied
+// on it.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -96,7 +97,7 @@ func (c *CloudDirectory) AddFacetToObjectRequest(input *AddFacetToObjectInput) (
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -131,7 +132,7 @@ const opApplySchema = "ApplySchema"
 
 // ApplySchemaRequest generates a "aws/request.Request" representing the
 // client's request for the ApplySchema operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -244,7 +245,7 @@ const opAttachObject = "AttachObject"
 
 // AttachObjectRequest generates a "aws/request.Request" representing the
 // client's request for the AttachObject operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -328,7 +329,7 @@ func (c *CloudDirectory) AttachObjectRequest(input *AttachObjectInput) (req *req
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -376,7 +377,7 @@ const opAttachPolicy = "AttachPolicy"
 
 // AttachPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the AttachPolicy operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -456,10 +457,7 @@ func (c *CloudDirectory) AttachPolicyRequest(input *AttachPolicyInput) (req *req
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
-//
-//   * ErrCodeInvalidArnException "InvalidArnException"
-//   Indicates that the provided ARN value is not valid.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -493,7 +491,7 @@ const opAttachToIndex = "AttachToIndex"
 
 // AttachToIndexRequest generates a "aws/request.Request" representing the
 // client's request for the AttachToIndex operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -572,7 +570,12 @@ func (c *CloudDirectory) AttachToIndexRequest(input *AttachToIndexInput) (req *r
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
+//
+//   * ErrCodeInvalidAttachmentException "InvalidAttachmentException"
+//   Indicates that an attempt to attach an object with the same link name or
+//   to apply a schema with the same name has occurred. Rename the link or the
+//   schema and then try again.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -614,7 +617,7 @@ const opAttachTypedLink = "AttachTypedLink"
 
 // AttachTypedLinkRequest generates a "aws/request.Request" representing the
 // client's request for the AttachTypedLink operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -694,7 +697,7 @@ func (c *CloudDirectory) AttachTypedLinkRequest(input *AttachTypedLinkInput) (re
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -738,7 +741,7 @@ const opBatchRead = "BatchRead"
 
 // BatchReadRequest generates a "aws/request.Request" representing the
 // client's request for the BatchRead operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -817,7 +820,7 @@ func (c *CloudDirectory) BatchReadRequest(input *BatchReadInput) (req *request.R
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchRead
 func (c *CloudDirectory) BatchRead(input *BatchReadInput) (*BatchReadOutput, error) {
@@ -845,7 +848,7 @@ const opBatchWrite = "BatchWrite"
 
 // BatchWriteRequest generates a "aws/request.Request" representing the
 // client's request for the BatchWrite operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -925,7 +928,7 @@ func (c *CloudDirectory) BatchWriteRequest(input *BatchWriteInput) (req *request
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeBatchWriteException "BatchWriteException"
 //   A BatchWrite exception has occurred.
@@ -956,7 +959,7 @@ const opCreateDirectory = "CreateDirectory"
 
 // CreateDirectoryRequest generates a "aws/request.Request" representing the
 // client's request for the CreateDirectory operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1039,9 +1042,6 @@ func (c *CloudDirectory) CreateDirectoryRequest(input *CreateDirectoryInput) (re
 //   Indicates that a Directory could not be created due to a naming conflict.
 //   Choose a different name and try again.
 //
-//   * ErrCodeInvalidArnException "InvalidArnException"
-//   Indicates that the provided ARN value is not valid.
-//
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
 //
@@ -1071,7 +1071,7 @@ const opCreateFacet = "CreateFacet"
 
 // CreateFacetRequest generates a "aws/request.Request" representing the
 // client's request for the CreateFacet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1189,7 +1189,7 @@ const opCreateIndex = "CreateIndex"
 
 // CreateIndexRequest generates a "aws/request.Request" representing the
 // client's request for the CreateIndex operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1269,7 +1269,7 @@ func (c *CloudDirectory) CreateIndexRequest(input *CreateIndexInput) (req *reque
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -1311,7 +1311,7 @@ const opCreateObject = "CreateObject"
 
 // CreateObjectRequest generates a "aws/request.Request" representing the
 // client's request for the CreateObject operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1393,10 +1393,7 @@ func (c *CloudDirectory) CreateObjectRequest(input *CreateObjectInput) (req *req
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
-//
-//   * ErrCodeInvalidArnException "InvalidArnException"
-//   Indicates that the provided ARN value is not valid.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -1438,7 +1435,7 @@ const opCreateSchema = "CreateSchema"
 
 // CreateSchemaRequest generates a "aws/request.Request" representing the
 // client's request for the CreateSchema operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1561,7 +1558,7 @@ const opCreateTypedLinkFacet = "CreateTypedLinkFacet"
 
 // CreateTypedLinkFacetRequest generates a "aws/request.Request" representing the
 // client's request for the CreateTypedLinkFacet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1678,7 +1675,7 @@ const opDeleteDirectory = "DeleteDirectory"
 
 // DeleteDirectoryRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteDirectory operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1793,7 +1790,7 @@ const opDeleteFacet = "DeleteFacet"
 
 // DeleteFacetRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteFacet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1908,7 +1905,7 @@ const opDeleteObject = "DeleteObject"
 
 // DeleteObjectRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteObject operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1988,7 +1985,7 @@ func (c *CloudDirectory) DeleteObjectRequest(input *DeleteObjectInput) (req *req
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -2023,7 +2020,7 @@ const opDeleteSchema = "DeleteSchema"
 
 // DeleteSchemaRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteSchema operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2135,7 +2132,7 @@ const opDeleteTypedLinkFacet = "DeleteTypedLinkFacet"
 
 // DeleteTypedLinkFacetRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteTypedLinkFacet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2245,7 +2242,7 @@ const opDetachFromIndex = "DetachFromIndex"
 
 // DetachFromIndexRequest generates a "aws/request.Request" representing the
 // client's request for the DetachFromIndex operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2324,7 +2321,7 @@ func (c *CloudDirectory) DetachFromIndexRequest(input *DetachFromIndexInput) (re
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -2361,7 +2358,7 @@ const opDetachObject = "DetachObject"
 
 // DetachObjectRequest generates a "aws/request.Request" representing the
 // client's request for the DetachObject operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2441,10 +2438,14 @@ func (c *CloudDirectory) DetachObjectRequest(input *DetachObjectInput) (req *req
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
+//
+//   * ErrCodeNotNodeException "NotNodeException"
+//   Occurs when any invalid operations are performed on an object that is not
+//   a node, such as calling ListObjectChildren for a leaf node object.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DetachObject
 func (c *CloudDirectory) DetachObject(input *DetachObjectInput) (*DetachObjectOutput, error) {
@@ -2472,7 +2473,7 @@ const opDetachPolicy = "DetachPolicy"
 
 // DetachPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the DetachPolicy operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2551,10 +2552,7 @@ func (c *CloudDirectory) DetachPolicyRequest(input *DetachPolicyInput) (req *req
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
-//
-//   * ErrCodeInvalidArnException "InvalidArnException"
-//   Indicates that the provided ARN value is not valid.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -2588,7 +2586,7 @@ const opDetachTypedLink = "DetachTypedLink"
 
 // DetachTypedLinkRequest generates a "aws/request.Request" representing the
 // client's request for the DetachTypedLink operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2670,7 +2668,7 @@ func (c *CloudDirectory) DetachTypedLinkRequest(input *DetachTypedLinkInput) (re
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -2705,7 +2703,7 @@ const opDisableDirectory = "DisableDirectory"
 
 // DisableDirectoryRequest generates a "aws/request.Request" representing the
 // client's request for the DisableDirectory operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2818,7 +2816,7 @@ const opEnableDirectory = "EnableDirectory"
 
 // EnableDirectoryRequest generates a "aws/request.Request" representing the
 // client's request for the EnableDirectory operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2930,7 +2928,7 @@ const opGetAppliedSchemaVersion = "GetAppliedSchemaVersion"
 
 // GetAppliedSchemaVersionRequest generates a "aws/request.Request" representing the
 // client's request for the GetAppliedSchemaVersion operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3038,7 +3036,7 @@ const opGetDirectory = "GetDirectory"
 
 // GetDirectoryRequest generates a "aws/request.Request" representing the
 // client's request for the GetDirectory operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3142,7 +3140,7 @@ const opGetFacet = "GetFacet"
 
 // GetFacetRequest generates a "aws/request.Request" representing the
 // client's request for the GetFacet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3250,11 +3248,125 @@ func (c *CloudDirectory) GetFacetWithContext(ctx aws.Context, input *GetFacetInp
 	return out, req.Send()
 }
 
+const opGetObjectAttributes = "GetObjectAttributes"
+
+// GetObjectAttributesRequest generates a "aws/request.Request" representing the
+// client's request for the GetObjectAttributes operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfuly.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See GetObjectAttributes for more information on using the GetObjectAttributes
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the GetObjectAttributesRequest method.
+//    req, resp := client.GetObjectAttributesRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetObjectAttributes
+func (c *CloudDirectory) GetObjectAttributesRequest(input *GetObjectAttributesInput) (req *request.Request, output *GetObjectAttributesOutput) {
+	op := &request.Operation{
+		Name:       opGetObjectAttributes,
+		HTTPMethod: "POST",
+		HTTPPath:   "/amazonclouddirectory/2017-01-11/object/attributes/get",
+	}
+
+	if input == nil {
+		input = &GetObjectAttributesInput{}
+	}
+
+	output = &GetObjectAttributesOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// GetObjectAttributes API operation for Amazon CloudDirectory.
+//
+// Retrieves attributes within a facet that are associated with an object.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon CloudDirectory's
+// API operation GetObjectAttributes for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeInternalServiceException "InternalServiceException"
+//   Indicates a problem that must be resolved by Amazon Web Services. This might
+//   be a transient error in which case you can retry your request until it succeeds.
+//   Otherwise, go to the AWS Service Health Dashboard (http://status.aws.amazon.com/)
+//   site to see if there are any operational issues with the service.
+//
+//   * ErrCodeInvalidArnException "InvalidArnException"
+//   Indicates that the provided ARN value is not valid.
+//
+//   * ErrCodeRetryableConflictException "RetryableConflictException"
+//   Occurs when a conflict with a previous successful write is detected. For
+//   example, if a write operation occurs on an object and then an attempt is
+//   made to read the object using “SERIALIZABLE” consistency, this exception
+//   may result. This generally occurs when the previous write did not have time
+//   to propagate to the host serving the current request. A retry (with appropriate
+//   backoff logic) is the recommended response to this exception.
+//
+//   * ErrCodeValidationException "ValidationException"
+//   Indicates that your request is malformed in some manner. See the exception
+//   message.
+//
+//   * ErrCodeLimitExceededException "LimitExceededException"
+//   Indicates that limits are exceeded. See Limits (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/limits.html)
+//   for more information.
+//
+//   * ErrCodeAccessDeniedException "AccessDeniedException"
+//   Access denied. Check your permissions.
+//
+//   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
+//   Operations are only permitted on enabled directories.
+//
+//   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
+//   The specified resource could not be found.
+//
+//   * ErrCodeFacetValidationException "FacetValidationException"
+//   The Facet that you provided was not well formed or could not be validated
+//   with the schema.
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetObjectAttributes
+func (c *CloudDirectory) GetObjectAttributes(input *GetObjectAttributesInput) (*GetObjectAttributesOutput, error) {
+	req, out := c.GetObjectAttributesRequest(input)
+	return out, req.Send()
+}
+
+// GetObjectAttributesWithContext is the same as GetObjectAttributes with the addition of
+// the ability to pass a context and additional request options.
+//
+// See GetObjectAttributes for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *CloudDirectory) GetObjectAttributesWithContext(ctx aws.Context, input *GetObjectAttributesInput, opts ...request.Option) (*GetObjectAttributesOutput, error) {
+	req, out := c.GetObjectAttributesRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opGetObjectInformation = "GetObjectInformation"
 
 // GetObjectInformationRequest generates a "aws/request.Request" representing the
 // client's request for the GetObjectInformation operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3333,7 +3445,7 @@ func (c *CloudDirectory) GetObjectInformationRequest(input *GetObjectInformation
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -3364,7 +3476,7 @@ const opGetSchemaAsJson = "GetSchemaAsJson"
 
 // GetSchemaAsJsonRequest generates a "aws/request.Request" representing the
 // client's request for the GetSchemaAsJson operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3476,7 +3588,7 @@ const opGetTypedLinkFacetInformation = "GetTypedLinkFacetInformation"
 
 // GetTypedLinkFacetInformationRequest generates a "aws/request.Request" representing the
 // client's request for the GetTypedLinkFacetInformation operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3590,7 +3702,7 @@ const opListAppliedSchemaArns = "ListAppliedSchemaArns"
 
 // ListAppliedSchemaArnsRequest generates a "aws/request.Request" representing the
 // client's request for the ListAppliedSchemaArns operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3757,7 +3869,7 @@ const opListAttachedIndices = "ListAttachedIndices"
 
 // ListAttachedIndicesRequest generates a "aws/request.Request" representing the
 // client's request for the ListAttachedIndices operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3842,7 +3954,7 @@ func (c *CloudDirectory) ListAttachedIndicesRequest(input *ListAttachedIndicesIn
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -3923,7 +4035,7 @@ const opListDevelopmentSchemaArns = "ListDevelopmentSchemaArns"
 
 // ListDevelopmentSchemaArnsRequest generates a "aws/request.Request" representing the
 // client's request for the ListDevelopmentSchemaArns operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4089,7 +4201,7 @@ const opListDirectories = "ListDirectories"
 
 // ListDirectoriesRequest generates a "aws/request.Request" representing the
 // client's request for the ListDirectories operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4252,7 +4364,7 @@ const opListFacetAttributes = "ListFacetAttributes"
 
 // ListFacetAttributesRequest generates a "aws/request.Request" representing the
 // client's request for the ListFacetAttributes operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4421,7 +4533,7 @@ const opListFacetNames = "ListFacetNames"
 
 // ListFacetNamesRequest generates a "aws/request.Request" representing the
 // client's request for the ListFacetNames operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4587,7 +4699,7 @@ const opListIncomingTypedLinks = "ListIncomingTypedLinks"
 
 // ListIncomingTypedLinksRequest generates a "aws/request.Request" representing the
 // client's request for the ListIncomingTypedLinks operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4668,7 +4780,7 @@ func (c *CloudDirectory) ListIncomingTypedLinksRequest(input *ListIncomingTypedL
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -4706,7 +4818,7 @@ const opListIndex = "ListIndex"
 
 // ListIndexRequest generates a "aws/request.Request" representing the
 // client's request for the ListIndex operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4752,7 +4864,7 @@ func (c *CloudDirectory) ListIndexRequest(input *ListIndexInput) (req *request.R
 
 // ListIndex API operation for Amazon CloudDirectory.
 //
-// Lists objects and indexed values attached to the index.
+// Lists objects attached to the specified index.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -4779,6 +4891,10 @@ func (c *CloudDirectory) ListIndexRequest(input *ListIndexInput) (req *request.R
 //   to propagate to the host serving the current request. A retry (with appropriate
 //   backoff logic) is the recommended response to this exception.
 //
+//   * ErrCodeFacetValidationException "FacetValidationException"
+//   The Facet that you provided was not well formed or could not be validated
+//   with the schema.
+//
 //   * ErrCodeValidationException "ValidationException"
 //   Indicates that your request is malformed in some manner. See the exception
 //   message.
@@ -4791,7 +4907,10 @@ func (c *CloudDirectory) ListIndexRequest(input *ListIndexInput) (req *request.R
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
+//
+//   * ErrCodeInvalidNextTokenException "InvalidNextTokenException"
+//   Indicates that the NextToken value is not valid.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -4875,7 +4994,7 @@ const opListObjectAttributes = "ListObjectAttributes"
 
 // ListObjectAttributesRequest generates a "aws/request.Request" representing the
 // client's request for the ListObjectAttributes operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -4960,10 +5079,7 @@ func (c *CloudDirectory) ListObjectAttributesRequest(input *ListObjectAttributes
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
-//
-//   * ErrCodeInvalidArnException "InvalidArnException"
-//   Indicates that the provided ARN value is not valid.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -5051,7 +5167,7 @@ const opListObjectChildren = "ListObjectChildren"
 
 // ListObjectChildrenRequest generates a "aws/request.Request" representing the
 // client's request for the ListObjectChildren operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5137,10 +5253,7 @@ func (c *CloudDirectory) ListObjectChildrenRequest(input *ListObjectChildrenInpu
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
-//
-//   * ErrCodeInvalidArnException "InvalidArnException"
-//   Indicates that the provided ARN value is not valid.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -5228,7 +5341,7 @@ const opListObjectParentPaths = "ListObjectParentPaths"
 
 // ListObjectParentPathsRequest generates a "aws/request.Request" representing the
 // client's request for the ListObjectParentPaths operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5323,7 +5436,7 @@ func (c *CloudDirectory) ListObjectParentPathsRequest(input *ListObjectParentPat
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeInvalidNextTokenException "InvalidNextTokenException"
 //   Indicates that the NextToken value is not valid.
@@ -5407,7 +5520,7 @@ const opListObjectParents = "ListObjectParents"
 
 // ListObjectParentsRequest generates a "aws/request.Request" representing the
 // client's request for the ListObjectParents operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5493,10 +5606,7 @@ func (c *CloudDirectory) ListObjectParentsRequest(input *ListObjectParentsInput)
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
-//
-//   * ErrCodeInvalidArnException "InvalidArnException"
-//   Indicates that the provided ARN value is not valid.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -5583,7 +5693,7 @@ const opListObjectPolicies = "ListObjectPolicies"
 
 // ListObjectPoliciesRequest generates a "aws/request.Request" representing the
 // client's request for the ListObjectPolicies operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5668,7 +5778,7 @@ func (c *CloudDirectory) ListObjectPoliciesRequest(input *ListObjectPoliciesInpu
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -5752,7 +5862,7 @@ const opListOutgoingTypedLinks = "ListOutgoingTypedLinks"
 
 // ListOutgoingTypedLinksRequest generates a "aws/request.Request" representing the
 // client's request for the ListOutgoingTypedLinks operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5833,7 +5943,7 @@ func (c *CloudDirectory) ListOutgoingTypedLinksRequest(input *ListOutgoingTypedL
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -5871,7 +5981,7 @@ const opListPolicyAttachments = "ListPolicyAttachments"
 
 // ListPolicyAttachmentsRequest generates a "aws/request.Request" representing the
 // client's request for the ListPolicyAttachments operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -5956,10 +6066,7 @@ func (c *CloudDirectory) ListPolicyAttachmentsRequest(input *ListPolicyAttachmen
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
-//
-//   * ErrCodeInvalidArnException "InvalidArnException"
-//   Indicates that the provided ARN value is not valid.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeInvalidNextTokenException "InvalidNextTokenException"
 //   Indicates that the NextToken value is not valid.
@@ -6046,7 +6153,7 @@ const opListPublishedSchemaArns = "ListPublishedSchemaArns"
 
 // ListPublishedSchemaArnsRequest generates a "aws/request.Request" representing the
 // client's request for the ListPublishedSchemaArns operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -6092,8 +6199,9 @@ func (c *CloudDirectory) ListPublishedSchemaArnsRequest(input *ListPublishedSche
 
 // ListPublishedSchemaArns API operation for Amazon CloudDirectory.
 //
-// Lists schema major versions for a published schema. If SchemaArn is provided,
-// lists the minor version.
+// Lists the major version families of each published schema. If a major version
+// ARN is provided as SchemaArn, the minor version revisions in that family
+// are listed instead.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -6213,7 +6321,7 @@ const opListTagsForResource = "ListTagsForResource"
 
 // ListTagsForResourceRequest generates a "aws/request.Request" representing the
 // client's request for the ListTagsForResource operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -6383,7 +6491,7 @@ const opListTypedLinkFacetAttributes = "ListTypedLinkFacetAttributes"
 
 // ListTypedLinkFacetAttributesRequest generates a "aws/request.Request" representing the
 // client's request for the ListTypedLinkFacetAttributes operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -6553,7 +6661,7 @@ const opListTypedLinkFacetNames = "ListTypedLinkFacetNames"
 
 // ListTypedLinkFacetNamesRequest generates a "aws/request.Request" representing the
 // client's request for the ListTypedLinkFacetNames operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -6720,7 +6828,7 @@ const opLookupPolicy = "LookupPolicy"
 
 // LookupPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the LookupPolicy operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -6811,10 +6919,7 @@ func (c *CloudDirectory) LookupPolicyRequest(input *LookupPolicyInput) (req *req
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
-//
-//   * ErrCodeInvalidArnException "InvalidArnException"
-//   Indicates that the provided ARN value is not valid.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeInvalidNextTokenException "InvalidNextTokenException"
 //   Indicates that the NextToken value is not valid.
@@ -6898,7 +7003,7 @@ const opPublishSchema = "PublishSchema"
 
 // PublishSchemaRequest generates a "aws/request.Request" representing the
 // client's request for the PublishSchema operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -7009,7 +7114,7 @@ const opPutSchemaFromJson = "PutSchemaFromJson"
 
 // PutSchemaFromJsonRequest generates a "aws/request.Request" representing the
 // client's request for the PutSchemaFromJson operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -7121,7 +7226,7 @@ const opRemoveFacetFromObject = "RemoveFacetFromObject"
 
 // RemoveFacetFromObjectRequest generates a "aws/request.Request" representing the
 // client's request for the RemoveFacetFromObject operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -7200,7 +7305,7 @@ func (c *CloudDirectory) RemoveFacetFromObjectRequest(input *RemoveFacetFromObje
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -7235,7 +7340,7 @@ const opTagResource = "TagResource"
 
 // TagResourceRequest generates a "aws/request.Request" representing the
 // client's request for the TagResource operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -7347,7 +7452,7 @@ const opUntagResource = "UntagResource"
 
 // UntagResourceRequest generates a "aws/request.Request" representing the
 // client's request for the UntagResource operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -7459,7 +7564,7 @@ const opUpdateFacet = "UpdateFacet"
 
 // UpdateFacetRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateFacet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -7581,7 +7686,7 @@ const opUpdateObjectAttributes = "UpdateObjectAttributes"
 
 // UpdateObjectAttributesRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateObjectAttributes operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -7660,7 +7765,7 @@ func (c *CloudDirectory) UpdateObjectAttributesRequest(input *UpdateObjectAttrib
 //   Access denied. Check your permissions.
 //
 //   * ErrCodeDirectoryNotEnabledException "DirectoryNotEnabledException"
-//   An operation can only operate on a directory that is not enabled.
+//   Operations are only permitted on enabled directories.
 //
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource could not be found.
@@ -7695,7 +7800,7 @@ const opUpdateSchema = "UpdateSchema"
 
 // UpdateSchemaRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateSchema operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -7803,7 +7908,7 @@ const opUpdateTypedLinkFacet = "UpdateTypedLinkFacet"
 
 // UpdateTypedLinkFacetRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateTypedLinkFacet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -7923,7 +8028,7 @@ const opUpgradeAppliedSchema = "UpgradeAppliedSchema"
 
 // UpgradeAppliedSchemaRequest generates a "aws/request.Request" representing the
 // client's request for the UpgradeAppliedSchema operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -8041,7 +8146,7 @@ const opUpgradePublishedSchema = "UpgradePublishedSchema"
 
 // UpgradePublishedSchemaRequest generates a "aws/request.Request" representing the
 // client's request for the UpgradePublishedSchema operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -8155,7 +8260,6 @@ func (c *CloudDirectory) UpgradePublishedSchemaWithContext(ctx aws.Context, inpu
 	return out, req.Send()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AddFacetToObjectRequest
 type AddFacetToObjectInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8248,7 +8352,6 @@ func (s *AddFacetToObjectInput) SetSchemaFacet(v *SchemaFacet) *AddFacetToObject
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AddFacetToObjectResponse
 type AddFacetToObjectOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -8263,7 +8366,6 @@ func (s AddFacetToObjectOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ApplySchemaRequest
 type ApplySchemaInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8318,7 +8420,6 @@ func (s *ApplySchemaInput) SetPublishedSchemaArn(v string) *ApplySchemaInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ApplySchemaResponse
 type ApplySchemaOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -8354,7 +8455,6 @@ func (s *ApplySchemaOutput) SetDirectoryArn(v string) *ApplySchemaOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttachObjectRequest
 type AttachObjectInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8439,7 +8539,6 @@ func (s *AttachObjectInput) SetParentReference(v *ObjectReference) *AttachObject
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttachObjectResponse
 type AttachObjectOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -8463,13 +8562,14 @@ func (s *AttachObjectOutput) SetAttachedObjectIdentifier(v string) *AttachObject
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttachPolicyRequest
 type AttachPolicyInput struct {
 	_ struct{} `type:"structure"`
 
 	// The Amazon Resource Name (ARN) that is associated with the Directory where
 	// both objects reside. For more information, see arns.
-	DirectoryArn *string `location:"header" locationName:"x-amz-data-partition" type:"string"`
+	//
+	// DirectoryArn is a required field
+	DirectoryArn *string `location:"header" locationName:"x-amz-data-partition" type:"string" required:"true"`
 
 	// The reference that identifies the object to which the policy will be attached.
 	//
@@ -8495,6 +8595,9 @@ func (s AttachPolicyInput) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *AttachPolicyInput) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "AttachPolicyInput"}
+	if s.DirectoryArn == nil {
+		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
 	if s.ObjectReference == nil {
 		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
 	}
@@ -8526,7 +8629,6 @@ func (s *AttachPolicyInput) SetPolicyReference(v *ObjectReference) *AttachPolicy
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttachPolicyResponse
 type AttachPolicyOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -8541,7 +8643,6 @@ func (s AttachPolicyOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttachToIndexRequest
 type AttachToIndexInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8609,7 +8710,6 @@ func (s *AttachToIndexInput) SetTargetReference(v *ObjectReference) *AttachToInd
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttachToIndexResponse
 type AttachToIndexOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -8633,7 +8733,6 @@ func (s *AttachToIndexOutput) SetAttachedObjectIdentifier(v string) *AttachToInd
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttachTypedLinkRequest
 type AttachTypedLinkInput struct {
 	_ struct{} `type:"structure"`
 
@@ -8744,7 +8843,6 @@ func (s *AttachTypedLinkInput) SetTypedLinkFacet(v *TypedLinkSchemaAndFacetName)
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttachTypedLinkResponse
 type AttachTypedLinkOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -8769,7 +8867,6 @@ func (s *AttachTypedLinkOutput) SetTypedLinkSpecifier(v *TypedLinkSpecifier) *At
 }
 
 // A unique identifier for an attribute.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttributeKey
 type AttributeKey struct {
 	_ struct{} `type:"structure"`
 
@@ -8844,7 +8941,6 @@ func (s *AttributeKey) SetSchemaArn(v string) *AttributeKey {
 }
 
 // The combination of an attribute key and an attribute value.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttributeKeyAndValue
 type AttributeKeyAndValue struct {
 	_ struct{} `type:"structure"`
 
@@ -8903,7 +8999,6 @@ func (s *AttributeKeyAndValue) SetValue(v *TypedAttributeValue) *AttributeKeyAnd
 }
 
 // Identifies the attribute name and value for a typed link.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/AttributeNameAndValue
 type AttributeNameAndValue struct {
 	_ struct{} `type:"structure"`
 
@@ -8960,7 +9055,6 @@ func (s *AttributeNameAndValue) SetValue(v *TypedAttributeValue) *AttributeNameA
 }
 
 // Represents the output of a batch add facet to object operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchAddFacetToObject
 type BatchAddFacetToObject struct {
 	_ struct{} `type:"structure"`
 
@@ -9043,7 +9137,6 @@ func (s *BatchAddFacetToObject) SetSchemaFacet(v *SchemaFacet) *BatchAddFacetToO
 }
 
 // The result of a batch add facet to object operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchAddFacetToObjectResponse
 type BatchAddFacetToObjectResponse struct {
 	_ struct{} `type:"structure"`
 }
@@ -9059,7 +9152,6 @@ func (s BatchAddFacetToObjectResponse) GoString() string {
 }
 
 // Represents the output of an AttachObject operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchAttachObject
 type BatchAttachObject struct {
 	_ struct{} `type:"structure"`
 
@@ -9130,7 +9222,6 @@ func (s *BatchAttachObject) SetParentReference(v *ObjectReference) *BatchAttachO
 }
 
 // Represents the output batch AttachObject response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchAttachObjectResponse
 type BatchAttachObjectResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -9156,7 +9247,6 @@ func (s *BatchAttachObjectResponse) SetAttachedObjectIdentifier(v string) *Batch
 
 // Attaches a policy object to a regular object inside a BatchRead operation. For
 // more information, see AttachPolicy and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchAttachPolicy
 type BatchAttachPolicy struct {
 	_ struct{} `type:"structure"`
 
@@ -9210,7 +9300,6 @@ func (s *BatchAttachPolicy) SetPolicyReference(v *ObjectReference) *BatchAttachP
 }
 
 // Represents the output of an AttachPolicy response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchAttachPolicyResponse
 type BatchAttachPolicyResponse struct {
 	_ struct{} `type:"structure"`
 }
@@ -9227,7 +9316,6 @@ func (s BatchAttachPolicyResponse) GoString() string {
 
 // Attaches the specified object to the specified index inside a BatchRead operation.
 // For more information, see AttachToIndex and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchAttachToIndex
 type BatchAttachToIndex struct {
 	_ struct{} `type:"structure"`
 
@@ -9281,7 +9369,6 @@ func (s *BatchAttachToIndex) SetTargetReference(v *ObjectReference) *BatchAttach
 }
 
 // Represents the output of a AttachToIndex response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchAttachToIndexResponse
 type BatchAttachToIndexResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -9307,7 +9394,6 @@ func (s *BatchAttachToIndexResponse) SetAttachedObjectIdentifier(v string) *Batc
 
 // Attaches a typed link to a specified source and target object inside a BatchRead
 // operation. For more information, see AttachTypedLink and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchAttachTypedLink
 type BatchAttachTypedLink struct {
 	_ struct{} `type:"structure"`
 
@@ -9404,7 +9490,6 @@ func (s *BatchAttachTypedLink) SetTypedLinkFacet(v *TypedLinkSchemaAndFacetName)
 }
 
 // Represents the output of a AttachTypedLink response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchAttachTypedLinkResponse
 type BatchAttachTypedLinkResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -9430,7 +9515,6 @@ func (s *BatchAttachTypedLinkResponse) SetTypedLinkSpecifier(v *TypedLinkSpecifi
 
 // Creates an index object inside of a BatchRead operation. For more information,
 // see CreateIndex and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchCreateIndex
 type BatchCreateIndex struct {
 	_ struct{} `type:"structure"`
 
@@ -9527,7 +9611,6 @@ func (s *BatchCreateIndex) SetParentReference(v *ObjectReference) *BatchCreateIn
 }
 
 // Represents the output of a CreateIndex response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchCreateIndexResponse
 type BatchCreateIndexResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -9552,20 +9635,15 @@ func (s *BatchCreateIndexResponse) SetObjectIdentifier(v string) *BatchCreateInd
 }
 
 // Represents the output of a CreateObject operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchCreateObject
 type BatchCreateObject struct {
 	_ struct{} `type:"structure"`
 
 	// The batch reference name. See Batches (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/cd_advanced.html#batches)
 	// for more information.
-	//
-	// BatchReferenceName is a required field
-	BatchReferenceName *string `type:"string" required:"true"`
+	BatchReferenceName *string `type:"string"`
 
 	// The name of the link.
-	//
-	// LinkName is a required field
-	LinkName *string `min:"1" type:"string" required:"true"`
+	LinkName *string `min:"1" type:"string"`
 
 	// An attribute map, which contains an attribute ARN as the key and attribute
 	// value as the map value.
@@ -9574,9 +9652,7 @@ type BatchCreateObject struct {
 	ObjectAttributeList []*AttributeKeyAndValue `type:"list" required:"true"`
 
 	// If specified, the parent reference to which this object will be attached.
-	//
-	// ParentReference is a required field
-	ParentReference *ObjectReference `type:"structure" required:"true"`
+	ParentReference *ObjectReference `type:"structure"`
 
 	// A list of FacetArns that will be associated with the object. For more information,
 	// see arns.
@@ -9598,20 +9674,11 @@ func (s BatchCreateObject) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *BatchCreateObject) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "BatchCreateObject"}
-	if s.BatchReferenceName == nil {
-		invalidParams.Add(request.NewErrParamRequired("BatchReferenceName"))
-	}
-	if s.LinkName == nil {
-		invalidParams.Add(request.NewErrParamRequired("LinkName"))
-	}
 	if s.LinkName != nil && len(*s.LinkName) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("LinkName", 1))
 	}
 	if s.ObjectAttributeList == nil {
 		invalidParams.Add(request.NewErrParamRequired("ObjectAttributeList"))
-	}
-	if s.ParentReference == nil {
-		invalidParams.Add(request.NewErrParamRequired("ParentReference"))
 	}
 	if s.SchemaFacet == nil {
 		invalidParams.Add(request.NewErrParamRequired("SchemaFacet"))
@@ -9674,7 +9741,6 @@ func (s *BatchCreateObject) SetSchemaFacet(v []*SchemaFacet) *BatchCreateObject 
 }
 
 // Represents the output of a CreateObject response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchCreateObjectResponse
 type BatchCreateObjectResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -9699,7 +9765,6 @@ func (s *BatchCreateObjectResponse) SetObjectIdentifier(v string) *BatchCreateOb
 }
 
 // Represents the output of a DeleteObject operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchDeleteObject
 type BatchDeleteObject struct {
 	_ struct{} `type:"structure"`
 
@@ -9739,7 +9804,6 @@ func (s *BatchDeleteObject) SetObjectReference(v *ObjectReference) *BatchDeleteO
 }
 
 // Represents the output of a DeleteObject response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchDeleteObjectResponse
 type BatchDeleteObjectResponse struct {
 	_ struct{} `type:"structure"`
 }
@@ -9756,7 +9820,6 @@ func (s BatchDeleteObjectResponse) GoString() string {
 
 // Detaches the specified object from the specified index inside a BatchRead
 // operation. For more information, see DetachFromIndex and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchDetachFromIndex
 type BatchDetachFromIndex struct {
 	_ struct{} `type:"structure"`
 
@@ -9810,7 +9873,6 @@ func (s *BatchDetachFromIndex) SetTargetReference(v *ObjectReference) *BatchDeta
 }
 
 // Represents the output of a DetachFromIndex response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchDetachFromIndexResponse
 type BatchDetachFromIndexResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -9835,15 +9897,12 @@ func (s *BatchDetachFromIndexResponse) SetDetachedObjectIdentifier(v string) *Ba
 }
 
 // Represents the output of a DetachObject operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchDetachObject
 type BatchDetachObject struct {
 	_ struct{} `type:"structure"`
 
 	// The batch reference name. See Batches (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/cd_advanced.html#batches)
 	// for more information.
-	//
-	// BatchReferenceName is a required field
-	BatchReferenceName *string `type:"string" required:"true"`
+	BatchReferenceName *string `type:"string"`
 
 	// The name of the link.
 	//
@@ -9869,9 +9928,6 @@ func (s BatchDetachObject) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *BatchDetachObject) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "BatchDetachObject"}
-	if s.BatchReferenceName == nil {
-		invalidParams.Add(request.NewErrParamRequired("BatchReferenceName"))
-	}
 	if s.LinkName == nil {
 		invalidParams.Add(request.NewErrParamRequired("LinkName"))
 	}
@@ -9907,7 +9963,6 @@ func (s *BatchDetachObject) SetParentReference(v *ObjectReference) *BatchDetachO
 }
 
 // Represents the output of a DetachObject response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchDetachObjectResponse
 type BatchDetachObjectResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -9933,7 +9988,6 @@ func (s *BatchDetachObjectResponse) SetDetachedObjectIdentifier(v string) *Batch
 
 // Detaches the specified policy from the specified directory inside a BatchWrite
 // operation. For more information, see DetachPolicy and BatchWriteRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchDetachPolicy
 type BatchDetachPolicy struct {
 	_ struct{} `type:"structure"`
 
@@ -9987,7 +10041,6 @@ func (s *BatchDetachPolicy) SetPolicyReference(v *ObjectReference) *BatchDetachP
 }
 
 // Represents the output of a DetachPolicy response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchDetachPolicyResponse
 type BatchDetachPolicyResponse struct {
 	_ struct{} `type:"structure"`
 }
@@ -10004,7 +10057,6 @@ func (s BatchDetachPolicyResponse) GoString() string {
 
 // Detaches a typed link from a specified source and target object inside a
 // BatchRead operation. For more information, see DetachTypedLink and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchDetachTypedLink
 type BatchDetachTypedLink struct {
 	_ struct{} `type:"structure"`
 
@@ -10049,7 +10101,6 @@ func (s *BatchDetachTypedLink) SetTypedLinkSpecifier(v *TypedLinkSpecifier) *Bat
 }
 
 // Represents the output of a DetachTypedLink response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchDetachTypedLinkResponse
 type BatchDetachTypedLinkResponse struct {
 	_ struct{} `type:"structure"`
 }
@@ -10064,9 +10115,107 @@ func (s BatchDetachTypedLinkResponse) GoString() string {
 	return s.String()
 }
 
+// Retrieves attributes within a facet that are associated with an object inside
+// an BatchRead operation. For more information, see GetObjectAttributes and
+// BatchReadRequest$Operations.
+type BatchGetObjectAttributes struct {
+	_ struct{} `type:"structure"`
+
+	// List of attribute names whose values will be retrieved.
+	//
+	// AttributeNames is a required field
+	AttributeNames []*string `type:"list" required:"true"`
+
+	// Reference that identifies the object whose attributes will be retrieved.
+	//
+	// ObjectReference is a required field
+	ObjectReference *ObjectReference `type:"structure" required:"true"`
+
+	// Identifier for the facet whose attributes will be retrieved. See SchemaFacet
+	// for details.
+	//
+	// SchemaFacet is a required field
+	SchemaFacet *SchemaFacet `type:"structure" required:"true"`
+}
+
+// String returns the string representation
+func (s BatchGetObjectAttributes) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s BatchGetObjectAttributes) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *BatchGetObjectAttributes) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "BatchGetObjectAttributes"}
+	if s.AttributeNames == nil {
+		invalidParams.Add(request.NewErrParamRequired("AttributeNames"))
+	}
+	if s.ObjectReference == nil {
+		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
+	}
+	if s.SchemaFacet == nil {
+		invalidParams.Add(request.NewErrParamRequired("SchemaFacet"))
+	}
+	if s.SchemaFacet != nil {
+		if err := s.SchemaFacet.Validate(); err != nil {
+			invalidParams.AddNested("SchemaFacet", err.(request.ErrInvalidParams))
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAttributeNames sets the AttributeNames field's value.
+func (s *BatchGetObjectAttributes) SetAttributeNames(v []*string) *BatchGetObjectAttributes {
+	s.AttributeNames = v
+	return s
+}
+
+// SetObjectReference sets the ObjectReference field's value.
+func (s *BatchGetObjectAttributes) SetObjectReference(v *ObjectReference) *BatchGetObjectAttributes {
+	s.ObjectReference = v
+	return s
+}
+
+// SetSchemaFacet sets the SchemaFacet field's value.
+func (s *BatchGetObjectAttributes) SetSchemaFacet(v *SchemaFacet) *BatchGetObjectAttributes {
+	s.SchemaFacet = v
+	return s
+}
+
+// Represents the output of a GetObjectAttributes response operation.
+type BatchGetObjectAttributesResponse struct {
+	_ struct{} `type:"structure"`
+
+	// The attribute values that are associated with an object.
+	Attributes []*AttributeKeyAndValue `type:"list"`
+}
+
+// String returns the string representation
+func (s BatchGetObjectAttributesResponse) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s BatchGetObjectAttributesResponse) GoString() string {
+	return s.String()
+}
+
+// SetAttributes sets the Attributes field's value.
+func (s *BatchGetObjectAttributesResponse) SetAttributes(v []*AttributeKeyAndValue) *BatchGetObjectAttributesResponse {
+	s.Attributes = v
+	return s
+}
+
 // Retrieves metadata about an object inside a BatchRead operation. For more
 // information, see GetObjectInformation and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchGetObjectInformation
 type BatchGetObjectInformation struct {
 	_ struct{} `type:"structure"`
 
@@ -10106,7 +10255,6 @@ func (s *BatchGetObjectInformation) SetObjectReference(v *ObjectReference) *Batc
 }
 
 // Represents the output of a GetObjectInformation response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchGetObjectInformationResponse
 type BatchGetObjectInformationResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -10141,7 +10289,6 @@ func (s *BatchGetObjectInformationResponse) SetSchemaFacets(v []*SchemaFacet) *B
 
 // Lists indices attached to an object inside a BatchRead operation. For more
 // information, see ListAttachedIndices and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListAttachedIndices
 type BatchListAttachedIndices struct {
 	_ struct{} `type:"structure"`
 
@@ -10202,7 +10349,6 @@ func (s *BatchListAttachedIndices) SetTargetReference(v *ObjectReference) *Batch
 }
 
 // Represents the output of a ListAttachedIndices response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListAttachedIndicesResponse
 type BatchListAttachedIndicesResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -10238,7 +10384,6 @@ func (s *BatchListAttachedIndicesResponse) SetNextToken(v string) *BatchListAtta
 // Returns a paginated list of all the incoming TypedLinkSpecifier information
 // for an object inside a BatchRead operation. For more information, see ListIncomingTypedLinks
 // and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListIncomingTypedLinks
 type BatchListIncomingTypedLinks struct {
 	_ struct{} `type:"structure"`
 
@@ -10336,7 +10481,6 @@ func (s *BatchListIncomingTypedLinks) SetObjectReference(v *ObjectReference) *Ba
 }
 
 // Represents the output of a ListIncomingTypedLinks response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListIncomingTypedLinksResponse
 type BatchListIncomingTypedLinksResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -10371,7 +10515,6 @@ func (s *BatchListIncomingTypedLinksResponse) SetNextToken(v string) *BatchListI
 
 // Lists objects attached to the specified index inside a BatchRead operation.
 // For more information, see ListIndex and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListIndex
 type BatchListIndex struct {
 	_ struct{} `type:"structure"`
 
@@ -10451,7 +10594,6 @@ func (s *BatchListIndex) SetRangesOnIndexedValues(v []*ObjectAttributeRange) *Ba
 }
 
 // Represents the output of a ListIndex response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListIndexResponse
 type BatchListIndexResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -10485,7 +10627,6 @@ func (s *BatchListIndexResponse) SetNextToken(v string) *BatchListIndexResponse 
 }
 
 // Represents the output of a ListObjectAttributes operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListObjectAttributes
 type BatchListObjectAttributes struct {
 	_ struct{} `type:"structure"`
 
@@ -10562,7 +10703,6 @@ func (s *BatchListObjectAttributes) SetObjectReference(v *ObjectReference) *Batc
 }
 
 // Represents the output of a ListObjectAttributes response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListObjectAttributesResponse
 type BatchListObjectAttributesResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -10597,7 +10737,6 @@ func (s *BatchListObjectAttributesResponse) SetNextToken(v string) *BatchListObj
 }
 
 // Represents the output of a ListObjectChildren operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListObjectChildren
 type BatchListObjectChildren struct {
 	_ struct{} `type:"structure"`
 
@@ -10659,7 +10798,6 @@ func (s *BatchListObjectChildren) SetObjectReference(v *ObjectReference) *BatchL
 }
 
 // Represents the output of a ListObjectChildren response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListObjectChildrenResponse
 type BatchListObjectChildrenResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -10696,7 +10834,6 @@ func (s *BatchListObjectChildrenResponse) SetNextToken(v string) *BatchListObjec
 // Retrieves all available parent paths for any object type such as node, leaf
 // node, policy node, and index node objects inside a BatchRead operation. For
 // more information, see ListObjectParentPaths and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListObjectParentPaths
 type BatchListObjectParentPaths struct {
 	_ struct{} `type:"structure"`
 
@@ -10757,7 +10894,6 @@ func (s *BatchListObjectParentPaths) SetObjectReference(v *ObjectReference) *Bat
 }
 
 // Represents the output of a ListObjectParentPaths response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListObjectParentPathsResponse
 type BatchListObjectParentPathsResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -10792,7 +10928,6 @@ func (s *BatchListObjectParentPathsResponse) SetPathToObjectIdentifiersList(v []
 
 // Returns policies attached to an object in pagination fashion inside a BatchRead
 // operation. For more information, see ListObjectPolicies and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListObjectPolicies
 type BatchListObjectPolicies struct {
 	_ struct{} `type:"structure"`
 
@@ -10853,7 +10988,6 @@ func (s *BatchListObjectPolicies) SetObjectReference(v *ObjectReference) *BatchL
 }
 
 // Represents the output of a ListObjectPolicies response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListObjectPoliciesResponse
 type BatchListObjectPoliciesResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -10889,7 +11023,6 @@ func (s *BatchListObjectPoliciesResponse) SetNextToken(v string) *BatchListObjec
 // Returns a paginated list of all the outgoing TypedLinkSpecifier information
 // for an object inside a BatchRead operation. For more information, see ListOutgoingTypedLinks
 // and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListOutgoingTypedLinks
 type BatchListOutgoingTypedLinks struct {
 	_ struct{} `type:"structure"`
 
@@ -10987,7 +11120,6 @@ func (s *BatchListOutgoingTypedLinks) SetObjectReference(v *ObjectReference) *Ba
 }
 
 // Represents the output of a ListOutgoingTypedLinks response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListOutgoingTypedLinksResponse
 type BatchListOutgoingTypedLinksResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -11023,7 +11155,6 @@ func (s *BatchListOutgoingTypedLinksResponse) SetTypedLinkSpecifiers(v []*TypedL
 // Returns all of the ObjectIdentifiers to which a given policy is attached
 // inside a BatchRead operation. For more information, see ListPolicyAttachments
 // and BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListPolicyAttachments
 type BatchListPolicyAttachments struct {
 	_ struct{} `type:"structure"`
 
@@ -11084,7 +11215,6 @@ func (s *BatchListPolicyAttachments) SetPolicyReference(v *ObjectReference) *Bat
 }
 
 // Represents the output of a ListPolicyAttachments response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchListPolicyAttachmentsResponse
 type BatchListPolicyAttachmentsResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -11120,7 +11250,6 @@ func (s *BatchListPolicyAttachmentsResponse) SetObjectIdentifiers(v []*string) *
 // Lists all policies from the root of the Directory to the object specified
 // inside a BatchRead operation. For more information, see LookupPolicy and
 // BatchReadRequest$Operations.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchLookupPolicy
 type BatchLookupPolicy struct {
 	_ struct{} `type:"structure"`
 
@@ -11181,7 +11310,6 @@ func (s *BatchLookupPolicy) SetObjectReference(v *ObjectReference) *BatchLookupP
 }
 
 // Represents the output of a LookupPolicy response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchLookupPolicyResponse
 type BatchLookupPolicyResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -11217,7 +11345,6 @@ func (s *BatchLookupPolicyResponse) SetPolicyToPathList(v []*PolicyToPath) *Batc
 
 // The batch read exception structure, which contains the exception type and
 // message.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchReadException
 type BatchReadException struct {
 	_ struct{} `type:"structure"`
 
@@ -11250,7 +11377,6 @@ func (s *BatchReadException) SetType(v string) *BatchReadException {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchReadRequest
 type BatchReadInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11325,9 +11451,11 @@ func (s *BatchReadInput) SetOperations(v []*BatchReadOperation) *BatchReadInput 
 }
 
 // Represents the output of a BatchRead operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchReadOperation
 type BatchReadOperation struct {
 	_ struct{} `type:"structure"`
+
+	// Retrieves attributes within a facet that are associated with an object.
+	GetObjectAttributes *BatchGetObjectAttributes `type:"structure"`
 
 	// Retrieves metadata about an object.
 	GetObjectInformation *BatchGetObjectInformation `type:"structure"`
@@ -11389,6 +11517,11 @@ func (s BatchReadOperation) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *BatchReadOperation) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "BatchReadOperation"}
+	if s.GetObjectAttributes != nil {
+		if err := s.GetObjectAttributes.Validate(); err != nil {
+			invalidParams.AddNested("GetObjectAttributes", err.(request.ErrInvalidParams))
+		}
+	}
 	if s.GetObjectInformation != nil {
 		if err := s.GetObjectInformation.Validate(); err != nil {
 			invalidParams.AddNested("GetObjectInformation", err.(request.ErrInvalidParams))
@@ -11449,6 +11582,12 @@ func (s *BatchReadOperation) Validate() error {
 		return invalidParams
 	}
 	return nil
+}
+
+// SetGetObjectAttributes sets the GetObjectAttributes field's value.
+func (s *BatchReadOperation) SetGetObjectAttributes(v *BatchGetObjectAttributes) *BatchReadOperation {
+	s.GetObjectAttributes = v
+	return s
 }
 
 // SetGetObjectInformation sets the GetObjectInformation field's value.
@@ -11518,7 +11657,6 @@ func (s *BatchReadOperation) SetLookupPolicy(v *BatchLookupPolicy) *BatchReadOpe
 }
 
 // Represents the output of a BatchRead response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchReadOperationResponse
 type BatchReadOperationResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -11551,7 +11689,6 @@ func (s *BatchReadOperationResponse) SetSuccessfulResponse(v *BatchReadSuccessfu
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchReadResponse
 type BatchReadOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -11576,9 +11713,11 @@ func (s *BatchReadOutput) SetResponses(v []*BatchReadOperationResponse) *BatchRe
 }
 
 // Represents the output of a BatchRead success response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchReadSuccessfulResponse
 type BatchReadSuccessfulResponse struct {
 	_ struct{} `type:"structure"`
+
+	// Retrieves attributes within a facet that are associated with an object.
+	GetObjectAttributes *BatchGetObjectAttributesResponse `type:"structure"`
 
 	// Retrieves metadata about an object.
 	GetObjectInformation *BatchGetObjectInformationResponse `type:"structure"`
@@ -11635,6 +11774,12 @@ func (s BatchReadSuccessfulResponse) String() string {
 // GoString returns the string representation
 func (s BatchReadSuccessfulResponse) GoString() string {
 	return s.String()
+}
+
+// SetGetObjectAttributes sets the GetObjectAttributes field's value.
+func (s *BatchReadSuccessfulResponse) SetGetObjectAttributes(v *BatchGetObjectAttributesResponse) *BatchReadSuccessfulResponse {
+	s.GetObjectAttributes = v
+	return s
 }
 
 // SetGetObjectInformation sets the GetObjectInformation field's value.
@@ -11704,7 +11849,6 @@ func (s *BatchReadSuccessfulResponse) SetLookupPolicy(v *BatchLookupPolicyRespon
 }
 
 // A batch operation to remove a facet from an object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchRemoveFacetFromObject
 type BatchRemoveFacetFromObject struct {
 	_ struct{} `type:"structure"`
 
@@ -11763,7 +11907,6 @@ func (s *BatchRemoveFacetFromObject) SetSchemaFacet(v *SchemaFacet) *BatchRemove
 }
 
 // An empty result that represents success.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchRemoveFacetFromObjectResponse
 type BatchRemoveFacetFromObjectResponse struct {
 	_ struct{} `type:"structure"`
 }
@@ -11779,7 +11922,6 @@ func (s BatchRemoveFacetFromObjectResponse) GoString() string {
 }
 
 // Represents the output of a BatchUpdate operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchUpdateObjectAttributes
 type BatchUpdateObjectAttributes struct {
 	_ struct{} `type:"structure"`
 
@@ -11843,7 +11985,6 @@ func (s *BatchUpdateObjectAttributes) SetObjectReference(v *ObjectReference) *Ba
 }
 
 // Represents the output of a BatchUpdate response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchUpdateObjectAttributesResponse
 type BatchUpdateObjectAttributesResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -11867,7 +12008,6 @@ func (s *BatchUpdateObjectAttributesResponse) SetObjectIdentifier(v string) *Bat
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchWriteRequest
 type BatchWriteInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11932,7 +12072,6 @@ func (s *BatchWriteInput) SetOperations(v []*BatchWriteOperation) *BatchWriteInp
 }
 
 // Represents the output of a BatchWrite operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchWriteOperation
 type BatchWriteOperation struct {
 	_ struct{} `type:"structure"`
 
@@ -12158,7 +12297,6 @@ func (s *BatchWriteOperation) SetUpdateObjectAttributes(v *BatchUpdateObjectAttr
 }
 
 // Represents the output of a BatchWrite response operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchWriteOperationResponse
 type BatchWriteOperationResponse struct {
 	_ struct{} `type:"structure"`
 
@@ -12303,7 +12441,6 @@ func (s *BatchWriteOperationResponse) SetUpdateObjectAttributes(v *BatchUpdateOb
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/BatchWriteResponse
 type BatchWriteOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -12327,7 +12464,6 @@ func (s *BatchWriteOutput) SetResponses(v []*BatchWriteOperationResponse) *Batch
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateDirectoryRequest
 type CreateDirectoryInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12384,7 +12520,6 @@ func (s *CreateDirectoryInput) SetSchemaArn(v string) *CreateDirectoryInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateDirectoryResponse
 type CreateDirectoryOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -12446,7 +12581,6 @@ func (s *CreateDirectoryOutput) SetObjectIdentifier(v string) *CreateDirectoryOu
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateFacetRequest
 type CreateFacetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12546,7 +12680,6 @@ func (s *CreateFacetInput) SetSchemaArn(v string) *CreateFacetInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateFacetResponse
 type CreateFacetOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -12561,7 +12694,6 @@ func (s CreateFacetOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateIndexRequest
 type CreateIndexInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12661,7 +12793,6 @@ func (s *CreateIndexInput) SetParentReference(v *ObjectReference) *CreateIndexIn
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateIndexResponse
 type CreateIndexOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -12685,7 +12816,6 @@ func (s *CreateIndexOutput) SetObjectIdentifier(v string) *CreateIndexOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateObjectRequest
 type CreateObjectInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12791,7 +12921,6 @@ func (s *CreateObjectInput) SetSchemaFacets(v []*SchemaFacet) *CreateObjectInput
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateObjectResponse
 type CreateObjectOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -12815,7 +12944,6 @@ func (s *CreateObjectOutput) SetObjectIdentifier(v string) *CreateObjectOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateSchemaRequest
 type CreateSchemaInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12858,7 +12986,6 @@ func (s *CreateSchemaInput) SetName(v string) *CreateSchemaInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateSchemaResponse
 type CreateSchemaOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -12883,7 +13010,6 @@ func (s *CreateSchemaOutput) SetSchemaArn(v string) *CreateSchemaOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateTypedLinkFacetRequest
 type CreateTypedLinkFacetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12942,7 +13068,6 @@ func (s *CreateTypedLinkFacetInput) SetSchemaArn(v string) *CreateTypedLinkFacet
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/CreateTypedLinkFacetResponse
 type CreateTypedLinkFacetOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -12957,7 +13082,6 @@ func (s CreateTypedLinkFacetOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteDirectoryRequest
 type DeleteDirectoryInput struct {
 	_ struct{} `type:"structure"`
 
@@ -12996,7 +13120,6 @@ func (s *DeleteDirectoryInput) SetDirectoryArn(v string) *DeleteDirectoryInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteDirectoryResponse
 type DeleteDirectoryOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -13022,7 +13145,6 @@ func (s *DeleteDirectoryOutput) SetDirectoryArn(v string) *DeleteDirectoryOutput
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteFacetRequest
 type DeleteFacetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13079,7 +13201,6 @@ func (s *DeleteFacetInput) SetSchemaArn(v string) *DeleteFacetInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteFacetResponse
 type DeleteFacetOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -13094,7 +13215,6 @@ func (s DeleteFacetOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteObjectRequest
 type DeleteObjectInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13148,7 +13268,6 @@ func (s *DeleteObjectInput) SetObjectReference(v *ObjectReference) *DeleteObject
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteObjectResponse
 type DeleteObjectOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -13163,7 +13282,6 @@ func (s DeleteObjectOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteSchemaRequest
 type DeleteSchemaInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13203,7 +13321,6 @@ func (s *DeleteSchemaInput) SetSchemaArn(v string) *DeleteSchemaInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteSchemaResponse
 type DeleteSchemaOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -13228,7 +13345,6 @@ func (s *DeleteSchemaOutput) SetSchemaArn(v string) *DeleteSchemaOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteTypedLinkFacetRequest
 type DeleteTypedLinkFacetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13282,7 +13398,6 @@ func (s *DeleteTypedLinkFacetInput) SetSchemaArn(v string) *DeleteTypedLinkFacet
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DeleteTypedLinkFacetResponse
 type DeleteTypedLinkFacetOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -13297,7 +13412,6 @@ func (s DeleteTypedLinkFacetOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DetachFromIndexRequest
 type DetachFromIndexInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13365,7 +13479,6 @@ func (s *DetachFromIndexInput) SetTargetReference(v *ObjectReference) *DetachFro
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DetachFromIndexResponse
 type DetachFromIndexOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -13389,7 +13502,6 @@ func (s *DetachFromIndexOutput) SetDetachedObjectIdentifier(v string) *DetachFro
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DetachObjectRequest
 type DetachObjectInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13461,7 +13573,6 @@ func (s *DetachObjectInput) SetParentReference(v *ObjectReference) *DetachObject
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DetachObjectResponse
 type DetachObjectOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -13485,7 +13596,6 @@ func (s *DetachObjectOutput) SetDetachedObjectIdentifier(v string) *DetachObject
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DetachPolicyRequest
 type DetachPolicyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13553,7 +13663,6 @@ func (s *DetachPolicyInput) SetPolicyReference(v *ObjectReference) *DetachPolicy
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DetachPolicyResponse
 type DetachPolicyOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -13568,7 +13677,6 @@ func (s DetachPolicyOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DetachTypedLinkRequest
 type DetachTypedLinkInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13627,7 +13735,6 @@ func (s *DetachTypedLinkInput) SetTypedLinkSpecifier(v *TypedLinkSpecifier) *Det
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DetachTypedLinkOutput
 type DetachTypedLinkOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -13643,7 +13750,6 @@ func (s DetachTypedLinkOutput) GoString() string {
 }
 
 // Directory structure that includes the directory name and directory ARN.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/Directory
 type Directory struct {
 	_ struct{} `type:"structure"`
 
@@ -13695,7 +13801,6 @@ func (s *Directory) SetState(v string) *Directory {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DisableDirectoryRequest
 type DisableDirectoryInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13734,7 +13839,6 @@ func (s *DisableDirectoryInput) SetDirectoryArn(v string) *DisableDirectoryInput
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/DisableDirectoryResponse
 type DisableDirectoryOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -13760,7 +13864,6 @@ func (s *DisableDirectoryOutput) SetDirectoryArn(v string) *DisableDirectoryOutp
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/EnableDirectoryRequest
 type EnableDirectoryInput struct {
 	_ struct{} `type:"structure"`
 
@@ -13799,7 +13902,6 @@ func (s *EnableDirectoryInput) SetDirectoryArn(v string) *EnableDirectoryInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/EnableDirectoryResponse
 type EnableDirectoryOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -13826,7 +13928,8 @@ func (s *EnableDirectoryOutput) SetDirectoryArn(v string) *EnableDirectoryOutput
 }
 
 // A structure that contains Name, ARN, Attributes, Rules, and ObjectTypes.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/Facet
+// See Facets (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/whatarefacets.html)
+// for more information.
 type Facet struct {
 	_ struct{} `type:"structure"`
 
@@ -13861,7 +13964,6 @@ func (s *Facet) SetObjectType(v string) *Facet {
 }
 
 // An attribute that is associated with the Facet.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/FacetAttribute
 type FacetAttribute struct {
 	_ struct{} `type:"structure"`
 
@@ -13946,7 +14048,6 @@ func (s *FacetAttribute) SetRequiredBehavior(v string) *FacetAttribute {
 
 // A facet attribute definition. See Attribute References (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/cd_advanced.html#attributereferences)
 // for more information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/FacetAttributeDefinition
 type FacetAttributeDefinition struct {
 	_ struct{} `type:"structure"`
 
@@ -14014,7 +14115,6 @@ func (s *FacetAttributeDefinition) SetType(v string) *FacetAttributeDefinition {
 
 // The facet attribute reference that specifies the attribute definition that
 // contains the attribute facet name and attribute name.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/FacetAttributeReference
 type FacetAttributeReference struct {
 	_ struct{} `type:"structure"`
 
@@ -14078,7 +14178,6 @@ func (s *FacetAttributeReference) SetTargetFacetName(v string) *FacetAttributeRe
 }
 
 // A structure that contains information used to update an attribute.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/FacetAttributeUpdate
 type FacetAttributeUpdate struct {
 	_ struct{} `type:"structure"`
 
@@ -14126,7 +14225,6 @@ func (s *FacetAttributeUpdate) SetAttribute(v *FacetAttribute) *FacetAttributeUp
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetAppliedSchemaVersionRequest
 type GetAppliedSchemaVersionInput struct {
 	_ struct{} `type:"structure"`
 
@@ -14165,7 +14263,6 @@ func (s *GetAppliedSchemaVersionInput) SetSchemaArn(v string) *GetAppliedSchemaV
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetAppliedSchemaVersionResponse
 type GetAppliedSchemaVersionOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -14190,7 +14287,6 @@ func (s *GetAppliedSchemaVersionOutput) SetAppliedSchemaArn(v string) *GetApplie
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetDirectoryRequest
 type GetDirectoryInput struct {
 	_ struct{} `type:"structure"`
 
@@ -14229,7 +14325,6 @@ func (s *GetDirectoryInput) SetDirectoryArn(v string) *GetDirectoryInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetDirectoryResponse
 type GetDirectoryOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -14255,7 +14350,6 @@ func (s *GetDirectoryOutput) SetDirectory(v *Directory) *GetDirectoryOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetFacetRequest
 type GetFacetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -14312,7 +14406,6 @@ func (s *GetFacetInput) SetSchemaArn(v string) *GetFacetInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetFacetResponse
 type GetFacetOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -14336,7 +14429,125 @@ func (s *GetFacetOutput) SetFacet(v *Facet) *GetFacetOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetObjectInformationRequest
+type GetObjectAttributesInput struct {
+	_ struct{} `type:"structure"`
+
+	// List of attribute names whose values will be retrieved.
+	//
+	// AttributeNames is a required field
+	AttributeNames []*string `type:"list" required:"true"`
+
+	// The consistency level at which to retrieve the attributes on an object.
+	ConsistencyLevel *string `location:"header" locationName:"x-amz-consistency-level" type:"string" enum:"ConsistencyLevel"`
+
+	// The Amazon Resource Name (ARN) that is associated with the Directory where
+	// the object resides.
+	//
+	// DirectoryArn is a required field
+	DirectoryArn *string `location:"header" locationName:"x-amz-data-partition" type:"string" required:"true"`
+
+	// Reference that identifies the object whose attributes will be retrieved.
+	//
+	// ObjectReference is a required field
+	ObjectReference *ObjectReference `type:"structure" required:"true"`
+
+	// Identifier for the facet whose attributes will be retrieved. See SchemaFacet
+	// for details.
+	//
+	// SchemaFacet is a required field
+	SchemaFacet *SchemaFacet `type:"structure" required:"true"`
+}
+
+// String returns the string representation
+func (s GetObjectAttributesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetObjectAttributesInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *GetObjectAttributesInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "GetObjectAttributesInput"}
+	if s.AttributeNames == nil {
+		invalidParams.Add(request.NewErrParamRequired("AttributeNames"))
+	}
+	if s.DirectoryArn == nil {
+		invalidParams.Add(request.NewErrParamRequired("DirectoryArn"))
+	}
+	if s.ObjectReference == nil {
+		invalidParams.Add(request.NewErrParamRequired("ObjectReference"))
+	}
+	if s.SchemaFacet == nil {
+		invalidParams.Add(request.NewErrParamRequired("SchemaFacet"))
+	}
+	if s.SchemaFacet != nil {
+		if err := s.SchemaFacet.Validate(); err != nil {
+			invalidParams.AddNested("SchemaFacet", err.(request.ErrInvalidParams))
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAttributeNames sets the AttributeNames field's value.
+func (s *GetObjectAttributesInput) SetAttributeNames(v []*string) *GetObjectAttributesInput {
+	s.AttributeNames = v
+	return s
+}
+
+// SetConsistencyLevel sets the ConsistencyLevel field's value.
+func (s *GetObjectAttributesInput) SetConsistencyLevel(v string) *GetObjectAttributesInput {
+	s.ConsistencyLevel = &v
+	return s
+}
+
+// SetDirectoryArn sets the DirectoryArn field's value.
+func (s *GetObjectAttributesInput) SetDirectoryArn(v string) *GetObjectAttributesInput {
+	s.DirectoryArn = &v
+	return s
+}
+
+// SetObjectReference sets the ObjectReference field's value.
+func (s *GetObjectAttributesInput) SetObjectReference(v *ObjectReference) *GetObjectAttributesInput {
+	s.ObjectReference = v
+	return s
+}
+
+// SetSchemaFacet sets the SchemaFacet field's value.
+func (s *GetObjectAttributesInput) SetSchemaFacet(v *SchemaFacet) *GetObjectAttributesInput {
+	s.SchemaFacet = v
+	return s
+}
+
+type GetObjectAttributesOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The attributes that are associated with the object.
+	Attributes []*AttributeKeyAndValue `type:"list"`
+}
+
+// String returns the string representation
+func (s GetObjectAttributesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetObjectAttributesOutput) GoString() string {
+	return s.String()
+}
+
+// SetAttributes sets the Attributes field's value.
+func (s *GetObjectAttributesOutput) SetAttributes(v []*AttributeKeyAndValue) *GetObjectAttributesOutput {
+	s.Attributes = v
+	return s
+}
+
 type GetObjectInformationInput struct {
 	_ struct{} `type:"structure"`
 
@@ -14398,7 +14609,6 @@ func (s *GetObjectInformationInput) SetObjectReference(v *ObjectReference) *GetO
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetObjectInformationResponse
 type GetObjectInformationOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -14433,7 +14643,6 @@ func (s *GetObjectInformationOutput) SetSchemaFacets(v []*SchemaFacet) *GetObjec
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetSchemaAsJsonRequest
 type GetSchemaAsJsonInput struct {
 	_ struct{} `type:"structure"`
 
@@ -14472,7 +14681,6 @@ func (s *GetSchemaAsJsonInput) SetSchemaArn(v string) *GetSchemaAsJsonInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetSchemaAsJsonResponse
 type GetSchemaAsJsonOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -14505,7 +14713,6 @@ func (s *GetSchemaAsJsonOutput) SetName(v string) *GetSchemaAsJsonOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetTypedLinkFacetInformationRequest
 type GetTypedLinkFacetInformationInput struct {
 	_ struct{} `type:"structure"`
 
@@ -14559,7 +14766,6 @@ func (s *GetTypedLinkFacetInformationInput) SetSchemaArn(v string) *GetTypedLink
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/GetTypedLinkFacetInformationResponse
 type GetTypedLinkFacetInformationOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -14591,7 +14797,6 @@ func (s *GetTypedLinkFacetInformationOutput) SetIdentityAttributeOrder(v []*stri
 }
 
 // Represents an index and an attached object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/IndexAttachment
 type IndexAttachment struct {
 	_ struct{} `type:"structure"`
 
@@ -14627,7 +14832,6 @@ func (s *IndexAttachment) SetObjectIdentifier(v string) *IndexAttachment {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListAppliedSchemaArnsRequest
 type ListAppliedSchemaArnsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -14697,7 +14901,6 @@ func (s *ListAppliedSchemaArnsInput) SetSchemaArn(v string) *ListAppliedSchemaAr
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListAppliedSchemaArnsResponse
 type ListAppliedSchemaArnsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -14730,7 +14933,6 @@ func (s *ListAppliedSchemaArnsOutput) SetSchemaArns(v []*string) *ListAppliedSch
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListAttachedIndicesRequest
 type ListAttachedIndicesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -14813,7 +15015,6 @@ func (s *ListAttachedIndicesInput) SetTargetReference(v *ObjectReference) *ListA
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListAttachedIndicesResponse
 type ListAttachedIndicesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -14846,7 +15047,6 @@ func (s *ListAttachedIndicesOutput) SetNextToken(v string) *ListAttachedIndicesO
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListDevelopmentSchemaArnsRequest
 type ListDevelopmentSchemaArnsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -14892,7 +15092,6 @@ func (s *ListDevelopmentSchemaArnsInput) SetNextToken(v string) *ListDevelopment
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListDevelopmentSchemaArnsResponse
 type ListDevelopmentSchemaArnsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -14925,7 +15124,6 @@ func (s *ListDevelopmentSchemaArnsOutput) SetSchemaArns(v []*string) *ListDevelo
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListDirectoriesRequest
 type ListDirectoriesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -14981,7 +15179,6 @@ func (s *ListDirectoriesInput) SetState(v string) *ListDirectoriesInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListDirectoriesResponse
 type ListDirectoriesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -15017,7 +15214,6 @@ func (s *ListDirectoriesOutput) SetNextToken(v string) *ListDirectoriesOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListFacetAttributesRequest
 type ListFacetAttributesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -15094,7 +15290,6 @@ func (s *ListFacetAttributesInput) SetSchemaArn(v string) *ListFacetAttributesIn
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListFacetAttributesResponse
 type ListFacetAttributesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -15127,7 +15322,6 @@ func (s *ListFacetAttributesOutput) SetNextToken(v string) *ListFacetAttributesO
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListFacetNamesRequest
 type ListFacetNamesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -15187,7 +15381,6 @@ func (s *ListFacetNamesInput) SetSchemaArn(v string) *ListFacetNamesInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListFacetNamesResponse
 type ListFacetNamesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -15220,7 +15413,6 @@ func (s *ListFacetNamesOutput) SetNextToken(v string) *ListFacetNamesOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListIncomingTypedLinksRequest
 type ListIncomingTypedLinksInput struct {
 	_ struct{} `type:"structure"`
 
@@ -15341,7 +15533,6 @@ func (s *ListIncomingTypedLinksInput) SetObjectReference(v *ObjectReference) *Li
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListIncomingTypedLinksResponse
 type ListIncomingTypedLinksOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -15374,7 +15565,6 @@ func (s *ListIncomingTypedLinksOutput) SetNextToken(v string) *ListIncomingTyped
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListIndexRequest
 type ListIndexInput struct {
 	_ struct{} `type:"structure"`
 
@@ -15478,7 +15668,6 @@ func (s *ListIndexInput) SetRangesOnIndexedValues(v []*ObjectAttributeRange) *Li
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListIndexResponse
 type ListIndexOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -15511,7 +15700,6 @@ func (s *ListIndexOutput) SetNextToken(v string) *ListIndexOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectAttributesRequest
 type ListObjectAttributesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -15612,7 +15800,6 @@ func (s *ListObjectAttributesInput) SetObjectReference(v *ObjectReference) *List
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectAttributesResponse
 type ListObjectAttributesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -15646,7 +15833,6 @@ func (s *ListObjectAttributesOutput) SetNextToken(v string) *ListObjectAttribute
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectChildrenRequest
 type ListObjectChildrenInput struct {
 	_ struct{} `type:"structure"`
 
@@ -15733,7 +15919,6 @@ func (s *ListObjectChildrenInput) SetObjectReference(v *ObjectReference) *ListOb
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectChildrenResponse
 type ListObjectChildrenOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -15767,7 +15952,6 @@ func (s *ListObjectChildrenOutput) SetNextToken(v string) *ListObjectChildrenOut
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectParentPathsRequest
 type ListObjectParentPathsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -15842,7 +16026,6 @@ func (s *ListObjectParentPathsInput) SetObjectReference(v *ObjectReference) *Lis
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectParentPathsResponse
 type ListObjectParentPathsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -15875,7 +16058,6 @@ func (s *ListObjectParentPathsOutput) SetPathToObjectIdentifiersList(v []*PathTo
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectParentsRequest
 type ListObjectParentsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -15962,7 +16144,6 @@ func (s *ListObjectParentsInput) SetObjectReference(v *ObjectReference) *ListObj
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectParentsResponse
 type ListObjectParentsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -15996,7 +16177,6 @@ func (s *ListObjectParentsOutput) SetParents(v map[string]*string) *ListObjectPa
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectPoliciesRequest
 type ListObjectPoliciesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -16082,7 +16262,6 @@ func (s *ListObjectPoliciesInput) SetObjectReference(v *ObjectReference) *ListOb
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListObjectPoliciesResponse
 type ListObjectPoliciesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -16115,7 +16294,6 @@ func (s *ListObjectPoliciesOutput) SetNextToken(v string) *ListObjectPoliciesOut
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListOutgoingTypedLinksRequest
 type ListOutgoingTypedLinksInput struct {
 	_ struct{} `type:"structure"`
 
@@ -16236,7 +16414,6 @@ func (s *ListOutgoingTypedLinksInput) SetObjectReference(v *ObjectReference) *Li
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListOutgoingTypedLinksResponse
 type ListOutgoingTypedLinksOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -16269,7 +16446,6 @@ func (s *ListOutgoingTypedLinksOutput) SetTypedLinkSpecifiers(v []*TypedLinkSpec
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListPolicyAttachmentsRequest
 type ListPolicyAttachmentsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -16355,7 +16531,6 @@ func (s *ListPolicyAttachmentsInput) SetPolicyReference(v *ObjectReference) *Lis
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListPolicyAttachmentsResponse
 type ListPolicyAttachmentsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -16388,7 +16563,6 @@ func (s *ListPolicyAttachmentsOutput) SetObjectIdentifiers(v []*string) *ListPol
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListPublishedSchemaArnsRequest
 type ListPublishedSchemaArnsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -16444,7 +16618,6 @@ func (s *ListPublishedSchemaArnsInput) SetSchemaArn(v string) *ListPublishedSche
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListPublishedSchemaArnsResponse
 type ListPublishedSchemaArnsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -16477,7 +16650,6 @@ func (s *ListPublishedSchemaArnsOutput) SetSchemaArns(v []*string) *ListPublishe
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListTagsForResourceRequest
 type ListTagsForResourceInput struct {
 	_ struct{} `type:"structure"`
 
@@ -16540,7 +16712,6 @@ func (s *ListTagsForResourceInput) SetResourceArn(v string) *ListTagsForResource
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListTagsForResourceResponse
 type ListTagsForResourceOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -16574,7 +16745,6 @@ func (s *ListTagsForResourceOutput) SetTags(v []*Tag) *ListTagsForResourceOutput
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListTypedLinkFacetAttributesRequest
 type ListTypedLinkFacetAttributesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -16649,7 +16819,6 @@ func (s *ListTypedLinkFacetAttributesInput) SetSchemaArn(v string) *ListTypedLin
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListTypedLinkFacetAttributesResponse
 type ListTypedLinkFacetAttributesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -16682,7 +16851,6 @@ func (s *ListTypedLinkFacetAttributesOutput) SetNextToken(v string) *ListTypedLi
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListTypedLinkFacetNamesRequest
 type ListTypedLinkFacetNamesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -16743,7 +16911,6 @@ func (s *ListTypedLinkFacetNamesInput) SetSchemaArn(v string) *ListTypedLinkFace
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ListTypedLinkFacetNamesResponse
 type ListTypedLinkFacetNamesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -16776,7 +16943,6 @@ func (s *ListTypedLinkFacetNamesOutput) SetNextToken(v string) *ListTypedLinkFac
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/LookupPolicyRequest
 type LookupPolicyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -16852,7 +17018,6 @@ func (s *LookupPolicyInput) SetObjectReference(v *ObjectReference) *LookupPolicy
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/LookupPolicyResponse
 type LookupPolicyOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -16887,7 +17052,6 @@ func (s *LookupPolicyOutput) SetPolicyToPathList(v []*PolicyToPath) *LookupPolic
 }
 
 // The action to take on the object attribute.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ObjectAttributeAction
 type ObjectAttributeAction struct {
 	_ struct{} `type:"structure"`
 
@@ -16921,7 +17085,6 @@ func (s *ObjectAttributeAction) SetObjectAttributeUpdateValue(v *TypedAttributeV
 }
 
 // A range of attributes.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ObjectAttributeRange
 type ObjectAttributeRange struct {
 	_ struct{} `type:"structure"`
 
@@ -16975,7 +17138,6 @@ func (s *ObjectAttributeRange) SetRange(v *TypedAttributeValueRange) *ObjectAttr
 }
 
 // Structure that contains attribute update information.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ObjectAttributeUpdate
 type ObjectAttributeUpdate struct {
 	_ struct{} `type:"structure"`
 
@@ -17024,7 +17186,6 @@ func (s *ObjectAttributeUpdate) SetObjectAttributeKey(v *AttributeKey) *ObjectAt
 }
 
 // The reference that identifies an object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/ObjectReference
 type ObjectReference struct {
 	_ struct{} `type:"structure"`
 
@@ -17063,7 +17224,6 @@ func (s *ObjectReference) SetSelector(v string) *ObjectReference {
 }
 
 // Returns the path to the ObjectIdentifiers that is associated with the directory.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/PathToObjectIdentifiers
 type PathToObjectIdentifiers struct {
 	_ struct{} `type:"structure"`
 
@@ -17099,7 +17259,6 @@ func (s *PathToObjectIdentifiers) SetPath(v string) *PathToObjectIdentifiers {
 
 // Contains the PolicyType, PolicyId, and the ObjectIdentifier to which it is
 // attached. For more information, see Policies (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/cd_key_concepts.html#policies).
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/PolicyAttachment
 type PolicyAttachment struct {
 	_ struct{} `type:"structure"`
 
@@ -17144,7 +17303,6 @@ func (s *PolicyAttachment) SetPolicyType(v string) *PolicyAttachment {
 // Used when a regular object exists in a Directory and you want to find all
 // of the policies that are associated with that object and the parent to that
 // object.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/PolicyToPath
 type PolicyToPath struct {
 	_ struct{} `type:"structure"`
 
@@ -17177,7 +17335,6 @@ func (s *PolicyToPath) SetPolicies(v []*PolicyAttachment) *PolicyToPath {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/PublishSchemaRequest
 type PublishSchemaInput struct {
 	_ struct{} `type:"structure"`
 
@@ -17262,7 +17419,6 @@ func (s *PublishSchemaInput) SetVersion(v string) *PublishSchemaInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/PublishSchemaResponse
 type PublishSchemaOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -17287,7 +17443,6 @@ func (s *PublishSchemaOutput) SetPublishedSchemaArn(v string) *PublishSchemaOutp
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/PutSchemaFromJsonRequest
 type PutSchemaFromJsonInput struct {
 	_ struct{} `type:"structure"`
 
@@ -17340,7 +17495,6 @@ func (s *PutSchemaFromJsonInput) SetSchemaArn(v string) *PutSchemaFromJsonInput 
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/PutSchemaFromJsonResponse
 type PutSchemaFromJsonOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -17364,7 +17518,6 @@ func (s *PutSchemaFromJsonOutput) SetArn(v string) *PutSchemaFromJsonOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/RemoveFacetFromObjectRequest
 type RemoveFacetFromObjectInput struct {
 	_ struct{} `type:"structure"`
 
@@ -17436,7 +17589,6 @@ func (s *RemoveFacetFromObjectInput) SetSchemaFacet(v *SchemaFacet) *RemoveFacet
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/RemoveFacetFromObjectResponse
 type RemoveFacetFromObjectOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -17453,7 +17605,6 @@ func (s RemoveFacetFromObjectOutput) GoString() string {
 
 // Contains an Amazon Resource Name (ARN) and parameters that are associated
 // with the rule.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/Rule
 type Rule struct {
 	_ struct{} `type:"structure"`
 
@@ -17487,7 +17638,6 @@ func (s *Rule) SetType(v string) *Rule {
 }
 
 // A facet.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/SchemaFacet
 type SchemaFacet struct {
 	_ struct{} `type:"structure"`
 
@@ -17536,7 +17686,6 @@ func (s *SchemaFacet) SetSchemaArn(v string) *SchemaFacet {
 }
 
 // The tag structure that contains a tag key and value.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/Tag
 type Tag struct {
 	_ struct{} `type:"structure"`
 
@@ -17569,7 +17718,6 @@ func (s *Tag) SetValue(v string) *Tag {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/TagResourceRequest
 type TagResourceInput struct {
 	_ struct{} `type:"structure"`
 
@@ -17623,7 +17771,6 @@ func (s *TagResourceInput) SetTags(v []*Tag) *TagResourceInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/TagResourceResponse
 type TagResourceOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -17641,7 +17788,6 @@ func (s TagResourceOutput) GoString() string {
 // Represents the data for a typed attribute. You can set one, and only one,
 // of the elements. Each attribute in an item is a name-value pair. Attributes
 // have a single value.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/TypedAttributeValue
 type TypedAttributeValue struct {
 	_ struct{} `type:"structure"`
 
@@ -17703,8 +17849,7 @@ func (s *TypedAttributeValue) SetStringValue(v string) *TypedAttributeValue {
 	return s
 }
 
-// A range of attribute values.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/TypedAttributeValueRange
+// A range of attribute values. For more information, see Range Filters (http://docs.aws.amazon.com/directoryservice/latest/admin-guide/objectsandlinks.html#rangefilters).
 type TypedAttributeValueRange struct {
 	_ struct{} `type:"structure"`
 
@@ -17776,7 +17921,6 @@ func (s *TypedAttributeValueRange) SetStartValue(v *TypedAttributeValue) *TypedA
 }
 
 // A typed link attribute definition.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/TypedLinkAttributeDefinition
 type TypedLinkAttributeDefinition struct {
 	_ struct{} `type:"structure"`
 
@@ -17874,7 +18018,6 @@ func (s *TypedLinkAttributeDefinition) SetType(v string) *TypedLinkAttributeDefi
 }
 
 // Identifies the range of attributes that are used by a specified filter.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/TypedLinkAttributeRange
 type TypedLinkAttributeRange struct {
 	_ struct{} `type:"structure"`
 
@@ -17932,7 +18075,6 @@ func (s *TypedLinkAttributeRange) SetRange(v *TypedAttributeValueRange) *TypedLi
 
 // Defines the typed links structure and its attributes. To create a typed link
 // facet, use the CreateTypedLinkFacet API.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/TypedLinkFacet
 type TypedLinkFacet struct {
 	_ struct{} `type:"structure"`
 
@@ -18016,7 +18158,6 @@ func (s *TypedLinkFacet) SetName(v string) *TypedLinkFacet {
 }
 
 // A typed link facet attribute update.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/TypedLinkFacetAttributeUpdate
 type TypedLinkFacetAttributeUpdate struct {
 	_ struct{} `type:"structure"`
 
@@ -18076,7 +18217,6 @@ func (s *TypedLinkFacetAttributeUpdate) SetAttribute(v *TypedLinkAttributeDefini
 
 // Identifies the schema Amazon Resource Name (ARN) and facet name for the typed
 // link.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/TypedLinkSchemaAndFacetName
 type TypedLinkSchemaAndFacetName struct {
 	_ struct{} `type:"structure"`
 
@@ -18136,7 +18276,6 @@ func (s *TypedLinkSchemaAndFacetName) SetTypedLinkName(v string) *TypedLinkSchem
 // while the DetachTypedLink API accepts one as input. Similarly, the ListIncomingTypedLinks
 // and ListOutgoingTypedLinks API operations provide typed link specifiers as
 // output. You can also construct a typed link specifier from scratch.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/TypedLinkSpecifier
 type TypedLinkSpecifier struct {
 	_ struct{} `type:"structure"`
 
@@ -18232,7 +18371,6 @@ func (s *TypedLinkSpecifier) SetTypedLinkFacet(v *TypedLinkSchemaAndFacetName) *
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UntagResourceRequest
 type UntagResourceInput struct {
 	_ struct{} `type:"structure"`
 
@@ -18286,7 +18424,6 @@ func (s *UntagResourceInput) SetTagKeys(v []*string) *UntagResourceInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UntagResourceResponse
 type UntagResourceOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -18301,7 +18438,6 @@ func (s UntagResourceOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpdateFacetRequest
 type UpdateFacetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -18389,7 +18525,6 @@ func (s *UpdateFacetInput) SetSchemaArn(v string) *UpdateFacetInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpdateFacetResponse
 type UpdateFacetOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -18404,7 +18539,6 @@ func (s UpdateFacetOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpdateObjectAttributesRequest
 type UpdateObjectAttributesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -18482,7 +18616,6 @@ func (s *UpdateObjectAttributesInput) SetObjectReference(v *ObjectReference) *Up
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpdateObjectAttributesResponse
 type UpdateObjectAttributesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -18506,7 +18639,6 @@ func (s *UpdateObjectAttributesOutput) SetObjectIdentifier(v string) *UpdateObje
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpdateSchemaRequest
 type UpdateSchemaInput struct {
 	_ struct{} `type:"structure"`
 
@@ -18563,7 +18695,6 @@ func (s *UpdateSchemaInput) SetSchemaArn(v string) *UpdateSchemaInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpdateSchemaResponse
 type UpdateSchemaOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -18588,7 +18719,6 @@ func (s *UpdateSchemaOutput) SetSchemaArn(v string) *UpdateSchemaOutput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpdateTypedLinkFacetRequest
 type UpdateTypedLinkFacetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -18687,7 +18817,6 @@ func (s *UpdateTypedLinkFacetInput) SetSchemaArn(v string) *UpdateTypedLinkFacet
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpdateTypedLinkFacetResponse
 type UpdateTypedLinkFacetOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -18702,7 +18831,6 @@ func (s UpdateTypedLinkFacetOutput) GoString() string {
 	return s.String()
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpgradeAppliedSchemaRequest
 type UpgradeAppliedSchemaInput struct {
 	_ struct{} `type:"structure"`
 
@@ -18766,7 +18894,6 @@ func (s *UpgradeAppliedSchemaInput) SetPublishedSchemaArn(v string) *UpgradeAppl
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpgradeAppliedSchemaResponse
 type UpgradeAppliedSchemaOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -18799,7 +18926,6 @@ func (s *UpgradeAppliedSchemaOutput) SetUpgradedSchemaArn(v string) *UpgradeAppl
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpgradePublishedSchemaRequest
 type UpgradePublishedSchemaInput struct {
 	_ struct{} `type:"structure"`
 
@@ -18882,7 +19008,6 @@ func (s *UpgradePublishedSchemaInput) SetPublishedSchemaArn(v string) *UpgradePu
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/clouddirectory-2016-05-10/UpgradePublishedSchemaResponse
 type UpgradePublishedSchemaOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -18980,6 +19105,9 @@ const (
 
 	// BatchWriteExceptionTypeNotIndexException is a BatchWriteExceptionType enum value
 	BatchWriteExceptionTypeNotIndexException = "NotIndexException"
+
+	// BatchWriteExceptionTypeNotNodeException is a BatchWriteExceptionType enum value
+	BatchWriteExceptionTypeNotNodeException = "NotNodeException"
 
 	// BatchWriteExceptionTypeIndexedAttributeMissingException is a BatchWriteExceptionType enum value
 	BatchWriteExceptionTypeIndexedAttributeMissingException = "IndexedAttributeMissingException"

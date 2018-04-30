@@ -27,8 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientset "k8s.io/client-go/kubernetes"
 	fakeclientset "k8s.io/client-go/kubernetes/fake"
-	clientsetscheme "k8s.io/client-go/kubernetes/scheme"
 	core "k8s.io/client-go/testing"
+	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
 )
 
 // DryRunGetter is an interface that must be supplied to the NewDryRunClient function in order to contstruct a fully functional fake dryrun clientset
@@ -42,14 +42,7 @@ type MarshalFunc func(runtime.Object, schema.GroupVersion) ([]byte, error)
 
 // DefaultMarshalFunc is the default MarshalFunc used; uses YAML to print objects to the user
 func DefaultMarshalFunc(obj runtime.Object, gv schema.GroupVersion) ([]byte, error) {
-	mediaType := "application/yaml"
-	info, ok := runtime.SerializerInfoForMediaType(clientsetscheme.Codecs.SupportedMediaTypes(), mediaType)
-	if !ok {
-		return []byte{}, fmt.Errorf("unsupported media type %q", mediaType)
-	}
-
-	encoder := clientsetscheme.Codecs.EncoderForVersion(info.Serializer, gv)
-	return runtime.Encode(encoder, obj)
+	return kubeadmutil.MarshalToYaml(obj, gv)
 }
 
 // DryRunClientOptions specifies options to pass to NewDryRunClientWithOpts in order to get a dryrun clientset
@@ -92,10 +85,10 @@ func NewDryRunClient(drg DryRunGetter, w io.Writer) clientset.Interface {
 // This client doesn't apply changes to the backend. The client gets GET/LIST values from the DryRunGetter implementation.
 // This client logs all I/O to the writer w in YAML format
 func NewDryRunClientWithOpts(opts DryRunClientOptions) clientset.Interface {
-	// Build a chain of reactors to act like a normal clientset; but log everything's that happening and don't change any state
+	// Build a chain of reactors to act like a normal clientset; but log everything that is happening and don't change any state
 	client := fakeclientset.NewSimpleClientset()
 
-	// Build the chain of reactors. Order matters; first item here will be invoked first on match, then the second one will be evaluted, etc.
+	// Build the chain of reactors. Order matters; first item here will be invoked first on match, then the second one will be evaluated, etc.
 	defaultReactorChain := []core.Reactor{
 		// Log everything that happens. Default the object if it's about to be created/updated so that the logged object is representative.
 		&core.SimpleReactor{
@@ -230,7 +223,7 @@ func logDryRunAction(action core.Action, w io.Writer, marshalFunc MarshalFunc) {
 
 	patchAction, ok := action.(core.PatchAction)
 	if ok {
-		// Replace all occurences of \" with a simple " when printing
+		// Replace all occurrences of \" with a simple " when printing
 		fmt.Fprintf(w, "[dryrun] Attached patch:\n\t%s\n", strings.Replace(string(patchAction.GetPatch()), `\"`, `"`, -1))
 	}
 }

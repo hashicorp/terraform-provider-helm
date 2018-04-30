@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -28,15 +29,24 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/spf13/cobra"
+
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/engine"
-	"k8s.io/helm/pkg/helm"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/proto/hapi/release"
 	util "k8s.io/helm/pkg/releaseutil"
 	"k8s.io/helm/pkg/tiller"
 	"k8s.io/helm/pkg/timeconv"
 	tversion "k8s.io/helm/pkg/version"
+)
+
+const defaultDirectoryPermission = 0755
+
+var (
+	whitespaceRegex = regexp.MustCompile(`^\s*$`)
+
+	// defaultKubeVersion is the default value of --kube-version flag
+	defaultKubeVersion = fmt.Sprintf("%s.%s", chartutil.DefaultKubeVersion.Major, chartutil.DefaultKubeVersion.Minor)
 )
 
 const templateDesc = `
@@ -57,13 +67,14 @@ type templateCmd struct {
 	valueFiles   valueFiles
 	chartPath    string
 	out          io.Writer
-	client       helm.Interface
 	values       []string
+	stringValues []string
 	nameTemplate string
 	showNotes    bool
 	releaseName  string
 	renderFiles  []string
 	kubeVersion  string
+	outputDir    string
 }
 
 func newTemplateCmd(out io.Writer) *cobra.Command {
@@ -86,8 +97,10 @@ func newTemplateCmd(out io.Writer) *cobra.Command {
 	f.VarP(&t.valueFiles, "values", "f", "specify values in a YAML file (can specify multiple)")
 	f.StringVar(&t.namespace, "namespace", "", "namespace to install the release into")
 	f.StringArrayVar(&t.values, "set", []string{}, "set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
+	f.StringArrayVar(&t.stringValues, "set-string", []string{}, "set STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
 	f.StringVar(&t.nameTemplate, "name-template", "", "specify template used to name the release")
-	f.StringVar(&t.kubeVersion, "kube-version", "", "override the Kubernetes version used as Capabilities.KubeVersion.Major/Minor (e.g. 1.7)")
+	f.StringVar(&t.kubeVersion, "kube-version", defaultKubeVersion, "kubernetes version used as Capabilities.KubeVersion.Major/Minor")
+	f.StringVar(&t.outputDir, "output-dir", "", "writes the executed templates to files in output-dir instead of stdout")
 
 	return cmd
 }
@@ -111,7 +124,7 @@ func (t *templateCmd) run(cmd *cobra.Command, args []string) error {
 	if len(t.renderFiles) > 0 {
 		for _, f := range t.renderFiles {
 			if !filepath.IsAbs(f) {
-				af, err = filepath.Abs(t.chartPath + "/" + f)
+				af, err = filepath.Abs(filepath.Join(t.chartPath, f))
 				if err != nil {
 					return fmt.Errorf("could not resolve template path: %s", err)
 				}
@@ -126,11 +139,19 @@ func (t *templateCmd) run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// verify that output-dir exists if provided
+	if t.outputDir != "" {
+		_, err = os.Stat(t.outputDir)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("output-dir '%s' does not exist", t.outputDir)
+		}
+	}
+
 	if t.namespace == "" {
 		t.namespace = defaultNamespace()
 	}
 	// get combined values and create config
-	rawVals, err := vals(t.valueFiles, t.values)
+	rawVals, err := vals(t.valueFiles, t.values, t.stringValues)
 	if err != nil {
 		return err
 	}
@@ -180,16 +201,16 @@ func (t *templateCmd) run(cmd *cobra.Command, args []string) error {
 		KubeVersion:   chartutil.DefaultKubeVersion,
 		TillerVersion: tversion.GetVersionProto(),
 	}
-	// If --kube-versionis set, try to parse it as SemVer, and override the
+
 	// kubernetes version
-	if t.kubeVersion != "" {
-		kv, err := semver.NewVersion(t.kubeVersion)
-		if err != nil {
-			return fmt.Errorf("could not parse a kubernetes version: %v", err)
-		}
-		caps.KubeVersion.Major = fmt.Sprint(kv.Major())
-		caps.KubeVersion.Minor = fmt.Sprint(kv.Minor())
+	kv, err := semver.NewVersion(t.kubeVersion)
+	if err != nil {
+		return fmt.Errorf("could not parse a kubernetes version: %v", err)
 	}
+	caps.KubeVersion.Major = fmt.Sprint(kv.Major())
+	caps.KubeVersion.Minor = fmt.Sprint(kv.Minor())
+	caps.KubeVersion.GitVersion = fmt.Sprintf("v%d.%d.0", kv.Major(), kv.Minor())
+
 	vals, err := chartutil.ToRenderValuesCaps(c, config, options, caps)
 	if err != nil {
 		return err
@@ -213,9 +234,9 @@ func (t *templateCmd) run(cmd *cobra.Command, args []string) error {
 	}
 	in := func(needle string, haystack []string) bool {
 		// make needle path absolute
-		d := strings.Split(needle, "/")
+		d := strings.Split(needle, string(os.PathSeparator))
 		dd := d[1:]
-		an := t.chartPath + "/" + strings.Join(dd, "/")
+		an := filepath.Join(t.chartPath, strings.Join(dd, string(os.PathSeparator)))
 
 		for _, h := range haystack {
 			if h == an {
@@ -237,7 +258,7 @@ func (t *templateCmd) run(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, m := range tiller.SortByKind(listManifests) {
-		if len(t.renderFiles) > 0 && in(m.Name, rf) == false {
+		if len(t.renderFiles) > 0 && !in(m.Name, rf) {
 			continue
 		}
 		data := m.Content
@@ -248,8 +269,57 @@ func (t *templateCmd) run(cmd *cobra.Command, args []string) error {
 		if strings.HasPrefix(b, "_") {
 			continue
 		}
+
+		if t.outputDir != "" {
+			// blank template after execution
+			if whitespaceRegex.MatchString(data) {
+				continue
+			}
+			err = writeToFile(t.outputDir, m.Name, data)
+			if err != nil {
+				return err
+			}
+			continue
+		}
 		fmt.Printf("---\n# Source: %s\n", m.Name)
 		fmt.Println(data)
 	}
 	return nil
+}
+
+// write the <data> to <output-dir>/<name>
+func writeToFile(outputDir string, name string, data string) error {
+	outfileName := strings.Join([]string{outputDir, name}, string(filepath.Separator))
+
+	err := ensureDirectoryForFile(outfileName)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(outfileName)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	_, err = f.WriteString(fmt.Sprintf("##---\n# Source: %s\n%s", name, data))
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("wrote %s\n", outfileName)
+	return nil
+}
+
+// check if the directory exists to create file. creates if don't exists
+func ensureDirectoryForFile(file string) error {
+	baseDir := path.Dir(file)
+	_, err := os.Stat(baseDir)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return os.MkdirAll(baseDir, defaultDirectoryPermission)
 }

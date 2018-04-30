@@ -199,8 +199,8 @@ start up.
 If you want to customize the manifest, you can save that output to a file and then
 use `kubectl create` to load it into your cluster.
 
-> We strongly recommend enabling RBAC on your cluster and adding [service accounts](service_accounts.md)
-> with RBACS.
+> We strongly recommend enabling RBAC on your cluster and adding [service accounts](rbac.md)
+> with RBAC.
 
 Otherwise, you can remove the `--dry-run` and `--debug` flags. We also recommend
 putting Tiller in a non-system namespace (`--tiller-namespace=something`) and enable
@@ -251,7 +251,7 @@ This configuration sends our client-side certificate to establish identity, uses
 the client key for encryption, and uses the CA certificate to validate the remote
 Tiller's identity.
 
-Typing a line that that is cumbersome, though. The shortcut is to move the key,
+Typing a line that is cumbersome, though. The shortcut is to move the key,
 cert, and CA into `$HELM_HOME`:
 
 ```console

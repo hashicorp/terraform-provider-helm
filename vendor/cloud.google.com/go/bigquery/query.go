@@ -17,6 +17,7 @@ package bigquery
 import (
 	"errors"
 
+	"cloud.google.com/go/internal/trace"
 	"golang.org/x/net/context"
 	bq "google.golang.org/api/bigquery/v2"
 )
@@ -115,17 +116,21 @@ type QueryConfig struct {
 	// call LastStatus on the returned job to get statistics. Calling Status on a
 	// dry-run job will fail.
 	DryRun bool
+
+	// Custom encryption configuration (e.g., Cloud KMS keys).
+	DestinationEncryptionConfig *EncryptionConfig
 }
 
 func (qc *QueryConfig) toBQ() (*bq.JobConfiguration, error) {
 	qconf := &bq.JobConfigurationQuery{
-		Query:              qc.Q,
-		CreateDisposition:  string(qc.CreateDisposition),
-		WriteDisposition:   string(qc.WriteDisposition),
-		AllowLargeResults:  qc.AllowLargeResults,
-		Priority:           string(qc.Priority),
-		MaximumBytesBilled: qc.MaxBytesBilled,
-		TimePartitioning:   qc.TimePartitioning.toBQ(),
+		Query:                              qc.Q,
+		CreateDisposition:                  string(qc.CreateDisposition),
+		WriteDisposition:                   string(qc.WriteDisposition),
+		AllowLargeResults:                  qc.AllowLargeResults,
+		Priority:                           string(qc.Priority),
+		MaximumBytesBilled:                 qc.MaxBytesBilled,
+		TimePartitioning:                   qc.TimePartitioning.toBQ(),
+		DestinationEncryptionConfiguration: qc.DestinationEncryptionConfig.toBQ(),
 	}
 	if len(qc.TableDefinitions) > 0 {
 		qconf.TableDefinitions = make(map[string]bq.ExternalDataConfiguration)
@@ -256,12 +261,15 @@ func (c *Client) Query(q string) *Query {
 }
 
 // Run initiates a query job.
-func (q *Query) Run(ctx context.Context) (*Job, error) {
+func (q *Query) Run(ctx context.Context) (j *Job, err error) {
+	ctx = trace.StartSpan(ctx, "cloud.google.com/go/bigquery.Query.Run")
+	defer func() { trace.EndSpan(ctx, err) }()
+
 	job, err := q.newJob()
 	if err != nil {
 		return nil, err
 	}
-	j, err := q.client.insertJob(ctx, job, nil)
+	j, err = q.client.insertJob(ctx, job, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +282,7 @@ func (q *Query) newJob() (*bq.Job, error) {
 		return nil, err
 	}
 	return &bq.Job{
-		JobReference:  q.JobIDConfig.createJobRef(q.client.projectID),
+		JobReference:  q.JobIDConfig.createJobRef(q.client),
 		Configuration: config,
 	}, nil
 }

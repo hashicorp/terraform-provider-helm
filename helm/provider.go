@@ -17,6 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	// Import to initialize client auth plugins.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/helm/cmd/helm/installer"
@@ -53,7 +55,7 @@ func Provider() terraform.ResourceProvider {
 			"tiller_image": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "gcr.io/kubernetes-helm/tiller:v2.7.2",
+				Default:     "gcr.io/kubernetes-helm/tiller:v2.9.0",
 				Description: "Tiller image to install. If Tiller is not already installed.",
 			},
 			"service_account": {

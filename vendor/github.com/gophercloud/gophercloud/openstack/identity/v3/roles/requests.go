@@ -201,6 +201,26 @@ func ListAssignments(client *gophercloud.ServiceClient, opts ListAssignmentsOpts
 	})
 }
 
+// ListAssignmentsOnResourceOpts provides options to list role assignments
+// for a user/group on a project/domain
+type ListAssignmentsOnResourceOpts struct {
+	// UserID is the ID of a user to assign a role
+	// Note: exactly one of UserID or GroupID must be provided
+	UserID string `xor:"GroupID"`
+
+	// GroupID is the ID of a group to assign a role
+	// Note: exactly one of UserID or GroupID must be provided
+	GroupID string `xor:"UserID"`
+
+	// ProjectID is the ID of a project to assign a role on
+	// Note: exactly one of ProjectID or DomainID must be provided
+	ProjectID string `xor:"DomainID"`
+
+	// DomainID is the ID of a domain to assign a role on
+	// Note: exactly one of ProjectID or DomainID must be provided
+	DomainID string `xor:"ProjectID"`
+}
+
 // AssignOpts provides options to assign a role
 type AssignOpts struct {
 	// UserID is the ID of a user to assign a role
@@ -237,6 +257,42 @@ type UnassignOpts struct {
 	// DomainID is the ID of a domain to unassign a role on
 	// Note: exactly one of ProjectID or DomainID must be provided
 	DomainID string `xor:"ProjectID"`
+}
+
+// ListAssignmentsOnResource is the operation responsible for listing role
+// assignments for a user/group on a project/domain.
+func ListAssignmentsOnResource(client *gophercloud.ServiceClient, opts ListAssignmentsOnResourceOpts) pagination.Pager {
+	// Check xor conditions
+	_, err := gophercloud.BuildRequestBody(opts, "")
+	if err != nil {
+		return pagination.Pager{Err: err}
+	}
+
+	// Get corresponding URL
+	var targetID string
+	var targetType string
+	if opts.ProjectID != "" {
+		targetID = opts.ProjectID
+		targetType = "projects"
+	} else {
+		targetID = opts.DomainID
+		targetType = "domains"
+	}
+
+	var actorID string
+	var actorType string
+	if opts.UserID != "" {
+		actorID = opts.UserID
+		actorType = "users"
+	} else {
+		actorID = opts.GroupID
+		actorType = "groups"
+	}
+
+	url := listAssignmentsOnResourceURL(client, targetType, targetID, actorType, actorID)
+	return pagination.NewPager(client, url, func(r pagination.PageResult) pagination.Page {
+		return RolePage{pagination.LinkedPageBase{PageResult: r}}
+	})
 }
 
 // Assign is the operation responsible for assigning a role

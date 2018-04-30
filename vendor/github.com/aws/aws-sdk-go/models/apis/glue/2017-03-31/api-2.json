@@ -1190,7 +1190,8 @@
       "type":"structure",
       "members":{
         "JobName":{"shape":"NameString"},
-        "Arguments":{"shape":"GenericMap"}
+        "Arguments":{"shape":"GenericMap"},
+        "Timeout":{"shape":"Timeout"}
       }
     },
     "ActionList":{
@@ -1433,7 +1434,8 @@
       "type":"structure",
       "members":{
         "GrokClassifier":{"shape":"GrokClassifier"},
-        "XMLClassifier":{"shape":"XMLClassifier"}
+        "XMLClassifier":{"shape":"XMLClassifier"},
+        "JsonClassifier":{"shape":"JsonClassifier"}
       }
     },
     "ClassifierList":{
@@ -1713,7 +1715,8 @@
       "type":"structure",
       "members":{
         "GrokClassifier":{"shape":"CreateGrokClassifierRequest"},
-        "XMLClassifier":{"shape":"CreateXMLClassifierRequest"}
+        "XMLClassifier":{"shape":"CreateXMLClassifierRequest"},
+        "JsonClassifier":{"shape":"CreateJsonClassifierRequest"}
       }
     },
     "CreateClassifierResponse":{
@@ -1777,8 +1780,7 @@
       "type":"structure",
       "required":[
         "EndpointName",
-        "RoleArn",
-        "PublicKey"
+        "RoleArn"
       ],
       "members":{
         "EndpointName":{"shape":"GenericString"},
@@ -1841,13 +1843,25 @@
         "DefaultArguments":{"shape":"GenericMap"},
         "Connections":{"shape":"ConnectionsList"},
         "MaxRetries":{"shape":"MaxRetries"},
-        "AllocatedCapacity":{"shape":"IntegerValue"}
+        "AllocatedCapacity":{"shape":"IntegerValue"},
+        "Timeout":{"shape":"Timeout"}
       }
     },
     "CreateJobResponse":{
       "type":"structure",
       "members":{
         "Name":{"shape":"NameString"}
+      }
+    },
+    "CreateJsonClassifierRequest":{
+      "type":"structure",
+      "required":[
+        "Name",
+        "JsonPath"
+      ],
+      "members":{
+        "Name":{"shape":"NameString"},
+        "JsonPath":{"shape":"JsonPath"}
       }
     },
     "CreatePartitionRequest":{
@@ -1914,7 +1928,8 @@
         "Schedule":{"shape":"GenericString"},
         "Predicate":{"shape":"Predicate"},
         "Actions":{"shape":"ActionList"},
-        "Description":{"shape":"DescriptionString"}
+        "Description":{"shape":"DescriptionString"},
+        "StartOnCreation":{"shape":"BooleanValue"}
       }
     },
     "CreateTriggerResponse":{
@@ -2187,6 +2202,7 @@
         "SecurityGroupIds":{"shape":"StringList"},
         "SubnetId":{"shape":"GenericString"},
         "YarnEndpointAddress":{"shape":"GenericString"},
+        "PrivateAddress":{"shape":"GenericString"},
         "ZeppelinRemoteSparkInterpreterPort":{"shape":"IntegerValue"},
         "PublicAddress":{"shape":"GenericString"},
         "Status":{"shape":"GenericString"},
@@ -2828,7 +2844,8 @@
         "DefaultArguments":{"shape":"GenericMap"},
         "Connections":{"shape":"ConnectionsList"},
         "MaxRetries":{"shape":"MaxRetries"},
-        "AllocatedCapacity":{"shape":"IntegerValue"}
+        "AllocatedCapacity":{"shape":"IntegerValue"},
+        "Timeout":{"shape":"Timeout"}
       }
     },
     "JobBookmarkEntry":{
@@ -2868,7 +2885,9 @@
         "Arguments":{"shape":"GenericMap"},
         "ErrorMessage":{"shape":"ErrorString"},
         "PredecessorRuns":{"shape":"PredecessorList"},
-        "AllocatedCapacity":{"shape":"IntegerValue"}
+        "AllocatedCapacity":{"shape":"IntegerValue"},
+        "ExecutionTime":{"shape":"IntegerValue"},
+        "Timeout":{"shape":"Timeout"}
       }
     },
     "JobRunList":{
@@ -2883,7 +2902,8 @@
         "STOPPING",
         "STOPPED",
         "SUCCEEDED",
-        "FAILED"
+        "FAILED",
+        "TIMEOUT"
       ]
     },
     "JobUpdate":{
@@ -2897,9 +2917,25 @@
         "DefaultArguments":{"shape":"GenericMap"},
         "Connections":{"shape":"ConnectionsList"},
         "MaxRetries":{"shape":"MaxRetries"},
-        "AllocatedCapacity":{"shape":"IntegerValue"}
+        "AllocatedCapacity":{"shape":"IntegerValue"},
+        "Timeout":{"shape":"Timeout"}
       }
     },
+    "JsonClassifier":{
+      "type":"structure",
+      "required":[
+        "Name",
+        "JsonPath"
+      ],
+      "members":{
+        "Name":{"shape":"NameString"},
+        "CreationTime":{"shape":"Timestamp"},
+        "LastUpdated":{"shape":"Timestamp"},
+        "Version":{"shape":"VersionId"},
+        "JsonPath":{"shape":"JsonPath"}
+      }
+    },
+    "JsonPath":{"type":"string"},
     "JsonValue":{"type":"string"},
     "KeyString":{
       "type":"string",
@@ -3332,7 +3368,8 @@
         "JobName":{"shape":"NameString"},
         "JobRunId":{"shape":"IdString"},
         "Arguments":{"shape":"GenericMap"},
-        "AllocatedCapacity":{"shape":"IntegerValue"}
+        "AllocatedCapacity":{"shape":"IntegerValue"},
+        "Timeout":{"shape":"Timeout"}
       }
     },
     "StartJobRunResponse":{
@@ -3496,6 +3533,11 @@
       "type":"list",
       "member":{"shape":"TableVersionError"}
     },
+    "Timeout":{
+      "type":"integer",
+      "box":true,
+      "min":1
+    },
     "Timestamp":{"type":"timestamp"},
     "TimestampValue":{"type":"timestamp"},
     "Token":{"type":"string"},
@@ -3569,7 +3611,8 @@
       "type":"structure",
       "members":{
         "GrokClassifier":{"shape":"UpdateGrokClassifierRequest"},
-        "XMLClassifier":{"shape":"UpdateXMLClassifierRequest"}
+        "XMLClassifier":{"shape":"UpdateXMLClassifierRequest"},
+        "JsonClassifier":{"shape":"UpdateJsonClassifierRequest"}
       }
     },
     "UpdateClassifierResponse":{
@@ -3685,6 +3728,14 @@
       "type":"structure",
       "members":{
         "JobName":{"shape":"NameString"}
+      }
+    },
+    "UpdateJsonClassifierRequest":{
+      "type":"structure",
+      "required":["Name"],
+      "members":{
+        "Name":{"shape":"NameString"},
+        "JsonPath":{"shape":"JsonPath"}
       }
     },
     "UpdatePartitionRequest":{

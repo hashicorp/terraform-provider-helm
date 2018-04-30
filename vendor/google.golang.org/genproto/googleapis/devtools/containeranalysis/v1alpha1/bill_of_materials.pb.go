@@ -15,12 +15,16 @@ It is generated from these files:
 It has these top-level messages:
 	PackageManager
 	Occurrence
+	Resource
 	Note
 	Deployable
 	Discovery
 	BuildType
 	BuildSignature
+	PgpSignedAttestation
+	AttestationAuthority
 	BuildDetails
+	ScanConfig
 	GetOccurrenceRequest
 	ListOccurrencesRequest
 	ListOccurrencesResponse
@@ -36,9 +40,15 @@ It has these top-level messages:
 	UpdateNoteRequest
 	ListNoteOccurrencesRequest
 	ListNoteOccurrencesResponse
+	CreateOperationRequest
+	UpdateOperationRequest
 	OperationMetadata
 	GetVulnzOccurrencesSummaryRequest
 	GetVulnzOccurrencesSummaryResponse
+	GetScanConfigRequest
+	ListScanConfigsRequest
+	ListScanConfigsResponse
+	UpdateScanConfigRequest
 	DockerImage
 	VulnerabilityType
 	BuildProvenance

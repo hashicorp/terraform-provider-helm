@@ -15,7 +15,7 @@ go_test(
     ],
     tags = ["integration"],
     deps = [
-        "//pkg/api:go_default_library",
+        "//pkg/api/legacyscheme:go_default_library",
         "//pkg/api/testapi:go_default_library",
         "//pkg/cloudprovider/providers/fake:go_default_library",
         "//pkg/controller/volume/attachdetach:go_default_library",
@@ -23,7 +23,7 @@ go_test(
         "//pkg/controller/volume/persistentvolume:go_default_library",
         "//pkg/volume:go_default_library",
         "//pkg/volume/testing:go_default_library",
-        "//pkg/volume/util/volumehelper:go_default_library",
+        "//pkg/volume/util:go_default_library",
         "//test/integration/framework:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",

@@ -8,12 +8,13 @@ load(
 
 go_binary(
     name = "linkcheck",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
 )
 
 go_library(
     name = "go_default_library",
     srcs = ["links.go"],
+    importpath = "k8s.io/kubernetes/cmd/linkcheck",
     deps = [
         "//vendor/github.com/mvdan/xurls:go_default_library",
         "//vendor/github.com/spf13/pflag:go_default_library",

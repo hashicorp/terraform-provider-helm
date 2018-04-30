@@ -15,7 +15,7 @@ const opCreateDeliveryStream = "CreateDeliveryStream"
 
 // CreateDeliveryStreamRequest generates a "aws/request.Request" representing the
 // client's request for the CreateDeliveryStream operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -57,7 +57,7 @@ func (c *Firehose) CreateDeliveryStreamRequest(input *CreateDeliveryStreamInput)
 //
 // Creates a delivery stream.
 //
-// By default, you can create up to 20 delivery streams per region.
+// By default, you can create up to 50 delivery streams per AWS Region.
 //
 // This is an asynchronous operation that immediately returns. The initial status
 // of the delivery stream is CREATING. After the delivery stream is created,
@@ -65,24 +65,25 @@ func (c *Firehose) CreateDeliveryStreamRequest(input *CreateDeliveryStreamInput)
 // delivery stream that is not in the ACTIVE state cause an exception. To check
 // the state of a delivery stream, use DescribeDeliveryStream.
 //
-// A Kinesis Firehose delivery stream can be configured to receive records directly
-// from providers using PutRecord or PutRecordBatch, or it can be configured
-// to use an existing Kinesis stream as its source. To specify a Kinesis stream
-// as input, set the DeliveryStreamType parameter to KinesisStreamAsSource,
-// and provide the Kinesis stream ARN and role ARN in the KinesisStreamSourceConfiguration
-// parameter.
+// A Kinesis Data Firehose delivery stream can be configured to receive records
+// directly from providers using PutRecord or PutRecordBatch, or it can be configured
+// to use an existing Kinesis data stream as its source. To specify a Kinesis
+// data stream as input, set the DeliveryStreamType parameter to KinesisStreamAsSource,
+// and provide the Kinesis data stream Amazon Resource Name (ARN) and role ARN
+// in the KinesisStreamSourceConfiguration parameter.
 //
 // A delivery stream is configured with a single destination: Amazon S3, Amazon
-// ES, or Amazon Redshift. You must specify only one of the following destination
+// ES, Amazon Redshift, or Splunk. Specify only one of the following destination
 // configuration parameters: ExtendedS3DestinationConfiguration, S3DestinationConfiguration,
-// ElasticsearchDestinationConfiguration, or RedshiftDestinationConfiguration.
+// ElasticsearchDestinationConfiguration, RedshiftDestinationConfiguration,
+// or SplunkDestinationConfiguration.
 //
 // When you specify S3DestinationConfiguration, you can also provide the following
 // optional values: BufferingHints, EncryptionConfiguration, and CompressionFormat.
-// By default, if no BufferingHints value is provided, Kinesis Firehose buffers
-// data up to 5 MB or for 5 minutes, whichever condition is satisfied first.
-// Note that BufferingHints is a hint, so there are some cases where the service
-// cannot adhere to these conditions strictly; for example, record boundaries
+// By default, if no BufferingHints value is provided, Kinesis Data Firehose
+// buffers data up to 5 MB or for 5 minutes, whichever condition is satisfied
+// first. BufferingHints is a hint, so there are some cases where the service
+// cannot adhere to these conditions strictly. For example, record boundaries
 // are such that the size is a little over or under the configured buffering
 // size. By default, no encryption is performed. We strongly recommend that
 // you enable encryption to ensure secure data storage in Amazon S3.
@@ -90,23 +91,25 @@ func (c *Firehose) CreateDeliveryStreamRequest(input *CreateDeliveryStreamInput)
 // A few notes about Amazon Redshift as a destination:
 //
 //    * An Amazon Redshift destination requires an S3 bucket as intermediate
-//    location, as Kinesis Firehose first delivers data to S3 and then uses
-//    COPY syntax to load data into an Amazon Redshift table. This is specified
-//    in the RedshiftDestinationConfiguration.S3Configuration parameter.
+//    location. This is because Kinesis Data Firehose first delivers data to
+//    Amazon S3 and then uses COPY syntax to load data into an Amazon Redshift
+//    table. This is specified in the RedshiftDestinationConfiguration.S3Configuration
+//    parameter.
 //
 //    * The compression formats SNAPPY or ZIP cannot be specified in RedshiftDestinationConfiguration.S3Configuration
 //    because the Amazon Redshift COPY operation that reads from the S3 bucket
 //    doesn't support these compression formats.
 //
-//    * We strongly recommend that you use the user name and password you provide
-//    exclusively with Kinesis Firehose, and that the permissions for the account
-//    are restricted for Amazon Redshift INSERT permissions.
+//    * We strongly recommend that you use the user name and password that you
+//    provide exclusively with Kinesis Data Firehose. In addition, the permissions
+//    for the account should be restricted for Amazon Redshift INSERT permissions.
 //
-// Kinesis Firehose assumes the IAM role that is configured as part of the destination.
-// The role should allow the Kinesis Firehose principal to assume the role,
-// and the role should have permissions that allow the service to deliver the
-// data. For more information, see Amazon S3 Bucket Access (http://docs.aws.amazon.com/firehose/latest/dev/controlling-access.html#using-iam-s3)
-// in the Amazon Kinesis Firehose Developer Guide.
+// Kinesis Data Firehose assumes the IAM role that is configured as part of
+// the destination. The role should allow the Kinesis Data Firehose principal
+// to assume the role, and the role should have permissions that allow the service
+// to deliver the data. For more information, see Grant Kinesis Firehose Access
+// to an Amazon S3 Destination (http://docs.aws.amazon.com/firehose/latest/dev/controlling-access.html#using-iam-s3)
+// in the Amazon Kinesis Data Firehose Developer Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -151,7 +154,7 @@ const opDeleteDeliveryStream = "DeleteDeliveryStream"
 
 // DeleteDeliveryStreamRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteDeliveryStream operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -244,7 +247,7 @@ const opDescribeDeliveryStream = "DescribeDeliveryStream"
 
 // DescribeDeliveryStreamRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeDeliveryStream operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -286,8 +289,8 @@ func (c *Firehose) DescribeDeliveryStreamRequest(input *DescribeDeliveryStreamIn
 //
 // Describes the specified delivery stream and gets the status. For example,
 // after your delivery stream is created, call DescribeDeliveryStream to see
-// if the delivery stream is ACTIVE and therefore ready for data to be sent
-// to it.
+// whether the delivery stream is ACTIVE and therefore ready for data to be
+// sent to it.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -326,7 +329,7 @@ const opListDeliveryStreams = "ListDeliveryStreams"
 
 // ListDeliveryStreamsRequest generates a "aws/request.Request" representing the
 // client's request for the ListDeliveryStreams operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -404,11 +407,97 @@ func (c *Firehose) ListDeliveryStreamsWithContext(ctx aws.Context, input *ListDe
 	return out, req.Send()
 }
 
+const opListTagsForDeliveryStream = "ListTagsForDeliveryStream"
+
+// ListTagsForDeliveryStreamRequest generates a "aws/request.Request" representing the
+// client's request for the ListTagsForDeliveryStream operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfuly.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See ListTagsForDeliveryStream for more information on using the ListTagsForDeliveryStream
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the ListTagsForDeliveryStreamRequest method.
+//    req, resp := client.ListTagsForDeliveryStreamRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ListTagsForDeliveryStream
+func (c *Firehose) ListTagsForDeliveryStreamRequest(input *ListTagsForDeliveryStreamInput) (req *request.Request, output *ListTagsForDeliveryStreamOutput) {
+	op := &request.Operation{
+		Name:       opListTagsForDeliveryStream,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &ListTagsForDeliveryStreamInput{}
+	}
+
+	output = &ListTagsForDeliveryStreamOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// ListTagsForDeliveryStream API operation for Amazon Kinesis Firehose.
+//
+// Lists the tags for the specified delivery stream. This operation has a limit
+// of five transactions per second per account.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Kinesis Firehose's
+// API operation ListTagsForDeliveryStream for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
+//   The specified resource could not be found.
+//
+//   * ErrCodeInvalidArgumentException "InvalidArgumentException"
+//   The specified input parameter has a value that is not valid.
+//
+//   * ErrCodeLimitExceededException "LimitExceededException"
+//   You have already reached the limit for a requested resource.
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ListTagsForDeliveryStream
+func (c *Firehose) ListTagsForDeliveryStream(input *ListTagsForDeliveryStreamInput) (*ListTagsForDeliveryStreamOutput, error) {
+	req, out := c.ListTagsForDeliveryStreamRequest(input)
+	return out, req.Send()
+}
+
+// ListTagsForDeliveryStreamWithContext is the same as ListTagsForDeliveryStream with the addition of
+// the ability to pass a context and additional request options.
+//
+// See ListTagsForDeliveryStream for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *Firehose) ListTagsForDeliveryStreamWithContext(ctx aws.Context, input *ListTagsForDeliveryStreamInput, opts ...request.Option) (*ListTagsForDeliveryStreamOutput, error) {
+	req, out := c.ListTagsForDeliveryStreamRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opPutRecord = "PutRecord"
 
 // PutRecordRequest generates a "aws/request.Request" representing the
 // client's request for the PutRecord operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -448,22 +537,22 @@ func (c *Firehose) PutRecordRequest(input *PutRecordInput) (req *request.Request
 
 // PutRecord API operation for Amazon Kinesis Firehose.
 //
-// Writes a single data record into an Amazon Kinesis Firehose delivery stream.
-// To write multiple data records into a delivery stream, use PutRecordBatch.
+// Writes a single data record into an Amazon Kinesis Data Firehose delivery
+// stream. To write multiple data records into a delivery stream, use PutRecordBatch.
 // Applications using these operations are referred to as producers.
 //
 // By default, each delivery stream can take in up to 2,000 transactions per
 // second, 5,000 records per second, or 5 MB per second. Note that if you use
 // PutRecord and PutRecordBatch, the limits are an aggregate across these two
 // operations for each delivery stream. For more information about limits and
-// how to request an increase, see Amazon Kinesis Firehose Limits (http://docs.aws.amazon.com/firehose/latest/dev/limits.html).
+// how to request an increase, see Amazon Kinesis Data Firehose Limits (http://docs.aws.amazon.com/firehose/latest/dev/limits.html).
 //
 // You must specify the name of the delivery stream and the data record when
 // using PutRecord. The data record consists of a data blob that can be up to
-// 1,000 KB in size, and any kind of data, for example, a segment from a log
-// file, geographic location data, website clickstream data, and so on.
+// 1,000 KB in size and any kind of data. For example, it can be a segment from
+// a log file, geographic location data, website clickstream data, and so on.
 //
-// Kinesis Firehose buffers records before delivering them to the destination.
+// Kinesis Data Firehose buffers records before delivering them to the destination.
 // To disambiguate the data blobs at the destination, a common solution is to
 // use delimiters in the data, such as a newline (\n) or some other character
 // unique within the data. This allows the consumer application to parse individual
@@ -477,9 +566,9 @@ func (c *Firehose) PutRecordRequest(input *PutRecordInput) (req *request.Request
 // and retry. If the exception persists, it is possible that the throughput
 // limits have been exceeded for the delivery stream.
 //
-// Data records sent to Kinesis Firehose are stored for 24 hours from the time
-// they are added to a delivery stream as it attempts to send the records to
-// the destination. If the destination is unreachable for more than 24 hours,
+// Data records sent to Kinesis Data Firehose are stored for 24 hours from the
+// time they are added to a delivery stream as it attempts to send the records
+// to the destination. If the destination is unreachable for more than 24 hours,
 // the data is no longer available.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -497,10 +586,10 @@ func (c *Firehose) PutRecordRequest(input *PutRecordInput) (req *request.Request
 //   The specified input parameter has a value that is not valid.
 //
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
-//   The service is unavailable, back off and retry the operation. If you continue
+//   The service is unavailable. Back off and retry the operation. If you continue
 //   to see the exception, throughput limits for the delivery stream may have
 //   been exceeded. For more information about limits and how to request an increase,
-//   see Amazon Kinesis Firehose Limits (http://docs.aws.amazon.com/firehose/latest/dev/limits.html).
+//   see Amazon Kinesis Data Firehose Limits (http://docs.aws.amazon.com/firehose/latest/dev/limits.html).
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/PutRecord
 func (c *Firehose) PutRecord(input *PutRecordInput) (*PutRecordOutput, error) {
@@ -528,7 +617,7 @@ const opPutRecordBatch = "PutRecordBatch"
 
 // PutRecordBatchRequest generates a "aws/request.Request" representing the
 // client's request for the PutRecordBatch operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -577,7 +666,7 @@ func (c *Firehose) PutRecordBatchRequest(input *PutRecordBatchInput) (req *reque
 // second, 5,000 records per second, or 5 MB per second. If you use PutRecord
 // and PutRecordBatch, the limits are an aggregate across these two operations
 // for each delivery stream. For more information about limits, see Amazon Kinesis
-// Firehose Limits (http://docs.aws.amazon.com/firehose/latest/dev/limits.html).
+// Data Firehose Limits (http://docs.aws.amazon.com/firehose/latest/dev/limits.html).
 //
 // Each PutRecordBatch request supports up to 500 records. Each record in the
 // request can be as large as 1,000 KB (before 64-bit encoding), up to a limit
@@ -585,11 +674,11 @@ func (c *Firehose) PutRecordBatchRequest(input *PutRecordBatchInput) (req *reque
 //
 // You must specify the name of the delivery stream and the data record when
 // using PutRecord. The data record consists of a data blob that can be up to
-// 1,000 KB in size, and any kind of data. For example, it could be a segment
-// from a log file, geographic location data, web site clickstream data, and
+// 1,000 KB in size and any kind of data. For example, it could be a segment
+// from a log file, geographic location data, website clickstream data, and
 // so on.
 //
-// Kinesis Firehose buffers records before delivering them to the destination.
+// Kinesis Data Firehose buffers records before delivering them to the destination.
 // To disambiguate the data blobs at the destination, a common solution is to
 // use delimiters in the data, such as a newline (\n) or some other character
 // unique within the data. This allows the consumer application to parse individual
@@ -601,7 +690,7 @@ func (c *Firehose) PutRecordBatchRequest(input *PutRecordBatchInput) (req *reque
 // correlates with a record in the request array using the same ordering, from
 // the top to the bottom. The response array always includes the same number
 // of records as the request array. RequestResponses includes both successfully
-// and unsuccessfully processed records. Kinesis Firehose attempts to process
+// and unsuccessfully processed records. Kinesis Data Firehose attempts to process
 // all records in each PutRecordBatch request. A single record failure does
 // not stop the processing of subsequent records.
 //
@@ -622,9 +711,9 @@ func (c *Firehose) PutRecordBatchRequest(input *PutRecordBatchInput) (req *reque
 // If the exception persists, it is possible that the throughput limits have
 // been exceeded for the delivery stream.
 //
-// Data records sent to Kinesis Firehose are stored for 24 hours from the time
-// they are added to a delivery stream as it attempts to send the records to
-// the destination. If the destination is unreachable for more than 24 hours,
+// Data records sent to Kinesis Data Firehose are stored for 24 hours from the
+// time they are added to a delivery stream as it attempts to send the records
+// to the destination. If the destination is unreachable for more than 24 hours,
 // the data is no longer available.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -642,10 +731,10 @@ func (c *Firehose) PutRecordBatchRequest(input *PutRecordBatchInput) (req *reque
 //   The specified input parameter has a value that is not valid.
 //
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
-//   The service is unavailable, back off and retry the operation. If you continue
+//   The service is unavailable. Back off and retry the operation. If you continue
 //   to see the exception, throughput limits for the delivery stream may have
 //   been exceeded. For more information about limits and how to request an increase,
-//   see Amazon Kinesis Firehose Limits (http://docs.aws.amazon.com/firehose/latest/dev/limits.html).
+//   see Amazon Kinesis Data Firehose Limits (http://docs.aws.amazon.com/firehose/latest/dev/limits.html).
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/PutRecordBatch
 func (c *Firehose) PutRecordBatch(input *PutRecordBatchInput) (*PutRecordBatchOutput, error) {
@@ -669,11 +758,203 @@ func (c *Firehose) PutRecordBatchWithContext(ctx aws.Context, input *PutRecordBa
 	return out, req.Send()
 }
 
+const opTagDeliveryStream = "TagDeliveryStream"
+
+// TagDeliveryStreamRequest generates a "aws/request.Request" representing the
+// client's request for the TagDeliveryStream operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfuly.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See TagDeliveryStream for more information on using the TagDeliveryStream
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the TagDeliveryStreamRequest method.
+//    req, resp := client.TagDeliveryStreamRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/TagDeliveryStream
+func (c *Firehose) TagDeliveryStreamRequest(input *TagDeliveryStreamInput) (req *request.Request, output *TagDeliveryStreamOutput) {
+	op := &request.Operation{
+		Name:       opTagDeliveryStream,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &TagDeliveryStreamInput{}
+	}
+
+	output = &TagDeliveryStreamOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// TagDeliveryStream API operation for Amazon Kinesis Firehose.
+//
+// Adds or updates tags for the specified delivery stream. A tag is a key-value
+// pair (the value is optional) that you can define and assign to AWS resources.
+// If you specify a tag that already exists, the tag value is replaced with
+// the value that you specify in the request. Tags are metadata. For example,
+// you can add friendly names and descriptions or other types of information
+// that can help you distinguish the delivery stream. For more information about
+// tags, see Using Cost Allocation Tags (https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html)
+// in the AWS Billing and Cost Management User Guide.
+//
+// Each delivery stream can have up to 50 tags.
+//
+// This operation has a limit of five transactions per second per account.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Kinesis Firehose's
+// API operation TagDeliveryStream for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
+//   The specified resource could not be found.
+//
+//   * ErrCodeResourceInUseException "ResourceInUseException"
+//   The resource is already in use and not available for this operation.
+//
+//   * ErrCodeInvalidArgumentException "InvalidArgumentException"
+//   The specified input parameter has a value that is not valid.
+//
+//   * ErrCodeLimitExceededException "LimitExceededException"
+//   You have already reached the limit for a requested resource.
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/TagDeliveryStream
+func (c *Firehose) TagDeliveryStream(input *TagDeliveryStreamInput) (*TagDeliveryStreamOutput, error) {
+	req, out := c.TagDeliveryStreamRequest(input)
+	return out, req.Send()
+}
+
+// TagDeliveryStreamWithContext is the same as TagDeliveryStream with the addition of
+// the ability to pass a context and additional request options.
+//
+// See TagDeliveryStream for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *Firehose) TagDeliveryStreamWithContext(ctx aws.Context, input *TagDeliveryStreamInput, opts ...request.Option) (*TagDeliveryStreamOutput, error) {
+	req, out := c.TagDeliveryStreamRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opUntagDeliveryStream = "UntagDeliveryStream"
+
+// UntagDeliveryStreamRequest generates a "aws/request.Request" representing the
+// client's request for the UntagDeliveryStream operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfuly.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See UntagDeliveryStream for more information on using the UntagDeliveryStream
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the UntagDeliveryStreamRequest method.
+//    req, resp := client.UntagDeliveryStreamRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/UntagDeliveryStream
+func (c *Firehose) UntagDeliveryStreamRequest(input *UntagDeliveryStreamInput) (req *request.Request, output *UntagDeliveryStreamOutput) {
+	op := &request.Operation{
+		Name:       opUntagDeliveryStream,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &UntagDeliveryStreamInput{}
+	}
+
+	output = &UntagDeliveryStreamOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// UntagDeliveryStream API operation for Amazon Kinesis Firehose.
+//
+// Removes tags from the specified delivery stream. Removed tags are deleted,
+// and you can't recover them after this operation successfully completes.
+//
+// If you specify a tag that doesn't exist, the operation ignores it.
+//
+// This operation has a limit of five transactions per second per account.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for Amazon Kinesis Firehose's
+// API operation UntagDeliveryStream for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
+//   The specified resource could not be found.
+//
+//   * ErrCodeResourceInUseException "ResourceInUseException"
+//   The resource is already in use and not available for this operation.
+//
+//   * ErrCodeInvalidArgumentException "InvalidArgumentException"
+//   The specified input parameter has a value that is not valid.
+//
+//   * ErrCodeLimitExceededException "LimitExceededException"
+//   You have already reached the limit for a requested resource.
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/UntagDeliveryStream
+func (c *Firehose) UntagDeliveryStream(input *UntagDeliveryStreamInput) (*UntagDeliveryStreamOutput, error) {
+	req, out := c.UntagDeliveryStreamRequest(input)
+	return out, req.Send()
+}
+
+// UntagDeliveryStreamWithContext is the same as UntagDeliveryStream with the addition of
+// the ability to pass a context and additional request options.
+//
+// See UntagDeliveryStream for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *Firehose) UntagDeliveryStreamWithContext(ctx aws.Context, input *UntagDeliveryStreamInput, opts ...request.Option) (*UntagDeliveryStreamOutput, error) {
+	req, out := c.UntagDeliveryStreamRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
 const opUpdateDestination = "UpdateDestination"
 
 // UpdateDestinationRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateDestination operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -715,18 +996,18 @@ func (c *Firehose) UpdateDestinationRequest(input *UpdateDestinationInput) (req 
 //
 // Updates the specified destination of the specified delivery stream.
 //
-// You can use this operation to change the destination type (for example, to
-// replace the Amazon S3 destination with Amazon Redshift) or change the parameters
+// Use this operation to change the destination type (for example, to replace
+// the Amazon S3 destination with Amazon Redshift) or change the parameters
 // associated with a destination (for example, to change the bucket name of
 // the Amazon S3 destination). The update might not occur immediately. The target
 // delivery stream remains active while the configurations are updated, so data
 // writes to the delivery stream can continue during this process. The updated
 // configurations are usually effective within a few minutes.
 //
-// Note that switching between Amazon ES and other services is not supported.
-// For an Amazon ES destination, you can only update to another Amazon ES destination.
+// Switching between Amazon ES and other services is not supported. For an Amazon
+// ES destination, you can only update to another Amazon ES destination.
 //
-// If the destination type is the same, Kinesis Firehose merges the configuration
+// If the destination type is the same, Kinesis Data Firehose merges the configuration
 // parameters specified with the destination configuration that already exists
 // on the delivery stream. If any of the parameters are not specified in the
 // call, the existing values are retained. For example, in the Amazon S3 destination,
@@ -734,15 +1015,15 @@ func (c *Firehose) UpdateDestinationRequest(input *UpdateDestinationInput) (req 
 // is maintained on the destination.
 //
 // If the destination type is not the same, for example, changing the destination
-// from Amazon S3 to Amazon Redshift, Kinesis Firehose does not merge any parameters.
-// In this case, all parameters must be specified.
+// from Amazon S3 to Amazon Redshift, Kinesis Data Firehose does not merge any
+// parameters. In this case, all parameters must be specified.
 //
-// Kinesis Firehose uses CurrentDeliveryStreamVersionId to avoid race conditions
+// Kinesis Data Firehose uses CurrentDeliveryStreamVersionId to avoid race conditions
 // and conflicting merges. This is a required field, and the service updates
 // the configuration only if the existing configuration has a version ID that
 // matches. After the update is applied successfully, the version ID is updated,
-// and can be retrieved using DescribeDeliveryStream. Use the new version ID
-// to set CurrentDeliveryStreamVersionId in the next call.
+// and you can retrieve it using DescribeDeliveryStream. Use the new version
+// ID to set CurrentDeliveryStreamVersionId in the next call.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -788,9 +1069,8 @@ func (c *Firehose) UpdateDestinationWithContext(ctx aws.Context, input *UpdateDe
 }
 
 // Describes hints for the buffering to perform before delivering data to the
-// destination. Please note that these options are treated as hints, and therefore
-// Kinesis Firehose may choose to use different values when it is optimal.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/BufferingHints
+// destination. These options are treated as hints, and therefore Kinesis Data
+// Firehose might choose to use different values whenever it is optimal.
 type BufferingHints struct {
 	_ struct{} `type:"structure"`
 
@@ -846,7 +1126,6 @@ func (s *BufferingHints) SetSizeInMBs(v int64) *BufferingHints {
 }
 
 // Describes the Amazon CloudWatch logging options for your delivery stream.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/CloudWatchLoggingOptions
 type CloudWatchLoggingOptions struct {
 	_ struct{} `type:"structure"`
 
@@ -891,14 +1170,13 @@ func (s *CloudWatchLoggingOptions) SetLogStreamName(v string) *CloudWatchLogging
 }
 
 // Describes a COPY command for Amazon Redshift.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/CopyCommand
 type CopyCommand struct {
 	_ struct{} `type:"structure"`
 
 	// Optional parameters to use with the Amazon Redshift COPY command. For more
 	// information, see the "Optional Parameters" section of Amazon Redshift COPY
 	// command (http://docs.aws.amazon.com/redshift/latest/dg/r_COPY.html). Some
-	// possible examples that would apply to Kinesis Firehose are as follows:
+	// possible examples that would apply to Kinesis Data Firehose are as follows:
 	//
 	// delimiter '\t' lzop; - fields are delimited with "\t" (TAB character) and
 	// compressed using lzop.
@@ -970,13 +1248,12 @@ func (s *CopyCommand) SetDataTableName(v string) *CopyCommand {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/CreateDeliveryStreamInput
 type CreateDeliveryStreamInput struct {
 	_ struct{} `type:"structure"`
 
 	// The name of the delivery stream. This name must be unique per AWS account
-	// in the same region. If the delivery streams are in different accounts or
-	// different regions, you can have multiple delivery streams with the same name.
+	// in the same Region. If the delivery streams are in different accounts or
+	// different Regions, you can have multiple delivery streams with the same name.
 	//
 	// DeliveryStreamName is a required field
 	DeliveryStreamName *string `min:"1" type:"string" required:"true"`
@@ -985,8 +1262,8 @@ type CreateDeliveryStreamInput struct {
 	//
 	//    * DirectPut: Provider applications access the delivery stream directly.
 	//
-	//    * KinesisStreamAsSource: The delivery stream uses a Kinesis stream as
-	//    a source.
+	//    * KinesisStreamAsSource: The delivery stream uses a Kinesis data stream
+	//    as a source.
 	DeliveryStreamType *string `type:"string" enum:"DeliveryStreamType"`
 
 	// The destination in Amazon ES. You can specify only one destination.
@@ -995,8 +1272,9 @@ type CreateDeliveryStreamInput struct {
 	// The destination in Amazon S3. You can specify only one destination.
 	ExtendedS3DestinationConfiguration *ExtendedS3DestinationConfiguration `type:"structure"`
 
-	// When a Kinesis stream is used as the source for the delivery stream, a KinesisStreamSourceConfiguration
-	// containing the Kinesis stream ARN and the role ARN for the source stream.
+	// When a Kinesis data stream is used as the source for the delivery stream,
+	// a KinesisStreamSourceConfiguration containing the Kinesis data stream Amazon
+	// Resource Name (ARN) and the role ARN for the source stream.
 	KinesisStreamSourceConfiguration *KinesisStreamSourceConfiguration `type:"structure"`
 
 	// The destination in Amazon Redshift. You can specify only one destination.
@@ -1113,7 +1391,6 @@ func (s *CreateDeliveryStreamInput) SetSplunkDestinationConfiguration(v *SplunkD
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/CreateDeliveryStreamOutput
 type CreateDeliveryStreamOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -1137,7 +1414,6 @@ func (s *CreateDeliveryStreamOutput) SetDeliveryStreamARN(v string) *CreateDeliv
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/DeleteDeliveryStreamInput
 type DeleteDeliveryStreamInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1179,7 +1455,6 @@ func (s *DeleteDeliveryStreamInput) SetDeliveryStreamName(v string) *DeleteDeliv
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/DeleteDeliveryStreamOutput
 type DeleteDeliveryStreamOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -1195,7 +1470,6 @@ func (s DeleteDeliveryStreamOutput) GoString() string {
 }
 
 // Contains information about a delivery stream.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/DeliveryStreamDescription
 type DeliveryStreamDescription struct {
 	_ struct{} `type:"structure"`
 
@@ -1221,8 +1495,8 @@ type DeliveryStreamDescription struct {
 	//
 	//    * DirectPut: Provider applications access the delivery stream directly.
 	//
-	//    * KinesisStreamAsSource: The delivery stream uses a Kinesis stream as
-	//    a source.
+	//    * KinesisStreamAsSource: The delivery stream uses a Kinesis data stream
+	//    as a source.
 	//
 	// DeliveryStreamType is a required field
 	DeliveryStreamType *string `type:"string" required:"true" enum:"DeliveryStreamType"`
@@ -1241,7 +1515,7 @@ type DeliveryStreamDescription struct {
 	LastUpdateTimestamp *time.Time `type:"timestamp" timestampFormat:"unix"`
 
 	// If the DeliveryStreamType parameter is KinesisStreamAsSource, a SourceDescription
-	// object describing the source Kinesis stream.
+	// object describing the source Kinesis data stream.
 	Source *SourceDescription `type:"structure"`
 
 	// Each time the destination is updated for a delivery stream, the version ID
@@ -1323,7 +1597,6 @@ func (s *DeliveryStreamDescription) SetVersionId(v string) *DeliveryStreamDescri
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/DescribeDeliveryStreamInput
 type DescribeDeliveryStreamInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1333,7 +1606,7 @@ type DescribeDeliveryStreamInput struct {
 	DeliveryStreamName *string `min:"1" type:"string" required:"true"`
 
 	// The ID of the destination to start returning the destination information.
-	// Currently, Kinesis Firehose supports one destination per delivery stream.
+	// Currently, Kinesis Data Firehose supports one destination per delivery stream.
 	ExclusiveStartDestinationId *string `min:"1" type:"string"`
 
 	// The limit on the number of destinations to return. Currently, you can have
@@ -1391,7 +1664,6 @@ func (s *DescribeDeliveryStreamInput) SetLimit(v int64) *DescribeDeliveryStreamI
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/DescribeDeliveryStreamOutput
 type DescribeDeliveryStreamOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -1418,7 +1690,6 @@ func (s *DescribeDeliveryStreamOutput) SetDeliveryStreamDescription(v *DeliveryS
 }
 
 // Describes the destination for a delivery stream.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/DestinationDescription
 type DestinationDescription struct {
 	_ struct{} `type:"structure"`
 
@@ -1491,7 +1762,6 @@ func (s *DestinationDescription) SetSplunkDestinationDescription(v *SplunkDestin
 
 // Describes the buffering to perform before delivering data to the Amazon ES
 // destination.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ElasticsearchBufferingHints
 type ElasticsearchBufferingHints struct {
 	_ struct{} `type:"structure"`
 
@@ -1547,7 +1817,6 @@ func (s *ElasticsearchBufferingHints) SetSizeInMBs(v int64) *ElasticsearchBuffer
 }
 
 // Describes the configuration of a destination in Amazon ES.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ElasticsearchDestinationConfiguration
 type ElasticsearchDestinationConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -1572,31 +1841,32 @@ type ElasticsearchDestinationConfiguration struct {
 
 	// The Elasticsearch index rotation period. Index rotation appends a time stamp
 	// to the IndexName to facilitate the expiration of old data. For more information,
-	// see Index Rotation for Amazon Elasticsearch Service Destination (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#es-index-rotation).
+	// see Index Rotation for the Amazon ES Destination (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#es-index-rotation).
 	// The default value is OneDay.
 	IndexRotationPeriod *string `type:"string" enum:"ElasticsearchIndexRotationPeriod"`
 
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The retry behavior in case Kinesis Firehose is unable to deliver documents
+	// The retry behavior in case Kinesis Data Firehose is unable to deliver documents
 	// to Amazon ES. The default value is 300 (5 minutes).
 	RetryOptions *ElasticsearchRetryOptions `type:"structure"`
 
-	// The ARN of the IAM role to be assumed by Kinesis Firehose for calling the
-	// Amazon ES Configuration API and for indexing documents. For more information,
-	// see Amazon S3 Bucket Access (http://docs.aws.amazon.com/firehose/latest/dev/controlling-access.html#using-iam-s3).
+	// The Amazon Resource Name (ARN) of the IAM role to be assumed by Kinesis Data
+	// Firehose for calling the Amazon ES Configuration API and for indexing documents.
+	// For more information, see Grant Kinesis Data Firehose Access to an Amazon
+	// Destination (http://docs.aws.amazon.com/firehose/latest/dev/controlling-access.html#using-iam-s3).
 	//
 	// RoleARN is a required field
 	RoleARN *string `min:"1" type:"string" required:"true"`
 
 	// Defines how documents should be delivered to Amazon S3. When set to FailedDocumentsOnly,
-	// Kinesis Firehose writes any documents that could not be indexed to the configured
-	// Amazon S3 destination, with elasticsearch-failed/ appended to the key prefix.
-	// When set to AllDocuments, Kinesis Firehose delivers all incoming records
-	// to Amazon S3, and also writes failed documents with elasticsearch-failed/
-	// appended to the prefix. For more information, see Amazon S3 Backup for Amazon
-	// Elasticsearch Service Destination (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#es-s3-backup).
+	// Kinesis Data Firehose writes any documents that could not be indexed to the
+	// configured Amazon S3 destination, with elasticsearch-failed/ appended to
+	// the key prefix. When set to AllDocuments, Kinesis Data Firehose delivers
+	// all incoming records to Amazon S3, and also writes failed documents with
+	// elasticsearch-failed/ appended to the prefix. For more information, see Data
+	// Delivery Failure Handling (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#retry).
 	// Default value is FailedDocumentsOnly.
 	S3BackupMode *string `type:"string" enum:"ElasticsearchS3BackupMode"`
 
@@ -1740,7 +2010,6 @@ func (s *ElasticsearchDestinationConfiguration) SetTypeName(v string) *Elasticse
 }
 
 // The destination description in Amazon ES.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ElasticsearchDestinationDescription
 type ElasticsearchDestinationDescription struct {
 	_ struct{} `type:"structure"`
 
@@ -1765,7 +2034,7 @@ type ElasticsearchDestinationDescription struct {
 	// The Amazon ES retry options.
 	RetryOptions *ElasticsearchRetryOptions `type:"structure"`
 
-	// The ARN of the AWS credentials.
+	// The Amazon Resource Name (ARN) of the AWS credentials.
 	RoleARN *string `min:"1" type:"string"`
 
 	// The Amazon S3 backup mode.
@@ -1855,7 +2124,6 @@ func (s *ElasticsearchDestinationDescription) SetTypeName(v string) *Elasticsear
 }
 
 // Describes an update for a destination in Amazon ES.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ElasticsearchDestinationUpdate
 type ElasticsearchDestinationUpdate struct {
 	_ struct{} `type:"structure"`
 
@@ -1876,20 +2144,21 @@ type ElasticsearchDestinationUpdate struct {
 
 	// The Elasticsearch index rotation period. Index rotation appends a time stamp
 	// to IndexName to facilitate the expiration of old data. For more information,
-	// see Index Rotation for Amazon Elasticsearch Service Destination (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#es-index-rotation).
+	// see Index Rotation for the Amazon ES Destination (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#es-index-rotation).
 	// Default value is OneDay.
 	IndexRotationPeriod *string `type:"string" enum:"ElasticsearchIndexRotationPeriod"`
 
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The retry behavior in case Kinesis Firehose is unable to deliver documents
+	// The retry behavior in case Kinesis Data Firehose is unable to deliver documents
 	// to Amazon ES. The default value is 300 (5 minutes).
 	RetryOptions *ElasticsearchRetryOptions `type:"structure"`
 
-	// The ARN of the IAM role to be assumed by Kinesis Firehose for calling the
-	// Amazon ES Configuration API and for indexing documents. For more information,
-	// see Amazon S3 Bucket Access (http://docs.aws.amazon.com/firehose/latest/dev/controlling-access.html#using-iam-s3).
+	// The Amazon Resource Name (ARN) of the IAM role to be assumed by Kinesis Data
+	// Firehose for calling the Amazon ES Configuration API and for indexing documents.
+	// For more information, see Grant Kinesis Data Firehose Access to an Amazon
+	// S3 Destination (http://docs.aws.amazon.com/firehose/latest/dev/controlling-access.html#using-iam-s3).
 	RoleARN *string `min:"1" type:"string"`
 
 	// The Amazon S3 destination.
@@ -2006,17 +2275,16 @@ func (s *ElasticsearchDestinationUpdate) SetTypeName(v string) *ElasticsearchDes
 	return s
 }
 
-// Configures retry behavior in case Kinesis Firehose is unable to deliver documents
-// to Amazon ES.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ElasticsearchRetryOptions
+// Configures retry behavior in case Kinesis Data Firehose is unable to deliver
+// documents to Amazon ES.
 type ElasticsearchRetryOptions struct {
 	_ struct{} `type:"structure"`
 
 	// After an initial failure to deliver to Amazon ES, the total amount of time
-	// during which Kinesis Firehose re-attempts delivery (including the first attempt).
-	// After this time has elapsed, the failed documents are written to Amazon S3.
-	// Default value is 300 seconds (5 minutes). A value of 0 (zero) results in
-	// no retries.
+	// during which Kinesis Data Firehose re-attempts delivery (including the first
+	// attempt). After this time has elapsed, the failed documents are written to
+	// Amazon S3. Default value is 300 seconds (5 minutes). A value of 0 (zero)
+	// results in no retries.
 	DurationInSeconds *int64 `type:"integer"`
 }
 
@@ -2037,7 +2305,6 @@ func (s *ElasticsearchRetryOptions) SetDurationInSeconds(v int64) *Elasticsearch
 }
 
 // Describes the encryption for a destination in Amazon S3.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/EncryptionConfiguration
 type EncryptionConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -2087,7 +2354,6 @@ func (s *EncryptionConfiguration) SetNoEncryptionConfig(v string) *EncryptionCon
 }
 
 // Describes the configuration of a destination in Amazon S3.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ExtendedS3DestinationConfiguration
 type ExtendedS3DestinationConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -2110,16 +2376,17 @@ type ExtendedS3DestinationConfiguration struct {
 	EncryptionConfiguration *EncryptionConfiguration `type:"structure"`
 
 	// The "YYYY/MM/DD/HH" time format prefix is automatically used for delivered
-	// S3 files. You can specify an extra prefix to be added in front of the time
-	// format prefix. If the prefix ends with a slash, it appears as a folder in
-	// the S3 bucket. For more information, see Amazon S3 Object Name Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html)
-	// in the Amazon Kinesis Firehose Developer Guide.
+	// Amazon S3 files. You can specify an extra prefix to be added in front of
+	// the time format prefix. If the prefix ends with a slash, it appears as a
+	// folder in the S3 bucket. For more information, see Amazon S3 Object Name
+	// Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#s3-object-name)
+	// in the Amazon Kinesis Data Firehose Developer Guide.
 	Prefix *string `type:"string"`
 
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The ARN of the AWS credentials.
+	// The Amazon Resource Name (ARN) of the AWS credentials.
 	//
 	// RoleARN is a required field
 	RoleARN *string `min:"1" type:"string" required:"true"`
@@ -2244,7 +2511,6 @@ func (s *ExtendedS3DestinationConfiguration) SetS3BackupMode(v string) *Extended
 }
 
 // Describes a destination in Amazon S3.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ExtendedS3DestinationDescription
 type ExtendedS3DestinationDescription struct {
 	_ struct{} `type:"structure"`
 
@@ -2275,14 +2541,14 @@ type ExtendedS3DestinationDescription struct {
 	// The "YYYY/MM/DD/HH" time format prefix is automatically used for delivered
 	// S3 files. You can specify an extra prefix to be added in front of the time
 	// format prefix. If the prefix ends with a slash, it appears as a folder in
-	// the S3 bucket. For more information, see Amazon S3 Object Name Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html)
-	// in the Amazon Kinesis Firehose Developer Guide.
+	// the S3 bucket. For more information, see Amazon S3 Object Name Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#s3-object-name)
+	// in the Amazon Kinesis Data Firehose Developer Guide.
 	Prefix *string `type:"string"`
 
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The ARN of the AWS credentials.
+	// The Amazon Resource Name (ARN) of the AWS credentials.
 	//
 	// RoleARN is a required field
 	RoleARN *string `min:"1" type:"string" required:"true"`
@@ -2365,7 +2631,6 @@ func (s *ExtendedS3DestinationDescription) SetS3BackupMode(v string) *ExtendedS3
 }
 
 // Describes an update for a destination in Amazon S3.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ExtendedS3DestinationUpdate
 type ExtendedS3DestinationUpdate struct {
 	_ struct{} `type:"structure"`
 
@@ -2386,16 +2651,17 @@ type ExtendedS3DestinationUpdate struct {
 	EncryptionConfiguration *EncryptionConfiguration `type:"structure"`
 
 	// The "YYYY/MM/DD/HH" time format prefix is automatically used for delivered
-	// S3 files. You can specify an extra prefix to be added in front of the time
-	// format prefix. If the prefix ends with a slash, it appears as a folder in
-	// the S3 bucket. For more information, see Amazon S3 Object Name Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html)
-	// in the Amazon Kinesis Firehose Developer Guide.
+	// Amazon S3 files. You can specify an extra prefix to be added in front of
+	// the time format prefix. If the prefix ends with a slash, it appears as a
+	// folder in the S3 bucket. For more information, see Amazon S3 Object Name
+	// Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#s3-object-name)
+	// in the Amazon Kinesis Data Firehose Developer Guide.
 	Prefix *string `type:"string"`
 
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The ARN of the AWS credentials.
+	// The Amazon Resource Name (ARN) of the AWS credentials.
 	RoleARN *string `min:"1" type:"string"`
 
 	// Enables or disables Amazon S3 backup mode.
@@ -2512,12 +2778,11 @@ func (s *ExtendedS3DestinationUpdate) SetS3BackupUpdate(v *S3DestinationUpdate) 
 }
 
 // Describes an encryption key for a destination in Amazon S3.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/KMSEncryptionConfig
 type KMSEncryptionConfig struct {
 	_ struct{} `type:"structure"`
 
-	// The ARN of the encryption key. Must belong to the same region as the destination
-	// Amazon S3 bucket.
+	// The Amazon Resource Name (ARN) of the encryption key. Must belong to the
+	// same AWS Region as the destination Amazon S3 bucket.
 	//
 	// AWSKMSKeyARN is a required field
 	AWSKMSKeyARN *string `min:"1" type:"string" required:"true"`
@@ -2555,18 +2820,17 @@ func (s *KMSEncryptionConfig) SetAWSKMSKeyARN(v string) *KMSEncryptionConfig {
 	return s
 }
 
-// The stream and role ARNs for a Kinesis stream used as the source for a delivery
-// stream.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/KinesisStreamSourceConfiguration
+// The stream and role Amazon Resource Names (ARNs) for a Kinesis data stream
+// used as the source for a delivery stream.
 type KinesisStreamSourceConfiguration struct {
 	_ struct{} `type:"structure"`
 
-	// The ARN of the source Kinesis stream.
+	// The ARN of the source Kinesis data stream.
 	//
 	// KinesisStreamARN is a required field
 	KinesisStreamARN *string `min:"1" type:"string" required:"true"`
 
-	// The ARN of the role that provides access to the source Kinesis stream.
+	// The ARN of the role that provides access to the source Kinesis data stream.
 	//
 	// RoleARN is a required field
 	RoleARN *string `min:"1" type:"string" required:"true"`
@@ -2616,20 +2880,19 @@ func (s *KinesisStreamSourceConfiguration) SetRoleARN(v string) *KinesisStreamSo
 	return s
 }
 
-// Details about a Kinesis stream used as the source for a Kinesis Firehose
-// delivery stream.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/KinesisStreamSourceDescription
+// Details about a Kinesis data stream used as the source for a Kinesis Data
+// Firehose delivery stream.
 type KinesisStreamSourceDescription struct {
 	_ struct{} `type:"structure"`
 
-	// Kinesis Firehose starts retrieving records from the Kinesis stream starting
-	// with this time stamp.
+	// Kinesis Data Firehose starts retrieving records from the Kinesis data stream
+	// starting with this time stamp.
 	DeliveryStartTimestamp *time.Time `type:"timestamp" timestampFormat:"unix"`
 
-	// The ARN of the source Kinesis stream.
+	// The Amazon Resource Name (ARN) of the source Kinesis data stream.
 	KinesisStreamARN *string `min:"1" type:"string"`
 
-	// The ARN of the role used by the source Kinesis stream.
+	// The ARN of the role used by the source Kinesis data stream.
 	RoleARN *string `min:"1" type:"string"`
 }
 
@@ -2661,7 +2924,6 @@ func (s *KinesisStreamSourceDescription) SetRoleARN(v string) *KinesisStreamSour
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ListDeliveryStreamsInput
 type ListDeliveryStreamsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2669,8 +2931,8 @@ type ListDeliveryStreamsInput struct {
 	//
 	//    * DirectPut: Provider applications access the delivery stream directly.
 	//
-	//    * KinesisStreamAsSource: The delivery stream uses a Kinesis stream as
-	//    a source.
+	//    * KinesisStreamAsSource: The delivery stream uses a Kinesis data stream
+	//    as a source.
 	//
 	// This parameter is optional. If this parameter is omitted, delivery streams
 	// of all types are returned.
@@ -2727,7 +2989,6 @@ func (s *ListDeliveryStreamsInput) SetLimit(v int64) *ListDeliveryStreamsInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ListDeliveryStreamsOutput
 type ListDeliveryStreamsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2764,8 +3025,115 @@ func (s *ListDeliveryStreamsOutput) SetHasMoreDeliveryStreams(v bool) *ListDeliv
 	return s
 }
 
+type ListTagsForDeliveryStreamInput struct {
+	_ struct{} `type:"structure"`
+
+	// The name of the delivery stream whose tags you want to list.
+	//
+	// DeliveryStreamName is a required field
+	DeliveryStreamName *string `min:"1" type:"string" required:"true"`
+
+	// The key to use as the starting point for the list of tags. If you set this
+	// parameter, ListTagsForDeliveryStream gets all tags that occur after ExclusiveStartTagKey.
+	ExclusiveStartTagKey *string `min:"1" type:"string"`
+
+	// The number of tags to return. If this number is less than the total number
+	// of tags associated with the delivery stream, HasMoreTags is set to true in
+	// the response. To list additional tags, set ExclusiveStartTagKey to the last
+	// key in the response.
+	Limit *int64 `min:"1" type:"integer"`
+}
+
+// String returns the string representation
+func (s ListTagsForDeliveryStreamInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListTagsForDeliveryStreamInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ListTagsForDeliveryStreamInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ListTagsForDeliveryStreamInput"}
+	if s.DeliveryStreamName == nil {
+		invalidParams.Add(request.NewErrParamRequired("DeliveryStreamName"))
+	}
+	if s.DeliveryStreamName != nil && len(*s.DeliveryStreamName) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DeliveryStreamName", 1))
+	}
+	if s.ExclusiveStartTagKey != nil && len(*s.ExclusiveStartTagKey) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ExclusiveStartTagKey", 1))
+	}
+	if s.Limit != nil && *s.Limit < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("Limit", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetDeliveryStreamName sets the DeliveryStreamName field's value.
+func (s *ListTagsForDeliveryStreamInput) SetDeliveryStreamName(v string) *ListTagsForDeliveryStreamInput {
+	s.DeliveryStreamName = &v
+	return s
+}
+
+// SetExclusiveStartTagKey sets the ExclusiveStartTagKey field's value.
+func (s *ListTagsForDeliveryStreamInput) SetExclusiveStartTagKey(v string) *ListTagsForDeliveryStreamInput {
+	s.ExclusiveStartTagKey = &v
+	return s
+}
+
+// SetLimit sets the Limit field's value.
+func (s *ListTagsForDeliveryStreamInput) SetLimit(v int64) *ListTagsForDeliveryStreamInput {
+	s.Limit = &v
+	return s
+}
+
+type ListTagsForDeliveryStreamOutput struct {
+	_ struct{} `type:"structure"`
+
+	// If this is true in the response, more tags are available. To list the remaining
+	// tags, set ExclusiveStartTagKey to the key of the last tag returned and call
+	// ListTagsForDeliveryStream again.
+	//
+	// HasMoreTags is a required field
+	HasMoreTags *bool `type:"boolean" required:"true"`
+
+	// A list of tags associated with DeliveryStreamName, starting with the first
+	// tag after ExclusiveStartTagKey and up to the specified Limit.
+	//
+	// Tags is a required field
+	Tags []*Tag `type:"list" required:"true"`
+}
+
+// String returns the string representation
+func (s ListTagsForDeliveryStreamOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListTagsForDeliveryStreamOutput) GoString() string {
+	return s.String()
+}
+
+// SetHasMoreTags sets the HasMoreTags field's value.
+func (s *ListTagsForDeliveryStreamOutput) SetHasMoreTags(v bool) *ListTagsForDeliveryStreamOutput {
+	s.HasMoreTags = &v
+	return s
+}
+
+// SetTags sets the Tags field's value.
+func (s *ListTagsForDeliveryStreamOutput) SetTags(v []*Tag) *ListTagsForDeliveryStreamOutput {
+	s.Tags = v
+	return s
+}
+
 // Describes a data processing configuration.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ProcessingConfiguration
 type ProcessingConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -2819,7 +3187,6 @@ func (s *ProcessingConfiguration) SetProcessors(v []*Processor) *ProcessingConfi
 }
 
 // Describes a data processor.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/Processor
 type Processor struct {
 	_ struct{} `type:"structure"`
 
@@ -2878,7 +3245,6 @@ func (s *Processor) SetType(v string) *Processor {
 }
 
 // Describes the processor parameter.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/ProcessorParameter
 type ProcessorParameter struct {
 	_ struct{} `type:"structure"`
 
@@ -2934,7 +3300,6 @@ func (s *ProcessorParameter) SetParameterValue(v string) *ProcessorParameter {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/PutRecordBatchInput
 type PutRecordBatchInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3003,7 +3368,6 @@ func (s *PutRecordBatchInput) SetRecords(v []*Record) *PutRecordBatchInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/PutRecordBatchOutput
 type PutRecordBatchOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3045,7 +3409,6 @@ func (s *PutRecordBatchOutput) SetRequestResponses(v []*PutRecordBatchResponseEn
 // If the record is successfully added to your delivery stream, it receives
 // a record ID. If the record fails to be added to your delivery stream, the
 // result includes an error code and an error message.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/PutRecordBatchResponseEntry
 type PutRecordBatchResponseEntry struct {
 	_ struct{} `type:"structure"`
 
@@ -3087,7 +3450,6 @@ func (s *PutRecordBatchResponseEntry) SetRecordId(v string) *PutRecordBatchRespo
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/PutRecordInput
 type PutRecordInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3148,7 +3510,6 @@ func (s *PutRecordInput) SetRecord(v *Record) *PutRecordInput {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/PutRecordOutput
 type PutRecordOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3175,7 +3536,6 @@ func (s *PutRecordOutput) SetRecordId(v string) *PutRecordOutput {
 }
 
 // The unit of data in a delivery stream.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/Record
 type Record struct {
 	_ struct{} `type:"structure"`
 
@@ -3218,7 +3578,6 @@ func (s *Record) SetData(v []byte) *Record {
 }
 
 // Describes the configuration of a destination in Amazon Redshift.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/RedshiftDestinationConfiguration
 type RedshiftDestinationConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -3243,11 +3602,11 @@ type RedshiftDestinationConfiguration struct {
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The retry behavior in case Kinesis Firehose is unable to deliver documents
+	// The retry behavior in case Kinesis Data Firehose is unable to deliver documents
 	// to Amazon Redshift. Default value is 3600 (60 minutes).
 	RetryOptions *RedshiftRetryOptions `type:"structure"`
 
-	// The ARN of the AWS credentials.
+	// The Amazon Resource Name (ARN) of the AWS credentials.
 	//
 	// RoleARN is a required field
 	RoleARN *string `min:"1" type:"string" required:"true"`
@@ -3411,7 +3770,6 @@ func (s *RedshiftDestinationConfiguration) SetUsername(v string) *RedshiftDestin
 }
 
 // Describes a destination in Amazon Redshift.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/RedshiftDestinationDescription
 type RedshiftDestinationDescription struct {
 	_ struct{} `type:"structure"`
 
@@ -3431,11 +3789,11 @@ type RedshiftDestinationDescription struct {
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The retry behavior in case Kinesis Firehose is unable to deliver documents
+	// The retry behavior in case Kinesis Data Firehose is unable to deliver documents
 	// to Amazon Redshift. Default value is 3600 (60 minutes).
 	RetryOptions *RedshiftRetryOptions `type:"structure"`
 
-	// The ARN of the AWS credentials.
+	// The Amazon Resource Name (ARN) of the AWS credentials.
 	//
 	// RoleARN is a required field
 	RoleARN *string `min:"1" type:"string" required:"true"`
@@ -3528,7 +3886,6 @@ func (s *RedshiftDestinationDescription) SetUsername(v string) *RedshiftDestinat
 }
 
 // Describes an update for a destination in Amazon Redshift.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/RedshiftDestinationUpdate
 type RedshiftDestinationUpdate struct {
 	_ struct{} `type:"structure"`
 
@@ -3547,11 +3904,11 @@ type RedshiftDestinationUpdate struct {
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The retry behavior in case Kinesis Firehose is unable to deliver documents
+	// The retry behavior in case Kinesis Data Firehose is unable to deliver documents
 	// to Amazon Redshift. Default value is 3600 (60 minutes).
 	RetryOptions *RedshiftRetryOptions `type:"structure"`
 
-	// The ARN of the AWS credentials.
+	// The Amazon Resource Name (ARN) of the AWS credentials.
 	RoleARN *string `min:"1" type:"string"`
 
 	// The Amazon S3 backup mode.
@@ -3689,16 +4046,15 @@ func (s *RedshiftDestinationUpdate) SetUsername(v string) *RedshiftDestinationUp
 	return s
 }
 
-// Configures retry behavior in case Kinesis Firehose is unable to deliver documents
-// to Amazon Redshift.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/RedshiftRetryOptions
+// Configures retry behavior in case Kinesis Data Firehose is unable to deliver
+// documents to Amazon Redshift.
 type RedshiftRetryOptions struct {
 	_ struct{} `type:"structure"`
 
-	// The length of time during which Kinesis Firehose retries delivery after a
-	// failure, starting from the initial request and including the first attempt.
-	// The default value is 3600 seconds (60 minutes). Kinesis Firehose does not
-	// retry if the value of DurationInSeconds is 0 (zero) or if the first delivery
+	// The length of time during which Kinesis Data Firehose retries delivery after
+	// a failure, starting from the initial request and including the first attempt.
+	// The default value is 3600 seconds (60 minutes). Kinesis Data Firehose does
+	// not retry if the value of DurationInSeconds is 0 (zero) or if the first delivery
 	// attempt takes longer than the current value.
 	DurationInSeconds *int64 `type:"integer"`
 }
@@ -3720,7 +4076,6 @@ func (s *RedshiftRetryOptions) SetDurationInSeconds(v int64) *RedshiftRetryOptio
 }
 
 // Describes the configuration of a destination in Amazon S3.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/S3DestinationConfiguration
 type S3DestinationConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -3748,13 +4103,14 @@ type S3DestinationConfiguration struct {
 	EncryptionConfiguration *EncryptionConfiguration `type:"structure"`
 
 	// The "YYYY/MM/DD/HH" time format prefix is automatically used for delivered
-	// S3 files. You can specify an extra prefix to be added in front of the time
-	// format prefix. If the prefix ends with a slash, it appears as a folder in
-	// the S3 bucket. For more information, see Amazon S3 Object Name Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html)
-	// in the Amazon Kinesis Firehose Developer Guide.
+	// Amazon S3 files. You can specify an extra prefix to be added in front of
+	// the time format prefix. If the prefix ends with a slash, it appears as a
+	// folder in the S3 bucket. For more information, see Amazon S3 Object Name
+	// Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#s3-object-name)
+	// in the Amazon Kinesis Data Firehose Developer Guide.
 	Prefix *string `type:"string"`
 
-	// The ARN of the AWS credentials.
+	// The Amazon Resource Name (ARN) of the AWS credentials.
 	//
 	// RoleARN is a required field
 	RoleARN *string `min:"1" type:"string" required:"true"`
@@ -3845,7 +4201,6 @@ func (s *S3DestinationConfiguration) SetRoleARN(v string) *S3DestinationConfigur
 }
 
 // Describes a destination in Amazon S3.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/S3DestinationDescription
 type S3DestinationDescription struct {
 	_ struct{} `type:"structure"`
 
@@ -3875,13 +4230,14 @@ type S3DestinationDescription struct {
 	EncryptionConfiguration *EncryptionConfiguration `type:"structure" required:"true"`
 
 	// The "YYYY/MM/DD/HH" time format prefix is automatically used for delivered
-	// S3 files. You can specify an extra prefix to be added in front of the time
-	// format prefix. If the prefix ends with a slash, it appears as a folder in
-	// the S3 bucket. For more information, see Amazon S3 Object Name Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html)
-	// in the Amazon Kinesis Firehose Developer Guide.
+	// Amazon S3 files. You can specify an extra prefix to be added in front of
+	// the time format prefix. If the prefix ends with a slash, it appears as a
+	// folder in the S3 bucket. For more information, see Amazon S3 Object Name
+	// Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#s3-object-name)
+	// in the Amazon Kinesis Data Firehose Developer Guide.
 	Prefix *string `type:"string"`
 
-	// The ARN of the AWS credentials.
+	// The Amazon Resource Name (ARN) of the AWS credentials.
 	//
 	// RoleARN is a required field
 	RoleARN *string `min:"1" type:"string" required:"true"`
@@ -3940,7 +4296,6 @@ func (s *S3DestinationDescription) SetRoleARN(v string) *S3DestinationDescriptio
 }
 
 // Describes an update for a destination in Amazon S3.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/S3DestinationUpdate
 type S3DestinationUpdate struct {
 	_ struct{} `type:"structure"`
 
@@ -3966,13 +4321,14 @@ type S3DestinationUpdate struct {
 	EncryptionConfiguration *EncryptionConfiguration `type:"structure"`
 
 	// The "YYYY/MM/DD/HH" time format prefix is automatically used for delivered
-	// S3 files. You can specify an extra prefix to be added in front of the time
-	// format prefix. If the prefix ends with a slash, it appears as a folder in
-	// the S3 bucket. For more information, see Amazon S3 Object Name Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html)
-	// in the Amazon Kinesis Firehose Developer Guide.
+	// Amazon S3 files. You can specify an extra prefix to be added in front of
+	// the time format prefix. If the prefix ends with a slash, it appears as a
+	// folder in the S3 bucket. For more information, see Amazon S3 Object Name
+	// Format (http://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html#s3-object-name)
+	// in the Amazon Kinesis Data Firehose Developer Guide.
 	Prefix *string `type:"string"`
 
-	// The ARN of the AWS credentials.
+	// The Amazon Resource Name (ARN) of the AWS credentials.
 	RoleARN *string `min:"1" type:"string"`
 }
 
@@ -4054,13 +4410,12 @@ func (s *S3DestinationUpdate) SetRoleARN(v string) *S3DestinationUpdate {
 	return s
 }
 
-// Details about a Kinesis stream used as the source for a Kinesis Firehose
-// delivery stream.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/SourceDescription
+// Details about a Kinesis data stream used as the source for a Kinesis Data
+// Firehose delivery stream.
 type SourceDescription struct {
 	_ struct{} `type:"structure"`
 
-	// The KinesisStreamSourceDescription value for the source Kinesis stream.
+	// The KinesisStreamSourceDescription value for the source Kinesis data stream.
 	KinesisStreamSourceDescription *KinesisStreamSourceDescription `type:"structure"`
 }
 
@@ -4081,32 +4436,31 @@ func (s *SourceDescription) SetKinesisStreamSourceDescription(v *KinesisStreamSo
 }
 
 // Describes the configuration of a destination in Splunk.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/SplunkDestinationConfiguration
 type SplunkDestinationConfiguration struct {
 	_ struct{} `type:"structure"`
 
 	// The CloudWatch logging options for your delivery stream.
 	CloudWatchLoggingOptions *CloudWatchLoggingOptions `type:"structure"`
 
-	// The amount of time that Kinesis Firehose waits to receive an acknowledgment
-	// from Splunk after it sends it data. At the end of the timeout period Kinesis
-	// Firehose either tries to send the data again or considers it an error, based
-	// on your retry settings.
+	// The amount of time that Kinesis Data Firehose waits to receive an acknowledgment
+	// from Splunk after it sends it data. At the end of the timeout period, Kinesis
+	// Data Firehose either tries to send the data again or considers it an error,
+	// based on your retry settings.
 	HECAcknowledgmentTimeoutInSeconds *int64 `min:"180" type:"integer"`
 
-	// The HTTP Event Collector (HEC) endpoint to which Kinesis Firehose sends your
-	// data.
+	// The HTTP Event Collector (HEC) endpoint to which Kinesis Data Firehose sends
+	// your data.
 	//
 	// HECEndpoint is a required field
 	HECEndpoint *string `type:"string" required:"true"`
 
-	// This type can be either "Raw" or "Event".
+	// This type can be either "Raw" or "Event."
 	//
 	// HECEndpointType is a required field
 	HECEndpointType *string `type:"string" required:"true" enum:"HECEndpointType"`
 
-	// This is a GUID you obtain from your Splunk cluster when you create a new
-	// HEC endpoint.
+	// This is a GUID that you obtain from your Splunk cluster when you create a
+	// new HEC endpoint.
 	//
 	// HECToken is a required field
 	HECToken *string `type:"string" required:"true"`
@@ -4114,13 +4468,13 @@ type SplunkDestinationConfiguration struct {
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The retry behavior in case Kinesis Firehose is unable to deliver data to
-	// Splunk or if it doesn't receive an acknowledgment of receipt from Splunk.
+	// The retry behavior in case Kinesis Data Firehose is unable to deliver data
+	// to Splunk, or if it doesn't receive an acknowledgment of receipt from Splunk.
 	RetryOptions *SplunkRetryOptions `type:"structure"`
 
 	// Defines how documents should be delivered to Amazon S3. When set to FailedDocumentsOnly,
-	// Kinesis Firehose writes any data that could not be indexed to the configured
-	// Amazon S3 destination. When set to AllDocuments, Kinesis Firehose delivers
+	// Kinesis Data Firehose writes any data that could not be indexed to the configured
+	// Amazon S3 destination. When set to AllDocuments, Kinesis Data Firehose delivers
 	// all incoming records to Amazon S3, and also writes failed documents to Amazon
 	// S3. Default value is FailedDocumentsOnly.
 	S3BackupMode *string `type:"string" enum:"SplunkS3BackupMode"`
@@ -4231,24 +4585,23 @@ func (s *SplunkDestinationConfiguration) SetS3Configuration(v *S3DestinationConf
 }
 
 // Describes a destination in Splunk.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/SplunkDestinationDescription
 type SplunkDestinationDescription struct {
 	_ struct{} `type:"structure"`
 
 	// The CloudWatch logging options for your delivery stream.
 	CloudWatchLoggingOptions *CloudWatchLoggingOptions `type:"structure"`
 
-	// The amount of time that Kinesis Firehose waits to receive an acknowledgment
-	// from Splunk after it sends it data. At the end of the timeout period Kinesis
-	// Firehose either tries to send the data again or considers it an error, based
-	// on your retry settings.
+	// The amount of time that Kinesis Data Firehose waits to receive an acknowledgment
+	// from Splunk after it sends it data. At the end of the timeout period, Kinesis
+	// Data Firehose either tries to send the data again or considers it an error,
+	// based on your retry settings.
 	HECAcknowledgmentTimeoutInSeconds *int64 `min:"180" type:"integer"`
 
-	// The HTTP Event Collector (HEC) endpoint to which Kinesis Firehose sends your
-	// data.
+	// The HTTP Event Collector (HEC) endpoint to which Kinesis Data Firehose sends
+	// your data.
 	HECEndpoint *string `type:"string"`
 
-	// This type can be either "Raw" or "Event".
+	// This type can be either "Raw" or "Event."
 	HECEndpointType *string `type:"string" enum:"HECEndpointType"`
 
 	// This is a GUID you obtain from your Splunk cluster when you create a new
@@ -4258,13 +4611,13 @@ type SplunkDestinationDescription struct {
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The retry behavior in case Kinesis Firehose is unable to deliver data to
-	// Splunk or if it doesn't receive an acknowledgment of receipt from Splunk.
+	// The retry behavior in case Kinesis Data Firehose is unable to deliver data
+	// to Splunk or if it doesn't receive an acknowledgment of receipt from Splunk.
 	RetryOptions *SplunkRetryOptions `type:"structure"`
 
 	// Defines how documents should be delivered to Amazon S3. When set to FailedDocumentsOnly,
-	// Kinesis Firehose writes any data that could not be indexed to the configured
-	// Amazon S3 destination. When set to AllDocuments, Kinesis Firehose delivers
+	// Kinesis Data Firehose writes any data that could not be indexed to the configured
+	// Amazon S3 destination. When set to AllDocuments, Kinesis Data Firehose delivers
 	// all incoming records to Amazon S3, and also writes failed documents to Amazon
 	// S3. Default value is FailedDocumentsOnly.
 	S3BackupMode *string `type:"string" enum:"SplunkS3BackupMode"`
@@ -4338,40 +4691,39 @@ func (s *SplunkDestinationDescription) SetS3DestinationDescription(v *S3Destinat
 }
 
 // Describes an update for a destination in Splunk.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/SplunkDestinationUpdate
 type SplunkDestinationUpdate struct {
 	_ struct{} `type:"structure"`
 
 	// The CloudWatch logging options for your delivery stream.
 	CloudWatchLoggingOptions *CloudWatchLoggingOptions `type:"structure"`
 
-	// The amount of time that Kinesis Firehose waits to receive an acknowledgment
-	// from Splunk after it sends it data. At the end of the timeout period Kinesis
-	// Firehose either tries to send the data again or considers it an error, based
-	// on your retry settings.
+	// The amount of time that Kinesis Data Firehose waits to receive an acknowledgment
+	// from Splunk after it sends data. At the end of the timeout period, Kinesis
+	// Data Firehose either tries to send the data again or considers it an error,
+	// based on your retry settings.
 	HECAcknowledgmentTimeoutInSeconds *int64 `min:"180" type:"integer"`
 
-	// The HTTP Event Collector (HEC) endpoint to which Kinesis Firehose sends your
-	// data.
+	// The HTTP Event Collector (HEC) endpoint to which Kinesis Data Firehose sends
+	// your data.
 	HECEndpoint *string `type:"string"`
 
-	// This type can be either "Raw" or "Event".
+	// This type can be either "Raw" or "Event."
 	HECEndpointType *string `type:"string" enum:"HECEndpointType"`
 
-	// This is a GUID you obtain from your Splunk cluster when you create a new
-	// HEC endpoint.
+	// A GUID that you obtain from your Splunk cluster when you create a new HEC
+	// endpoint.
 	HECToken *string `type:"string"`
 
 	// The data processing configuration.
 	ProcessingConfiguration *ProcessingConfiguration `type:"structure"`
 
-	// The retry behavior in case Kinesis Firehose is unable to deliver data to
-	// Splunk or if it doesn't receive an acknowledgment of receipt from Splunk.
+	// The retry behavior in case Kinesis Data Firehose is unable to deliver data
+	// to Splunk or if it doesn't receive an acknowledgment of receipt from Splunk.
 	RetryOptions *SplunkRetryOptions `type:"structure"`
 
 	// Defines how documents should be delivered to Amazon S3. When set to FailedDocumentsOnly,
-	// Kinesis Firehose writes any data that could not be indexed to the configured
-	// Amazon S3 destination. When set to AllDocuments, Kinesis Firehose delivers
+	// Kinesis Data Firehose writes any data that could not be indexed to the configured
+	// Amazon S3 destination. When set to AllDocuments, Kinesis Data Firehose delivers
 	// all incoming records to Amazon S3, and also writes failed documents to Amazon
 	// S3. Default value is FailedDocumentsOnly.
 	S3BackupMode *string `type:"string" enum:"SplunkS3BackupMode"`
@@ -4467,16 +4819,15 @@ func (s *SplunkDestinationUpdate) SetS3Update(v *S3DestinationUpdate) *SplunkDes
 	return s
 }
 
-// Configures retry behavior in case Kinesis Firehose is unable to deliver documents
-// to Splunk or if it doesn't receive an acknowledgment from Splunk.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/SplunkRetryOptions
+// Configures retry behavior in case Kinesis Data Firehose is unable to deliver
+// documents to Splunk, or if it doesn't receive an acknowledgment from Splunk.
 type SplunkRetryOptions struct {
 	_ struct{} `type:"structure"`
 
-	// The total amount of time that Kinesis Firehose spends on retries. This duration
-	// starts after the initial attempt to send data to Splunk fails and doesn't
-	// include the periods during which Kinesis Firehose waits for acknowledgment
-	// from Splunk after each attempt.
+	// The total amount of time that Kinesis Data Firehose spends on retries. This
+	// duration starts after the initial attempt to send data to Splunk fails. It
+	// doesn't include the periods during which Kinesis Data Firehose waits for
+	// acknowledgment from Splunk after each attempt.
 	DurationInSeconds *int64 `type:"integer"`
 }
 
@@ -4496,12 +4847,220 @@ func (s *SplunkRetryOptions) SetDurationInSeconds(v int64) *SplunkRetryOptions {
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/UpdateDestinationInput
+// Metadata that you can assign to a delivery stream, consisting of a key-value
+// pair.
+type Tag struct {
+	_ struct{} `type:"structure"`
+
+	// A unique identifier for the tag. Maximum length: 128 characters. Valid characters:
+	// Unicode letters, digits, white space, _ . / = + - % @
+	//
+	// Key is a required field
+	Key *string `min:"1" type:"string" required:"true"`
+
+	// An optional string, which you can use to describe or define the tag. Maximum
+	// length: 256 characters. Valid characters: Unicode letters, digits, white
+	// space, _ . / = + - % @
+	Value *string `type:"string"`
+}
+
+// String returns the string representation
+func (s Tag) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s Tag) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *Tag) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "Tag"}
+	if s.Key == nil {
+		invalidParams.Add(request.NewErrParamRequired("Key"))
+	}
+	if s.Key != nil && len(*s.Key) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Key", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetKey sets the Key field's value.
+func (s *Tag) SetKey(v string) *Tag {
+	s.Key = &v
+	return s
+}
+
+// SetValue sets the Value field's value.
+func (s *Tag) SetValue(v string) *Tag {
+	s.Value = &v
+	return s
+}
+
+type TagDeliveryStreamInput struct {
+	_ struct{} `type:"structure"`
+
+	// The name of the delivery stream to which you want to add the tags.
+	//
+	// DeliveryStreamName is a required field
+	DeliveryStreamName *string `min:"1" type:"string" required:"true"`
+
+	// A set of key-value pairs to use to create the tags.
+	//
+	// Tags is a required field
+	Tags []*Tag `min:"1" type:"list" required:"true"`
+}
+
+// String returns the string representation
+func (s TagDeliveryStreamInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s TagDeliveryStreamInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *TagDeliveryStreamInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "TagDeliveryStreamInput"}
+	if s.DeliveryStreamName == nil {
+		invalidParams.Add(request.NewErrParamRequired("DeliveryStreamName"))
+	}
+	if s.DeliveryStreamName != nil && len(*s.DeliveryStreamName) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DeliveryStreamName", 1))
+	}
+	if s.Tags == nil {
+		invalidParams.Add(request.NewErrParamRequired("Tags"))
+	}
+	if s.Tags != nil && len(s.Tags) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("Tags", 1))
+	}
+	if s.Tags != nil {
+		for i, v := range s.Tags {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "Tags", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetDeliveryStreamName sets the DeliveryStreamName field's value.
+func (s *TagDeliveryStreamInput) SetDeliveryStreamName(v string) *TagDeliveryStreamInput {
+	s.DeliveryStreamName = &v
+	return s
+}
+
+// SetTags sets the Tags field's value.
+func (s *TagDeliveryStreamInput) SetTags(v []*Tag) *TagDeliveryStreamInput {
+	s.Tags = v
+	return s
+}
+
+type TagDeliveryStreamOutput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s TagDeliveryStreamOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s TagDeliveryStreamOutput) GoString() string {
+	return s.String()
+}
+
+type UntagDeliveryStreamInput struct {
+	_ struct{} `type:"structure"`
+
+	// The name of the delivery stream.
+	//
+	// DeliveryStreamName is a required field
+	DeliveryStreamName *string `min:"1" type:"string" required:"true"`
+
+	// A list of tag keys. Each corresponding tag is removed from the delivery stream.
+	//
+	// TagKeys is a required field
+	TagKeys []*string `min:"1" type:"list" required:"true"`
+}
+
+// String returns the string representation
+func (s UntagDeliveryStreamInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UntagDeliveryStreamInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *UntagDeliveryStreamInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "UntagDeliveryStreamInput"}
+	if s.DeliveryStreamName == nil {
+		invalidParams.Add(request.NewErrParamRequired("DeliveryStreamName"))
+	}
+	if s.DeliveryStreamName != nil && len(*s.DeliveryStreamName) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("DeliveryStreamName", 1))
+	}
+	if s.TagKeys == nil {
+		invalidParams.Add(request.NewErrParamRequired("TagKeys"))
+	}
+	if s.TagKeys != nil && len(s.TagKeys) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("TagKeys", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetDeliveryStreamName sets the DeliveryStreamName field's value.
+func (s *UntagDeliveryStreamInput) SetDeliveryStreamName(v string) *UntagDeliveryStreamInput {
+	s.DeliveryStreamName = &v
+	return s
+}
+
+// SetTagKeys sets the TagKeys field's value.
+func (s *UntagDeliveryStreamInput) SetTagKeys(v []*string) *UntagDeliveryStreamInput {
+	s.TagKeys = v
+	return s
+}
+
+type UntagDeliveryStreamOutput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s UntagDeliveryStreamOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s UntagDeliveryStreamOutput) GoString() string {
+	return s.String()
+}
+
 type UpdateDestinationInput struct {
 	_ struct{} `type:"structure"`
 
 	// Obtain this value from the VersionId result of DeliveryStreamDescription.
-	// This value is required, and helps the service to perform conditional operations.
+	// This value is required, and it helps the service perform conditional operations.
 	// For example, if there is an interleaving update and this value is null, then
 	// the update destination fails. After the update is successful, the VersionId
 	// value is updated. The service then performs a merge of the old configuration
@@ -4647,7 +5206,6 @@ func (s *UpdateDestinationInput) SetSplunkDestinationUpdate(v *SplunkDestination
 	return s
 }
 
-// See also, https://docs.aws.amazon.com/goto/WebAPI/firehose-2015-08-04/UpdateDestinationOutput
 type UpdateDestinationOutput struct {
 	_ struct{} `type:"structure"`
 }

@@ -34,7 +34,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	imageutils "k8s.io/kubernetes/test/utils/image"
 )
 
 const (
@@ -95,42 +94,6 @@ func waitTillNPodsRunningOnNodes(c clientset.Interface, nodeNames sets.String, p
 	})
 }
 
-// updates labels of nodes given by nodeNames.
-// In case a given label already exists, it overwrites it. If label to remove doesn't exist
-// it silently ignores it.
-// TODO: migrate to use framework.AddOrUpdateLabelOnNode/framework.RemoveLabelOffNode
-func updateNodeLabels(c clientset.Interface, nodeNames sets.String, toAdd, toRemove map[string]string) {
-	const maxRetries = 5
-	for nodeName := range nodeNames {
-		var node *v1.Node
-		var err error
-		for i := 0; i < maxRetries; i++ {
-			node, err = c.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
-			if err != nil {
-				framework.Logf("Error getting node %s: %v", nodeName, err)
-				continue
-			}
-			if toAdd != nil {
-				for k, v := range toAdd {
-					node.ObjectMeta.Labels[k] = v
-				}
-			}
-			if toRemove != nil {
-				for k := range toRemove {
-					delete(node.ObjectMeta.Labels, k)
-				}
-			}
-			_, err = c.CoreV1().Nodes().Update(node)
-			if err != nil {
-				framework.Logf("Error updating node %s: %v", nodeName, err)
-			} else {
-				break
-			}
-		}
-		Expect(err).NotTo(HaveOccurred())
-	}
-}
-
 // Restart the passed-in nfs-server by issuing a `/usr/sbin/rpc.nfsd 1` command in the
 // pod's (only) container. This command changes the number of nfs server threads from
 // (presumably) zero back to 1, and therefore allows nfs to open connections again.
@@ -170,7 +133,7 @@ func createPodUsingNfs(f *framework.Framework, c clientset.Interface, ns, nfsIP,
 			Containers: []v1.Container{
 				{
 					Name:    "pod-nfs-vol",
-					Image:   imageutils.GetBusyBoxImage(),
+					Image:   "busybox",
 					Command: []string{"/bin/sh"},
 					Args:    cmdLine,
 					VolumeMounts: []v1.VolumeMount{
@@ -318,7 +281,11 @@ var _ = SIGDescribe("kubelet", func() {
 			for i := 0; i < numNodes; i++ {
 				nodeNames.Insert(nodes.Items[i].Name)
 			}
-			updateNodeLabels(c, nodeNames, nodeLabels, nil)
+			for nodeName := range nodeNames {
+				for k, v := range nodeLabels {
+					framework.AddOrUpdateLabelOnNode(c, nodeName, k, v)
+				}
+			}
 
 			// Start resourceMonitor only in small clusters.
 			if len(nodes.Items) <= maxNodesToCheck {
@@ -332,7 +299,11 @@ var _ = SIGDescribe("kubelet", func() {
 				resourceMonitor.Stop()
 			}
 			// If we added labels to nodes in this test, remove them now.
-			updateNodeLabels(c, nodeNames, nil, nodeLabels)
+			for nodeName := range nodeNames {
+				for k := range nodeLabels {
+					framework.RemoveLabelOffNode(c, nodeName, k)
+				}
+			}
 		})
 
 		for _, itArg := range deleteTests {
@@ -401,7 +372,6 @@ var _ = SIGDescribe("kubelet", func() {
 			var (
 				nfsServerPod *v1.Pod
 				nfsIP        string
-				NFSconfig    framework.VolumeTestConfig
 				pod          *v1.Pod // client pod
 			)
 
@@ -419,12 +389,14 @@ var _ = SIGDescribe("kubelet", func() {
 
 			BeforeEach(func() {
 				framework.SkipUnlessProviderIs(framework.ProvidersWithSSH...)
-				NFSconfig, nfsServerPod, nfsIP = framework.NewNFSServer(c, ns, []string{"-G", "777", "/exports"})
+				_, nfsServerPod, nfsIP = framework.NewNFSServer(c, ns, []string{"-G", "777", "/exports"})
 			})
 
 			AfterEach(func() {
-				framework.ExpectNoError(framework.DeletePodWithWait(f, c, pod), "AfterEach: Failed to delete pod ", pod.Name)
-				framework.ExpectNoError(framework.DeletePodWithWait(f, c, nfsServerPod), "AfterEach: Failed to delete pod ", nfsServerPod.Name)
+				err := framework.DeletePodWithWait(f, c, pod)
+				Expect(err).NotTo(HaveOccurred(), "AfterEach: Failed to delete client pod ", pod.Name)
+				err = framework.DeletePodWithWait(f, c, nfsServerPod)
+				Expect(err).NotTo(HaveOccurred(), "AfterEach: Failed to delete server pod ", nfsServerPod.Name)
 			})
 
 			// execute It blocks from above table of tests
@@ -435,8 +407,9 @@ var _ = SIGDescribe("kubelet", func() {
 					By("Stop the NFS server")
 					stopNfsServer(nfsServerPod)
 
-					By("Delete the pod mounted to the NFS volume")
-					framework.ExpectNoError(framework.DeletePodWithWait(f, c, pod), "Failed to delete pod ", pod.Name)
+					By("Delete the pod mounted to the NFS volume -- expect failure")
+					err := framework.DeletePodWithWait(f, c, pod)
+					Expect(err).To(HaveOccurred())
 					// pod object is now stale, but is intentionally not nil
 
 					By("Check if pod's host has been cleaned up -- expect not")
@@ -445,7 +418,7 @@ var _ = SIGDescribe("kubelet", func() {
 					By("Restart the nfs server")
 					restartNfsServer(nfsServerPod)
 
-					By("Verify host running the deleted pod is now cleaned up")
+					By("Verify that the deleted client pod is now cleaned up")
 					checkPodCleanup(c, pod, true)
 				})
 			}

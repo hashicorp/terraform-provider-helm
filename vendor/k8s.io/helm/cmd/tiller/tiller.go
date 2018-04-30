@@ -28,10 +28,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	goprom "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/keepalive"
 
 	"k8s.io/helm/pkg/kube"
 	"k8s.io/helm/pkg/proto/hapi/services"
@@ -77,6 +81,7 @@ var (
 	certFile             = flag.String("tls-cert", tlsDefaultsFromEnv("tls-cert"), "path to TLS certificate file")
 	caCertFile           = flag.String("tls-ca-cert", tlsDefaultsFromEnv("tls-ca-cert"), "trust certificates signed by this CA")
 	maxHistory           = flag.Int("history-max", historyMaxFromEnv(), "maximum number of releases kept in release history, with 0 meaning no limit")
+	printVersion         = flag.Bool("version", false, "print the version number")
 
 	// rootServer is the root gRPC server.
 	//
@@ -92,7 +97,13 @@ var (
 )
 
 func main() {
+	// TODO: use spf13/cobra for tiller instead of flags
 	flag.Parse()
+
+	if *printVersion {
+		fmt.Println(version.GetVersion())
+		os.Exit(0)
+	}
 
 	if *enableTracing {
 		log.SetFlags(log.Lshortfile)
@@ -103,6 +114,9 @@ func main() {
 }
 
 func start() {
+
+	healthSrv := health.NewServer()
+	healthSrv.SetServingStatus("Tiller", healthpb.HealthCheckResponse_NOT_SERVING)
 
 	clientset, err := kube.New(nil).ClientSet()
 	if err != nil {
@@ -150,7 +164,16 @@ func start() {
 		opts = append(opts, grpc.Creds(credentials.NewTLS(cfg)))
 	}
 
+	opts = append(opts, grpc.KeepaliveParams(keepalive.ServerParameters{
+		MaxConnectionIdle: 10 * time.Minute,
+		// If needed, we can configure the max connection age
+	}))
+	opts = append(opts, grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+		MinTime: time.Duration(20) * time.Second, // For compatibility with the client keepalive.ClientParameters
+	}))
+
 	rootServer = tiller.NewServer(opts...)
+	healthpb.RegisterHealthServer(rootServer, healthSrv)
 
 	lstn, err := net.Listen("tcp", *grpcAddr)
 	if err != nil {
@@ -189,6 +212,8 @@ func start() {
 			probeErrCh <- err
 		}
 	}()
+
+	healthSrv.SetServingStatus("Tiller", healthpb.HealthCheckResponse_SERVING)
 
 	select {
 	case err := <-srvErrCh:

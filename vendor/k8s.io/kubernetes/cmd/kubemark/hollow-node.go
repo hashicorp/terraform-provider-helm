@@ -17,30 +17,37 @@ limitations under the License.
 package main
 
 import (
+	goflag "flag"
 	"fmt"
+	"math/rand"
+	"os"
+	"time"
+
+	"github.com/golang/glog"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apiserver/pkg/util/flag"
-	clientgoclientset "k8s.io/client-go/kubernetes"
+	utilflag "k8s.io/apiserver/pkg/util/flag"
+	"k8s.io/apiserver/pkg/util/logs"
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	_ "k8s.io/kubernetes/pkg/client/metrics/prometheus" // for client metric registration
 	cadvisortest "k8s.io/kubernetes/pkg/kubelet/cadvisor/testing"
 	"k8s.io/kubernetes/pkg/kubelet/cm"
+	"k8s.io/kubernetes/pkg/kubelet/dockershim"
 	"k8s.io/kubernetes/pkg/kubelet/dockershim/libdocker"
 	"k8s.io/kubernetes/pkg/kubemark"
 	fakeiptables "k8s.io/kubernetes/pkg/util/iptables/testing"
 	fakesysctl "k8s.io/kubernetes/pkg/util/sysctl/testing"
 	_ "k8s.io/kubernetes/pkg/version/prometheus" // for version metric registration
+	"k8s.io/kubernetes/pkg/version/verflag"
 	fakeexec "k8s.io/utils/exec/testing"
-
-	"github.com/golang/glog"
-	"github.com/spf13/pflag"
 )
 
 type HollowNodeConfig struct {
@@ -88,10 +95,43 @@ func (c *HollowNodeConfig) createClientConfigFromFile() (*restclient.Config, err
 }
 
 func main() {
-	config := HollowNodeConfig{}
-	config.addFlags(pflag.CommandLine)
-	flag.InitFlags()
+	rand.Seed(time.Now().UTC().UnixNano())
 
+	command := newHollowNodeCommand()
+
+	// TODO: once we switch everything over to Cobra commands, we can go back to calling
+	// utilflag.InitFlags() (by removing its pflag.Parse() call). For now, we have to set the
+	// normalize func and add the go flag set by hand.
+	pflag.CommandLine.SetNormalizeFunc(utilflag.WordSepNormalizeFunc)
+	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+	// utilflag.InitFlags()
+	logs.InitLogs()
+	defer logs.FlushLogs()
+
+	if err := command.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+}
+
+// newControllerManagerCommand creates a *cobra.Command object with default parameters
+func newHollowNodeCommand() *cobra.Command {
+	s := &HollowNodeConfig{}
+
+	cmd := &cobra.Command{
+		Use:  "kubemark",
+		Long: "kubemark",
+		Run: func(cmd *cobra.Command, args []string) {
+			verflag.PrintAndExitIfRequested()
+			run(s)
+		},
+	}
+	s.addFlags(cmd.Flags())
+
+	return cmd
+}
+
+func run(config *HollowNodeConfig) {
 	if !knownMorphs.Has(config.Morph) {
 		glog.Fatalf("Unknown morph: %v. Allowed values: %v", config.Morph, knownMorphs.List())
 	}
@@ -102,7 +142,7 @@ func main() {
 		glog.Fatalf("Failed to create a ClientConfig: %v. Exiting.", err)
 	}
 
-	clientset, err := clientset.NewForConfig(clientConfig)
+	client, err := clientset.NewForConfig(clientConfig)
 	if err != nil {
 		glog.Fatalf("Failed to create a ClientSet: %v. Exiting.", err)
 	}
@@ -116,14 +156,18 @@ func main() {
 			NodeName: config.NodeName,
 		}
 		containerManager := cm.NewStubContainerManager()
-		fakeDockerClient := libdocker.NewFakeDockerClient().WithTraceDisabled()
-		fakeDockerClient.EnableSleep = true
+
+		fakeDockerClientConfig := &dockershim.ClientConfig{
+			DockerEndpoint:    libdocker.FakeDockerEndpoint,
+			EnableSleep:       true,
+			WithTraceDisabled: true,
+		}
 
 		hollowKubelet := kubemark.NewHollowKubelet(
 			config.NodeName,
-			clientset,
+			client,
 			cadvisorInterface,
-			fakeDockerClient,
+			fakeDockerClientConfig,
 			config.KubeletPort,
 			config.KubeletReadOnlyPort,
 			containerManager,
@@ -134,7 +178,7 @@ func main() {
 	}
 
 	if config.Morph == "proxy" {
-		client, err := clientgoclientset.NewForConfig(clientConfig)
+		client, err := clientset.NewForConfig(clientConfig)
 		if err != nil {
 			glog.Fatalf("Failed to create API Server client: %v", err)
 		}
@@ -142,7 +186,7 @@ func main() {
 		sysctl := fakesysctl.NewFake()
 		execer := &fakeexec.FakeExec{}
 		eventBroadcaster := record.NewBroadcaster()
-		recorder := eventBroadcaster.NewRecorder(api.Scheme, v1.EventSource{Component: "kube-proxy", Host: config.NodeName})
+		recorder := eventBroadcaster.NewRecorder(legacyscheme.Scheme, v1.EventSource{Component: "kube-proxy", Host: config.NodeName})
 
 		hollowProxy, err := kubemark.NewHollowProxyOrDie(
 			config.NodeName,

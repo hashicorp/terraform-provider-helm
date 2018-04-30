@@ -66,6 +66,9 @@ type Flavor struct {
 
 	// IsPublic indicates whether the flavor is public.
 	IsPublic bool `json:"os-flavor-access:is_public"`
+
+	// Ephemeral is the amount of ephemeral disk space, measured in GB.
+	Ephemeral int `json:"OS-FLV-EXT-DATA:ephemeral"`
 }
 
 func (r *Flavor) UnmarshalJSON(b []byte) error {

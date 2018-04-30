@@ -8,7 +8,7 @@ load(
 
 go_binary(
     name = "resource-consumer",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
 )
 
 go_library(
@@ -18,6 +18,7 @@ go_library(
         "resource_consumer_handler.go",
         "utils.go",
     ],
+    importpath = "k8s.io/kubernetes/test/images/resource-consumer",
     deps = ["//test/images/resource-consumer/common:go_default_library"],
 )
 

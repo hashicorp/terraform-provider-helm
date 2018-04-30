@@ -14,7 +14,7 @@ const opGenerateDataSet = "GenerateDataSet"
 
 // GenerateDataSetRequest generates a "aws/request.Request" representing the
 // client's request for the GenerateDataSet operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -102,7 +102,7 @@ const opStartSupportDataExport = "StartSupportDataExport"
 
 // StartSupportDataExportRequest generates a "aws/request.Request" representing the
 // client's request for the StartSupportDataExport operation. The "output" return
-// value will be populated with the request's response once the request complets
+// value will be populated with the request's response once the request completes
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -188,7 +188,6 @@ func (c *MarketplaceCommerceAnalytics) StartSupportDataExportWithContext(ctx aws
 }
 
 // Container for the parameters to the GenerateDataSet operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/marketplacecommerceanalytics-2015-07-01/GenerateDataSetRequest
 type GenerateDataSetInput struct {
 	_ struct{} `type:"structure"`
 
@@ -421,7 +420,6 @@ func (s *GenerateDataSetInput) SetSnsTopicArn(v string) *GenerateDataSetInput {
 }
 
 // Container for the result of the GenerateDataSet operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/marketplacecommerceanalytics-2015-07-01/GenerateDataSetResult
 type GenerateDataSetOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -448,7 +446,6 @@ func (s *GenerateDataSetOutput) SetDataSetRequestId(v string) *GenerateDataSetOu
 }
 
 // Container for the parameters to the StartSupportDataExport operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/marketplacecommerceanalytics-2015-07-01/StartSupportDataExportRequest
 type StartSupportDataExportInput struct {
 	_ struct{} `type:"structure"`
 
@@ -597,7 +594,6 @@ func (s *StartSupportDataExportInput) SetSnsTopicArn(v string) *StartSupportData
 }
 
 // Container for the result of the StartSupportDataExport operation.
-// See also, https://docs.aws.amazon.com/goto/WebAPI/marketplacecommerceanalytics-2015-07-01/StartSupportDataExportResult
 type StartSupportDataExportOutput struct {
 	_ struct{} `type:"structure"`
 

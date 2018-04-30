@@ -8,7 +8,7 @@ load(
 
 go_binary(
     name = "set-gen",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
 )
 
 exports_files([
@@ -18,8 +18,10 @@ exports_files([
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
+    importpath = "k8s.io/code-generator/cmd/set-gen",
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/k8s.io/code-generator/pkg/util:go_default_library",
         "//vendor/k8s.io/gengo/args:go_default_library",
         "//vendor/k8s.io/gengo/examples/set-gen/generators:go_default_library",
     ],

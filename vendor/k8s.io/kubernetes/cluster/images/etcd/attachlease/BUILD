@@ -8,12 +8,13 @@ load(
 
 go_binary(
     name = "attachlease",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
 )
 
 go_library(
     name = "go_default_library",
     srcs = ["attachlease.go"],
+    importpath = "k8s.io/kubernetes/cluster/images/etcd/attachlease",
     deps = [
         "//vendor/github.com/coreos/etcd/clientv3:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",

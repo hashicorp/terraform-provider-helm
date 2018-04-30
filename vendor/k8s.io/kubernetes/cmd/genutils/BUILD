@@ -9,12 +9,13 @@ load(
 go_library(
     name = "go_default_library",
     srcs = ["genutils.go"],
+    importpath = "k8s.io/kubernetes/cmd/genutils",
 )
 
 go_test(
     name = "go_default_test",
     srcs = ["genutils_test.go"],
-    library = ":go_default_library",
+    embed = [":go_default_library"],
 )
 
 filegroup(

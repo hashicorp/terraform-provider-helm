@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/kubernetes/pkg/security/apparmor"
 	"k8s.io/kubernetes/test/e2e/framework"
+	imageutils "k8s.io/kubernetes/test/utils/image"
 
 	. "github.com/onsi/gomega"
 )
@@ -56,7 +57,7 @@ func LoadAppArmorProfiles(f *framework.Framework) {
 // CreateAppArmorTestPod creates a pod that tests apparmor profile enforcement. The pod exits with
 // an error code if the profile is incorrectly enforced. If runOnce is true the pod will exit after
 // a single test, otherwise it will repeat the test every 1 second until failure.
-func CreateAppArmorTestPod(f *framework.Framework, runOnce bool) *api.Pod {
+func CreateAppArmorTestPod(f *framework.Framework, unconfined bool, runOnce bool) *api.Pod {
 	profile := "localhost/" + appArmorProfilePrefix + f.Namespace.Name
 	testCmd := fmt.Sprintf(`
 if touch %[1]s; then
@@ -65,11 +66,23 @@ if touch %[1]s; then
 elif ! touch %[2]s; then
   echo "FAILURE: write to %[2]s should be allowed"
   exit 2
-elif ! grep "%[3]s" /proc/self/attr/current; then
+elif [[ $(< /proc/self/attr/current) != "%[3]s" ]]; then
   echo "FAILURE: not running with expected profile %[3]s"
   echo "found: $(cat /proc/self/attr/current)"
   exit 3
 fi`, appArmorDeniedPath, appArmorAllowedPath, appArmorProfilePrefix+f.Namespace.Name)
+
+	if unconfined {
+		profile = apparmor.ProfileNameUnconfined
+		testCmd = `
+if cat /proc/sysrq-trigger 2>&1 | grep 'Permission denied'; then
+  echo 'FAILURE: reading /proc/sysrq-trigger should be allowed'
+  exit 1
+elif [[ $(< /proc/self/attr/current) != "unconfined" ]]; then
+  echo 'FAILURE: not running with expected profile unconfined'
+  exit 2
+fi`
+	}
 
 	if !runOnce {
 		testCmd = fmt.Sprintf(`while true; do
@@ -152,7 +165,7 @@ profile %s flags=(attach_disconnected) {
 			profileName: profile,
 		},
 	}
-	_, err := f.ClientSet.Core().ConfigMaps(f.Namespace.Name).Create(cm)
+	_, err := f.ClientSet.CoreV1().ConfigMaps(f.Namespace.Name).Create(cm)
 	framework.ExpectNoError(err, "Failed to create apparmor-profiles ConfigMap")
 }
 
@@ -173,7 +186,7 @@ func createAppArmorProfileLoader(f *framework.Framework) {
 				Spec: api.PodSpec{
 					Containers: []api.Container{{
 						Name:  "apparmor-loader",
-						Image: "gcr.io/google_containers/apparmor-loader:0.1",
+						Image: imageutils.GetE2EImage(imageutils.AppArmorLoader),
 						Args:  []string{"-poll", "10s", "/profiles"},
 						SecurityContext: &api.SecurityContext{
 							Privileged: &True,
@@ -220,7 +233,7 @@ func createAppArmorProfileLoader(f *framework.Framework) {
 			},
 		},
 	}
-	_, err := f.ClientSet.Core().ReplicationControllers(f.Namespace.Name).Create(loader)
+	_, err := f.ClientSet.CoreV1().ReplicationControllers(f.Namespace.Name).Create(loader)
 	framework.ExpectNoError(err, "Failed to create apparmor-loader ReplicationController")
 
 	// Wait for loader to be ready.

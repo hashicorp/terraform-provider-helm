@@ -117,7 +117,7 @@ kube::swagger::gen_api_ref_docs() {
       -v "${swagger_spec_path}":/swagger-source:z \
       -v "${register_file}":/register.go:z \
       --net=host -e "https_proxy=${KUBERNETES_HTTPS_PROXY:-}" \
-      gcr.io/google_containers/gen-swagger-docs:v8 \
+      k8s.gcr.io/gen-swagger-docs:v8 \
       "${swagger_json_name}"
   done
 
@@ -127,21 +127,14 @@ kube::swagger::gen_api_ref_docs() {
   find . -type f | cut -sd / -f 2- | LC_ALL=C sort > .generated_html
   popd > /dev/null
 
-  if LANG=C sed --help 2>&1 | grep -q GNU; then
-    SED="sed"
-  elif which gsed &>/dev/null; then
-    SED="gsed"
-  else
-    echo "Failed to find GNU sed as sed or gsed. If you are on Mac: brew install gnu-sed." >&2
-    exit 1
-  fi
+  kube::util::ensure-gnu-sed
 
   while read file; do
     if [[ -e "${output_dir}/${file}" && -e "${output_tmp}/${file}" ]]; then
       echo "comparing ${output_dir}/${file} with ${output_tmp}/${file}"
 
       # Remove the timestamp to reduce conflicts in PR(s)
-      $SED -i 's/^Last updated.*$//' "${output_tmp}/${file}"
+      ${SED} -i 's/^Last updated.*$//' "${output_tmp}/${file}"
 
       # By now, the contents should be normalized and stripped of any
       # auto-managed content.

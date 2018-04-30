@@ -14,12 +14,13 @@ go_library(
         "deep_equal.go",
         "type.go",
     ],
+    importpath = "k8s.io/kubernetes/third_party/forked/golang/reflect",
 )
 
 go_test(
     name = "go_default_test",
     srcs = ["deep_equal_test.go"],
-    library = ":go_default_library",
+    embed = [":go_default_library"],
 )
 
 filegroup(

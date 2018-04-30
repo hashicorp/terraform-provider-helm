@@ -32,7 +32,7 @@ set -o pipefail
 
 MOUNTER_IMAGE=${1:-}
 MOUNTER_PATH=/home/kubernetes/flexvolume_mounter
-VOLUME_PLUGIN_DIR=/etc/srv/kubernetes/kubelet-plugins/volume/exec
+VOLUME_PLUGIN_DIR=/home/kubernetes/flexvolume
 
 usage() {
   echo "usage: $0 imagename[:tag]"
@@ -149,11 +149,11 @@ echo
 echo "Loading mount utilities onto this instance..."
 echo
 
-mkdir ${MOUNTER_PATH}
+mkdir -p ${MOUNTER_PATH}
 tar xf /tmp/${MOUNTER_DEFAULT_NAME}.tar -C ${MOUNTER_PATH}
 
 # Bind the kubelet directory to one under flexvolume_mounter
-mkdir ${MOUNTER_PATH}/var/lib/kubelet
+mkdir -p ${MOUNTER_PATH}/var/lib/kubelet
 mount --rbind /var/lib/kubelet/ ${MOUNTER_PATH}/var/lib/kubelet
 mount --make-rshared ${MOUNTER_PATH}/var/lib/kubelet
 

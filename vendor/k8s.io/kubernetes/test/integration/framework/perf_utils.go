@@ -73,7 +73,14 @@ func (p *IntegrationTestNodePreparer) PrepareNodes() error {
 		},
 	}
 	for i := 0; i < numNodes; i++ {
-		if _, err := p.client.Core().Nodes().Create(baseNode); err != nil {
+		var err error
+		for retry := 0; retry < retries; retry++ {
+			_, err = p.client.CoreV1().Nodes().Create(baseNode)
+			if err == nil || !testutils.IsRetryableAPIError(err) {
+				break
+			}
+		}
+		if err != nil {
 			glog.Fatalf("Error creating node: %v", err)
 		}
 	}
@@ -96,7 +103,7 @@ func (p *IntegrationTestNodePreparer) PrepareNodes() error {
 func (p *IntegrationTestNodePreparer) CleanupNodes() error {
 	nodes := e2eframework.GetReadySchedulableNodesOrDie(p.client)
 	for i := range nodes.Items {
-		if err := p.client.Core().Nodes().Delete(nodes.Items[i].Name, &metav1.DeleteOptions{}); err != nil {
+		if err := p.client.CoreV1().Nodes().Delete(nodes.Items[i].Name, &metav1.DeleteOptions{}); err != nil {
 			glog.Errorf("Error while deleting Node: %v", err)
 		}
 	}

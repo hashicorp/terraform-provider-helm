@@ -14,11 +14,11 @@ go_library(
         "generated.pb.go",
         "register.go",
         "types.go",
-        "types_swagger_doc_generated.go",
         "zz_generated.conversion.go",
         "zz_generated.deepcopy.go",
         "zz_generated.defaults.go",
     ],
+    importpath = "k8s.io/apimachinery/pkg/apis/testapigroup/v1",
     deps = [
         "//vendor/github.com/gogo/protobuf/proto:go_default_library",
         "//vendor/github.com/gogo/protobuf/sortkeys:go_default_library",

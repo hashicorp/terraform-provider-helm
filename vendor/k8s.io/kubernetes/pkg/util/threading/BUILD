@@ -9,13 +9,14 @@ load(
 go_library(
     name = "go_default_library",
     srcs = ["deadlock-detector.go"],
+    importpath = "k8s.io/kubernetes/pkg/util/threading",
     deps = ["//vendor/github.com/golang/glog:go_default_library"],
 )
 
 go_test(
     name = "go_default_test",
     srcs = ["deadlock-detector_test.go"],
-    library = ":go_default_library",
+    embed = [":go_default_library"],
 )
 
 filegroup(

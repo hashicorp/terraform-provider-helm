@@ -191,7 +191,7 @@ type DockerImage_Basis struct {
 	// The resource_url for the resource representing the basis of
 	// associated occurrence images.
 	ResourceUrl string `protobuf:"bytes,1,opt,name=resource_url,json=resourceUrl" json:"resource_url,omitempty"`
-	// The fingerprint of the base image
+	// The fingerprint of the base image.
 	Fingerprint *DockerImage_Fingerprint `protobuf:"bytes,2,opt,name=fingerprint" json:"fingerprint,omitempty"`
 }
 
@@ -218,18 +218,17 @@ func (m *DockerImage_Basis) GetFingerprint() *DockerImage_Fingerprint {
 // DockerImage relationship.  This image would be produced from a Dockerfile
 // with FROM <DockerImage.Basis in attached Note>.
 type DockerImage_Derived struct {
-	// The fingerprint of the derived image
+	// The fingerprint of the derived image.
 	Fingerprint *DockerImage_Fingerprint `protobuf:"bytes,1,opt,name=fingerprint" json:"fingerprint,omitempty"`
-	// Output only. The number of layers by which this image differs from
-	// the associated image basis.
+	// Output only. The number of layers by which this image differs from the
+	// associated image basis.
 	Distance uint32 `protobuf:"varint,2,opt,name=distance" json:"distance,omitempty"`
-	// This contains layer-specific metadata, if populated it
-	// has length "distance" and is ordered with [distance] being the
-	// layer immediately following the base image and [1]
-	// being the final layer.
+	// This contains layer-specific metadata, if populated it has length
+	// "distance" and is ordered with [distance] being the layer immediately
+	// following the base image and [1] being the final layer.
 	LayerInfo []*DockerImage_Layer `protobuf:"bytes,3,rep,name=layer_info,json=layerInfo" json:"layer_info,omitempty"`
-	// Output only.This contains the base image url for the derived image
-	// Occurrence
+	// Output only. This contains the base image URL for the derived image
+	// occurrence.
 	BaseResourceUrl string `protobuf:"bytes,4,opt,name=base_resource_url,json=baseResourceUrl" json:"base_resource_url,omitempty"`
 }
 
