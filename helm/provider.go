@@ -64,6 +64,18 @@ func Provider() terraform.ResourceProvider {
 				Default:     "default",
 				Description: "Service account to install Tiller with.",
 			},
+			"override": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "Override values for the Tiller Deployment manifest.",
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
+			"max_history": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     0,
+				Description: "Maximum number of release versions stored per release.",
+			},
 			"debug": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -370,6 +382,11 @@ func (m *Meta) installTillerIfNeeded(d *schema.ResourceData) error {
 	o.Namespace = d.Get("namespace").(string)
 	o.ImageSpec = d.Get("tiller_image").(string)
 	o.ServiceAccount = d.Get("service_account").(string)
+	o.MaxHistory = d.Get("max_history").(int)
+
+	for _, rule := range d.Get("override").([]interface{}) {
+		o.Values = append(o.Values, rule.(string))
+	}
 
 	o.EnableTLS = d.Get("enable_tls").(bool)
 	if o.EnableTLS {
