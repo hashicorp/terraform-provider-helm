@@ -86,6 +86,23 @@ func resourceRelease() *schema.Resource {
 					},
 				},
 			},
+			"set_string": {
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Custom string values to be merge with the values.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
 			"namespace": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -296,7 +313,7 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	//	d.Set("values_source_detected_md5", d.Get("values_sources_md5"))
+	//  d.Set("values_source_detected_md5", d.Get("values_sources_md5"))
 
 	return setIDAndMetadataFromRelease(d, r)
 }
@@ -500,6 +517,17 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 		value := set["value"].(string)
 
 		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+			return nil, fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
+		}
+	}
+
+	for _, raw := range d.Get("set_string").(*schema.Set).List() {
+		set := raw.(map[string]interface{})
+
+		name := set["name"].(string)
+		value := set["value"].(string)
+
+		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
 			return nil, fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
 		}
 	}
