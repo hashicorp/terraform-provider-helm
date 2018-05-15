@@ -55,7 +55,7 @@ func testAccCheckHelmRepositoryDestroy(s *terraform.State) error {
 
 	for _, r := range f.Repositories {
 		if r.Name == testRepositoryName {
-			return fmt.Errorf("found %q repository", testReleaseName)
+			return fmt.Errorf("found %q repository", testResourceName)
 		}
 	}
 
