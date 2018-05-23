@@ -187,6 +187,11 @@ func kubernetesResource() *schema.Resource {
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX", ""),
 				Description: "Context to choose from the config file. Can be sourced from `KUBE_CTX`.",
 			},
+			"in_cluster": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Retrieve config from Kubernetes cluster.",
+			},
 		},
 	}
 }
@@ -323,21 +328,22 @@ func k8sGet(d *schema.ResourceData, key string) interface{} {
 
 func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	explicitPath, err := homedir.Expand(k8sGet(d, "config_path").(string))
-	if err != nil {
-		return nil, err
-	}
-
-	rules.ExplicitPath = explicitPath
-	rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-
 	overrides := &clientcmd.ConfigOverrides{}
 
-	context := k8sGet(d, "config_context").(string)
-	if context != "" {
-		overrides.CurrentContext = context
-	}
+	if !k8sGet(d, "in_cluster").(bool) {
+		explicitPath, err := homedir.Expand(k8sGet(d, "config_path").(string))
+		if err != nil {
+			return nil, err
+		}
 
+		rules.ExplicitPath = explicitPath
+		rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+
+		context := k8sGet(d, "config_context").(string)
+		if context != "" {
+			overrides.CurrentContext = context
+		}
+	}
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides), nil
 }
 
