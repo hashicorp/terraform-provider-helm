@@ -48,7 +48,19 @@ func resourceRepository() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Description: "Verify certificates of HTTPS-enabled servers using this CA bundle",
+				Description: "Verify certificates of HTTPS-enabled servers using this CA bundle.",
+			},
+			"username": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "Username for HTTP basic authentcation.",
+			},
+			"password": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "Password for HTTP basic authentication.",
 			},
 			"metadata": {
 				Type:        schema.TypeSet,
@@ -84,6 +96,8 @@ func resourceRepositoryCreate(d *schema.ResourceData, meta interface{}) error {
 		d.Get("cert_file").(string),
 		d.Get("key_file").(string),
 		d.Get("ca_file").(string),
+		d.Get("username").(string),
+		d.Get("password").(string),
 		false,
 	)
 
@@ -147,7 +161,7 @@ func getRepository(d *schema.ResourceData, m *Meta) (*repo.Entry, error) {
 
 // from helm
 func addRepository(m *Meta,
-	name, url string, home helmpath.Home, certFile, keyFile, caFile string, noUpdate bool,
+	name, url string, home helmpath.Home, certFile, keyFile, caFile string, username string, password string, noUpdate bool,
 ) error {
 
 	f, err := repo.LoadRepositoriesFile(home.RepositoryFile())
@@ -167,6 +181,8 @@ func addRepository(m *Meta,
 		CertFile: certFile,
 		KeyFile:  keyFile,
 		CAFile:   caFile,
+		Username: username,
+		Password: password,
 	}
 
 	r, err := repo.NewChartRepository(&c, getter.All(*m.Settings))
