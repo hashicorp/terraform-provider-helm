@@ -54,7 +54,7 @@ func resourceRepository() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Description: "Username for HTTP basic authentcation.",
+				Description: "Username for HTTP basic authentication.",
 			},
 			"password": {
 				Type:        schema.TypeString,
