@@ -60,6 +60,7 @@ func resourceRepository() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
+				Sensitive:   true,
 				Description: "Password for HTTP basic authentication.",
 			},
 			"metadata": {
