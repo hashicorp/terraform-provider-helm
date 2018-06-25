@@ -140,6 +140,12 @@ func resourceRelease() *schema.Resource {
 				Default:     false,
 				Description: "Perform pods restart during upgrade/rollback",
 			},
+			"wait": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
+			},
 			"metadata": {
 				Type:        schema.TypeSet,
 				Computed:    true,
@@ -270,7 +276,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		helm.ValueOverrides(values),
 		helm.InstallDisableHooks(d.Get("disable_webhooks").(bool)),
 		helm.InstallTimeout(int64(d.Get("timeout").(int))),
-		helm.InstallWait(true),
+		helm.InstallWait(d.Get("wait").(bool)),
 	}
 
 	ns := d.Get("namespace").(string)
@@ -335,7 +341,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		helm.UpgradeDisableHooks(d.Get("disable_webhooks").(bool)),
 		helm.UpgradeTimeout(int64(d.Get("timeout").(int))),
 		helm.ReuseValues(d.Get("reuse_values").(bool)),
-		helm.UpgradeWait(true),
+		helm.UpgradeWait(d.Get("wait").(bool)),
 	}
 
 	c, err := m.GetHelmClient()
