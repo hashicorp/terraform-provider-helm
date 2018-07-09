@@ -3,7 +3,7 @@ Terraform Provider for Helm [![Build Status](https://travis-ci.org/mcuadros/terr
 
 This is a [Helm](https://github.com/kubernetes/helm) provider for [Terraform](https://www.terraform.io/).
 
-The provider manage the installed [Charts](https://github.com/kubernetes/charts) in your Kubernetes cluster, in the same way of Helm does, through Terraform.
+The provider manages the installed [Charts](https://github.com/kubernetes/charts) in your Kubernetes cluster, in the same way of Helm does, through Terraform. It will also install Tiller automatically if it is not already present.
 
 Contents
 --------
@@ -20,7 +20,7 @@ Installation
 
 ### Requirements
 
-*terraform-provider-helm* is based on [Terraform](golang.org), this means that you need
+*terraform-provider-helm* is based on [Terraform](https://www.terraform.io), this means that you need
 
 
 - [Terraform](https://www.terraform.io/downloads.html) >=0.10.0
