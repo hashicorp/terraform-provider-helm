@@ -4,7 +4,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -171,14 +173,8 @@ func kubernetesResource() *schema.Resource {
 				Description: "PEM-encoded root certificates bundle for TLS authentication. Can be sourced from `KUBE_CLUSTER_CA_CERT_DATA`.",
 			},
 			"config_path": {
-				Type:     schema.TypeString,
-				Optional: true,
-				DefaultFunc: schema.MultiEnvDefaultFunc(
-					[]string{
-						"KUBE_CONFIG",
-						"KUBECONFIG",
-					},
-					"~/.kube/config"),
+				Type:        schema.TypeString,
+				Optional:    true,
 				Description: "Path to the kube config file, defaults to ~/.kube/config. Can be sourced from `KUBE_CONFIG`.",
 			},
 			"config_context": {
@@ -241,25 +237,24 @@ func (m *Meta) buildSettings(d *schema.ResourceData) {
 }
 
 func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
+	var cfg *rest.Config
+	var err error
+
 	_, hasStatic := d.GetOk("kubernetes")
+	_, hasCustomConfigPath := k8sGetOk(d, "config_path")
 
-	c, err := getK8sConfig(d)
-	if err != nil {
-		debug("could not get Kubernetes config: %s", err)
-		if !hasStatic {
+	if hasCustomConfigPath || hasStatic == false {
+		c, err := getK8sConfig(d)
+		if err != nil {
+			debug("could not get Kubernetes config: %s", err)
 			return err
 		}
-	}
-
-	cfg, err := c.ClientConfig()
-	if err != nil {
-		debug("could not get Kubernetes client config: %s", err)
-		if !hasStatic {
+		cfg, err = c.ClientConfig()
+		if err != nil {
+			debug("could not get Kubernetes client config: %s", err)
 			return err
 		}
-	}
-
-	if cfg == nil {
+	} else {
 		cfg = &rest.Config{}
 	}
 
@@ -379,13 +374,37 @@ func (m *Meta) installTillerIfNeeded(d *schema.ResourceData) error {
 
 	o.EnableTLS = d.Get("enable_tls").(bool)
 	if o.EnableTLS {
-		o.TLSCertFile = d.Get("client_certificate").(string)
-		o.TLSKeyFile = d.Get("client_key").(string)
+		certFile, isTemp, err := tempFileOrPath(d, "client_certificate")
+		if err != nil {
+			return nil
+		}
+		if isTemp {
+			defer os.Remove(certFile)
+		}
+		o.TLSCertFile = certFile
+
+		keyFile, isTemp, err := tempFileOrPath(d, "client_key")
+		if err != nil {
+			return nil
+		}
+		if isTemp {
+			defer os.Remove(keyFile)
+		}
+		o.TLSKeyFile = keyFile
+
 		o.VerifyTLS = !d.Get("insecure").(bool)
 		if o.VerifyTLS {
-			o.TLSCaCertFile = d.Get("ca_certificate").(string)
+			caFile, isTemp, err := tempFileOrPath(d, "ca_certificate")
+			if err != nil {
+				return nil
+			}
+			if isTemp {
+				defer os.Remove(caFile)
+			}
+			o.TLSCaCertFile = caFile
 		}
 	}
+	debug("doing install with these options: %+v", o)
 
 	if err := installer.Install(m.K8sClient, o); err != nil {
 		if errors.IsAlreadyExists(err) {
@@ -490,6 +509,7 @@ func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {
 		if !cfg.RootCAs.AppendCertsFromPEM(caPEMBlock) {
 			return fmt.Errorf("failed to parse ca_certificate")
 		}
+		cfg.BuildNameToCertificate()
 	}
 
 	m.TLSConfig = cfg
@@ -509,6 +529,25 @@ func getContent(d *schema.ResourceData, key, def string) ([]byte, error) {
 	}
 
 	return []byte(content), nil
+}
+
+func tempFileOrPath(d *schema.ResourceData, key string) (string, bool, error) {
+	f := d.Get(key).(string)
+	if _, err := os.Stat(f); err == nil {
+		return f, false, nil
+	}
+	tmpfile, err := ioutil.TempFile("", "tf-helfm")
+	if err != nil {
+		return "", false, err
+	}
+
+	if _, err := tmpfile.Write([]byte(f)); err != nil {
+		return "", false, err
+	}
+	if err := tmpfile.Close(); err != nil {
+		return "", false, err
+	}
+	return tmpfile.Name(), true, nil
 }
 
 func debug(format string, a ...interface{}) {
