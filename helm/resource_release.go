@@ -29,11 +29,12 @@ var ErrReleaseNotFound = errors.New("release not found")
 
 func resourceRelease() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceReleaseCreate,
-		Read:   resourceReleaseRead,
-		Delete: resourceReleaseDelete,
-		Update: resourceReleaseUpdate,
-		Exists: resourceReleaseExists,
+		Create:        resourceReleaseCreate,
+		Read:          resourceReleaseRead,
+		Delete:        resourceReleaseDelete,
+		Update:        resourceReleaseUpdate,
+		Exists:        resourceReleaseExists,
+		CustomizeDiff: resourceDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -56,6 +57,7 @@ func resourceRelease() *schema.Resource {
 			"version": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed.",
 			},
 			"devel": {
@@ -242,6 +244,14 @@ func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name s
 	}
 }
 
+func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
+	c, _, err := getChart(d, meta.(*Meta))
+	if err == nil {
+		return d.SetNew("version", c.Metadata.Version)
+	}
+	return nil
+}
+
 func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 	c, err := m.GetHelmClient()
@@ -303,6 +313,8 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 
 func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
 	d.SetId(r.Name)
+	d.Set("version", r.Chart.Metadata.Version)
+	d.Set("namespace", r.Namespace)
 
 	return d.Set("metadata", []map[string]interface{}{{
 		"name":      r.Name,
@@ -404,7 +416,11 @@ func deleteRelease(c helm.Interface, name string, disableWebhooks bool, timeout 
 	return nil
 }
 
-func getChart(d *schema.ResourceData, m *Meta) (c *chart.Chart, path string, err error) {
+type resourceGetter interface {
+	Get(string) interface{}
+}
+
+func getChart(d resourceGetter, m *Meta) (c *chart.Chart, path string, err error) {
 	version := d.Get("version").(string)
 
 	if version == "" && d.Get("devel").(bool) {
