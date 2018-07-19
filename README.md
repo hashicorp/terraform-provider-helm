@@ -33,12 +33,19 @@ distributions from the [Releases](https://github.com/mcuadros/terraform-provider
 
 Download and uncompress the latest release for your OS. This example uses the linux binary.
 
+#### Linux:
 ```sh
 > wget https://github.com/mcuadros/terraform-provider-helm/releases/download/v0.5.1/terraform-provider-helm_v0.5.1_linux_amd64.tar.gz
 > tar -xvf terraform-provider-helm*.tar.gz
 ```
 
-Now copy the binary to the Terraform's plugins folder, if is your first plugin maybe isn't present.
+#### MacOS:
+```sh
+> wget https://github.com/mcuadros/terraform-provider-helm/releases/download/v0.5.1/terraform-provider-helm_v0.5.1_darwin_amd64.tar.gz
+> tar -xvf terraform-provider-helm*.tar.gz
+```
+
+Now copy the binary to the Terraform's plugins folder. If this is your first plugin the folder might be present.
 
 ```sh
 > mkdir -p ~/.terraform.d/plugins/
@@ -82,7 +89,7 @@ You should have a local configured copy of kubectl.
 
 ```hcl
 resource "helm_release" "my_database" {
-    name      = "my_datasase"
+    name      = "mydatasase"
     chart     = "stable/mariadb"
 
     set {
