@@ -53,7 +53,7 @@ Clone repository to: `$GOPATH/src/github.com/mcuadros/terraform-provider-helm`
 
 ```sh
 > mkdir -p $GOPATH/src/github.com/mcuadros
-> git clone https://github.com/mcuadros/terraform-provider-helm.git $GOPATH/src/github.com/mcuadros/terraform-providers
+> git clone https://github.com/mcuadros/terraform-provider-helm.git $GOPATH/src/github.com/mcuadros/terraform-provider-helm
 ```
 
 Enter the provider directory and build the provider
