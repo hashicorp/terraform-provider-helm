@@ -82,7 +82,7 @@ You should have a local configured copy of kubectl.
 
 ```hcl
 resource "helm_release" "my_database" {
-    name      = "my_datasase"
+    name      = "my-database"
     chart     = "stable/mariadb"
 
     set {
