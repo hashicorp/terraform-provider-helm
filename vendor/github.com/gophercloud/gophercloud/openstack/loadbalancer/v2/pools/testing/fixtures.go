@@ -386,3 +386,33 @@ func HandleMemberUpdateSuccessfully(t *testing.T) {
 		fmt.Fprintf(w, PostUpdateMemberBody)
 	})
 }
+
+// HandleMembersUpdateSuccessfully sets up the test server to respond to a batch member Update request.
+func HandleMembersUpdateSuccessfully(t *testing.T) {
+	th.Mux.HandleFunc("/v2.0/lbaas/pools/332abe93-f488-41ba-870b-2ac66be7f853/members", func(w http.ResponseWriter, r *http.Request) {
+		th.TestMethod(t, r, "PUT")
+		th.TestHeader(t, r, "X-Auth-Token", client.TokenID)
+		th.TestHeader(t, r, "Accept", "application/json")
+		th.TestHeader(t, r, "Content-Type", "application/json")
+		th.TestJSONRequest(t, r, `{
+			"members": [
+				{
+					"name": "web-server-1",
+					"weight": 20,
+					"subnet_id": "bbb35f84-35cc-4b2f-84c2-a6a29bba68aa",
+					"address": "192.0.2.16",
+					"protocol_port": 80
+				},
+				{
+					"name": "web-server-2",
+					"weight": 10,
+					"subnet_id": "bbb35f84-35cc-4b2f-84c2-a6a29bba68aa",
+					"address": "192.0.2.17",
+					"protocol_port": 80
+				}
+			]
+		}`)
+
+		w.WriteHeader(http.StatusAccepted)
+	})
+}

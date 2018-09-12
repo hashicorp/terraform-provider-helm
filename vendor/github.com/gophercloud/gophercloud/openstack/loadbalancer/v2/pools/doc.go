@@ -120,5 +120,30 @@ Example to Delete a Member
 	if err != nil {
 		panic(err)
 	}
+
+Example to Update Members:
+
+	poolID := "d67d56a6-4a86-4688-a282-f46444705c64"
+
+	member1 := pools.BatchUpdateMemberOpts{
+		Address:      "192.0.2.16",
+		ProtocolPort: 80,
+		Name:         "web-server-1",
+		SubnetID:     "bbb35f84-35cc-4b2f-84c2-a6a29bba68aa",
+		Weight:       20,
+	}
+	member2 := pools.BatchUpdateMemberOpts{
+		Address:      "192.0.2.17",
+		ProtocolPort: 80,
+		Name:         "web-server-2",
+		Weight:       10,
+		SubnetID:     "bbb35f84-35cc-4b2f-84c2-a6a29bba68aa",
+	}
+	members := []pools.BatchUpdateMemberOpts{member1, member2}
+
+	err := pools.BatchUpdateMembers(networkClient, poolID, members).ExtractErr()
+	if err != nil {
+		panic(err)
+	}
 */
 package pools

@@ -1,9 +1,15 @@
 # Contributing to Gophercloud
 
+- [New Contributor Tutorial](#new-contributor-tutorial)
 - [3 ways to get involved](#3-ways-to-get-involved)
 - [Getting started](#getting-started)
 - [Tests](#tests)
 - [Style guide](#basic-style-guide)
+
+## New Contributor Tutorial
+
+For new contributors, we've put together a detailed tutorial
+[here](https://github.com/gophercloud/gophercloud/tree/master/docs/contributor-tutorial)!
 
 ## 3 ways to get involved
 

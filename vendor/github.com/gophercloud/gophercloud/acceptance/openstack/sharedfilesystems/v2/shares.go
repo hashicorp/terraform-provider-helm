@@ -43,6 +43,41 @@ func CreateShare(t *testing.T, client *gophercloud.ServiceClient) (*shares.Share
 	return share, nil
 }
 
+// ListShares lists all shares that belong to this tenant's project.
+// An error will be returned if the shares could not be listed..
+func ListShares(t *testing.T, client *gophercloud.ServiceClient) ([]shares.Share, error) {
+	r, err := shares.ListDetail(client, &shares.ListOpts{}).AllPages()
+	if err != nil {
+		return nil, err
+	}
+
+	return shares.ExtractShares(r)
+}
+
+// GrantAccess will grant access to an existing share. A fatal error will occur if
+// this operation fails.
+func GrantAccess(t *testing.T, client *gophercloud.ServiceClient, share *shares.Share) (*shares.AccessRight, error) {
+	return shares.GrantAccess(client, share.ID, shares.GrantAccessOpts{
+		AccessType:  "ip",
+		AccessTo:    "0.0.0.0/32",
+		AccessLevel: "r",
+	}).Extract()
+}
+
+// RevokeAccess will revoke an exisiting access of a share. A fatal error will occur
+// if this operation fails.
+func RevokeAccess(t *testing.T, client *gophercloud.ServiceClient, share *shares.Share, accessRight *shares.AccessRight) error {
+	return shares.RevokeAccess(client, share.ID, shares.RevokeAccessOpts{
+		AccessID: accessRight.ID,
+	}).ExtractErr()
+}
+
+// GetAccessRightsSlice will retrieve all access rules assigned to a share.
+// A fatal error will occur if this operation fails.
+func GetAccessRightsSlice(t *testing.T, client *gophercloud.ServiceClient, share *shares.Share) ([]shares.AccessRight, error) {
+	return shares.ListAccessRights(client, share.ID).Extract()
+}
+
 // DeleteShare will delete a share. A fatal error will occur if the share
 // failed to be deleted. This works best when used as a deferred function.
 func DeleteShare(t *testing.T, client *gophercloud.ServiceClient, share *shares.Share) {
@@ -62,6 +97,26 @@ func PrintShare(t *testing.T, share *shares.Share) {
 	}
 
 	t.Logf("Share %s", string(asJSON))
+}
+
+// PrintAccessRight prints contents of an access rule
+func PrintAccessRight(t *testing.T, accessRight *shares.AccessRight) {
+	asJSON, err := json.MarshalIndent(accessRight, "", " ")
+	if err != nil {
+		t.Logf("Cannot print access rule")
+	}
+
+	t.Logf("Access rule %s", string(asJSON))
+}
+
+// ExtendShare extends the capacity of an existing share
+func ExtendShare(t *testing.T, client *gophercloud.ServiceClient, share *shares.Share, newSize int) error {
+	return shares.Extend(client, share.ID, &shares.ExtendOpts{NewSize: newSize}).ExtractErr()
+}
+
+// ShrinkShare shrinks the capacity of an existing share
+func ShrinkShare(t *testing.T, client *gophercloud.ServiceClient, share *shares.Share, newSize int) error {
+	return shares.Shrink(client, share.ID, &shares.ShrinkOpts{NewSize: newSize}).ExtractErr()
 }
 
 func waitForStatus(c *gophercloud.ServiceClient, id, status string, secs int) error {

@@ -26,8 +26,8 @@ set -o pipefail
 ### Hardcoded constants
 DEFAULT_CNI_VERSION="v0.6.0"
 DEFAULT_CNI_SHA1="d595d3ded6499a64e8dac02466e2f5f2ce257c9f" 
-DEFAULT_NPD_VERSION="v0.4.1"
-DEFAULT_NPD_SHA1="a57a3fe64cab8a18ec654f5cef0aec59dae62568"
+DEFAULT_NPD_VERSION="v0.5.0"
+DEFAULT_NPD_SHA1="650ecfb2ae495175ee43706d0bd862a1ea7f1395"
 DEFAULT_MOUNTER_TAR_SHA="8003b798cf33c7f91320cd6ee5cec4fa22244571"
 ###
 
@@ -175,15 +175,15 @@ function install-node-problem-detector {
       local -r npd_version="${DEFAULT_NPD_VERSION}"
       local -r npd_sha1="${DEFAULT_NPD_SHA1}"
   fi
+  local -r npd_tar="node-problem-detector-${npd_version}.tar.gz"
 
-  if is-preloaded "node-problem-detector" "${npd_sha1}"; then
+  if is-preloaded "${npd_tar}" "${npd_sha1}"; then
     echo "node-problem-detector is preloaded."
     return
   fi
 
   echo "Downloading node problem detector."
   local -r npd_release_path="https://storage.googleapis.com/kubernetes-release"
-  local -r npd_tar="node-problem-detector-${npd_version}.tar.gz"
   download-or-bust "${npd_sha1}" "${npd_release_path}/node-problem-detector/${npd_tar}"
   local -r npd_dir="${KUBE_HOME}/node-problem-detector"
   mkdir -p "${npd_dir}"

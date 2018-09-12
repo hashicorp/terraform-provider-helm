@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright The Helm Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import (
 )
 
 var (
+	tlsServerName string // overrides the server name used to verify the hostname on the returned certificates from the server.
 	tlsCaCertFile string // path to TLS CA certificate file
 	tlsCertFile   string // path to TLS certificate file
 	tlsKeyFile    string // path to TLS key file
@@ -158,7 +159,12 @@ func init() {
 func main() {
 	cmd := newRootCmd(os.Args[1:])
 	if err := cmd.Execute(); err != nil {
-		os.Exit(1)
+		switch e := err.(type) {
+		case pluginError:
+			os.Exit(e.code)
+		default:
+			os.Exit(1)
+		}
 	}
 }
 
@@ -169,7 +175,7 @@ func markDeprecated(cmd *cobra.Command, notice string) *cobra.Command {
 
 func setupConnection() error {
 	if settings.TillerHost == "" {
-		config, client, err := getKubeClient(settings.KubeContext)
+		config, client, err := getKubeClient(settings.KubeContext, settings.KubeConfig)
 		if err != nil {
 			return err
 		}
@@ -223,8 +229,8 @@ func prettyError(err error) error {
 }
 
 // configForContext creates a Kubernetes REST client configuration for a given kubeconfig context.
-func configForContext(context string) (*rest.Config, error) {
-	config, err := kube.GetConfig(context).ClientConfig()
+func configForContext(context string, kubeconfig string) (*rest.Config, error) {
+	config, err := kube.GetConfig(context, kubeconfig).ClientConfig()
 	if err != nil {
 		return nil, fmt.Errorf("could not get Kubernetes config for context %q: %s", context, err)
 	}
@@ -232,8 +238,8 @@ func configForContext(context string) (*rest.Config, error) {
 }
 
 // getKubeClient creates a Kubernetes config and client for a given kubeconfig context.
-func getKubeClient(context string) (*rest.Config, kubernetes.Interface, error) {
-	config, err := configForContext(context)
+func getKubeClient(context string, kubeconfig string) (*rest.Config, kubernetes.Interface, error) {
+	config, err := configForContext(context, kubeconfig)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -247,8 +253,8 @@ func getKubeClient(context string) (*rest.Config, kubernetes.Interface, error) {
 // getInternalKubeClient creates a Kubernetes config and an "internal" client for a given kubeconfig context.
 //
 // Prefer the similar getKubeClient if you don't need to use such an internal client.
-func getInternalKubeClient(context string) (internalclientset.Interface, error) {
-	config, err := configForContext(context)
+func getInternalKubeClient(context string, kubeconfig string) (internalclientset.Interface, error) {
+	config, err := configForContext(context, kubeconfig)
 	if err != nil {
 		return nil, err
 	}
@@ -280,8 +286,13 @@ func newClient() helm.Interface {
 		if tlsKeyFile == "" {
 			tlsKeyFile = settings.Home.TLSKey()
 		}
-		debug("Key=%q, Cert=%q, CA=%q\n", tlsKeyFile, tlsCertFile, tlsCaCertFile)
-		tlsopts := tlsutil.Options{KeyFile: tlsKeyFile, CertFile: tlsCertFile, InsecureSkipVerify: true}
+		debug("Host=%q, Key=%q, Cert=%q, CA=%q\n", tlsKeyFile, tlsCertFile, tlsCaCertFile)
+		tlsopts := tlsutil.Options{
+			ServerName:         tlsServerName,
+			KeyFile:            tlsKeyFile,
+			CertFile:           tlsCertFile,
+			InsecureSkipVerify: true,
+		}
 		if tlsVerify {
 			tlsopts.CaCertFile = tlsCaCertFile
 			tlsopts.InsecureSkipVerify = false
@@ -301,6 +312,7 @@ func newClient() helm.Interface {
 func addFlagsTLS(cmd *cobra.Command) *cobra.Command {
 
 	// add flags
+	cmd.Flags().StringVar(&tlsServerName, "tls-hostname", settings.TillerHost, "the server name used to verify the hostname on the returned certificates from the server")
 	cmd.Flags().StringVar(&tlsCaCertFile, "tls-ca-cert", tlsCaCertDefault, "path to TLS CA certificate file")
 	cmd.Flags().StringVar(&tlsCertFile, "tls-cert", tlsCertDefault, "path to TLS certificate file")
 	cmd.Flags().StringVar(&tlsKeyFile, "tls-key", tlsKeyDefault, "path to TLS key file")

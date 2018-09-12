@@ -859,6 +859,7 @@
       }
     },
     "AccountId":{"type":"string"},
+    "AllowQuotedRecordDelimiter":{"type":"boolean"},
     "AllowedHeader":{"type":"string"},
     "AllowedHeaders":{
       "type":"list",
@@ -1030,6 +1031,7 @@
       }
     },
     "BytesProcessed":{"type":"long"},
+    "BytesReturned":{"type":"long"},
     "BytesScanned":{"type":"long"},
     "CORSConfiguration":{
       "type":"structure",
@@ -1080,7 +1082,8 @@
         "QuoteEscapeCharacter":{"shape":"QuoteEscapeCharacter"},
         "RecordDelimiter":{"shape":"RecordDelimiter"},
         "FieldDelimiter":{"shape":"FieldDelimiter"},
-        "QuoteCharacter":{"shape":"QuoteCharacter"}
+        "QuoteCharacter":{"shape":"QuoteCharacter"},
+        "AllowQuotedRecordDelimiter":{"shape":"AllowQuotedRecordDelimiter"}
       }
     },
     "CSVOutput":{
@@ -1220,7 +1223,8 @@
       "type":"string",
       "enum":[
         "NONE",
-        "GZIP"
+        "GZIP",
+        "BZIP2"
       ]
     },
     "Condition":{
@@ -3196,7 +3200,8 @@
       "members":{
         "CSV":{"shape":"CSVInput"},
         "CompressionType":{"shape":"CompressionType"},
-        "JSON":{"shape":"JSONInput"}
+        "JSON":{"shape":"JSONInput"},
+        "Parquet":{"shape":"ParquetInput"}
       }
     },
     "InventoryConfiguration":{
@@ -4143,6 +4148,11 @@
       "type":"string",
       "enum":["Destination"]
     },
+    "ParquetInput":{
+      "type":"structure",
+      "members":{
+      }
+    },
     "Part":{
       "type":"structure",
       "members":{
@@ -4183,7 +4193,8 @@
       "type":"structure",
       "members":{
         "BytesScanned":{"shape":"BytesScanned"},
-        "BytesProcessed":{"shape":"BytesProcessed"}
+        "BytesProcessed":{"shape":"BytesProcessed"},
+        "BytesReturned":{"shape":"BytesReturned"}
       }
     },
     "ProgressEvent":{
@@ -5432,7 +5443,8 @@
       "type":"structure",
       "members":{
         "BytesScanned":{"shape":"BytesScanned"},
-        "BytesProcessed":{"shape":"BytesProcessed"}
+        "BytesProcessed":{"shape":"BytesProcessed"},
+        "BytesReturned":{"shape":"BytesReturned"}
       }
     },
     "StatsEvent":{

@@ -176,7 +176,7 @@ type UpdateOpts struct {
 	DNSNameservers []string `json:"dns_nameservers,omitempty"`
 
 	// HostRoutes are any static host routes to be set via DHCP.
-	HostRoutes []HostRoute `json:"host_routes,omitempty"`
+	HostRoutes *[]HostRoute `json:"host_routes,omitempty"`
 
 	// EnableDHCP will either enable to disable the DHCP service.
 	EnableDHCP *bool `json:"enable_dhcp,omitempty"`
@@ -221,7 +221,12 @@ func Delete(c *gophercloud.ServiceClient, id string) (r DeleteResult) {
 func IDFromName(client *gophercloud.ServiceClient, name string) (string, error) {
 	count := 0
 	id := ""
-	pages, err := List(client, nil).AllPages()
+
+	listOpts := ListOpts{
+		Name: name,
+	}
+
+	pages, err := List(client, listOpts).AllPages()
 	if err != nil {
 		return "", err
 	}

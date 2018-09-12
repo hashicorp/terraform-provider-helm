@@ -125,12 +125,12 @@ func (kl *Kubelet) tryRegisterWithAPIServer(node *v1.Node) bool {
 
 	if existingNode.Spec.ExternalID == node.Spec.ExternalID {
 		glog.Infof("Node %s was previously registered", kl.nodeName)
-
 		// Edge case: the node was previously registered; reconcile
 		// the value of the controller-managed attach-detach
 		// annotation.
 		requiresUpdate := kl.reconcileCMADAnnotationWithExistingNode(node, existingNode)
 		requiresUpdate = kl.updateDefaultLabels(node, existingNode) || requiresUpdate
+		requiresUpdate = kl.reconcileExtendedResource(node, existingNode) || requiresUpdate
 		if requiresUpdate {
 			if _, _, err := nodeutil.PatchNodeStatus(kl.kubeClient.CoreV1(), types.NodeName(kl.nodeName), originalNode, existingNode); err != nil {
 				glog.Errorf("Unable to reconcile node %q with API server: error updating node: %v", kl.nodeName, err)
@@ -151,6 +151,19 @@ func (kl *Kubelet) tryRegisterWithAPIServer(node *v1.Node) bool {
 	}
 
 	return false
+}
+
+// Zeros out extended resource capacity during reconciliation.
+func (kl *Kubelet) reconcileExtendedResource(initialNode, node *v1.Node) bool {
+	requiresUpdate := false
+	for k := range node.Status.Capacity {
+		if v1helper.IsExtendedResourceName(k) {
+			node.Status.Capacity[k] = *resource.NewQuantity(int64(0), resource.DecimalSI)
+			node.Status.Allocatable[k] = *resource.NewQuantity(int64(0), resource.DecimalSI)
+			requiresUpdate = true
+		}
+	}
+	return requiresUpdate
 }
 
 // updateDefaultLabels will set the default labels on the node
@@ -371,6 +384,9 @@ func (kl *Kubelet) syncNodeStatus() {
 func (kl *Kubelet) updateNodeStatus() error {
 	for i := 0; i < nodeStatusUpdateRetry; i++ {
 		if err := kl.tryUpdateNodeStatus(i); err != nil {
+			if i > 0 && kl.onRepeatedHeartbeatFailure != nil {
+				kl.onRepeatedHeartbeatFailure()
+			}
 			glog.Errorf("Error updating node status, will retry: %v", err)
 		} else {
 			return nil
@@ -428,7 +444,7 @@ func (kl *Kubelet) recordNodeStatusEvent(eventType, event string) {
 // Set IP and hostname addresses for the node.
 func (kl *Kubelet) setNodeAddress(node *v1.Node) error {
 	if kl.nodeIP != nil {
-		if err := validateNodeIP(kl.nodeIP); err != nil {
+		if err := kl.nodeIPValidator(kl.nodeIP); err != nil {
 			return fmt.Errorf("failed to validate nodeIP: %v", err)
 		}
 		glog.V(2).Infof("Using node IP: %q", kl.nodeIP.String())
@@ -459,12 +475,22 @@ func (kl *Kubelet) setNodeAddress(node *v1.Node) error {
 		}
 		if kl.nodeIP != nil {
 			enforcedNodeAddresses := []v1.NodeAddress{}
+
+			var nodeIPType v1.NodeAddressType
 			for _, nodeAddress := range nodeAddresses {
 				if nodeAddress.Address == kl.nodeIP.String() {
 					enforcedNodeAddresses = append(enforcedNodeAddresses, v1.NodeAddress{Type: nodeAddress.Type, Address: nodeAddress.Address})
+					nodeIPType = nodeAddress.Type
+					break
 				}
 			}
 			if len(enforcedNodeAddresses) > 0 {
+				for _, nodeAddress := range nodeAddresses {
+					if nodeAddress.Type != nodeIPType && nodeAddress.Type != v1.NodeHostName {
+						enforcedNodeAddresses = append(enforcedNodeAddresses, v1.NodeAddress{Type: nodeAddress.Type, Address: nodeAddress.Address})
+					}
+				}
+
 				enforcedNodeAddresses = append(enforcedNodeAddresses, v1.NodeAddress{Type: v1.NodeHostName, Address: kl.GetHostname()})
 				node.Status.Addresses = enforcedNodeAddresses
 				return nil
@@ -505,7 +531,7 @@ func (kl *Kubelet) setNodeAddress(node *v1.Node) error {
 			var addrs []net.IP
 			addrs, _ = net.LookupIP(node.Name)
 			for _, addr := range addrs {
-				if err = validateNodeIP(addr); err == nil {
+				if err = kl.nodeIPValidator(addr); err == nil {
 					if addr.To4() != nil {
 						ipAddr = addr
 						break

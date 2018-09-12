@@ -261,8 +261,8 @@ type CreateMemberOpts struct {
 	ProjectID string `json:"project_id,omitempty"`
 
 	// A positive integer value that indicates the relative portion of traffic
-	// that  this member should receive from the pool. For example, a member with
-	// a weight  of 10 receives five times as much traffic as a member with a
+	// that this member should receive from the pool. For example, a member with
+	// a weight of 10 receives five times as much traffic as a member with a
 	// weight of 2.
 	Weight int `json:"weight,omitempty"`
 
@@ -335,6 +335,36 @@ func UpdateMember(c *gophercloud.ServiceClient, poolID string, memberID string, 
 	_, r.Err = c.Put(memberResourceURL(c, poolID, memberID), b, &r.Body, &gophercloud.RequestOpts{
 		OkCodes: []int{200, 201, 202},
 	})
+	return
+}
+
+// BatchUpdateMemberOptsBuilder allows extensions to add additional parameters to the BatchUpdateMembers request.
+type BatchUpdateMemberOptsBuilder interface {
+	ToBatchMemberUpdateMap() (map[string]interface{}, error)
+}
+
+type BatchUpdateMemberOpts CreateMemberOpts
+
+// ToBatchMemberUpdateMap builds a request body from BatchUpdateMemberOpts.
+func (opts BatchUpdateMemberOpts) ToBatchMemberUpdateMap() (map[string]interface{}, error) {
+	return gophercloud.BuildRequestBody(opts, "")
+}
+
+// BatchUpdateMembers updates the pool members in batch
+func BatchUpdateMembers(c *gophercloud.ServiceClient, poolID string, opts []BatchUpdateMemberOpts) (r UpdateMembersResult) {
+	var members []map[string]interface{}
+	for _, opt := range opts {
+		b, err := opt.ToBatchMemberUpdateMap()
+		if err != nil {
+			r.Err = err
+			return
+		}
+		members = append(members, b)
+	}
+
+	b := map[string]interface{}{"members": members}
+
+	_, r.Err = c.Put(memberRootURL(c, poolID), b, nil, &gophercloud.RequestOpts{OkCodes: []int{202}})
 	return
 }
 

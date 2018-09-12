@@ -1,6 +1,9 @@
 package roles
 
 import (
+	"net/url"
+	"strings"
+
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/pagination"
 )
@@ -18,11 +21,30 @@ type ListOpts struct {
 
 	// Name filters the response by role name.
 	Name string `q:"name"`
+
+	// Filters filters the response by custom filters such as
+	// 'name__contains=foo'
+	Filters map[string]string `q:"-"`
 }
 
 // ToRoleListQuery formats a ListOpts into a query string.
 func (opts ListOpts) ToRoleListQuery() (string, error) {
 	q, err := gophercloud.BuildQueryString(opts)
+	if err != nil {
+		return "", err
+	}
+
+	params := q.Query()
+	for k, v := range opts.Filters {
+		i := strings.Index(k, "__")
+		if i > 0 && i < len(k)-2 {
+			params.Add(k, v)
+		} else {
+			return "", InvalidListFilter{FilterName: k}
+		}
+	}
+
+	q = &url.URL{RawQuery: params.Encode()}
 	return q.String(), err
 }
 

@@ -101,11 +101,11 @@ func (CRICheck) Name() string {
 func (criCheck CRICheck) Check() (warnings, errors []error) {
 	crictlPath, err := criCheck.exec.LookPath("crictl")
 	if err != nil {
-		errors = append(errors, fmt.Errorf("unable to find command crictl: %s", err))
+		errors = append(errors, fmt.Errorf("unable to find command crictl: %v", err))
 		return warnings, errors
 	}
-	if err := criCheck.exec.Command(fmt.Sprintf("%s -r %s info", crictlPath, criCheck.socket)).Run(); err != nil {
-		errors = append(errors, fmt.Errorf("unable to check if the container runtime at %q is running: %s", criCheck.socket, err))
+	if err := criCheck.exec.Command(crictlPath, "-r", criCheck.socket, "info").Run(); err != nil {
+		errors = append(errors, fmt.Errorf("unable to check if the container runtime at %q is running: %v", criCheck.socket, err))
 		return warnings, errors
 	}
 	return warnings, errors
@@ -832,13 +832,13 @@ func getEtcdVersionResponse(client *http.Client, url string, target interface{})
 			r, err := client.Get(url)
 			if err != nil {
 				loopCount--
-				return false, nil
+				return false, err
 			}
 			defer r.Body.Close()
 
 			if r != nil && r.StatusCode >= 500 && r.StatusCode <= 599 {
 				loopCount--
-				return false, nil
+				return false, fmt.Errorf("server responded with non-successful status: %s", r.Status)
 			}
 			return true, json.NewDecoder(r.Body).Decode(target)
 

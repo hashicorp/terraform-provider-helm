@@ -626,6 +626,9 @@ function construct-kubelet-flags {
   if [[ -n "${CONTAINER_RUNTIME_ENDPOINT:-}" ]]; then
     flags+=" --container-runtime-endpoint=${CONTAINER_RUNTIME_ENDPOINT}"
   fi
+  if [[ -n "${MAX_PODS_PER_NODE:-}" ]]; then
+    flags+=" --max-pods=${MAX_PODS_PER_NODE}"
+  fi
 
   KUBELET_ARGS="${flags}"
 }
@@ -725,6 +728,7 @@ ENABLE_CACHE_MUTATION_DETECTOR: $(yaml-quote ${ENABLE_CACHE_MUTATION_DETECTOR:-f
 ENABLE_PATCH_CONVERSION_DETECTOR: $(yaml-quote ${ENABLE_PATCH_CONVERSION_DETECTOR:-false})
 ADVANCED_AUDIT_POLICY: $(yaml-quote ${ADVANCED_AUDIT_POLICY:-})
 ADVANCED_AUDIT_BACKEND: $(yaml-quote ${ADVANCED_AUDIT_BACKEND:-log})
+ADVANCED_AUDIT_TRUNCATING_BACKEND: $(yaml-quote ${ADVANCED_AUDIT_TRUNCATING_BACKEND:-})
 ADVANCED_AUDIT_LOG_MODE: $(yaml-quote ${ADVANCED_AUDIT_LOG_MODE:-})
 ADVANCED_AUDIT_LOG_BUFFER_SIZE: $(yaml-quote ${ADVANCED_AUDIT_LOG_BUFFER_SIZE:-})
 ADVANCED_AUDIT_LOG_MAX_BATCH_SIZE: $(yaml-quote ${ADVANCED_AUDIT_LOG_MAX_BATCH_SIZE:-})
@@ -902,6 +906,11 @@ EOF
 ETCD_QUOTA_BACKEND_BYTES: $(yaml-quote ${ETCD_QUOTA_BACKEND_BYTES})
 EOF
     fi
+    if [ -n "${ETCD_EXTRA_ARGS:-}" ]; then
+    cat >>$file <<EOF
+ETCD_EXTRA_ARGS: $(yaml-quote ${ETCD_EXTRA_ARGS})
+EOF
+    fi
     if [ -n "${APISERVER_TEST_ARGS:-}" ]; then
       cat >>$file <<EOF
 APISERVER_TEST_ARGS: $(yaml-quote ${APISERVER_TEST_ARGS})
@@ -996,6 +1005,11 @@ EOF
   if [ -n "${SCHEDULING_ALGORITHM_PROVIDER:-}" ]; then
     cat >>$file <<EOF
 SCHEDULING_ALGORITHM_PROVIDER: $(yaml-quote ${SCHEDULING_ALGORITHM_PROVIDER})
+EOF
+  fi
+  if [ -n "${MAX_PODS_PER_NODE:-}" ]; then
+    cat >>$file <<EOF
+MAX_PODS_PER_NODE: $(yaml-quote ${MAX_PODS_PER_NODE})
 EOF
   fi
 }

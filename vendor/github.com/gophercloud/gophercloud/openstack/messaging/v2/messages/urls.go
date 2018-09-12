@@ -6,15 +6,33 @@ import (
 	"github.com/gophercloud/gophercloud"
 )
 
-const ApiVersion = "v2"
-const ApiName = "queues"
+const (
+	apiVersion = "v2"
+	apiName    = "queues"
+)
 
 func createURL(client *gophercloud.ServiceClient, queueName string) string {
-	return client.ServiceURL(ApiVersion, ApiName, queueName, "messages")
+	return client.ServiceURL(apiVersion, apiName, queueName, "messages")
 }
 
 func listURL(client *gophercloud.ServiceClient, queueName string) string {
-	return client.ServiceURL(ApiVersion, ApiName, queueName, "messages")
+	return client.ServiceURL(apiVersion, apiName, queueName, "messages")
+}
+
+func getURL(client *gophercloud.ServiceClient, queueName string) string {
+	return client.ServiceURL(apiVersion, apiName, queueName, "messages")
+}
+
+func deleteURL(client *gophercloud.ServiceClient, queueName string) string {
+	return client.ServiceURL(apiVersion, apiName, queueName, "messages")
+}
+
+func DeleteMessageURL(client *gophercloud.ServiceClient, queueName string, messageID string) string {
+	return client.ServiceURL(apiVersion, apiName, queueName, "messages", messageID)
+}
+
+func messageURL(client *gophercloud.ServiceClient, queueName string, messageID string) string {
+	return client.ServiceURL(apiVersion, apiName, queueName, "messages", messageID)
 }
 
 // Builds next page full url based on current url.

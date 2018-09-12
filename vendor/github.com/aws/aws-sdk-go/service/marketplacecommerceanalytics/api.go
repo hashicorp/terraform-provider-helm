@@ -73,7 +73,7 @@ func (c *MarketplaceCommerceAnalytics) GenerateDataSetRequest(input *GenerateDat
 // API operation GenerateDataSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeException "Exception"
+//   * ErrCodeException "MarketplaceCommerceAnalyticsException"
 //   This exception is thrown when an internal service error occurs.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/marketplacecommerceanalytics-2015-07-01/GenerateDataSet
@@ -162,7 +162,7 @@ func (c *MarketplaceCommerceAnalytics) StartSupportDataExportRequest(input *Star
 // API operation StartSupportDataExport for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeException "Exception"
+//   * ErrCodeException "MarketplaceCommerceAnalyticsException"
 //   This exception is thrown when an internal service error occurs.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/marketplacecommerceanalytics-2015-07-01/StartSupportDataExport
@@ -204,7 +204,7 @@ type GenerateDataSetInput struct {
 	// granularity for the desired month (the day value will be ignored).
 	//
 	// DataSetPublicationDate is a required field
-	DataSetPublicationDate *time.Time `locationName:"dataSetPublicationDate" type:"timestamp" timestampFormat:"unix" required:"true"`
+	DataSetPublicationDate *time.Time `locationName:"dataSetPublicationDate" type:"timestamp" required:"true"`
 
 	// The desired data set type.
 	//
@@ -486,7 +486,7 @@ type StartSupportDataExportInput struct {
 	// only affects the customer_support_contacts_data data set type.
 	//
 	// FromDate is a required field
-	FromDate *time.Time `locationName:"fromDate" type:"timestamp" timestampFormat:"unix" required:"true"`
+	FromDate *time.Time `locationName:"fromDate" type:"timestamp" required:"true"`
 
 	// The Amazon Resource Name (ARN) of the Role with an attached permissions policy
 	// to interact with the provided AWS services.

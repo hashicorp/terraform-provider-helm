@@ -445,6 +445,79 @@ const SubnetUpdateRemoveGatewayResponse = `
 }
 `
 
+const SubnetUpdateHostRoutesRequest = `
+{
+    "subnet": {
+        "name": "my_new_subnet",
+        "host_routes": [
+          {
+            "destination": "192.168.1.1/24",
+            "nexthop": "bar"
+          }
+        ]
+    }
+}
+`
+
+const SubnetUpdateHostRoutesResponse = `
+{
+    "subnet": {
+        "name": "my_new_subnet",
+        "enable_dhcp": true,
+        "network_id": "db193ab3-96e3-4cb3-8fc5-05f4296d0324",
+        "tenant_id": "26a7980765d0414dbc1fc1f88cdb7e6e",
+        "dns_nameservers": [],
+        "allocation_pools": [
+            {
+                "start": "10.0.0.2",
+                "end": "10.0.0.254"
+            }
+        ],
+        "ip_version": 4,
+        "gateway_ip": "10.0.0.1",
+        "host_routes": [
+          {
+            "destination": "192.168.1.1/24",
+            "nexthop": "bar"
+          }
+        ],
+        "cidr": "10.0.0.0/24",
+        "id": "08eae331-0402-425a-923c-34f7cfe39c1b"
+    }
+}
+`
+
+const SubnetUpdateRemoveHostRoutesRequest = `
+{
+    "subnet": {
+        "host_routes": []
+    }
+}
+`
+
+const SubnetUpdateRemoveHostRoutesResponse = `
+{
+    "subnet": {
+        "name": "my_new_subnet",
+        "enable_dhcp": true,
+        "network_id": "db193ab3-96e3-4cb3-8fc5-05f4296d0324",
+        "tenant_id": "26a7980765d0414dbc1fc1f88cdb7e6e",
+        "dns_nameservers": [],
+        "allocation_pools": [
+            {
+                "start": "10.0.0.2",
+                "end": "10.0.0.254"
+            }
+        ],
+        "host_routes": [],
+        "ip_version": 4,
+        "gateway_ip": null,
+        "cidr": "10.0.0.0/24",
+        "id": "08eae331-0402-425a-923c-34f7cfe39c1b"
+    }
+}
+`
+
 const SubnetUpdateAllocationPoolRequest = `
 {
     "subnet": {

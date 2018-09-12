@@ -113,6 +113,9 @@ const (
 	// TODO: Make this 30 seconds once #4566 is resolved.
 	PodStartTimeout = 5 * time.Minute
 
+	// How long to wait for a pod to be deleted
+	PodDeleteTimeout = 5 * time.Minute
+
 	// If there are any orphaned namespaces to clean up, this test is running
 	// on a long lived cluster. A long wait here is preferably to spurious test
 	// failures caused by leaked resources from a previous test run.
@@ -2076,15 +2079,27 @@ func AssertCleanup(ns string, selectors ...string) {
 	if ns != "" {
 		nsArg = fmt.Sprintf("--namespace=%s", ns)
 	}
-	for _, selector := range selectors {
-		resources := RunKubectlOrDie("get", "rc,svc", "-l", selector, "--no-headers", nsArg)
-		if resources != "" {
-			Failf("Resources left running after stop:\n%s", resources)
+
+	var e error
+	verifyCleanupFunc := func() (bool, error) {
+		e = nil
+		for _, selector := range selectors {
+			resources := RunKubectlOrDie("get", "rc,svc", "-l", selector, "--no-headers", nsArg)
+			if resources != "" {
+				e = fmt.Errorf("Resources left running after stop:\n%s", resources)
+				return false, nil
+			}
+			pods := RunKubectlOrDie("get", "pods", "-l", selector, nsArg, "-o", "go-template={{ range .items }}{{ if not .metadata.deletionTimestamp }}{{ .metadata.name }}{{ \"\\n\" }}{{ end }}{{ end }}")
+			if pods != "" {
+				e = fmt.Errorf("Pods left unterminated after stop:\n%s", pods)
+				return false, nil
+			}
 		}
-		pods := RunKubectlOrDie("get", "pods", "-l", selector, nsArg, "-o", "go-template={{ range .items }}{{ if not .metadata.deletionTimestamp }}{{ .metadata.name }}{{ \"\\n\" }}{{ end }}{{ end }}")
-		if pods != "" {
-			Failf("Pods left unterminated after stop:\n%s", pods)
-		}
+		return true, nil
+	}
+	err := wait.PollImmediate(500*time.Millisecond, 1*time.Minute, verifyCleanupFunc)
+	if err != nil {
+		Failf(e.Error())
 	}
 }
 
@@ -5147,8 +5162,8 @@ func DumpDebugInfo(c clientset.Interface, ns string) {
 }
 
 // DsFromManifest reads a .json/yaml file and returns the daemonset in it.
-func DsFromManifest(url string) (*extensions.DaemonSet, error) {
-	var controller extensions.DaemonSet
+func DsFromManifest(url string) (*apps.DaemonSet, error) {
+	var controller apps.DaemonSet
 	Logf("Parsing ds from %v", url)
 
 	var response *http.Response

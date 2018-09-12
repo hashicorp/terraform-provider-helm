@@ -86,18 +86,18 @@ func (c *WAF) CreateByteMatchSetRequest(input *CreateByteMatchSetInput) (req *re
 // API operation CreateByteMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -126,11 +126,11 @@ func (c *WAF) CreateByteMatchSetRequest(input *CreateByteMatchSetInput) (req *re
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -232,22 +232,22 @@ func (c *WAF) CreateGeoMatchSetRequest(input *CreateGeoMatchSetInput) (req *requ
 // API operation CreateGeoMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -276,7 +276,7 @@ func (c *WAF) CreateGeoMatchSetRequest(input *CreateGeoMatchSetInput) (req *requ
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -379,22 +379,22 @@ func (c *WAF) CreateIPSetRequest(input *CreateIPSetInput) (req *request.Request,
 // API operation CreateIPSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -423,7 +423,7 @@ func (c *WAF) CreateIPSetRequest(input *CreateIPSetInput) (req *request.Request,
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -565,18 +565,18 @@ func (c *WAF) CreateRateBasedRuleRequest(input *CreateRateBasedRuleInput) (req *
 // API operation CreateRateBasedRule for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -605,7 +605,7 @@ func (c *WAF) CreateRateBasedRuleRequest(input *CreateRateBasedRuleInput) (req *
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -709,18 +709,18 @@ func (c *WAF) CreateRegexMatchSetRequest(input *CreateRegexMatchSetInput) (req *
 // API operation CreateRegexMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -820,18 +820,18 @@ func (c *WAF) CreateRegexPatternSetRequest(input *CreateRegexPatternSetInput) (r
 // API operation CreateRegexPatternSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -948,18 +948,18 @@ func (c *WAF) CreateRuleRequest(input *CreateRuleInput) (req *request.Request, o
 // API operation CreateRule for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -988,7 +988,7 @@ func (c *WAF) CreateRuleRequest(input *CreateRuleInput) (req *request.Request, o
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -1083,18 +1083,18 @@ func (c *WAF) CreateRuleGroupRequest(input *CreateRuleGroupInput) (req *request.
 // API operation CreateRuleGroup for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -1198,22 +1198,22 @@ func (c *WAF) CreateSizeConstraintSetRequest(input *CreateSizeConstraintSetInput
 // API operation CreateSizeConstraintSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -1242,7 +1242,7 @@ func (c *WAF) CreateSizeConstraintSetRequest(input *CreateSizeConstraintSetInput
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -1342,18 +1342,18 @@ func (c *WAF) CreateSqlInjectionMatchSetRequest(input *CreateSqlInjectionMatchSe
 // API operation CreateSqlInjectionMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -1382,11 +1382,11 @@ func (c *WAF) CreateSqlInjectionMatchSetRequest(input *CreateSqlInjectionMatchSe
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -1498,22 +1498,22 @@ func (c *WAF) CreateWebACLRequest(input *CreateWebACLInput) (req *request.Reques
 // API operation CreateWebACL for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -1542,7 +1542,7 @@ func (c *WAF) CreateWebACLRequest(input *CreateWebACLInput) (req *request.Reques
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -1643,18 +1643,18 @@ func (c *WAF) CreateXssMatchSetRequest(input *CreateXssMatchSetInput) (req *requ
 // API operation CreateXssMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -1683,11 +1683,11 @@ func (c *WAF) CreateXssMatchSetRequest(input *CreateXssMatchSetInput) (req *requ
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -1783,18 +1783,18 @@ func (c *WAF) DeleteByteMatchSetRequest(input *DeleteByteMatchSetInput) (req *re
 // API operation DeleteByteMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -1802,11 +1802,11 @@ func (c *WAF) DeleteByteMatchSetRequest(input *DeleteByteMatchSetInput) (req *re
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -1909,22 +1909,22 @@ func (c *WAF) DeleteGeoMatchSetRequest(input *DeleteGeoMatchSetInput) (req *requ
 // API operation DeleteGeoMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -1932,7 +1932,7 @@ func (c *WAF) DeleteGeoMatchSetRequest(input *DeleteGeoMatchSetInput) (req *requ
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -2035,22 +2035,22 @@ func (c *WAF) DeleteIPSetRequest(input *DeleteIPSetInput) (req *request.Request,
 // API operation DeleteIPSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -2058,7 +2058,7 @@ func (c *WAF) DeleteIPSetRequest(input *DeleteIPSetInput) (req *request.Request,
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -2089,6 +2089,93 @@ func (c *WAF) DeleteIPSet(input *DeleteIPSetInput) (*DeleteIPSetOutput, error) {
 // for more information on using Contexts.
 func (c *WAF) DeleteIPSetWithContext(ctx aws.Context, input *DeleteIPSetInput, opts ...request.Option) (*DeleteIPSetOutput, error) {
 	req, out := c.DeleteIPSetRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opDeleteLoggingConfiguration = "DeleteLoggingConfiguration"
+
+// DeleteLoggingConfigurationRequest generates a "aws/request.Request" representing the
+// client's request for the DeleteLoggingConfiguration operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfuly.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See DeleteLoggingConfiguration for more information on using the DeleteLoggingConfiguration
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the DeleteLoggingConfigurationRequest method.
+//    req, resp := client.DeleteLoggingConfigurationRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/DeleteLoggingConfiguration
+func (c *WAF) DeleteLoggingConfigurationRequest(input *DeleteLoggingConfigurationInput) (req *request.Request, output *DeleteLoggingConfigurationOutput) {
+	op := &request.Operation{
+		Name:       opDeleteLoggingConfiguration,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &DeleteLoggingConfigurationInput{}
+	}
+
+	output = &DeleteLoggingConfigurationOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// DeleteLoggingConfiguration API operation for AWS WAF.
+//
+// Permanently deletes the LoggingConfiguration from the specified web ACL.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for AWS WAF's
+// API operation DeleteLoggingConfiguration for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
+//   The operation failed because of a system problem, even though the request
+//   was valid. Retry your request.
+//
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
+//   The operation failed because the referenced object doesn't exist.
+//
+//   * ErrCodeStaleDataException "WAFStaleDataException"
+//   The operation failed because you tried to create, update, or delete an object
+//   by using a change token that has already been used.
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/DeleteLoggingConfiguration
+func (c *WAF) DeleteLoggingConfiguration(input *DeleteLoggingConfigurationInput) (*DeleteLoggingConfigurationOutput, error) {
+	req, out := c.DeleteLoggingConfigurationRequest(input)
+	return out, req.Send()
+}
+
+// DeleteLoggingConfigurationWithContext is the same as DeleteLoggingConfiguration with the addition of
+// the ability to pass a context and additional request options.
+//
+// See DeleteLoggingConfiguration for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WAF) DeleteLoggingConfigurationWithContext(ctx aws.Context, input *DeleteLoggingConfigurationInput, opts ...request.Option) (*DeleteLoggingConfigurationOutput, error) {
+	req, out := c.DeleteLoggingConfigurationRequest(input)
 	req.SetContext(ctx)
 	req.ApplyOptions(opts...)
 	return out, req.Send()
@@ -2150,15 +2237,15 @@ func (c *WAF) DeletePermissionPolicyRequest(input *DeletePermissionPolicyInput) 
 // API operation DeletePermissionPolicy for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/DeletePermissionPolicy
@@ -2252,22 +2339,22 @@ func (c *WAF) DeleteRateBasedRuleRequest(input *DeleteRateBasedRuleInput) (req *
 // API operation DeleteRateBasedRule for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -2275,7 +2362,7 @@ func (c *WAF) DeleteRateBasedRuleRequest(input *DeleteRateBasedRuleInput) (req *
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -2379,18 +2466,18 @@ func (c *WAF) DeleteRegexMatchSetRequest(input *DeleteRegexMatchSetInput) (req *
 // API operation DeleteRegexMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -2398,11 +2485,11 @@ func (c *WAF) DeleteRegexMatchSetRequest(input *DeleteRegexMatchSetInput) (req *
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -2494,18 +2581,18 @@ func (c *WAF) DeleteRegexPatternSetRequest(input *DeleteRegexPatternSetInput) (r
 // API operation DeleteRegexPatternSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -2513,11 +2600,11 @@ func (c *WAF) DeleteRegexPatternSetRequest(input *DeleteRegexPatternSetInput) (r
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -2620,22 +2707,22 @@ func (c *WAF) DeleteRuleRequest(input *DeleteRuleInput) (req *request.Request, o
 // API operation DeleteRule for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -2643,7 +2730,7 @@ func (c *WAF) DeleteRuleRequest(input *DeleteRuleInput) (req *request.Request, o
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -2745,18 +2832,18 @@ func (c *WAF) DeleteRuleGroupRequest(input *DeleteRuleGroupInput) (req *request.
 // API operation DeleteRuleGroup for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -2764,7 +2851,7 @@ func (c *WAF) DeleteRuleGroupRequest(input *DeleteRuleGroupInput) (req *request.
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -2777,6 +2864,24 @@ func (c *WAF) DeleteRuleGroupRequest(input *DeleteRuleGroupInput) (req *request.
 //      objects.
 //
 //      * You tried to delete an IPSet that references one or more IP addresses.
+//
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
+//   The operation failed because there was nothing to do. For example:
+//
+//      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
+//      specified WebACL.
+//
+//      * You tried to remove an IP address from an IPSet, but the IP address
+//      isn't in the specified IPSet.
+//
+//      * You tried to remove a ByteMatchTuple from a ByteMatchSet, but the ByteMatchTuple
+//      isn't in the specified WebACL.
+//
+//      * You tried to add a Rule to a WebACL, but the Rule already exists in
+//      the specified WebACL.
+//
+//      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
+//      already exists in the specified WebACL.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/DeleteRuleGroup
 func (c *WAF) DeleteRuleGroup(input *DeleteRuleGroupInput) (*DeleteRuleGroupOutput, error) {
@@ -2868,22 +2973,22 @@ func (c *WAF) DeleteSizeConstraintSetRequest(input *DeleteSizeConstraintSetInput
 // API operation DeleteSizeConstraintSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -2891,7 +2996,7 @@ func (c *WAF) DeleteSizeConstraintSetRequest(input *DeleteSizeConstraintSetInput
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -2996,18 +3101,18 @@ func (c *WAF) DeleteSqlInjectionMatchSetRequest(input *DeleteSqlInjectionMatchSe
 // API operation DeleteSqlInjectionMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -3015,11 +3120,11 @@ func (c *WAF) DeleteSqlInjectionMatchSetRequest(input *DeleteSqlInjectionMatchSe
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -3119,22 +3224,22 @@ func (c *WAF) DeleteWebACLRequest(input *DeleteWebACLInput) (req *request.Reques
 // API operation DeleteWebACL for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -3142,7 +3247,7 @@ func (c *WAF) DeleteWebACLRequest(input *DeleteWebACLInput) (req *request.Reques
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -3246,18 +3351,18 @@ func (c *WAF) DeleteXssMatchSetRequest(input *DeleteXssMatchSetInput) (req *requ
 // API operation DeleteXssMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -3265,11 +3370,11 @@ func (c *WAF) DeleteXssMatchSetRequest(input *DeleteXssMatchSetInput) (req *requ
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeNonEmptyEntityException "NonEmptyEntityException"
+//   * ErrCodeNonEmptyEntityException "WAFNonEmptyEntityException"
 //   The operation failed because you tried to delete an object that isn't empty.
 //   For example:
 //
@@ -3359,15 +3464,15 @@ func (c *WAF) GetByteMatchSetRequest(input *GetByteMatchSetInput) (req *request.
 // API operation GetByteMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetByteMatchSet
@@ -3460,7 +3565,7 @@ func (c *WAF) GetChangeTokenRequest(input *GetChangeTokenInput) (req *request.Re
 // API operation GetChangeToken for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
@@ -3550,10 +3655,10 @@ func (c *WAF) GetChangeTokenStatusRequest(input *GetChangeTokenStatusInput) (req
 // API operation GetChangeTokenStatus for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
@@ -3633,15 +3738,15 @@ func (c *WAF) GetGeoMatchSetRequest(input *GetGeoMatchSetInput) (req *request.Re
 // API operation GetGeoMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetGeoMatchSet
@@ -3720,15 +3825,15 @@ func (c *WAF) GetIPSetRequest(input *GetIPSetInput) (req *request.Request, outpu
 // API operation GetIPSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetIPSet
@@ -3748,6 +3853,89 @@ func (c *WAF) GetIPSet(input *GetIPSetInput) (*GetIPSetOutput, error) {
 // for more information on using Contexts.
 func (c *WAF) GetIPSetWithContext(ctx aws.Context, input *GetIPSetInput, opts ...request.Option) (*GetIPSetOutput, error) {
 	req, out := c.GetIPSetRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opGetLoggingConfiguration = "GetLoggingConfiguration"
+
+// GetLoggingConfigurationRequest generates a "aws/request.Request" representing the
+// client's request for the GetLoggingConfiguration operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfuly.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See GetLoggingConfiguration for more information on using the GetLoggingConfiguration
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the GetLoggingConfigurationRequest method.
+//    req, resp := client.GetLoggingConfigurationRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetLoggingConfiguration
+func (c *WAF) GetLoggingConfigurationRequest(input *GetLoggingConfigurationInput) (req *request.Request, output *GetLoggingConfigurationOutput) {
+	op := &request.Operation{
+		Name:       opGetLoggingConfiguration,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &GetLoggingConfigurationInput{}
+	}
+
+	output = &GetLoggingConfigurationOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// GetLoggingConfiguration API operation for AWS WAF.
+//
+// Returns the LoggingConfiguration for the specified web ACL.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for AWS WAF's
+// API operation GetLoggingConfiguration for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
+//   The operation failed because of a system problem, even though the request
+//   was valid. Retry your request.
+//
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
+//   The operation failed because the referenced object doesn't exist.
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetLoggingConfiguration
+func (c *WAF) GetLoggingConfiguration(input *GetLoggingConfigurationInput) (*GetLoggingConfigurationOutput, error) {
+	req, out := c.GetLoggingConfigurationRequest(input)
+	return out, req.Send()
+}
+
+// GetLoggingConfigurationWithContext is the same as GetLoggingConfiguration with the addition of
+// the ability to pass a context and additional request options.
+//
+// See GetLoggingConfiguration for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WAF) GetLoggingConfigurationWithContext(ctx aws.Context, input *GetLoggingConfigurationInput, opts ...request.Option) (*GetLoggingConfigurationOutput, error) {
+	req, out := c.GetLoggingConfigurationRequest(input)
 	req.SetContext(ctx)
 	req.ApplyOptions(opts...)
 	return out, req.Send()
@@ -3807,11 +3995,11 @@ func (c *WAF) GetPermissionPolicyRequest(input *GetPermissionPolicyInput) (req *
 // API operation GetPermissionPolicy for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetPermissionPolicy
@@ -3891,15 +4079,15 @@ func (c *WAF) GetRateBasedRuleRequest(input *GetRateBasedRuleInput) (req *reques
 // API operation GetRateBasedRule for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetRateBasedRule
@@ -3981,18 +4169,18 @@ func (c *WAF) GetRateBasedRuleManagedKeysRequest(input *GetRateBasedRuleManagedK
 // API operation GetRateBasedRuleManagedKeys for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -4097,15 +4285,15 @@ func (c *WAF) GetRegexMatchSetRequest(input *GetRegexMatchSetInput) (req *reques
 // API operation GetRegexMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetRegexMatchSet
@@ -4184,15 +4372,15 @@ func (c *WAF) GetRegexPatternSetRequest(input *GetRegexPatternSetInput) (req *re
 // API operation GetRegexPatternSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetRegexPatternSet
@@ -4272,15 +4460,15 @@ func (c *WAF) GetRuleRequest(input *GetRuleInput) (req *request.Request, output 
 // API operation GetRule for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetRule
@@ -4362,11 +4550,11 @@ func (c *WAF) GetRuleGroupRequest(input *GetRuleGroupInput) (req *request.Reques
 // API operation GetRuleGroup for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetRuleGroup
@@ -4455,10 +4643,10 @@ func (c *WAF) GetSampledRequestsRequest(input *GetSampledRequestsInput) (req *re
 // API operation GetSampledRequests for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
@@ -4538,15 +4726,15 @@ func (c *WAF) GetSizeConstraintSetRequest(input *GetSizeConstraintSetInput) (req
 // API operation GetSizeConstraintSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetSizeConstraintSet
@@ -4625,15 +4813,15 @@ func (c *WAF) GetSqlInjectionMatchSetRequest(input *GetSqlInjectionMatchSetInput
 // API operation GetSqlInjectionMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetSqlInjectionMatchSet
@@ -4712,15 +4900,15 @@ func (c *WAF) GetWebACLRequest(input *GetWebACLInput) (req *request.Request, out
 // API operation GetWebACL for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetWebACL
@@ -4799,15 +4987,15 @@ func (c *WAF) GetXssMatchSetRequest(input *GetXssMatchSetInput) (req *request.Re
 // API operation GetXssMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/GetXssMatchSet
@@ -4886,14 +5074,14 @@ func (c *WAF) ListActivatedRulesInRuleGroupRequest(input *ListActivatedRulesInRu
 // API operation ListActivatedRulesInRuleGroup for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -4998,11 +5186,11 @@ func (c *WAF) ListByteMatchSetsRequest(input *ListByteMatchSetsInput) (req *requ
 // API operation ListByteMatchSets for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -5082,11 +5270,11 @@ func (c *WAF) ListGeoMatchSetsRequest(input *ListGeoMatchSetsInput) (req *reques
 // API operation ListGeoMatchSets for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -5166,11 +5354,11 @@ func (c *WAF) ListIPSetsRequest(input *ListIPSetsInput) (req *request.Request, o
 // API operation ListIPSets for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -5191,6 +5379,118 @@ func (c *WAF) ListIPSets(input *ListIPSetsInput) (*ListIPSetsOutput, error) {
 // for more information on using Contexts.
 func (c *WAF) ListIPSetsWithContext(ctx aws.Context, input *ListIPSetsInput, opts ...request.Option) (*ListIPSetsOutput, error) {
 	req, out := c.ListIPSetsRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opListLoggingConfigurations = "ListLoggingConfigurations"
+
+// ListLoggingConfigurationsRequest generates a "aws/request.Request" representing the
+// client's request for the ListLoggingConfigurations operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfuly.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See ListLoggingConfigurations for more information on using the ListLoggingConfigurations
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the ListLoggingConfigurationsRequest method.
+//    req, resp := client.ListLoggingConfigurationsRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/ListLoggingConfigurations
+func (c *WAF) ListLoggingConfigurationsRequest(input *ListLoggingConfigurationsInput) (req *request.Request, output *ListLoggingConfigurationsOutput) {
+	op := &request.Operation{
+		Name:       opListLoggingConfigurations,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &ListLoggingConfigurationsInput{}
+	}
+
+	output = &ListLoggingConfigurationsOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// ListLoggingConfigurations API operation for AWS WAF.
+//
+// Returns an array of LoggingConfiguration objects.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for AWS WAF's
+// API operation ListLoggingConfigurations for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
+//   The operation failed because of a system problem, even though the request
+//   was valid. Retry your request.
+//
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
+//   The operation failed because the referenced object doesn't exist.
+//
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
+//   The operation failed because AWS WAF didn't recognize a parameter in the
+//   request. For example:
+//
+//      * You specified an invalid parameter name.
+//
+//      * You specified an invalid value.
+//
+//      * You tried to update an object (ByteMatchSet, IPSet, Rule, or WebACL)
+//      using an action other than INSERT or DELETE.
+//
+//      * You tried to create a WebACL with a DefaultActionType other than ALLOW,
+//      BLOCK, or COUNT.
+//
+//      * You tried to create a RateBasedRule with a RateKey value other than
+//      IP.
+//
+//      * You tried to update a WebACL with a WafActionType other than ALLOW,
+//      BLOCK, or COUNT.
+//
+//      * You tried to update a ByteMatchSet with a FieldToMatchType other than
+//      HEADER, METHOD, QUERY_STRING, URI, or BODY.
+//
+//      * You tried to update a ByteMatchSet with a Field of HEADER but no value
+//      for Data.
+//
+//      * Your request references an ARN that is malformed, or corresponds to
+//      a resource with which a web ACL cannot be associated.
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/ListLoggingConfigurations
+func (c *WAF) ListLoggingConfigurations(input *ListLoggingConfigurationsInput) (*ListLoggingConfigurationsOutput, error) {
+	req, out := c.ListLoggingConfigurationsRequest(input)
+	return out, req.Send()
+}
+
+// ListLoggingConfigurationsWithContext is the same as ListLoggingConfigurations with the addition of
+// the ability to pass a context and additional request options.
+//
+// See ListLoggingConfigurations for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WAF) ListLoggingConfigurationsWithContext(ctx aws.Context, input *ListLoggingConfigurationsInput, opts ...request.Option) (*ListLoggingConfigurationsOutput, error) {
+	req, out := c.ListLoggingConfigurationsRequest(input)
 	req.SetContext(ctx)
 	req.ApplyOptions(opts...)
 	return out, req.Send()
@@ -5250,11 +5550,11 @@ func (c *WAF) ListRateBasedRulesRequest(input *ListRateBasedRulesInput) (req *re
 // API operation ListRateBasedRules for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -5334,11 +5634,11 @@ func (c *WAF) ListRegexMatchSetsRequest(input *ListRegexMatchSetsInput) (req *re
 // API operation ListRegexMatchSets for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -5418,11 +5718,11 @@ func (c *WAF) ListRegexPatternSetsRequest(input *ListRegexPatternSetsInput) (req
 // API operation ListRegexPatternSets for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -5502,7 +5802,7 @@ func (c *WAF) ListRuleGroupsRequest(input *ListRuleGroupsInput) (req *request.Re
 // API operation ListRuleGroups for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
@@ -5582,11 +5882,11 @@ func (c *WAF) ListRulesRequest(input *ListRulesInput) (req *request.Request, out
 // API operation ListRules for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -5666,11 +5966,11 @@ func (c *WAF) ListSizeConstraintSetsRequest(input *ListSizeConstraintSetsInput) 
 // API operation ListSizeConstraintSets for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -5750,11 +6050,11 @@ func (c *WAF) ListSqlInjectionMatchSetsRequest(input *ListSqlInjectionMatchSetsI
 // API operation ListSqlInjectionMatchSets for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -5834,10 +6134,10 @@ func (c *WAF) ListSubscribedRuleGroupsRequest(input *ListSubscribedRuleGroupsInp
 // API operation ListSubscribedRuleGroups for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
@@ -5917,11 +6217,11 @@ func (c *WAF) ListWebACLsRequest(input *ListWebACLsInput) (req *request.Request,
 // API operation ListWebACLs for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -6001,11 +6301,11 @@ func (c *WAF) ListXssMatchSetsRequest(input *ListXssMatchSetsInput) (req *reques
 // API operation ListXssMatchSets for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -6026,6 +6326,108 @@ func (c *WAF) ListXssMatchSets(input *ListXssMatchSetsInput) (*ListXssMatchSetsO
 // for more information on using Contexts.
 func (c *WAF) ListXssMatchSetsWithContext(ctx aws.Context, input *ListXssMatchSetsInput, opts ...request.Option) (*ListXssMatchSetsOutput, error) {
 	req, out := c.ListXssMatchSetsRequest(input)
+	req.SetContext(ctx)
+	req.ApplyOptions(opts...)
+	return out, req.Send()
+}
+
+const opPutLoggingConfiguration = "PutLoggingConfiguration"
+
+// PutLoggingConfigurationRequest generates a "aws/request.Request" representing the
+// client's request for the PutLoggingConfiguration operation. The "output" return
+// value will be populated with the request's response once the request completes
+// successfuly.
+//
+// Use "Send" method on the returned Request to send the API call to the service.
+// the "output" return value is not valid until after Send returns without error.
+//
+// See PutLoggingConfiguration for more information on using the PutLoggingConfiguration
+// API call, and error handling.
+//
+// This method is useful when you want to inject custom logic or configuration
+// into the SDK's request lifecycle. Such as custom headers, or retry logic.
+//
+//
+//    // Example sending a request using the PutLoggingConfigurationRequest method.
+//    req, resp := client.PutLoggingConfigurationRequest(params)
+//
+//    err := req.Send()
+//    if err == nil { // resp is now filled
+//        fmt.Println(resp)
+//    }
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/PutLoggingConfiguration
+func (c *WAF) PutLoggingConfigurationRequest(input *PutLoggingConfigurationInput) (req *request.Request, output *PutLoggingConfigurationOutput) {
+	op := &request.Operation{
+		Name:       opPutLoggingConfiguration,
+		HTTPMethod: "POST",
+		HTTPPath:   "/",
+	}
+
+	if input == nil {
+		input = &PutLoggingConfigurationInput{}
+	}
+
+	output = &PutLoggingConfigurationOutput{}
+	req = c.newRequest(op, input, output)
+	return
+}
+
+// PutLoggingConfiguration API operation for AWS WAF.
+//
+// Associates a LoggingConfiguration with a specified web ACL.
+//
+// You can access information about all traffic that AWS WAF inspects using
+// the following steps:
+//
+// Create an Amazon Kinesis Data Firehose delivery stream. For more information,
+// see Creating an Amazon Kinesis Data Firehose Delivery Stream (https://docs.aws.amazon.com/firehose/latest/dev/what-is-this-service.html).
+//
+// Associate that delivery stream to your web ACL using a PutLoggingConfiguration
+// request.
+//
+// When you successfully enable logging using a PutLoggingConfiguration request,
+// AWS WAF will create a service linked role with the necessary permissions
+// to write logs to the Amazon Kinesis Data Firehose delivery stream. For more
+// information, see Logging Web ACL Traffic Information (http://docs.aws.amazon.com/waf/latest/developerguide/logging.html)
+// in the AWS WAF Developer Guide.
+//
+// Returns awserr.Error for service API and SDK errors. Use runtime type assertions
+// with awserr.Error's Code and Message methods to get detailed information about
+// the error.
+//
+// See the AWS API reference guide for AWS WAF's
+// API operation PutLoggingConfiguration for usage and error information.
+//
+// Returned Error Codes:
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
+//   The operation failed because of a system problem, even though the request
+//   was valid. Retry your request.
+//
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
+//   The operation failed because the referenced object doesn't exist.
+//
+//   * ErrCodeStaleDataException "WAFStaleDataException"
+//   The operation failed because you tried to create, update, or delete an object
+//   by using a change token that has already been used.
+//
+// See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/PutLoggingConfiguration
+func (c *WAF) PutLoggingConfiguration(input *PutLoggingConfigurationInput) (*PutLoggingConfigurationOutput, error) {
+	req, out := c.PutLoggingConfigurationRequest(input)
+	return out, req.Send()
+}
+
+// PutLoggingConfigurationWithContext is the same as PutLoggingConfiguration with the addition of
+// the ability to pass a context and additional request options.
+//
+// See PutLoggingConfiguration for details on how to use this API operation.
+//
+// The context must be non-nil and will be used for request cancellation. If
+// the context is nil a panic will occur. In the future the SDK may create
+// sub-contexts for http.Requests. See https://golang.org/pkg/context/
+// for more information on using Contexts.
+func (c *WAF) PutLoggingConfigurationWithContext(ctx aws.Context, input *PutLoggingConfigurationInput, opts ...request.Option) (*PutLoggingConfigurationOutput, error) {
+	req, out := c.PutLoggingConfigurationRequest(input)
 	req.SetContext(ctx)
 	req.ApplyOptions(opts...)
 	return out, req.Send()
@@ -6086,8 +6488,9 @@ func (c *WAF) PutPermissionPolicyRequest(input *PutPermissionPolicyInput) (req *
 //
 //    * Effect must specify Allow.
 //
-//    * The Action in the policy must be waf:UpdateWebACL and waf-regional:UpdateWebACL.
-//    Any extra or wildcard actions in the policy will be rejected.
+//    * The Action in the policy must be waf:UpdateWebACL, waf-regional:UpdateWebACL,
+//    waf:GetRuleGroup and waf-regional:GetRuleGroup . Any extra or wildcard
+//    actions in the policy will be rejected.
 //
 //    * The policy cannot include a Resource parameter.
 //
@@ -6110,18 +6513,18 @@ func (c *WAF) PutPermissionPolicyRequest(input *PutPermissionPolicyInput) (req *
 // API operation PutPermissionPolicy for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeInvalidPermissionPolicyException "InvalidPermissionPolicyException"
+//   * ErrCodeInvalidPermissionPolicyException "WAFInvalidPermissionPolicyException"
 //   The operation failed because the specified policy is not in the proper format.
 //
 //   The policy is subject to the following restrictions:
@@ -6132,8 +6535,9 @@ func (c *WAF) PutPermissionPolicyRequest(input *PutPermissionPolicyInput) (req *
 //
 //      * Effect must specify Allow.
 //
-//      * The Action in the policy must be waf:UpdateWebACL or waf-regional:UpdateWebACL.
-//      Any extra or wildcard actions in the policy will be rejected.
+//      * The Action in the policy must be waf:UpdateWebACL, waf-regional:UpdateWebACL,
+//      waf:GetRuleGroup and waf-regional:GetRuleGroup . Any extra or wildcard
+//      actions in the policy will be rejected.
 //
 //      * The policy cannot include a Resource parameter.
 //
@@ -6256,15 +6660,15 @@ func (c *WAF) UpdateByteMatchSetRequest(input *UpdateByteMatchSetInput) (req *re
 // API operation UpdateByteMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -6279,13 +6683,10 @@ func (c *WAF) UpdateByteMatchSetRequest(input *UpdateByteMatchSetInput) (req *re
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -6314,7 +6715,7 @@ func (c *WAF) UpdateByteMatchSetRequest(input *UpdateByteMatchSetInput) (req *re
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -6330,14 +6731,14 @@ func (c *WAF) UpdateByteMatchSetRequest(input *UpdateByteMatchSetInput) (req *re
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -6446,19 +6847,19 @@ func (c *WAF) UpdateGeoMatchSetRequest(input *UpdateGeoMatchSetInput) (req *requ
 // API operation UpdateGeoMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -6473,13 +6874,10 @@ func (c *WAF) UpdateGeoMatchSetRequest(input *UpdateGeoMatchSetInput) (req *requ
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -6508,7 +6906,7 @@ func (c *WAF) UpdateGeoMatchSetRequest(input *UpdateGeoMatchSetInput) (req *requ
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -6524,10 +6922,10 @@ func (c *WAF) UpdateGeoMatchSetRequest(input *UpdateGeoMatchSetInput) (req *requ
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -6535,7 +6933,7 @@ func (c *WAF) UpdateGeoMatchSetRequest(input *UpdateGeoMatchSetInput) (req *requ
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -6620,9 +7018,10 @@ func (c *WAF) UpdateIPSetRequest(input *UpdateIPSetInput) (req *request.Request,
 //    range of IP addresses from 192.0.2.0 to 192.0.2.255) or 192.0.2.44/32
 //    (for the individual IP address 192.0.2.44).
 //
-// AWS WAF supports /8, /16, /24, and /32 IP address ranges for IPv4, and /24,
-// /32, /48, /56, /64 and /128 for IPv6. For more information about CIDR notation,
-// see the Wikipedia entry Classless Inter-Domain Routing (https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing).
+// AWS WAF supports IPv4 address ranges: /8 and any range between /16 through
+// /32. AWS WAF supports IPv6 address ranges: /16, /24, /32, /48, /56, /64,
+// and /128. For more information about CIDR notation, see the Wikipedia entry
+// Classless Inter-Domain Routing (https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing).
 //
 // IPv6 addresses can be represented using any of the following formats:
 //
@@ -6654,6 +7053,8 @@ func (c *WAF) UpdateIPSetRequest(input *UpdateIPSetInput) (req *request.Request,
 // and/or the IP addresses that you want to delete. If you want to change an
 // IP address, you delete the existing IP address and add the new one.
 //
+// You can insert a maximum of 1000 addresses in a single request.
+//
 // For more information about how to use the AWS WAF API to allow or block HTTP
 // requests, see the AWS WAF Developer Guide (http://docs.aws.amazon.com/waf/latest/developerguide/).
 //
@@ -6665,19 +7066,19 @@ func (c *WAF) UpdateIPSetRequest(input *UpdateIPSetInput) (req *request.Request,
 // API operation UpdateIPSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -6692,13 +7093,10 @@ func (c *WAF) UpdateIPSetRequest(input *UpdateIPSetInput) (req *request.Request,
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -6727,7 +7125,7 @@ func (c *WAF) UpdateIPSetRequest(input *UpdateIPSetInput) (req *request.Request,
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -6743,10 +7141,10 @@ func (c *WAF) UpdateIPSetRequest(input *UpdateIPSetInput) (req *request.Request,
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -6754,7 +7152,7 @@ func (c *WAF) UpdateIPSetRequest(input *UpdateIPSetInput) (req *request.Request,
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -6873,19 +7271,19 @@ func (c *WAF) UpdateRateBasedRuleRequest(input *UpdateRateBasedRuleInput) (req *
 // API operation UpdateRateBasedRule for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -6900,13 +7298,10 @@ func (c *WAF) UpdateRateBasedRuleRequest(input *UpdateRateBasedRuleInput) (req *
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -6935,7 +7330,7 @@ func (c *WAF) UpdateRateBasedRuleRequest(input *UpdateRateBasedRuleInput) (req *
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -6951,10 +7346,10 @@ func (c *WAF) UpdateRateBasedRuleRequest(input *UpdateRateBasedRuleInput) (req *
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -6962,7 +7357,7 @@ func (c *WAF) UpdateRateBasedRuleRequest(input *UpdateRateBasedRuleInput) (req *
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -7077,27 +7472,27 @@ func (c *WAF) UpdateRegexMatchSetRequest(input *UpdateRegexMatchSetInput) (req *
 // API operation UpdateRegexMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeDisallowedNameException "DisallowedNameException"
+//   * ErrCodeDisallowedNameException "WAFDisallowedNameException"
 //   The name specified is invalid.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
 //   in the AWS WAF Developer Guide.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -7113,7 +7508,7 @@ func (c *WAF) UpdateRegexMatchSetRequest(input *UpdateRegexMatchSetInput) (req *
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -7128,13 +7523,10 @@ func (c *WAF) UpdateRegexMatchSetRequest(input *UpdateRegexMatchSetInput) (req *
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
@@ -7244,24 +7636,24 @@ func (c *WAF) UpdateRegexPatternSetRequest(input *UpdateRegexPatternSetInput) (r
 // API operation UpdateRegexPatternSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
 //   in the AWS WAF Developer Guide.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -7277,7 +7669,7 @@ func (c *WAF) UpdateRegexPatternSetRequest(input *UpdateRegexPatternSetInput) (r
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -7292,17 +7684,14 @@ func (c *WAF) UpdateRegexPatternSetRequest(input *UpdateRegexPatternSetInput) (r
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidRegexPatternException "InvalidRegexPatternException"
+//   * ErrCodeInvalidRegexPatternException "WAFInvalidRegexPatternException"
 //   The regular expression (regex) you specified in RegexPatternString is invalid.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/UpdateRegexPatternSet
@@ -7413,19 +7802,19 @@ func (c *WAF) UpdateRuleRequest(input *UpdateRuleInput) (req *request.Request, o
 // API operation UpdateRule for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -7440,13 +7829,10 @@ func (c *WAF) UpdateRuleRequest(input *UpdateRuleInput) (req *request.Request, o
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -7475,7 +7861,7 @@ func (c *WAF) UpdateRuleRequest(input *UpdateRuleInput) (req *request.Request, o
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -7491,10 +7877,10 @@ func (c *WAF) UpdateRuleRequest(input *UpdateRuleInput) (req *request.Request, o
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -7502,7 +7888,7 @@ func (c *WAF) UpdateRuleRequest(input *UpdateRuleInput) (req *request.Request, o
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -7606,15 +7992,15 @@ func (c *WAF) UpdateRuleGroupRequest(input *UpdateRuleGroupInput) (req *request.
 // API operation UpdateRuleGroup for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -7630,10 +8016,10 @@ func (c *WAF) UpdateRuleGroupRequest(input *UpdateRuleGroupInput) (req *request.
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -7648,19 +8034,16 @@ func (c *WAF) UpdateRuleGroupRequest(input *UpdateRuleGroupInput) (req *request.
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
 //   in the AWS WAF Developer Guide.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -7770,6 +8153,8 @@ func (c *WAF) UpdateSizeConstraintSetRequest(input *UpdateSizeConstraintSetInput
 //    of the request body are not supported because the AWS resource forwards
 //    only the first 8192 bytes of your request to AWS WAF.
 //
+// You can only specify a single type of TextTransformation.
+//
 //    * A ComparisonOperator used for evaluating the selected part of the request
 //    against the specified Size, such as equals, greater than, less than, and
 //    so on.
@@ -7803,19 +8188,19 @@ func (c *WAF) UpdateSizeConstraintSetRequest(input *UpdateSizeConstraintSetInput
 // API operation UpdateSizeConstraintSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -7830,13 +8215,10 @@ func (c *WAF) UpdateSizeConstraintSetRequest(input *UpdateSizeConstraintSetInput
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -7865,7 +8247,7 @@ func (c *WAF) UpdateSizeConstraintSetRequest(input *UpdateSizeConstraintSetInput
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -7881,10 +8263,10 @@ func (c *WAF) UpdateSizeConstraintSetRequest(input *UpdateSizeConstraintSetInput
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -7892,7 +8274,7 @@ func (c *WAF) UpdateSizeConstraintSetRequest(input *UpdateSizeConstraintSetInput
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -7972,11 +8354,14 @@ func (c *WAF) UpdateSqlInjectionMatchSetRequest(input *UpdateSqlInjectionMatchSe
 //    object and add a new one.
 //
 //    * FieldToMatch: The part of web requests that you want AWS WAF to inspect
-//    and, if you want AWS WAF to inspect a header, the name of the header.
+//    and, if you want AWS WAF to inspect a header or custom query parameter,
+//    the name of the header or parameter.
 //
 //    * TextTransformation: Which text transformation, if any, to perform on
 //    the web request before inspecting the request for snippets of malicious
 //    SQL code.
+//
+// You can only specify a single type of TextTransformation.
 //
 // You use SqlInjectionMatchSet objects to specify which CloudFront requests
 // you want to allow, block, or count. For example, if you're receiving requests
@@ -8005,15 +8390,15 @@ func (c *WAF) UpdateSqlInjectionMatchSetRequest(input *UpdateSqlInjectionMatchSe
 // API operation UpdateSqlInjectionMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -8028,13 +8413,10 @@ func (c *WAF) UpdateSqlInjectionMatchSetRequest(input *UpdateSqlInjectionMatchSe
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -8063,7 +8445,7 @@ func (c *WAF) UpdateSqlInjectionMatchSetRequest(input *UpdateSqlInjectionMatchSe
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -8079,14 +8461,14 @@ func (c *WAF) UpdateSqlInjectionMatchSetRequest(input *UpdateSqlInjectionMatchSe
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -8215,19 +8597,19 @@ func (c *WAF) UpdateWebACLRequest(input *UpdateWebACLInput) (req *request.Reques
 // API operation UpdateWebACL for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -8242,13 +8624,10 @@ func (c *WAF) UpdateWebACLRequest(input *UpdateWebACLInput) (req *request.Reques
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -8277,7 +8656,7 @@ func (c *WAF) UpdateWebACLRequest(input *UpdateWebACLInput) (req *request.Reques
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -8293,10 +8672,10 @@ func (c *WAF) UpdateWebACLRequest(input *UpdateWebACLInput) (req *request.Reques
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeReferencedItemException "ReferencedItemException"
+//   * ErrCodeReferencedItemException "WAFReferencedItemException"
 //   The operation failed because you tried to delete an object that is still
 //   in use. For example:
 //
@@ -8304,13 +8683,13 @@ func (c *WAF) UpdateWebACLRequest(input *UpdateWebACLInput) (req *request.Reques
 //
 //      * You tried to delete a Rule that is still referenced by a WebACL.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
 //   in the AWS WAF Developer Guide.
 //
-//   * ErrCodeSubscriptionNotFoundException "SubscriptionNotFoundException"
+//   * ErrCodeSubscriptionNotFoundException "WAFSubscriptionNotFoundException"
 //   The specified subscription does not exist.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/waf-2015-08-24/UpdateWebACL
@@ -8387,11 +8766,14 @@ func (c *WAF) UpdateXssMatchSetRequest(input *UpdateXssMatchSetInput) (req *requ
 //    add a new one.
 //
 //    * FieldToMatch: The part of web requests that you want AWS WAF to inspect
-//    and, if you want AWS WAF to inspect a header, the name of the header.
+//    and, if you want AWS WAF to inspect a header or custom query parameter,
+//    the name of the header or parameter.
 //
 //    * TextTransformation: Which text transformation, if any, to perform on
 //    the web request before inspecting the request for cross-site scripting
 //    attacks.
+//
+// You can only specify a single type of TextTransformation.
 //
 // You use XssMatchSet objects to specify which CloudFront requests you want
 // to allow, block, or count. For example, if you're receiving requests that
@@ -8420,15 +8802,15 @@ func (c *WAF) UpdateXssMatchSetRequest(input *UpdateXssMatchSetInput) (req *requ
 // API operation UpdateXssMatchSet for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeInternalErrorException "InternalErrorException"
+//   * ErrCodeInternalErrorException "WAFInternalErrorException"
 //   The operation failed because of a system problem, even though the request
 //   was valid. Retry your request.
 //
-//   * ErrCodeInvalidAccountException "InvalidAccountException"
+//   * ErrCodeInvalidAccountException "WAFInvalidAccountException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using an invalid account identifier.
 //
-//   * ErrCodeInvalidOperationException "InvalidOperationException"
+//   * ErrCodeInvalidOperationException "WAFInvalidOperationException"
 //   The operation failed because there was nothing to do. For example:
 //
 //      * You tried to remove a Rule from a WebACL, but the Rule isn't in the
@@ -8443,13 +8825,10 @@ func (c *WAF) UpdateXssMatchSetRequest(input *UpdateXssMatchSetInput) (req *requ
 //      * You tried to add a Rule to a WebACL, but the Rule already exists in
 //      the specified WebACL.
 //
-//      * You tried to add an IP address to an IPSet, but the IP address already
-//      exists in the specified IPSet.
-//
 //      * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 //      already exists in the specified WebACL.
 //
-//   * ErrCodeInvalidParameterException "InvalidParameterException"
+//   * ErrCodeInvalidParameterException "WAFInvalidParameterException"
 //   The operation failed because AWS WAF didn't recognize a parameter in the
 //   request. For example:
 //
@@ -8478,7 +8857,7 @@ func (c *WAF) UpdateXssMatchSetRequest(input *UpdateXssMatchSetInput) (req *requ
 //      * Your request references an ARN that is malformed, or corresponds to
 //      a resource with which a web ACL cannot be associated.
 //
-//   * ErrCodeNonexistentContainerException "NonexistentContainerException"
+//   * ErrCodeNonexistentContainerException "WAFNonexistentContainerException"
 //   The operation failed because you tried to add an object to or delete an object
 //   from another object that doesn't exist. For example:
 //
@@ -8494,14 +8873,14 @@ func (c *WAF) UpdateXssMatchSetRequest(input *UpdateXssMatchSetInput) (req *requ
 //      * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 //      a ByteMatchSet that doesn't exist.
 //
-//   * ErrCodeNonexistentItemException "NonexistentItemException"
+//   * ErrCodeNonexistentItemException "WAFNonexistentItemException"
 //   The operation failed because the referenced object doesn't exist.
 //
-//   * ErrCodeStaleDataException "StaleDataException"
+//   * ErrCodeStaleDataException "WAFStaleDataException"
 //   The operation failed because you tried to create, update, or delete an object
 //   by using a change token that has already been used.
 //
-//   * ErrCodeLimitsExceededException "LimitsExceededException"
+//   * ErrCodeLimitsExceededException "WAFLimitsExceededException"
 //   The operation exceeds a resource limit, for example, the maximum number of
 //   WebACL objects that you can create for an AWS account. For more information,
 //   see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
@@ -8923,6 +9302,14 @@ type ByteMatchTuple struct {
 	//    of the body, you can create a size constraint set. For more information,
 	//    see CreateSizeConstraintSet.
 	//
+	//    * SINGLE_QUERY_ARG: The parameter in the query string that you will inspect,
+	//    such as UserName or SalesRegion. The maximum length for SINGLE_QUERY_ARG
+	//    is 30 characters.
+	//
+	//    * ALL_QUERY_ARGS: Similar to SINGLE_QUERY_ARG, but instead of inspecting
+	//    a single parameter, AWS WAF inspects all parameters within the query string
+	//    for the value or regex pattern that you specify in TargetString.
+	//
 	// If TargetString includes alphabetic characters A-Z and a-z, note that the
 	// value is case sensitive.
 	//
@@ -8951,11 +9338,13 @@ type ByteMatchTuple struct {
 	// AWS WAF performs the transformation on TargetString before inspecting a request
 	// for a match.
 	//
+	// You can only specify a single type of TextTransformation.
+	//
 	// CMD_LINE
 	//
-	// When you're concerned that attackers are injecting an operating system commandline
-	// command and using unusual formatting to disguise some or all of the command,
-	// use this option to perform the following transformations:
+	// When you're concerned that attackers are injecting an operating system command
+	// line command and using unusual formatting to disguise some or all of the
+	// command, use this option to perform the following transformations:
 	//
 	//    * Delete the following characters: \ " ' ^
 	//
@@ -10583,6 +10972,62 @@ func (s *DeleteIPSetOutput) SetChangeToken(v string) *DeleteIPSetOutput {
 	return s
 }
 
+type DeleteLoggingConfigurationInput struct {
+	_ struct{} `type:"structure"`
+
+	// The Amazon Resource Name (ARN) of the web ACL from which you want to delete
+	// the LoggingConfiguration.
+	//
+	// ResourceArn is a required field
+	ResourceArn *string `min:"1" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s DeleteLoggingConfigurationInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteLoggingConfigurationInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *DeleteLoggingConfigurationInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "DeleteLoggingConfigurationInput"}
+	if s.ResourceArn == nil {
+		invalidParams.Add(request.NewErrParamRequired("ResourceArn"))
+	}
+	if s.ResourceArn != nil && len(*s.ResourceArn) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ResourceArn", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetResourceArn sets the ResourceArn field's value.
+func (s *DeleteLoggingConfigurationInput) SetResourceArn(v string) *DeleteLoggingConfigurationInput {
+	s.ResourceArn = &v
+	return s
+}
+
+type DeleteLoggingConfigurationOutput struct {
+	_ struct{} `type:"structure"`
+}
+
+// String returns the string representation
+func (s DeleteLoggingConfigurationOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DeleteLoggingConfigurationOutput) GoString() string {
+	return s.String()
+}
+
 type DeletePermissionPolicyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -11406,10 +11851,14 @@ type FieldToMatch struct {
 	_ struct{} `type:"structure"`
 
 	// When the value of Type is HEADER, enter the name of the header that you want
-	// AWS WAF to search, for example, User-Agent or Referer. If the value of Type
-	// is any other value, omit Data.
+	// AWS WAF to search, for example, User-Agent or Referer. The name of the header
+	// is not case sensitive.
 	//
-	// The name of the header is not case sensitive.
+	// When the value of Type is SINGLE_QUERY_ARG, enter the name of the parameter
+	// that you want AWS WAF to search, for example, UserName or SalesRegion. The
+	// parameter name is not case sensitive.
+	//
+	// If the value of Type is any other value, omit Data.
 	Data *string `type:"string"`
 
 	// The part of the web request that you want AWS WAF to search for a specified
@@ -11436,6 +11885,14 @@ type FieldToMatch struct {
 	//    to AWS WAF for inspection. To allow or block requests based on the length
 	//    of the body, you can create a size constraint set. For more information,
 	//    see CreateSizeConstraintSet.
+	//
+	//    * SINGLE_QUERY_ARG: The parameter in the query string that you will inspect,
+	//    such as UserName or SalesRegion. The maximum length for SINGLE_QUERY_ARG
+	//    is 30 characters.
+	//
+	//    * ALL_QUERY_ARGS: Similar to SINGLE_QUERY_ARG, but rather than inspecting
+	//    a single parameter, AWS WAF will inspect all parameters within the query
+	//    for the value or regex pattern that you specify in TargetString.
 	//
 	// Type is a required field
 	Type *string `type:"string" required:"true" enum:"MatchFieldType"`
@@ -11994,6 +12451,71 @@ func (s GetIPSetOutput) GoString() string {
 // SetIPSet sets the IPSet field's value.
 func (s *GetIPSetOutput) SetIPSet(v *IPSet) *GetIPSetOutput {
 	s.IPSet = v
+	return s
+}
+
+type GetLoggingConfigurationInput struct {
+	_ struct{} `type:"structure"`
+
+	// The Amazon Resource Name (ARN) of the web ACL for which you want to get the
+	// LoggingConfiguration.
+	//
+	// ResourceArn is a required field
+	ResourceArn *string `min:"1" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s GetLoggingConfigurationInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetLoggingConfigurationInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *GetLoggingConfigurationInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "GetLoggingConfigurationInput"}
+	if s.ResourceArn == nil {
+		invalidParams.Add(request.NewErrParamRequired("ResourceArn"))
+	}
+	if s.ResourceArn != nil && len(*s.ResourceArn) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ResourceArn", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetResourceArn sets the ResourceArn field's value.
+func (s *GetLoggingConfigurationInput) SetResourceArn(v string) *GetLoggingConfigurationInput {
+	s.ResourceArn = &v
+	return s
+}
+
+type GetLoggingConfigurationOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The LoggingConfiguration for the specified web ACL.
+	LoggingConfiguration *LoggingConfiguration `type:"structure"`
+}
+
+// String returns the string representation
+func (s GetLoggingConfigurationOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s GetLoggingConfigurationOutput) GoString() string {
+	return s.String()
+}
+
+// SetLoggingConfiguration sets the LoggingConfiguration field's value.
+func (s *GetLoggingConfigurationOutput) SetLoggingConfiguration(v *LoggingConfiguration) *GetLoggingConfigurationOutput {
+	s.LoggingConfiguration = v
 	return s
 }
 
@@ -13059,15 +13581,15 @@ func (s *HTTPRequest) SetURI(v string) *HTTPRequest {
 }
 
 // Contains one or more IP addresses or blocks of IP addresses specified in
-// Classless Inter-Domain Routing (CIDR) notation. AWS WAF supports /8, /16,
-// /24, and /32 IP address ranges for IPv4, and /24, /32, /48, /56, /64 and
-// /128 for IPv6.
+// Classless Inter-Domain Routing (CIDR) notation. AWS WAF supports IPv4 address
+// ranges: /8 and any range between /16 through /32. AWS WAF supports IPv6 address
+// ranges: /16, /24, /32, /48, /56, /64, and /128.
 //
 // To specify an individual IP address, you specify the four-part IP address
 // followed by a /32, for example, 192.0.2.0/31. To block a range of IP addresses,
-// you can specify a /128, /64, /56, /48, /32, /24, /16, or /8 CIDR. For more
-// information about CIDR notation, see the Wikipedia entry Classless Inter-Domain
-// Routing (https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing).
+// you can specify /8 or any range between /16 through /32 (for IPv4) or /16,
+// /24, /32, /48, /56, /64, or /128 (for IPv6). For more information about CIDR
+// notation, see the Wikipedia entry Classless Inter-Domain Routing (https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing).
 type IPSet struct {
 	_ struct{} `type:"structure"`
 
@@ -13652,6 +14174,94 @@ func (s *ListIPSetsOutput) SetIPSets(v []*IPSetSummary) *ListIPSetsOutput {
 
 // SetNextMarker sets the NextMarker field's value.
 func (s *ListIPSetsOutput) SetNextMarker(v string) *ListIPSetsOutput {
+	s.NextMarker = &v
+	return s
+}
+
+type ListLoggingConfigurationsInput struct {
+	_ struct{} `type:"structure"`
+
+	// Specifies the number of LoggingConfigurations that you want AWS WAF to return
+	// for this request. If you have more LoggingConfigurations than the number
+	// that you specify for Limit, the response includes a NextMarker value that
+	// you can use to get another batch of LoggingConfigurations.
+	Limit *int64 `type:"integer"`
+
+	// If you specify a value for Limit and you have more LoggingConfigurations
+	// than the value of Limit, AWS WAF returns a NextMarker value in the response
+	// that allows you to list another group of LoggingConfigurations. For the second
+	// and subsequent ListLoggingConfigurations requests, specify the value of NextMarker
+	// from the previous response to get information about another batch of ListLoggingConfigurations.
+	NextMarker *string `min:"1" type:"string"`
+}
+
+// String returns the string representation
+func (s ListLoggingConfigurationsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListLoggingConfigurationsInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ListLoggingConfigurationsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ListLoggingConfigurationsInput"}
+	if s.NextMarker != nil && len(*s.NextMarker) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("NextMarker", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetLimit sets the Limit field's value.
+func (s *ListLoggingConfigurationsInput) SetLimit(v int64) *ListLoggingConfigurationsInput {
+	s.Limit = &v
+	return s
+}
+
+// SetNextMarker sets the NextMarker field's value.
+func (s *ListLoggingConfigurationsInput) SetNextMarker(v string) *ListLoggingConfigurationsInput {
+	s.NextMarker = &v
+	return s
+}
+
+type ListLoggingConfigurationsOutput struct {
+	_ struct{} `type:"structure"`
+
+	// An array of LoggingConfiguration objects.
+	LoggingConfigurations []*LoggingConfiguration `type:"list"`
+
+	// If you have more LoggingConfigurations than the number that you specified
+	// for Limit in the request, the response includes a NextMarker value. To list
+	// more LoggingConfigurations, submit another ListLoggingConfigurations request,
+	// and specify the NextMarker value from the response in the NextMarker value
+	// in the next request.
+	NextMarker *string `min:"1" type:"string"`
+}
+
+// String returns the string representation
+func (s ListLoggingConfigurationsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s ListLoggingConfigurationsOutput) GoString() string {
+	return s.String()
+}
+
+// SetLoggingConfigurations sets the LoggingConfigurations field's value.
+func (s *ListLoggingConfigurationsOutput) SetLoggingConfigurations(v []*LoggingConfiguration) *ListLoggingConfigurationsOutput {
+	s.LoggingConfigurations = v
+	return s
+}
+
+// SetNextMarker sets the NextMarker field's value.
+func (s *ListLoggingConfigurationsOutput) SetNextMarker(v string) *ListLoggingConfigurationsOutput {
 	s.NextMarker = &v
 	return s
 }
@@ -14538,6 +15148,88 @@ func (s *ListXssMatchSetsOutput) SetXssMatchSets(v []*XssMatchSetSummary) *ListX
 	return s
 }
 
+// The Amazon Kinesis Data Firehose delivery streams, RedactedFields information,
+// and the web ACL Amazon Resource Name (ARN).
+type LoggingConfiguration struct {
+	_ struct{} `type:"structure"`
+
+	// An array of Amazon Kinesis Data Firehose delivery stream ARNs.
+	//
+	// LogDestinationConfigs is a required field
+	LogDestinationConfigs []*string `min:"1" type:"list" required:"true"`
+
+	// The parts of the request that you want redacted from the logs. For example,
+	// if you redact the cookie field, the cookie field in the delivery stream will
+	// be xxx.
+	RedactedFields []*FieldToMatch `type:"list"`
+
+	// The Amazon Resource Name (ARN) of the web ACL that you want to associate
+	// with LogDestinationConfigs.
+	//
+	// ResourceArn is a required field
+	ResourceArn *string `min:"1" type:"string" required:"true"`
+}
+
+// String returns the string representation
+func (s LoggingConfiguration) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s LoggingConfiguration) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *LoggingConfiguration) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "LoggingConfiguration"}
+	if s.LogDestinationConfigs == nil {
+		invalidParams.Add(request.NewErrParamRequired("LogDestinationConfigs"))
+	}
+	if s.LogDestinationConfigs != nil && len(s.LogDestinationConfigs) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("LogDestinationConfigs", 1))
+	}
+	if s.ResourceArn == nil {
+		invalidParams.Add(request.NewErrParamRequired("ResourceArn"))
+	}
+	if s.ResourceArn != nil && len(*s.ResourceArn) < 1 {
+		invalidParams.Add(request.NewErrParamMinLen("ResourceArn", 1))
+	}
+	if s.RedactedFields != nil {
+		for i, v := range s.RedactedFields {
+			if v == nil {
+				continue
+			}
+			if err := v.Validate(); err != nil {
+				invalidParams.AddNested(fmt.Sprintf("%s[%v]", "RedactedFields", i), err.(request.ErrInvalidParams))
+			}
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetLogDestinationConfigs sets the LogDestinationConfigs field's value.
+func (s *LoggingConfiguration) SetLogDestinationConfigs(v []*string) *LoggingConfiguration {
+	s.LogDestinationConfigs = v
+	return s
+}
+
+// SetRedactedFields sets the RedactedFields field's value.
+func (s *LoggingConfiguration) SetRedactedFields(v []*FieldToMatch) *LoggingConfiguration {
+	s.RedactedFields = v
+	return s
+}
+
+// SetResourceArn sets the ResourceArn field's value.
+func (s *LoggingConfiguration) SetResourceArn(v string) *LoggingConfiguration {
+	s.ResourceArn = &v
+	return s
+}
+
 // Specifies the ByteMatchSet, IPSet, SqlInjectionMatchSet, XssMatchSet, RegexMatchSet,
 // GeoMatchSet, and SizeConstraintSet objects that you want to add to a Rule
 // and, for each object, indicates whether you want to negate the settings,
@@ -14566,7 +15258,7 @@ type Predicate struct {
 	// Negated is a required field
 	Negated *bool `type:"boolean" required:"true"`
 
-	// The type of predicate in a Rule, such as ByteMatchSet or IPSet.
+	// The type of predicate in a Rule, such as ByteMatch or IPSet.
 	//
 	// Type is a required field
 	Type *string `type:"string" required:"true" enum:"PredicateType"`
@@ -14619,6 +15311,74 @@ func (s *Predicate) SetNegated(v bool) *Predicate {
 // SetType sets the Type field's value.
 func (s *Predicate) SetType(v string) *Predicate {
 	s.Type = &v
+	return s
+}
+
+type PutLoggingConfigurationInput struct {
+	_ struct{} `type:"structure"`
+
+	// The Amazon Kinesis Data Firehose delivery streams that contains the inspected
+	// traffic information, the redacted fields details, and the Amazon Resource
+	// Name (ARN) of the web ACL to monitor.
+	//
+	// LoggingConfiguration is a required field
+	LoggingConfiguration *LoggingConfiguration `type:"structure" required:"true"`
+}
+
+// String returns the string representation
+func (s PutLoggingConfigurationInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutLoggingConfigurationInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *PutLoggingConfigurationInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "PutLoggingConfigurationInput"}
+	if s.LoggingConfiguration == nil {
+		invalidParams.Add(request.NewErrParamRequired("LoggingConfiguration"))
+	}
+	if s.LoggingConfiguration != nil {
+		if err := s.LoggingConfiguration.Validate(); err != nil {
+			invalidParams.AddNested("LoggingConfiguration", err.(request.ErrInvalidParams))
+		}
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetLoggingConfiguration sets the LoggingConfiguration field's value.
+func (s *PutLoggingConfigurationInput) SetLoggingConfiguration(v *LoggingConfiguration) *PutLoggingConfigurationInput {
+	s.LoggingConfiguration = v
+	return s
+}
+
+type PutLoggingConfigurationOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The LoggingConfiguration that you submitted in the request.
+	LoggingConfiguration *LoggingConfiguration `type:"structure"`
+}
+
+// String returns the string representation
+func (s PutLoggingConfigurationOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PutLoggingConfigurationOutput) GoString() string {
+	return s.String()
+}
+
+// SetLoggingConfiguration sets the LoggingConfiguration field's value.
+func (s *PutLoggingConfigurationOutput) SetLoggingConfiguration(v *LoggingConfiguration) *PutLoggingConfigurationOutput {
+	s.LoggingConfiguration = v
 	return s
 }
 
@@ -15009,6 +15769,8 @@ type RegexMatchTuple struct {
 	// use in web requests in an effort to bypass AWS WAF. If you specify a transformation,
 	// AWS WAF performs the transformation on RegexPatternSet before inspecting
 	// a request for a match.
+	//
+	// You can only specify a single type of TextTransformation.
 	//
 	// CMD_LINE
 	//
@@ -15660,7 +16422,7 @@ type SampledHTTPRequest struct {
 
 	// The time at which AWS WAF received the request from your AWS resource, in
 	// Unix time format (in seconds).
-	Timestamp *time.Time `type:"timestamp" timestampFormat:"unix"`
+	Timestamp *time.Time `type:"timestamp"`
 
 	// A value that indicates how one result in the response relates proportionally
 	// to other results in the response. A result that has a weight of 2 represents
@@ -15762,6 +16524,8 @@ type SizeConstraint struct {
 	// use in web requests in an effort to bypass AWS WAF. If you specify a transformation,
 	// AWS WAF performs the transformation on FieldToMatch before inspecting a request
 	// for a match.
+	//
+	// You can only specify a single type of TextTransformation.
 	//
 	// Note that if you choose BODY for the value of Type, you must choose NONE
 	// for TextTransformation because CloudFront forwards only the first 8192 bytes
@@ -16240,11 +17004,13 @@ type SqlInjectionMatchTuple struct {
 	// AWS WAF performs the transformation on FieldToMatch before inspecting a request
 	// for a match.
 	//
+	// You can only specify a single type of TextTransformation.
+	//
 	// CMD_LINE
 	//
-	// When you're concerned that attackers are injecting an operating system commandline
-	// command and using unusual formatting to disguise some or all of the command,
-	// use this option to perform the following transformations:
+	// When you're concerned that attackers are injecting an operating system command
+	// line command and using unusual formatting to disguise some or all of the
+	// command, use this option to perform the following transformations:
 	//
 	//    * Delete the following characters: \ " ' ^
 	//
@@ -16424,7 +17190,7 @@ type TimeWindow struct {
 	// time range in the previous three hours.
 	//
 	// EndTime is a required field
-	EndTime *time.Time `type:"timestamp" timestampFormat:"unix" required:"true"`
+	EndTime *time.Time `type:"timestamp" required:"true"`
 
 	// The beginning of the time range from which you want GetSampledRequests to
 	// return a sample of the requests that your AWS resource received. Specify
@@ -16432,7 +17198,7 @@ type TimeWindow struct {
 	// any time range in the previous three hours.
 	//
 	// StartTime is a required field
-	StartTime *time.Time `type:"timestamp" timestampFormat:"unix" required:"true"`
+	StartTime *time.Time `type:"timestamp" required:"true"`
 }
 
 // String returns the string representation
@@ -16731,6 +17497,8 @@ type UpdateIPSetInput struct {
 	//    * IPSetUpdate: Contains Action and IPSetDescriptor
 	//
 	//    * IPSetDescriptor: Contains Type and Value
+	//
+	// You can insert a maximum of 1000 addresses in a single request.
 	//
 	// Updates is a required field
 	Updates []*IPSetUpdate `min:"1" type:"list" required:"true"`
@@ -18363,11 +19131,13 @@ type XssMatchTuple struct {
 	// AWS WAF performs the transformation on FieldToMatch before inspecting a request
 	// for a match.
 	//
+	// You can only specify a single type of TextTransformation.
+	//
 	// CMD_LINE
 	//
-	// When you're concerned that attackers are injecting an operating system commandline
-	// command and using unusual formatting to disguise some or all of the command,
-	// use this option to perform the following transformations:
+	// When you're concerned that attackers are injecting an operating system command
+	// line command and using unusual formatting to disguise some or all of the
+	// command, use this option to perform the following transformations:
 	//
 	//    * Delete the following characters: \ " ' ^
 	//
@@ -19292,6 +20062,12 @@ const (
 
 	// MatchFieldTypeBody is a MatchFieldType enum value
 	MatchFieldTypeBody = "BODY"
+
+	// MatchFieldTypeSingleQueryArg is a MatchFieldType enum value
+	MatchFieldTypeSingleQueryArg = "SINGLE_QUERY_ARG"
+
+	// MatchFieldTypeAllQueryArgs is a MatchFieldType enum value
+	MatchFieldTypeAllQueryArgs = "ALL_QUERY_ARGS"
 )
 
 const (

@@ -92,6 +92,10 @@ type Pool struct {
 
 	// The Monitor associated with this Pool.
 	Monitor monitors.Monitor `json:"healthmonitor"`
+
+	// The provisioning status of the pool.
+	// This value is ACTIVE, PENDING_* or ERROR.
+	ProvisioningStatus string `json:"provisioning_status"`
 }
 
 // PoolPage is the page returned by a pager when traversing over a
@@ -196,6 +200,10 @@ type Member struct {
 
 	// The unique ID for the Member.
 	ID string `json:"id"`
+
+	// The provisioning status of the pool.
+	// This value is ACTIVE, PENDING_* or ERROR.
+	ProvisioningStatus string `json:"provisioning_status"`
 }
 
 // MemberPage is the page returned by a pager when traversing over a
@@ -264,6 +272,12 @@ type GetMemberResult struct {
 // Call its Extract method to interpret it as a Member.
 type UpdateMemberResult struct {
 	commonMemberResult
+}
+
+// UpdateMembersResult represents the result of an UpdateMembers operation.
+// Call its ExtractErr method to determine if the request succeeded or failed.
+type UpdateMembersResult struct {
+	gophercloud.ErrResult
 }
 
 // DeleteMemberResult represents the result of a DeleteMember operation.

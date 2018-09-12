@@ -82,20 +82,23 @@ func startServiceController(ctx ControllerContext) (bool, error) {
 func startNodeIpamController(ctx ControllerContext) (bool, error) {
 	var clusterCIDR *net.IPNet = nil
 	var serviceCIDR *net.IPNet = nil
-	if ctx.ComponentConfig.AllocateNodeCIDRs {
-		var err error
-		if len(strings.TrimSpace(ctx.ComponentConfig.ClusterCIDR)) != 0 {
-			_, clusterCIDR, err = net.ParseCIDR(ctx.ComponentConfig.ClusterCIDR)
-			if err != nil {
-				glog.Warningf("Unsuccessful parsing of cluster CIDR %v: %v", ctx.ComponentConfig.ClusterCIDR, err)
-			}
-		}
 
-		if len(strings.TrimSpace(ctx.ComponentConfig.ServiceCIDR)) != 0 {
-			_, serviceCIDR, err = net.ParseCIDR(ctx.ComponentConfig.ServiceCIDR)
-			if err != nil {
-				glog.Warningf("Unsuccessful parsing of service CIDR %v: %v", ctx.ComponentConfig.ServiceCIDR, err)
-			}
+	if !ctx.ComponentConfig.AllocateNodeCIDRs {
+		return false, nil
+	}
+
+	var err error
+	if len(strings.TrimSpace(ctx.ComponentConfig.ClusterCIDR)) != 0 {
+		_, clusterCIDR, err = net.ParseCIDR(ctx.ComponentConfig.ClusterCIDR)
+		if err != nil {
+			glog.Warningf("Unsuccessful parsing of cluster CIDR %v: %v", ctx.ComponentConfig.ClusterCIDR, err)
+		}
+	}
+
+	if len(strings.TrimSpace(ctx.ComponentConfig.ServiceCIDR)) != 0 {
+		_, serviceCIDR, err = net.ParseCIDR(ctx.ComponentConfig.ServiceCIDR)
+		if err != nil {
+			glog.Warningf("Unsuccessful parsing of service CIDR %v: %v", ctx.ComponentConfig.ServiceCIDR, err)
 		}
 	}
 
@@ -106,7 +109,6 @@ func startNodeIpamController(ctx ControllerContext) (bool, error) {
 		clusterCIDR,
 		serviceCIDR,
 		int(ctx.ComponentConfig.NodeCIDRMaskSize),
-		ctx.ComponentConfig.AllocateNodeCIDRs,
 		ipam.CIDRAllocatorType(ctx.ComponentConfig.CIDRAllocatorType),
 	)
 	if err != nil {
@@ -395,24 +397,20 @@ func startGarbageCollectorController(ctx ControllerContext) (bool, error) {
 }
 
 func startPVCProtectionController(ctx ControllerContext) (bool, error) {
-	if utilfeature.DefaultFeatureGate.Enabled(features.StorageObjectInUseProtection) {
-		go pvcprotection.NewPVCProtectionController(
-			ctx.InformerFactory.Core().V1().PersistentVolumeClaims(),
-			ctx.InformerFactory.Core().V1().Pods(),
-			ctx.ClientBuilder.ClientOrDie("pvc-protection-controller"),
-		).Run(1, ctx.Stop)
-		return true, nil
-	}
-	return false, nil
+	go pvcprotection.NewPVCProtectionController(
+		ctx.InformerFactory.Core().V1().PersistentVolumeClaims(),
+		ctx.InformerFactory.Core().V1().Pods(),
+		ctx.ClientBuilder.ClientOrDie("pvc-protection-controller"),
+		utilfeature.DefaultFeatureGate.Enabled(features.StorageObjectInUseProtection),
+	).Run(1, ctx.Stop)
+	return true, nil
 }
 
 func startPVProtectionController(ctx ControllerContext) (bool, error) {
-	if utilfeature.DefaultFeatureGate.Enabled(features.StorageObjectInUseProtection) {
-		go pvprotection.NewPVProtectionController(
-			ctx.InformerFactory.Core().V1().PersistentVolumes(),
-			ctx.ClientBuilder.ClientOrDie("pv-protection-controller"),
-		).Run(1, ctx.Stop)
-		return true, nil
-	}
-	return false, nil
+	go pvprotection.NewPVProtectionController(
+		ctx.InformerFactory.Core().V1().PersistentVolumes(),
+		ctx.ClientBuilder.ClientOrDie("pv-protection-controller"),
+		utilfeature.DefaultFeatureGate.Enabled(features.StorageObjectInUseProtection),
+	).Run(1, ctx.Stop)
+	return true, nil
 }

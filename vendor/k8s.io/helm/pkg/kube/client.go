@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright The Helm Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ import (
 )
 
 const (
-	// MissingGetHeader is added to Get's outout when a resource is not found.
+	// MissingGetHeader is added to Get's output when a resource is not found.
 	MissingGetHeader = "==> MISSING\nKIND\t\tNAME\n"
 )
 
@@ -139,6 +139,7 @@ func (c *Client) BuildUnstructured(namespace string, reader io.Reader) (Result, 
 		NamespaceParam(namespace).
 		DefaultNamespace().
 		Stream(reader, "").
+		Schema(c.validator()).
 		Flatten().
 		Do().Infos()
 	return result, scrubValidationError(err)
@@ -403,7 +404,7 @@ func createPatch(target *resource.Info, current runtime.Object) ([]byte, types.P
 
 	// While different objects need different merge types, the parent function
 	// that calls this does not try to create a patch when the data (first
-	// returned object) is nil. We can skip calculating the the merge type as
+	// returned object) is nil. We can skip calculating the merge type as
 	// the returned merge type is ignored.
 	if apiequality.Semantic.DeepEqual(oldData, newData) {
 		return nil, types.StrategicMergePatchType, nil
