@@ -94,6 +94,11 @@ resource "helm_release" "my_database" {
         name = "mariadbPassword"
         value = "qux"
     }
+
+    set_string {
+        name = "image.tags"
+        value = "registry\\.io/terraform-provider-helm\\,example\\.io/terraform-provider-helm"
+    }
 }
 ```
 
