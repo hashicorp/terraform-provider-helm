@@ -1,7 +1,14 @@
 package helm
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -189,6 +196,7 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
+				resource.TestCheckResourceAttrSet("helm_release.test", "version"),
 			),
 		}, {
 			Config: testAccHelmReleaseConfigRepositoryURL(testNamespace, testResourceName),
@@ -196,6 +204,7 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
+				resource.TestCheckResourceAttrSet("helm_release.test", "version"),
 			),
 		}},
 	})
@@ -226,6 +235,48 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
+			),
+		}},
+	})
+}
+
+func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
+	dir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	chartPath := filepath.Join(dir, "mariadb")
+	defer os.RemoveAll(dir)
+	resource.Test(t, resource.TestCase{
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy,
+		Steps: []resource.TestStep{{
+			PreConfig: func() {
+				err := downloadTar("https://kubernetes-charts.storage.googleapis.com/mariadb-0.6.2.tgz", dir)
+				if err != nil {
+					t.Fatal(err)
+				}
+			},
+			Config: testAccHelmReleaseConfigLocalDir(testNamespace, testResourceName, chartPath),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "version", "0.6.2"),
+			),
+		}, {
+			PreConfig: func() {
+				err := downloadTar("https://kubernetes-charts.storage.googleapis.com/mariadb-0.6.3.tgz", dir)
+				if err != nil {
+					t.Fatal(err)
+				}
+			},
+			Config: testAccHelmReleaseConfigLocalDir(testNamespace, testResourceName, chartPath),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "version", "0.6.3"),
 			),
 		}},
 	})
@@ -366,4 +417,61 @@ func testAccCheckHelmReleaseDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+func testAccHelmReleaseConfigLocalDir(ns, name, path string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "test" {
+			name      = %q
+			namespace = %q
+			chart     = %q
+		}
+	`, name, ns, path)
+}
+
+func downloadTar(url, dst string) error {
+	rsp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer rsp.Body.Close()
+	return unTar(dst, rsp.Body)
+}
+
+func unTar(dst string, r io.Reader) error {
+	gzr, err := gzip.NewReader(r)
+	defer gzr.Close()
+	if err != nil {
+		return err
+	}
+	tr := tar.NewReader(gzr)
+	for {
+		header, err := tr.Next()
+		switch {
+		case err == io.EOF:
+			return nil
+		case err != nil:
+			return err
+		case header == nil:
+			continue
+		}
+		target := filepath.Join(dst, header.Name)
+		switch header.Typeflag {
+		case tar.TypeReg, tar.TypeRegA:
+			dir := filepath.Dir(target)
+			if _, err := os.Stat(dir); err != nil {
+				if err := os.MkdirAll(dir, 0755); err != nil {
+					return err
+				}
+			}
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			if _, err := io.Copy(f, tr); err != nil {
+				return err
+			}
+		}
+	}
 }
