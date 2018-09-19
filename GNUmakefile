@@ -8,8 +8,10 @@ BASE_PATH ?= $(shell pwd)
 BUILD_PATH ?= $(BASE_PATH)/build
 PROVIDER := $(shell basename $(BASE_PATH))
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+VERSION ?= v0.0.0
 ifneq ($(origin TRAVIS_TAG), undefined)
 	BRANCH := $(TRAVIS_TAG)
+	VERSION := $(TRAVIS_TAG)
 endif
 
 default: build
@@ -70,7 +72,7 @@ packages:
 		for arch in $(PKG_ARCH); do \
 			mkdir -p $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch} && \
 			cd $(BASE_PATH) && \
-			GOOS=$${os} GOARCH=$${arch} go build -o $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch}/$(PROVIDER) . && \
+			GOOS=$${os} GOARCH=$${arch} go build -o $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch}/$(PROVIDER)_$(VERSION) . && \
 			cd $(BUILD_PATH) && \
 			tar -cvzf $(BUILD_PATH)/$(PROVIDER)_$(BRANCH)_$${os}_$${arch}.tar.gz $(PROVIDER)_$${os}_$${arch}/; \
 		done; \
