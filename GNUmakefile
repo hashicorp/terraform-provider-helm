@@ -4,7 +4,7 @@ COVER_TEST?=$$(go list ./... |grep -v 'vendor')
 WEBSITE_REPO=github.com/hashicorp/terraform-website
 PKG_NAME=helm
 
-PKG_OS ?= darwin linux
+PKG_OS ?= darwin linux windows
 PKG_ARCH ?= amd64
 BASE_PATH ?= $(shell pwd)
 BUILD_PATH ?= $(BASE_PATH)/build
@@ -78,6 +78,7 @@ packages:
 			mkdir -p $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch} && \
 			cd $(BASE_PATH) && \
 			CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} go build -o $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch}/$(PROVIDER)_$(VERSION) . && \
+			if [ "$${os}" = "windows" ]; then mv $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch}/$(PROVIDER)_$(VERSION) $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch}/$(PROVIDER)_$(VERSION).exe; fi && \
 			cd $(BUILD_PATH) && \
 			tar -cvzf $(BUILD_PATH)/$(PROVIDER)_$(BRANCH)_$${os}_$${arch}.tar.gz $(PROVIDER)_$${os}_$${arch}/; \
 		done; \

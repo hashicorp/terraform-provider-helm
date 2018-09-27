@@ -21,9 +21,13 @@ script:
 - make vet
 - make website-test
 
-branches:
-  only:
-  - master
-matrix:
-  fast_finish: true
-  allow_failures:
+deploy:
+  provider: releases
+  api_key: $GITHUB_TOKEN
+  file:
+    - build/terraform-provider-helm_${TRAVIS_TAG}_darwin_amd64.tar.gz
+    - build/terraform-provider-helm_${TRAVIS_TAG}_linux_amd64.tar.gz
+    - build/terraform-provider-helm_${TRAVIS_TAG}_windows_amd64.tar.gz
+  skip_cleanup: true
+  on:
+    tags: true
