@@ -72,7 +72,7 @@ packages:
 		for arch in $(PKG_ARCH); do \
 			mkdir -p $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch} && \
 			cd $(BASE_PATH) && \
-			GOOS=$${os} GOARCH=$${arch} go build -o $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch}/$(PROVIDER)_$(VERSION) . && \
+			CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} go build -o $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch}/$(PROVIDER)_$(VERSION) . && \
 			cd $(BUILD_PATH) && \
 			tar -cvzf $(BUILD_PATH)/$(PROVIDER)_$(BRANCH)_$${os}_$${arch}.tar.gz $(PROVIDER)_$${os}_$${arch}/; \
 		done; \
