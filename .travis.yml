@@ -11,6 +11,9 @@ install:
   # See: https://github.com/golang/go/issues/12933
   - bash scripts/gogetcookie.sh
   - go get github.com/kardianos/govendor
+  
+env:
+  - CGO_ENABLED=0
 
 script:
   - make test
