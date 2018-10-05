@@ -68,6 +68,7 @@ func resourceRelease() *schema.Resource {
 			"values": {
 				Type:        schema.TypeList,
 				Optional:    true,
+				ForceNew:    true,
 				Description: "List of values in raw yaml file to pass to helm.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
@@ -198,6 +199,7 @@ func resourceRelease() *schema.Resource {
 						"values": {
 							Type:        schema.TypeString,
 							Computed:    true,
+							ForceNew:    true,
 							Description: "The raw yaml values used for the chart.",
 						},
 					},
