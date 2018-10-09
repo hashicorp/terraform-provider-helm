@@ -1,3 +1,11 @@
+---
+layout: "helm"
+page_title: "Provider: Helm"
+sidebar_current: "docs-helm-index"
+description: |-
+  The Helm provider is used to deploy software packages in Kubernetes. The provider needs to be configured with the proper credentials before it can be used.
+---
+
 # Helm Provider
 
 The Helm provider is used to deploy software packages in Kubernetes. The provider needs to be configured with the proper credentials before it can be used.

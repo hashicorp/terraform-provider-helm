@@ -1,32 +1,29 @@
+
 dist: trusty
-sudo: false
+sudo: required
+services:
+- docker
 language: go
 go:
-- 1.9
+- 1.8.1
 
 install:
-  # This script is used by the Travis build to install a cookie for
-  # go.googlesource.com so rate limits are higher when using `go get` to fetch
-  # packages that live there.
-  # See: https://github.com/golang/go/issues/12933
-  - bash scripts/gogetcookie.sh
-  - go get github.com/kardianos/govendor
+# This script is used by the Travis build to install a cookie for
+# go.googlesource.com so rate limits are higher when using `go get` to fetch
+# packages that live there.
+# See: https://github.com/golang/go/issues/12933
+- bash scripts/gogetcookie.sh
+- go get github.com/kardianos/govendor
 
 script:
-  - make test
-  - make vendor-status
-  - make vet
-  - make errcheck
+- make test
+- make vendor-status
+- make vet
+- make website-test
 
-before_deploy:
-  - make packages
-
-deploy:
-  provider: releases
-  api_key: $GITHUB_TOKEN
-  file:
-    - build/terraform-provider-helm_${TRAVIS_TAG}_darwin_amd64.tar.gz
-    - build/terraform-provider-helm_${TRAVIS_TAG}_linux_amd64.tar.gz
-  skip_cleanup: true
-  on:
-    tags: true
+branches:
+  only:
+  - master
+matrix:
+  fast_finish: true
+  allow_failures:

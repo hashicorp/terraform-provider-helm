@@ -1,0 +1,25 @@
+<% wrap_layout :inner do %>
+  <% content_for :sidebar do %>
+    <div class="docs-sidebar hidden-print affix-top" role="complementary">
+      <ul class="nav docs-sidenav">
+        <li<%#= sidebar_current("docs-home") %>>
+          <a href="/docs/providers/index.html">All Providers</a>
+        </li>
+
+        <li<%= sidebar_current("docs-helm-index") %>>
+          <a href="/docs/providers/helm/index.html">Helm Provider</a>
+          <ul class="nav nav-visible">
+            <li<%= sidebar_current("docs-helm-resource") %>>
+              <a href="/docs/providers/helm/release.html">helm_release</a>
+            </li>
+            <li<%= sidebar_current("docs-helm-repository") %>>
+              <a href="/docs/providers/helm/repository.html">helm_repository</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= yield %>
+<% end %>

@@ -1,3 +1,11 @@
+---
+layout: "helm"
+page_title: "helm: helm_release"
+sidebar_current: "docs-helm-release"
+description: |-
+
+---
+
 # Resource: helm_release
 
 A Release is an instance of a chart running in a Kubernetes cluster.
