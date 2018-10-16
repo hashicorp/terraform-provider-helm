@@ -10,9 +10,9 @@ Contents
 
 * [Installation](#installation)
 * [Example](#example)
-* [Documentation](docs/README.md)
-  * [Resource: helm_release](docs/release.md)
-  * [Resource: helm_repository](docs/repository.md)
+* [Documentation](https://www.terraform.io/docs/providers/helm/index.html)
+  * [Resource: helm_release](https://www.terraform.io/docs/providers/helm/release.html)
+  * [Resource: helm_repository](https://www.terraform.io/docs/providers/helm/repository.html)
 
 
 Installation
