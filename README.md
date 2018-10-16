@@ -1,4 +1,4 @@
-Terraform Provider for Helm [![Build Status](https://travis-ci.org/mcuadros/terraform-provider-helm.svg?branch=v0.4.0)](https://travis-ci.org/mcuadros/terraform-provider-helm) [![GitHub release](https://img.shields.io/github/release/mcuadros/terraform-provider-helm.svg)](https://github.com/mcuadros/terraform-provider-helm/releases) [![license](https://img.shields.io/github/license/mcuadros/terraform-provider-helm.svg)]()
+Terraform Provider for Helm [![Build Status](https://travis-ci.org/mcuadros/terraform-provider-helm.svg?branch=v0.4.0)](https://travis-ci.org/mcuadros/terraform-provider-helm) [![GitHub release](https://img.shields.io/github/release/terraform-providers/terraform-provider-helm.svg)](https://github.com/terraform-providers/terraform-provider-helm/releases) [![license](https://img.shields.io/github/license/terraform-providers/terraform-provider-helm.svg)]()
 ===========================
 
 This is a [Helm](https://github.com/kubernetes/helm) provider for [Terraform](https://www.terraform.io/).
@@ -29,12 +29,12 @@ Installation
 ### Installation from binaries (recommended)
 
 The recommended way to install *terraform-provider-helm* is use the binary
-distributions from the [Releases](https://github.com/mcuadros/terraform-provider-helm/releases) page. The packages are available for Linux and macOS.
+distributions from the [Releases](https://github.com/terraform-providers/terraform-provider-helm/releases) page. The packages are available for Linux and macOS.
 
 Download and uncompress the latest release for your OS. This example uses the linux binary.
 
 ```sh
-> wget https://github.com/mcuadros/terraform-provider-helm/releases/download/v0.6.0/terraform-provider-helm_v0.6.0_linux_amd64.tar.gz
+> wget https://github.com/terraform-providers/terraform-provider-helm/releases/download/v0.6.0/terraform-provider-helm_v0.6.0_linux_amd64.tar.gz
 > tar -xvf terraform-provider-helm*.tar.gz
 ```
 
@@ -49,17 +49,17 @@ Now copy the binary to the Terraform's plugins folder, if is your first plugin m
 
 If you wish to compile the provider from source code, you'll first need [Go](http://www.golang.org) installed on your machine (version >=1.9 is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
-Clone repository to: `$GOPATH/src/github.com/mcuadros/terraform-provider-helm`
+Clone repository to: `$GOPATH/src/github.com/terraform-providers/terraform-provider-helm`
 
 ```sh
-> mkdir -p $GOPATH/src/github.com/mcuadros
-> git clone https://github.com/mcuadros/terraform-provider-helm.git $GOPATH/src/github.com/mcuadros/terraform-provider-helm
+> mkdir -p $GOPATH/src/github.com/terraform-providers
+> git clone https://github.com/terraform-providers/terraform-provider-helm.git $GOPATH/src/github.com/terraform-providers/terraform-provider-helm
 ```
 
 Enter the provider directory and build the provider
 
 ```sh
-> cd $GOPATH/src/github.com/mcuadros/terraform-provider-helm
+> cd $GOPATH/src/github.com/terraform-providers/terraform-provider-helm
 > make build
 ```
 
