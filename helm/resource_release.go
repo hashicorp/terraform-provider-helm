@@ -108,6 +108,7 @@ func resourceRelease() *schema.Resource {
 			"namespace": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				ForceNew:    true,
 				Default:     "default",
 				Description: "Namespace to install the release into.",
 			},
