@@ -75,7 +75,7 @@ Example
 
 This is a small example of how to install the mariadb chart on your default
 kubernetes cluster, since the provider was initialized, all the configuration
-is retrieve from the environment. Please read the [documentation](docs/README.md) for more
+is retrieved from the environment. Please read the [documentation](docs/README.md) for more
 information.
 
 You should have a local configured copy of kubectl.
