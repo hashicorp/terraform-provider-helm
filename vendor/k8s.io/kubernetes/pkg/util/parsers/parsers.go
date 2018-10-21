@@ -33,7 +33,7 @@ const (
 // ParseImageName parses a docker image string into three parts: repo, tag and digest.
 // If both tag and digest are empty, a default image tag will be returned.
 func ParseImageName(image string) (string, string, string, error) {
-	named, err := dockerref.ParseNamed(image)
+	named, err := dockerref.ParseNormalizedNamed(image)
 	if err != nil {
 		return "", "", "", fmt.Errorf("couldn't parse image name: %v", err)
 	}

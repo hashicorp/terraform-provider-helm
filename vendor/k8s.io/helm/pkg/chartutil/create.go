@@ -129,10 +129,10 @@ kind: Ingress
 metadata:
   name: {{ $fullName }}
   labels:
-    app: {{ include "<CHARTNAME>.name" . }}
-    chart: {{ include "<CHARTNAME>.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "<CHARTNAME>.name" . }}
+    helm.sh/chart: {{ include "<CHARTNAME>.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- with .Values.ingress.annotations }}
   annotations:
 {{ toYaml . | indent 4 }}
@@ -166,21 +166,21 @@ kind: Deployment
 metadata:
   name: {{ include "<CHARTNAME>.fullname" . }}
   labels:
-    app: {{ include "<CHARTNAME>.name" . }}
-    chart: {{ include "<CHARTNAME>.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "<CHARTNAME>.name" . }}
+    helm.sh/chart: {{ include "<CHARTNAME>.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "<CHARTNAME>.name" . }}
-      release: {{ .Release.Name }}
+      app.kubernetes.io/name: {{ include "<CHARTNAME>.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: {{ include "<CHARTNAME>.name" . }}
-        release: {{ .Release.Name }}
+        app.kubernetes.io/name: {{ include "<CHARTNAME>.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
         - name: {{ .Chart.Name }}
@@ -219,10 +219,10 @@ kind: Service
 metadata:
   name: {{ include "<CHARTNAME>.fullname" . }}
   labels:
-    app: {{ include "<CHARTNAME>.name" . }}
-    chart: {{ include "<CHARTNAME>.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+    app.kubernetes.io/name: {{ include "<CHARTNAME>.name" . }}
+    helm.sh/chart: {{ include "<CHARTNAME>.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -231,8 +231,8 @@ spec:
       protocol: TCP
       name: http
   selector:
-    app: {{ include "<CHARTNAME>.name" . }}
-    release: {{ .Release.Name }}
+    app.kubernetes.io/name: {{ include "<CHARTNAME>.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
 `
 
 const defaultNotes = `1. Get the application URL by running these commands:
@@ -250,7 +250,7 @@ const defaultNotes = `1. Get the application URL by running these commands:
   export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "<CHARTNAME>.fullname" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
   echo http://$SERVICE_IP:{{ .Values.service.port }}
 {{- else if contains "ClusterIP" .Values.service.type }}
-  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app={{ include "<CHARTNAME>.name" . }},release={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "<CHARTNAME>.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
   echo "Visit http://127.0.0.1:8080 to use your application"
   kubectl port-forward $POD_NAME 8080:80
 {{- end }}

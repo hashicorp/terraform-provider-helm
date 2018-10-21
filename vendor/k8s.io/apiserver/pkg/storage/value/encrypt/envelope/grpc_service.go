@@ -18,16 +18,16 @@ limitations under the License.
 package envelope
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
 
 	"google.golang.org/grpc"
-
-	"golang.org/x/net/context"
 
 	kmsapi "k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1"
 )
@@ -94,6 +94,15 @@ func parseEndpoint(endpoint string) (string, error) {
 	if u.Scheme != unixProtocol {
 		return "", fmt.Errorf("unsupported scheme %q for remote KMS provider", u.Scheme)
 	}
+
+	// Linux abstract namespace socket - no physical file required
+	// Warning: Linux Abstract sockets have not concept of ACL (unlike traditional file based sockets).
+	// However, Linux Abstract sockets are subject to Linux networking namespace, so will only be accessible to
+	// containers within the same pod (unless host networking is used).
+	if strings.HasPrefix(u.Path, "/@") {
+		return strings.TrimPrefix(u.Path, "/"), nil
+	}
+
 	return u.Path, nil
 }
 

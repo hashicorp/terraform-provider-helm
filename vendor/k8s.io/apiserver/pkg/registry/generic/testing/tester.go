@@ -17,6 +17,7 @@ limitations under the License.
 package tester
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -26,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest/resttest"
 	etcdstorage "k8s.io/apiserver/pkg/storage/etcd"
@@ -142,7 +142,7 @@ func (t *Tester) TestWatch(valid runtime.Object, labelsPass, labelsFail []labels
 
 // Helper functions
 
-func (t *Tester) getObject(ctx genericapirequest.Context, obj runtime.Object) (runtime.Object, error) {
+func (t *Tester) getObject(ctx context.Context, obj runtime.Object) (runtime.Object, error) {
 	accessor, err := meta.Accessor(obj)
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func (t *Tester) getObject(ctx genericapirequest.Context, obj runtime.Object) (r
 	return result, nil
 }
 
-func (t *Tester) createObject(ctx genericapirequest.Context, obj runtime.Object) error {
+func (t *Tester) createObject(ctx context.Context, obj runtime.Object) error {
 	accessor, err := meta.Accessor(obj)
 	if err != nil {
 		return err
@@ -164,7 +164,7 @@ func (t *Tester) createObject(ctx genericapirequest.Context, obj runtime.Object)
 	if err != nil {
 		return err
 	}
-	return t.storage.Storage.Create(ctx, key, obj, nil, 0)
+	return t.storage.Storage.Create(ctx, key, obj, nil, 0, false)
 }
 
 func (t *Tester) setObjectsForList(objects []runtime.Object) []runtime.Object {
@@ -173,7 +173,7 @@ func (t *Tester) setObjectsForList(objects []runtime.Object) []runtime.Object {
 		t.tester.Errorf("unable to clear collection: %v", err)
 		return nil
 	}
-	if err := storagetesting.CreateObjList(key, t.storage.Storage, objects); err != nil {
+	if err := storagetesting.CreateObjList(key, t.storage.Storage.Storage, objects); err != nil {
 		t.tester.Errorf("unexpected error: %v", err)
 		return nil
 	}

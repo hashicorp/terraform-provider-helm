@@ -19,8 +19,7 @@ package downwardapi
 import (
 	"fmt"
 	"path"
-	"sort"
-	"strings"
+	"path/filepath"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -231,7 +230,7 @@ func CollectData(items []v1.DownwardAPIVolumeFile, pod *v1.Pod, host volume.Volu
 	data := make(map[string]volumeutil.FileProjection)
 	for _, fileInfo := range items {
 		var fileProjection volumeutil.FileProjection
-		fPath := path.Clean(fileInfo.Path)
+		fPath := filepath.Clean(fileInfo.Path)
 		if fileInfo.Mode != nil {
 			fileProjection.Mode = *fileInfo.Mode
 		} else {
@@ -243,7 +242,7 @@ func CollectData(items []v1.DownwardAPIVolumeFile, pod *v1.Pod, host volume.Volu
 				glog.Errorf("Unable to extract field %s: %s", fileInfo.FieldRef.FieldPath, err.Error())
 				errlist = append(errlist, err)
 			} else {
-				fileProjection.Data = []byte(sortLines(values))
+				fileProjection.Data = []byte(values)
 			}
 		} else if fileInfo.ResourceFieldRef != nil {
 			containerName := fileInfo.ResourceFieldRef.ContainerName
@@ -254,21 +253,13 @@ func CollectData(items []v1.DownwardAPIVolumeFile, pod *v1.Pod, host volume.Volu
 				glog.Errorf("Unable to extract field %s: %s", fileInfo.ResourceFieldRef.Resource, err.Error())
 				errlist = append(errlist, err)
 			} else {
-				fileProjection.Data = []byte(sortLines(values))
+				fileProjection.Data = []byte(values)
 			}
 		}
 
 		data[fPath] = fileProjection
 	}
 	return data, utilerrors.NewAggregate(errlist)
-}
-
-// sortLines sorts the strings generated from map based data
-// (annotations and labels)
-func sortLines(values string) string {
-	splitted := strings.Split(values, "\n")
-	sort.Strings(splitted)
-	return strings.Join(splitted, "\n")
 }
 
 func (d *downwardAPIVolume) GetPath() string {

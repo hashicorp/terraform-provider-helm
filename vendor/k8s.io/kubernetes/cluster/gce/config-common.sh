@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2016 The Kubernetes Authors.
 #
@@ -110,10 +110,7 @@ function get-alias-range-size() {
       return 0
     fi
   done
-  echo -e "${color_red}Error finding an alias range for $1 IPs." >&2
-  exit 1
 }
-
 # NOTE: Avoid giving nodes empty scopes, because kubelet needs a service account
 # in order to initialize properly.
 NODE_SCOPES="${NODE_SCOPES:-monitoring,logging-write,storage-ro}"

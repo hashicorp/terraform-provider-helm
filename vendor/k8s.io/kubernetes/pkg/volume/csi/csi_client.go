@@ -17,6 +17,7 @@ limitations under the License.
 package csi
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -24,14 +25,15 @@ import (
 
 	csipb "github.com/container-storage-interface/spec/lib/go/csi/v0"
 	"github.com/golang/glog"
-	grpctx "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	api "k8s.io/api/core/v1"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	"k8s.io/kubernetes/pkg/features"
 )
 
 type csiClient interface {
 	NodePublishVolume(
-		ctx grpctx.Context,
+		ctx context.Context,
 		volumeid string,
 		readOnly bool,
 		stagingTargetPath string,
@@ -43,11 +45,11 @@ type csiClient interface {
 		fsType string,
 	) error
 	NodeUnpublishVolume(
-		ctx grpctx.Context,
+		ctx context.Context,
 		volID string,
 		targetPath string,
 	) error
-	NodeStageVolume(ctx grpctx.Context,
+	NodeStageVolume(ctx context.Context,
 		volID string,
 		publishVolumeInfo map[string]string,
 		stagingTargetPath string,
@@ -56,8 +58,8 @@ type csiClient interface {
 		nodeStageSecrets map[string]string,
 		volumeAttribs map[string]string,
 	) error
-	NodeUnstageVolume(ctx grpctx.Context, volID, stagingTargetPath string) error
-	NodeGetCapabilities(ctx grpctx.Context) ([]*csipb.NodeServiceCapability, error)
+	NodeUnstageVolume(ctx context.Context, volID, stagingTargetPath string) error
+	NodeGetCapabilities(ctx context.Context) ([]*csipb.NodeServiceCapability, error)
 }
 
 // csiClient encapsulates all csi-plugin methods
@@ -74,7 +76,7 @@ func newCsiDriverClient(driverName string) *csiDriverClient {
 }
 
 func (c *csiDriverClient) NodePublishVolume(
-	ctx grpctx.Context,
+	ctx context.Context,
 	volID string,
 	readOnly bool,
 	stagingTargetPath string,
@@ -111,22 +113,29 @@ func (c *csiDriverClient) NodePublishVolume(
 			AccessMode: &csipb.VolumeCapability_AccessMode{
 				Mode: asCSIAccessMode(accessMode),
 			},
-			AccessType: &csipb.VolumeCapability_Mount{
-				Mount: &csipb.VolumeCapability_MountVolume{
-					FsType: fsType,
-				},
-			},
 		},
 	}
 	if stagingTargetPath != "" {
 		req.StagingTargetPath = stagingTargetPath
 	}
 
+	if fsType == fsTypeBlockName {
+		req.VolumeCapability.AccessType = &csipb.VolumeCapability_Block{
+			Block: &csipb.VolumeCapability_BlockVolume{},
+		}
+	} else {
+		req.VolumeCapability.AccessType = &csipb.VolumeCapability_Mount{
+			Mount: &csipb.VolumeCapability_MountVolume{
+				FsType: fsType,
+			},
+		}
+	}
+
 	_, err = nodeClient.NodePublishVolume(ctx, req)
 	return err
 }
 
-func (c *csiDriverClient) NodeUnpublishVolume(ctx grpctx.Context, volID string, targetPath string) error {
+func (c *csiDriverClient) NodeUnpublishVolume(ctx context.Context, volID string, targetPath string) error {
 	glog.V(4).Info(log("calling NodeUnpublishVolume rpc: [volid=%s, target_path=%s", volID, targetPath))
 	if volID == "" {
 		return errors.New("missing volume id")
@@ -151,7 +160,7 @@ func (c *csiDriverClient) NodeUnpublishVolume(ctx grpctx.Context, volID string, 
 	return err
 }
 
-func (c *csiDriverClient) NodeStageVolume(ctx grpctx.Context,
+func (c *csiDriverClient) NodeStageVolume(ctx context.Context,
 	volID string,
 	publishInfo map[string]string,
 	stagingTargetPath string,
@@ -183,21 +192,28 @@ func (c *csiDriverClient) NodeStageVolume(ctx grpctx.Context,
 			AccessMode: &csipb.VolumeCapability_AccessMode{
 				Mode: asCSIAccessMode(accessMode),
 			},
-			AccessType: &csipb.VolumeCapability_Mount{
-				Mount: &csipb.VolumeCapability_MountVolume{
-					FsType: fsType,
-				},
-			},
 		},
 		NodeStageSecrets: nodeStageSecrets,
 		VolumeAttributes: volumeAttribs,
+	}
+
+	if fsType == fsTypeBlockName {
+		req.VolumeCapability.AccessType = &csipb.VolumeCapability_Block{
+			Block: &csipb.VolumeCapability_BlockVolume{},
+		}
+	} else {
+		req.VolumeCapability.AccessType = &csipb.VolumeCapability_Mount{
+			Mount: &csipb.VolumeCapability_MountVolume{
+				FsType: fsType,
+			},
+		}
 	}
 
 	_, err = nodeClient.NodeStageVolume(ctx, req)
 	return err
 }
 
-func (c *csiDriverClient) NodeUnstageVolume(ctx grpctx.Context, volID, stagingTargetPath string) error {
+func (c *csiDriverClient) NodeUnstageVolume(ctx context.Context, volID, stagingTargetPath string) error {
 	glog.V(4).Info(log("calling NodeUnstageVolume rpc [volid=%s,staging_target_path=%s]", volID, stagingTargetPath))
 	if volID == "" {
 		return errors.New("missing volume id")
@@ -221,7 +237,7 @@ func (c *csiDriverClient) NodeUnstageVolume(ctx grpctx.Context, volID, stagingTa
 	return err
 }
 
-func (c *csiDriverClient) NodeGetCapabilities(ctx grpctx.Context) ([]*csipb.NodeServiceCapability, error) {
+func (c *csiDriverClient) NodeGetCapabilities(ctx context.Context) ([]*csipb.NodeServiceCapability, error) {
 	glog.V(4).Info(log("calling NodeGetCapabilities rpc"))
 
 	conn, err := newGrpcConn(c.driverName)
@@ -255,9 +271,16 @@ func newGrpcConn(driverName string) (*grpc.ClientConn, error) {
 	if driverName == "" {
 		return nil, fmt.Errorf("driver name is empty")
 	}
-
-	network := "unix"
 	addr := fmt.Sprintf(csiAddrTemplate, driverName)
+	// TODO once KubeletPluginsWatcher graduates to beta, remove FeatureGate check
+	if utilfeature.DefaultFeatureGate.Enabled(features.KubeletPluginsWatcher) {
+		driver, ok := csiDrivers.driversMap[driverName]
+		if !ok {
+			return nil, fmt.Errorf("driver name %s not found in the list of registered CSI drivers", driverName)
+		}
+		addr = driver.driverEndpoint
+	}
+	network := "unix"
 	glog.V(4).Infof(log("creating new gRPC connection for [%s://%s]", network, addr))
 
 	return grpc.Dial(
