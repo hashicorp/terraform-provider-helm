@@ -19,6 +19,7 @@ func resourceRepository() *schema.Resource {
 		Create: resourceRepositoryCreate,
 		Read:   resourceRepositoryRead,
 		Delete: resourceRepositoryDelete,
+		Exists: resourceRepositoryExists,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -113,11 +114,6 @@ func resourceRepositoryCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 
-	err := resourceRepositoryCreate(d, m)
-	if err != nil {
-		return err
-	}
-
 	r, err := getRepository(d, m)
 	if err != nil {
 		return err
@@ -137,6 +133,15 @@ func resourceRepositoryDelete(d *schema.ResourceData, meta interface{}) error {
 	debug("%q has been removed from your repositories\n", name)
 	d.SetId("")
 	return nil
+}
+
+func resourceRepositoryExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	err := resourceRepositoryCreate(d, meta)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func setIDAndMetadataFromRepository(d *schema.ResourceData, r *repo.Entry) error {
