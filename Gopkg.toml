@@ -19,19 +19,19 @@
 
 [[constraint]]
   name = "k8s.io/helm"
-  version = "2.10.0"
+  version = "2.11.0"
 
 [[constraint]]
   name = "k8s.io/kubernetes"
-  version = "release-1.10"
+  version = "release-1.11"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.11.0"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.11.0"
 
 
 [[override]]

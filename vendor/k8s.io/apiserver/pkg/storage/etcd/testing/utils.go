@@ -32,6 +32,8 @@ import (
 	"k8s.io/apiserver/pkg/storage/etcd/testing/testingcert"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 
+	"context"
+
 	etcd "github.com/coreos/etcd/client"
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/etcdserver"
@@ -42,7 +44,6 @@ import (
 	"github.com/coreos/etcd/pkg/transport"
 	"github.com/coreos/etcd/pkg/types"
 	"github.com/golang/glog"
-	"golang.org/x/net/context"
 )
 
 // EtcdTestServer encapsulates the datastructures needed to start local instance for testing
@@ -188,7 +189,7 @@ func configureTestCluster(t *testing.T, name string, https bool) *EtcdTestServer
 // launch will attempt to start the etcd server
 func (m *EtcdTestServer) launch(t *testing.T) error {
 	var err error
-	if m.s, err = etcdserver.NewServer(&m.ServerConfig); err != nil {
+	if m.s, err = etcdserver.NewServer(m.ServerConfig); err != nil {
 		return fmt.Errorf("failed to initialize the etcd server: %v", err)
 	}
 	m.s.SyncTicker = time.NewTicker(500 * time.Millisecond)
@@ -292,11 +293,10 @@ func NewUnsecuredEtcd3TestClientServer(t *testing.T) (*EtcdTestServer, *storageb
 	}
 	server.V3Client = server.v3Cluster.RandClient()
 	config := &storagebackend.Config{
-		Type:                     "etcd3",
-		Prefix:                   etcdtest.PathPrefix(),
-		ServerList:               server.V3Client.Endpoints(),
-		DeserializationCacheSize: etcdtest.DeserializationCacheSize,
-		Paging: true,
+		Type:       "etcd3",
+		Prefix:     etcdtest.PathPrefix(),
+		ServerList: server.V3Client.Endpoints(),
+		Paging:     true,
 	}
 	return server, config
 }

@@ -17,14 +17,14 @@ limitations under the License.
 package csi
 
 import (
-	"encoding/json"
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path"
 
 	"github.com/golang/glog"
-	grpctx "golang.org/x/net/context"
+
 	api "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -116,7 +116,7 @@ func (c *csiMountMgr) SetUpAt(dir string, fsGroup *int64) error {
 	nodeName := string(c.plugin.host.GetNodeName())
 	attachID := getAttachmentName(csiSource.VolumeHandle, csiSource.Driver, nodeName)
 
-	ctx, cancel := grpctx.WithTimeout(grpctx.Background(), csiTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), csiTimeout)
 	defer cancel()
 
 	// Check for STAGE_UNSTAGE_VOLUME set and populate deviceMountPath if so
@@ -190,9 +190,8 @@ func (c *csiMountMgr) SetUpAt(dir string, fsGroup *int64) error {
 
 	if err != nil {
 		glog.Errorf(log("mounter.SetupAt failed: %v", err))
-		if err := removeMountDir(c.plugin, dir); err != nil {
-			glog.Error(log("mounter.SetuAt failed to remove mount dir after a NodePublish() error [%s]: %v", dir, err))
-			return err
+		if removeMountDirErr := removeMountDir(c.plugin, dir); removeMountDirErr != nil {
+			glog.Error(log("mounter.SetupAt failed to remove mount dir after a NodePublish() error [%s]: %v", dir, removeMountDirErr))
 		}
 		return err
 	}
@@ -271,7 +270,7 @@ func (c *csiMountMgr) TearDownAt(dir string) error {
 	volID := c.volumeID
 	csi := c.csiClient
 
-	ctx, cancel := grpctx.WithTimeout(grpctx.Background(), csiTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), csiTimeout)
 	defer cancel()
 
 	if err := csi.NodeUnpublishVolume(ctx, volID, dir); err != nil {
@@ -287,45 +286,6 @@ func (c *csiMountMgr) TearDownAt(dir string) error {
 	glog.V(4).Infof(log("mounte.TearDownAt successfully unmounted dir [%s]", dir))
 
 	return nil
-}
-
-// saveVolumeData persists parameter data as json file at the provided location
-func saveVolumeData(dir string, fileName string, data map[string]string) error {
-	dataFilePath := path.Join(dir, fileName)
-	glog.V(4).Info(log("saving volume data file [%s]", dataFilePath))
-	file, err := os.Create(dataFilePath)
-	if err != nil {
-		glog.Error(log("failed to save volume data file %s: %v", dataFilePath, err))
-		return err
-	}
-	defer file.Close()
-	if err := json.NewEncoder(file).Encode(data); err != nil {
-		glog.Error(log("failed to save volume data file %s: %v", dataFilePath, err))
-		return err
-	}
-	glog.V(4).Info(log("volume data file saved successfully [%s]", dataFilePath))
-	return nil
-}
-
-// loadVolumeData loads volume info from specified json file/location
-func loadVolumeData(dir string, fileName string) (map[string]string, error) {
-	// remove /mount at the end
-	dataFileName := path.Join(dir, fileName)
-	glog.V(4).Info(log("loading volume data file [%s]", dataFileName))
-
-	file, err := os.Open(dataFileName)
-	if err != nil {
-		glog.Error(log("failed to open volume data file [%s]: %v", dataFileName, err))
-		return nil, err
-	}
-	defer file.Close()
-	data := map[string]string{}
-	if err := json.NewDecoder(file).Decode(&data); err != nil {
-		glog.Error(log("failed to parse volume data file [%s]: %v", dataFileName, err))
-		return nil, err
-	}
-
-	return data, nil
 }
 
 // isDirMounted returns the !notMounted result from IsLikelyNotMountPoint check

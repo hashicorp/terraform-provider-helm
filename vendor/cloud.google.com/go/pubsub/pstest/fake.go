@@ -57,6 +57,7 @@ func timeNow() time.Time {
 	return now.Load().(func() time.Time)()
 }
 
+// Server is a fake Pub/Sub server.
 type Server struct {
 	Addr    string // The address that the server is listening on.
 	gServer gServer
@@ -148,6 +149,7 @@ type Message struct {
 
 }
 
+// Modack represents a modack sent to the server.
 type Modack struct {
 	AckID       string
 	AckDeadline int32
@@ -326,7 +328,7 @@ func (s *gServer) CreateSubscription(_ context.Context, ps *pb.Subscription) (*p
 // Can be set for testing.
 var minAckDeadlineSecs int32
 
-// SetMinAckDeadlineSecs changes the minack deadline to n. Must be
+// SetMinAckDeadline changes the minack deadline to n. Must be
 // greater than or equal to 1 second. Remember to reset this value
 // to the default after your test changes it. Example usage:
 // 		pstest.SetMinAckDeadlineSecs(1)
@@ -339,7 +341,7 @@ func SetMinAckDeadline(n time.Duration) {
 	minAckDeadlineSecs = int32(n / time.Second)
 }
 
-// ResetMinAckDeadlineSecs resets the minack deadline to the default.
+// ResetMinAckDeadline resets the minack deadline to the default.
 func ResetMinAckDeadline() {
 	minAckDeadlineSecs = 10
 }
@@ -370,22 +372,23 @@ func checkMRD(pmrd *durpb.Duration) error {
 func (s *gServer) GetSubscription(_ context.Context, req *pb.GetSubscriptionRequest) (*pb.Subscription, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	if sub := s.subs[req.Subscription]; sub != nil {
-		return sub.proto, nil
+	sub, err := s.findSubscription(req.Subscription)
+	if err != nil {
+		return nil, err
 	}
-	return nil, status.Errorf(codes.NotFound, "subscription %q", req.Subscription)
+	return sub.proto, nil
 }
 
 func (s *gServer) UpdateSubscription(_ context.Context, req *pb.UpdateSubscriptionRequest) (*pb.Subscription, error) {
+	if req.Subscription == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "missing subscription")
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	sub := s.subs[req.Subscription.Name]
-	if sub == nil {
-		return nil, status.Errorf(codes.NotFound, "subscription %q", req.Subscription.Name)
+	sub, err := s.findSubscription(req.Subscription.Name)
+	if err != nil {
+		return nil, err
 	}
-
 	for _, path := range req.UpdateMask.Paths {
 		switch path {
 		case "push_config":
@@ -442,10 +445,9 @@ func (s *gServer) ListSubscriptions(_ context.Context, req *pb.ListSubscriptions
 func (s *gServer) DeleteSubscription(_ context.Context, req *pb.DeleteSubscriptionRequest) (*emptypb.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	sub := s.subs[req.Subscription]
-	if sub == nil {
-		return nil, status.Errorf(codes.NotFound, "subscription %q", req.Subscription)
+	sub, err := s.findSubscription(req.Subscription)
+	if err != nil {
+		return nil, err
 	}
 	sub.stop()
 	delete(s.subs, req.Subscription)
@@ -529,7 +531,7 @@ func (t *topic) publish(pm *pb.PubsubMessage, m *Message) {
 
 type subscription struct {
 	topic      *topic
-	mu         *sync.Mutex
+	mu         *sync.Mutex // the server mutex, here for convenience
 	proto      *pb.Subscription
 	ackTimeout time.Duration
 	msgs       map[string]*message // unacked messages by message ID
@@ -574,10 +576,11 @@ func (s *subscription) stop() {
 func (s *gServer) Acknowledge(_ context.Context, req *pb.AcknowledgeRequest) (*emptypb.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if req.Subscription == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing subscription")
+
+	sub, err := s.findSubscription(req.Subscription)
+	if err != nil {
+		return nil, err
 	}
-	sub := s.subs[req.Subscription]
 	for _, id := range req.AckIds {
 		sub.ack(id)
 	}
@@ -587,21 +590,56 @@ func (s *gServer) Acknowledge(_ context.Context, req *pb.AcknowledgeRequest) (*e
 func (s *gServer) ModifyAckDeadline(_ context.Context, req *pb.ModifyAckDeadlineRequest) (*emptypb.Empty, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
+	sub, err := s.findSubscription(req.Subscription)
+	if err != nil {
+		return nil, err
+	}
 	now := time.Now()
 	for _, id := range req.AckIds {
 		s.msgsByID[id].Modacks = append(s.msgsByID[id].Modacks, Modack{AckID: id, AckDeadline: req.AckDeadlineSeconds, ReceivedAt: now})
 	}
-
-	if req.Subscription == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "missing subscription")
-	}
-	sub := s.subs[req.Subscription]
 	dur := secsToDur(req.AckDeadlineSeconds)
 	for _, id := range req.AckIds {
 		sub.modifyAckDeadline(id, dur)
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func (s *gServer) Pull(ctx context.Context, req *pb.PullRequest) (*pb.PullResponse, error) {
+	s.mu.Lock()
+	sub, err := s.findSubscription(req.Subscription)
+	if err != nil {
+		s.mu.Unlock()
+		return nil, err
+	}
+	max := int(req.MaxMessages)
+	if max < 0 {
+		s.mu.Unlock()
+		return nil, status.Error(codes.InvalidArgument, "MaxMessages cannot be negative")
+	}
+	if max == 0 { // MaxMessages not specified; use a default.
+		max = 1000
+	}
+	msgs := sub.pull(max)
+	s.mu.Unlock()
+	// Implement the spec from the pubsub proto:
+	// "If ReturnImmediately set to true, the system will respond immediately even if
+	// it there are no messages available to return in the `Pull` response.
+	// Otherwise, the system may wait (for a bounded amount of time) until at
+	// least one message is available, rather than returning no messages."
+	if len(msgs) == 0 && !req.ReturnImmediately {
+		// Wait for a short amount of time for a message.
+		// TODO: signal when a message arrives, so we don't wait the whole time.
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(500 * time.Millisecond):
+			s.mu.Lock()
+			msgs = sub.pull(max)
+			s.mu.Unlock()
+		}
+	}
+	return &pb.PullResponse{ReceivedMessages: msgs}, nil
 }
 
 func (s *gServer) StreamingPull(sps pb.Subscriber_StreamingPullServer) error {
@@ -610,14 +648,11 @@ func (s *gServer) StreamingPull(sps pb.Subscriber_StreamingPullServer) error {
 	if err != nil {
 		return err
 	}
-	if req.Subscription == "" {
-		return status.Errorf(codes.InvalidArgument, "missing subscription")
-	}
 	s.mu.Lock()
-	sub := s.subs[req.Subscription]
+	sub, err := s.findSubscription(req.Subscription)
 	s.mu.Unlock()
-	if sub == nil {
-		return status.Errorf(codes.NotFound, "subscription %s", req.Subscription)
+	if err != nil {
+		return err
 	}
 	// Create a new stream to handle the pull.
 	st := sub.newStream(sps, s.streamTimeout)
@@ -631,6 +666,8 @@ func (s *gServer) Seek(ctx context.Context, req *pb.SeekRequest) (*pb.SeekRespon
 	// This fake doesn't deal with snapshots.
 	var target time.Time
 	switch v := req.Target.(type) {
+	case nil:
+		return nil, status.Errorf(codes.InvalidArgument, "missing Seek target type")
 	case *pb.SeekRequest_Time:
 		var err error
 		target, err = ptypes.Timestamp(v.Time)
@@ -645,12 +682,10 @@ func (s *gServer) Seek(ctx context.Context, req *pb.SeekRequest) (*pb.SeekRespon
 	// because the messages don't have any other synchronization.
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
-	sub := s.subs[req.Subscription]
-	if sub == nil {
-		return nil, status.Errorf(codes.NotFound, "subscription %s", req.Subscription)
+	sub, err := s.findSubscription(req.Subscription)
+	if err != nil {
+		return nil, err
 	}
-
 	// Drop all messages from sub that were published before the target time.
 	for id, m := range sub.msgs {
 		if m.publishTime.Before(target) {
@@ -679,27 +714,44 @@ func (s *gServer) Seek(ctx context.Context, req *pb.SeekRequest) (*pb.SeekRespon
 	return &pb.SeekResponse{}, nil
 }
 
-var retentionDuration = 10 * time.Minute
+// Gets a subscription that must exist.
+// Must be called with the lock held.
+func (s *gServer) findSubscription(name string) (*subscription, error) {
+	if name == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "missing subscription")
+	}
+	sub := s.subs[name]
+	if sub == nil {
+		return nil, status.Errorf(codes.NotFound, "subscription %s", name)
+	}
+	return sub, nil
+}
+
+// Must be called with the lock held.
+func (s *subscription) pull(max int) []*pb.ReceivedMessage {
+	now := timeNow()
+	s.maintainMessages(now)
+	var msgs []*pb.ReceivedMessage
+	for _, m := range s.msgs {
+		if m.outstanding() {
+			continue
+		}
+		(*m.deliveries)++
+		m.ackDeadline = now.Add(s.ackTimeout)
+		msgs = append(msgs, m.proto)
+		if len(msgs) >= max {
+			break
+		}
+	}
+	return msgs
+}
 
 func (s *subscription) deliver() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	tNow := timeNow()
-	for id, m := range s.msgs {
-		// Mark a message as re-deliverable if its ack deadline has expired.
-		if m.outstanding() && tNow.After(m.ackDeadline) {
-			m.makeAvailable()
-		}
-		pubTime, err := ptypes.Timestamp(m.proto.Message.PublishTime)
-		if err != nil {
-			panic(err)
-		}
-		// Remove messages that have been undelivered for a long time.
-		if !m.outstanding() && tNow.Sub(pubTime) > retentionDuration {
-			delete(s.msgs, id)
-		}
-	}
+	now := timeNow()
+	s.maintainMessages(now)
 	// Try to deliver each remaining message.
 	curIndex := 0
 	for _, m := range s.msgs {
@@ -710,14 +762,14 @@ func (s *subscription) deliver() {
 		// curIndex. If it was delivered before, start with the stream after the one
 		// that owned it.
 		if m.streamIndex < 0 {
-			delIndex, ok := s.deliverMessage(m, curIndex, tNow)
+			delIndex, ok := s.tryDeliverMessage(m, curIndex, now)
 			if !ok {
 				break
 			}
 			curIndex = delIndex + 1
 			m.streamIndex = curIndex
 		} else {
-			delIndex, ok := s.deliverMessage(m, m.streamIndex, tNow)
+			delIndex, ok := s.tryDeliverMessage(m, m.streamIndex, now)
 			if !ok {
 				break
 			}
@@ -726,27 +778,53 @@ func (s *subscription) deliver() {
 	}
 }
 
-// deliverMessage attempts to deliver m to the stream at index i. If it can't, it
-// tries streams i+1, i+2, ..., wrapping around. It returns the index of the stream
-// it delivered the message to, or 0, false if it didn't deliver the message because
-// there are no active streams.
-func (s *subscription) deliverMessage(m *message, i int, tNow time.Time) (int, bool) {
-	for len(s.streams) > 0 {
-		if i >= len(s.streams) {
-			i = 0
-		}
-		st := s.streams[i]
+// tryDeliverMessage attempts to deliver m to the stream at index i. If it can't, it
+// tries streams i+1, i+2, ..., wrapping around. Once it's tried all streams, it
+// exits.
+//
+// It returns the index of the stream it delivered the message to, or 0, false if
+// it didn't deliver the message.
+//
+// Must be called with the lock held.
+func (s *subscription) tryDeliverMessage(m *message, start int, now time.Time) (int, bool) {
+	for i := 0; i < len(s.streams); i++ {
+		idx := (i + start) % len(s.streams)
+
+		st := s.streams[idx]
 		select {
 		case <-st.done:
-			s.streams = deleteStreamAt(s.streams, i)
+			s.streams = deleteStreamAt(s.streams, idx)
+			i--
 
 		case st.msgc <- m.proto:
 			(*m.deliveries)++
-			m.ackDeadline = tNow.Add(st.ackTimeout)
-			return i, true
+			m.ackDeadline = now.Add(st.ackTimeout)
+			return idx, true
+
+		default:
 		}
 	}
 	return 0, false
+}
+
+var retentionDuration = 10 * time.Minute
+
+// Must be called with the lock held.
+func (s *subscription) maintainMessages(now time.Time) {
+	for id, m := range s.msgs {
+		// Mark a message as re-deliverable if its ack deadline has expired.
+		if m.outstanding() && now.After(m.ackDeadline) {
+			m.makeAvailable()
+		}
+		pubTime, err := ptypes.Timestamp(m.proto.Message.PublishTime)
+		if err != nil {
+			panic(err)
+		}
+		// Remove messages that have been undelivered for a long time.
+		if !m.outstanding() && now.Sub(pubTime) > retentionDuration {
+			delete(s.msgs, id)
+		}
+	}
 }
 
 func (s *subscription) newStream(gs pb.Subscriber_StreamingPullServer, timeout time.Duration) *stream {
@@ -878,6 +956,7 @@ func (s *subscription) handleStreamingPullRequest(st *stream, req *pb.StreamingP
 	}
 }
 
+// Must be called with the lock held.
 func (s *subscription) ack(id string) {
 	m := s.msgs[id]
 	if m != nil {
@@ -886,6 +965,7 @@ func (s *subscription) ack(id string) {
 	}
 }
 
+// Must be called with the lock held.
 func (s *subscription) modifyAckDeadline(id string, d time.Duration) {
 	m := s.msgs[id]
 	if m == nil { // already acked: ignore.

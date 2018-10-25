@@ -19,10 +19,16 @@ version: '2.0'
 %s:
   description: Simple workflow example
   type: direct
+  tags:
+    - tag1
+    - tag2
+
+  input:
+    - msg
 
   tasks:
     test:
-      action: std.echo output="Hello World!"`, workflowName)
+      action: std.echo output="<%% $.msg %%>"`, workflowName)
 }
 
 // CreateWorkflow creates a workflow on Mistral API.

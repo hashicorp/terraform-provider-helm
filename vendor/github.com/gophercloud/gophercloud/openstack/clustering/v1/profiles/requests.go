@@ -137,3 +137,37 @@ func Delete(client *gophercloud.ServiceClient, id string) (r DeleteResult) {
 	}
 	return
 }
+
+// ValidateOptsBuilder allows extensions to add additional parameters to the
+// Validate request.
+type ValidateOptsBuilder interface {
+	ToProfileValidateMap() (map[string]interface{}, error)
+}
+
+// ValidateOpts params
+type ValidateOpts struct {
+	Spec Spec `json:"spec" required:"true"`
+}
+
+// ToProfileValidateMap formats a CreateOpts into a body map.
+func (opts ValidateOpts) ToProfileValidateMap() (map[string]interface{}, error) {
+	return gophercloud.BuildRequestBody(opts, "profile")
+}
+
+// Validate profile.
+func Validate(client *gophercloud.ServiceClient, opts ValidateOpts) (r ValidateResult) {
+	b, err := opts.ToProfileValidateMap()
+	if err != nil {
+		r.Err = err
+		return
+	}
+
+	var result *http.Response
+	result, r.Err = client.Post(validateURL(client), b, &r.Body, &gophercloud.RequestOpts{
+		OkCodes: []int{200},
+	})
+	if r.Err == nil {
+		r.Header = result.Header
+	}
+	return
+}

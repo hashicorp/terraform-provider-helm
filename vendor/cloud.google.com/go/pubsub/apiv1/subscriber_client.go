@@ -20,7 +20,6 @@ import (
 	"math"
 	"time"
 
-	"cloud.google.com/go/iam"
 	"cloud.google.com/go/internal/version"
 	"github.com/golang/protobuf/proto"
 	gax "github.com/googleapis/gax-go"
@@ -74,10 +73,21 @@ func defaultSubscriberCallOptions() *SubscriberCallOptions {
 				})
 			}),
 		},
+		{"messaging", "idempotent"}: {
+			gax.WithRetry(func() gax.Retryer {
+				return gax.OnCodes([]codes.Code{
+					codes.DeadlineExceeded,
+					codes.Unavailable,
+				}, gax.Backoff{
+					Initial:    100 * time.Millisecond,
+					Max:        60000 * time.Millisecond,
+					Multiplier: 1.3,
+				})
+			}),
+		},
 		{"messaging", "pull"}: {
 			gax.WithRetry(func() gax.Retryer {
 				return gax.OnCodes([]codes.Code{
-					codes.Canceled,
 					codes.DeadlineExceeded,
 					codes.Internal,
 					codes.ResourceExhausted,
@@ -92,7 +102,6 @@ func defaultSubscriberCallOptions() *SubscriberCallOptions {
 		{"streaming_messaging", "pull"}: {
 			gax.WithRetry(func() gax.Retryer {
 				return gax.OnCodes([]codes.Code{
-					codes.Canceled,
 					codes.DeadlineExceeded,
 					codes.Internal,
 					codes.ResourceExhausted,
@@ -112,7 +121,7 @@ func defaultSubscriberCallOptions() *SubscriberCallOptions {
 		ListSubscriptions:  retry[[2]string{"default", "idempotent"}],
 		DeleteSubscription: retry[[2]string{"default", "idempotent"}],
 		ModifyAckDeadline:  retry[[2]string{"default", "non_idempotent"}],
-		Acknowledge:        retry[[2]string{"messaging", "non_idempotent"}],
+		Acknowledge:        retry[[2]string{"messaging", "idempotent"}],
 		Pull:               retry[[2]string{"messaging", "pull"}],
 		StreamingPull:      retry[[2]string{"streaming_messaging", "pull"}],
 		ModifyPushConfig:   retry[[2]string{"default", "non_idempotent"}],
@@ -179,14 +188,6 @@ func (c *SubscriberClient) SetGoogleClientInfo(keyval ...string) {
 	kv := append([]string{"gl-go", version.Go()}, keyval...)
 	kv = append(kv, "gapic", version.Repo, "gax", gax.Version, "grpc", grpc.Version)
 	c.xGoogMetadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))
-}
-
-func (c *SubscriberClient) SubscriptionIAM(subscription *pubsubpb.Subscription) *iam.Handle {
-	return iam.InternalNewHandle(c.Connection(), subscription.Name)
-}
-
-func (c *SubscriberClient) TopicIAM(topic *pubsubpb.Topic) *iam.Handle {
-	return iam.InternalNewHandle(c.Connection(), topic.Name)
 }
 
 // CreateSubscription creates a subscription to a given topic. See the
@@ -335,8 +336,7 @@ func (c *SubscriberClient) Acknowledge(ctx context.Context, req *pubsubpb.Acknow
 	return err
 }
 
-// Pull pulls messages from the server. Returns an empty list if there are no
-// messages available in the backlog. The server may return UNAVAILABLE if
+// Pull pulls messages from the server. The server may return UNAVAILABLE if
 // there are too many concurrent pull requests pending for the given
 // subscription.
 func (c *SubscriberClient) Pull(ctx context.Context, req *pubsubpb.PullRequest, opts ...gax.CallOption) (*pubsubpb.PullResponse, error) {
@@ -436,7 +436,7 @@ func (c *SubscriberClient) ListSnapshots(ctx context.Context, req *pubsubpb.List
 // CreateSnapshot creates a snapshot from the requested subscription.<br><br>
 // <b>ALPHA:</b> This feature is part of an alpha release. This API might be
 // changed in backward-incompatible ways and is not recommended for production
-// use. It is not subject to any SLA or deprecation policy.
+// use. It is not subject to any SLA or deprecation policy.<br><br>
 // If the snapshot already exists, returns ALREADY_EXISTS.
 // If the requested subscription doesn't exist, returns NOT_FOUND.
 // If the backlog in the subscription is too old -- and the resulting snapshot

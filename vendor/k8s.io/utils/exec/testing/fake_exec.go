@@ -24,7 +24,7 @@ import (
 	"k8s.io/utils/exec"
 )
 
-// A simple scripted Interface type.
+// FakeExec is a simple scripted Interface type.
 type FakeExec struct {
 	CommandScript []FakeCommandAction
 	CommandCalls  int
@@ -33,8 +33,10 @@ type FakeExec struct {
 
 var _ exec.Interface = &FakeExec{}
 
+// FakeCommandAction is the function to be executed
 type FakeCommandAction func(cmd string, args ...string) exec.Cmd
 
+// Command is to track the commands that are executed
 func (fake *FakeExec) Command(cmd string, args ...string) exec.Cmd {
 	if fake.CommandCalls > len(fake.CommandScript)-1 {
 		panic(fmt.Sprintf("ran out of Command() actions. Could not handle command [%d]: %s args: %v", fake.CommandCalls, cmd, args))
@@ -44,15 +46,17 @@ func (fake *FakeExec) Command(cmd string, args ...string) exec.Cmd {
 	return fake.CommandScript[i](cmd, args...)
 }
 
+// CommandContext wraps arguments into exec.Cmd
 func (fake *FakeExec) CommandContext(ctx context.Context, cmd string, args ...string) exec.Cmd {
 	return fake.Command(cmd, args...)
 }
 
+// LookPath is for finding the path of a file
 func (fake *FakeExec) LookPath(file string) (string, error) {
 	return fake.LookPathFunc(file)
 }
 
-// A simple scripted Cmd type.
+// FakeCmd is a simple scripted Cmd type.
 type FakeCmd struct {
 	Argv                 []string
 	CombinedOutputScript []FakeCombinedOutputAction
@@ -65,34 +69,49 @@ type FakeCmd struct {
 	Stdin                io.Reader
 	Stdout               io.Writer
 	Stderr               io.Writer
+	Env                  []string
 }
 
 var _ exec.Cmd = &FakeCmd{}
 
+// InitFakeCmd is for creating a fake exec.Cmd
 func InitFakeCmd(fake *FakeCmd, cmd string, args ...string) exec.Cmd {
 	fake.Argv = append([]string{cmd}, args...)
 	return fake
 }
 
+// FakeCombinedOutputAction is a function type
 type FakeCombinedOutputAction func() ([]byte, error)
+
+// FakeRunAction is a function type
 type FakeRunAction func() ([]byte, []byte, error)
 
+// SetDir sets the directory
 func (fake *FakeCmd) SetDir(dir string) {
 	fake.Dirs = append(fake.Dirs, dir)
 }
 
+// SetStdin sets the stdin
 func (fake *FakeCmd) SetStdin(in io.Reader) {
 	fake.Stdin = in
 }
 
+// SetStdout sets the stdout
 func (fake *FakeCmd) SetStdout(out io.Writer) {
 	fake.Stdout = out
 }
 
+// SetStderr sets the stderr
 func (fake *FakeCmd) SetStderr(out io.Writer) {
 	fake.Stderr = out
 }
 
+// SetEnv sets the environment variables
+func (fake *FakeCmd) SetEnv(env []string) {
+	fake.Env = env
+}
+
+// Run sets runs the command
 func (fake *FakeCmd) Run() error {
 	if fake.RunCalls > len(fake.RunScript)-1 {
 		panic("ran out of Run() actions")
@@ -113,6 +132,7 @@ func (fake *FakeCmd) Run() error {
 	return err
 }
 
+// CombinedOutput returns the output from the command
 func (fake *FakeCmd) CombinedOutput() ([]byte, error) {
 	if fake.CombinedOutputCalls > len(fake.CombinedOutputScript)-1 {
 		panic("ran out of CombinedOutput() actions")
@@ -126,15 +146,17 @@ func (fake *FakeCmd) CombinedOutput() ([]byte, error) {
 	return fake.CombinedOutputScript[i]()
 }
 
+// Output is the response from the command
 func (fake *FakeCmd) Output() ([]byte, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
 
+// Stop is to stop the process
 func (fake *FakeCmd) Stop() {
 	// no-op
 }
 
-// A simple fake ExitError type.
+// FakeExitError is a simple fake ExitError type.
 type FakeExitError struct {
 	Status int
 }
@@ -149,10 +171,12 @@ func (fake FakeExitError) Error() string {
 	return fake.String()
 }
 
+// Exited always returns true
 func (fake FakeExitError) Exited() bool {
 	return true
 }
 
+// ExitStatus returns the fake status
 func (fake FakeExitError) ExitStatus() int {
 	return fake.Status
 }

@@ -66,6 +66,7 @@ const (
 	LBMethodSourceIp         LBMethod = "SOURCE_IP"
 
 	ProtocolTCP   Protocol = "TCP"
+	ProtocolUDP   Protocol = "UDP"
 	ProtocolHTTP  Protocol = "HTTP"
 	ProtocolHTTPS Protocol = "HTTPS"
 )
@@ -85,7 +86,7 @@ type CreateOpts struct {
 	LBMethod LBMethod `json:"lb_algorithm" required:"true"`
 
 	// The protocol used by the pool members, you can use either
-	// ProtocolTCP, ProtocolHTTP, or ProtocolHTTPS.
+	// ProtocolTCP, ProtocolUDP, ProtocolHTTP, or ProtocolHTTPS.
 	Protocol Protocol `json:"protocol" required:"true"`
 
 	// The Loadbalancer on which the members of the pool will be associated with.
@@ -264,7 +265,7 @@ type CreateMemberOpts struct {
 	// that this member should receive from the pool. For example, a member with
 	// a weight of 10 receives five times as much traffic as a member with a
 	// weight of 2.
-	Weight int `json:"weight,omitempty"`
+	Weight *int `json:"weight,omitempty"`
 
 	// If you omit this parameter, LBaaS uses the vip_subnet_id parameter value
 	// for the subnet UUID.
@@ -313,7 +314,7 @@ type UpdateMemberOpts struct {
 	// that this member should receive from the pool. For example, a member with
 	// a weight of 10 receives five times as much traffic as a member with a
 	// weight of 2.
-	Weight int `json:"weight,omitempty"`
+	Weight *int `json:"weight,omitempty"`
 
 	// The administrative state of the Pool. A valid value is true (UP)
 	// or false (DOWN).

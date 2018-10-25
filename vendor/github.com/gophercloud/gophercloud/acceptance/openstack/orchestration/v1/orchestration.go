@@ -7,7 +7,6 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/acceptance/tools"
 	"github.com/gophercloud/gophercloud/openstack/orchestration/v1/stacks"
-
 	th "github.com/gophercloud/gophercloud/testhelper"
 )
 

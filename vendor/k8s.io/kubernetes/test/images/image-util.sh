@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2017 The Kubernetes Authors.
 #
@@ -78,8 +78,6 @@ build() {
         # Register qemu-*-static for all supported processors except the current one
         docker run --rm --privileged multiarch/qemu-user-static:register --reset
         curl -sSL https://github.com/multiarch/qemu-user-static/releases/download/${QEMUVERSION}/x86_64_qemu-${QEMUARCHS[$arch]}-static.tar.gz | tar -xz -C ${temp_dir}
-        # Ensure we don't get surprised by umask settings
-        chmod 0755 "${temp_dir}/qemu-${QEMUARCHS[$arch]}-static"
         sed -i "s/CROSS_BUILD_//g" Dockerfile
       fi
     fi
@@ -92,15 +90,23 @@ build() {
 
 # This function will push the docker images
 push() {
+  TAG=$(<${IMAGE}/VERSION)
   if [[ -f ${IMAGE}/BASEIMAGE ]]; then
     archs=$(listArchs)
   else
     archs=${!QEMUARCHS[@]}
   fi
   for arch in ${archs}; do
-    TAG=$(<${IMAGE}/VERSION)
     docker push ${REGISTRY}/${IMAGE}-${arch}:${TAG}
   done
+
+  # Make archs list into image manifest. Eg: 'amd64 ppc64le' to '${REGISTRY}/${IMAGE}-amd64:${TAG} ${REGISTRY}/${IMAGE}-ppc64le:${TAG}'
+  manifest=$(echo $archs | sed -e "s~[^ ]*~$REGISTRY\/$IMAGE\-&:$TAG~g")
+  docker manifest create --amend ${REGISTRY}/${IMAGE}:${TAG} ${manifest}
+  for arch in ${archs}; do
+    docker manifest annotate --arch ${arch} ${REGISTRY}/${IMAGE}:${TAG} ${REGISTRY}/${IMAGE}-${arch}:${TAG}
+  done
+  docker manifest push ${REGISTRY}/${IMAGE}:${TAG}
 }
 
 # This function is for building the go code

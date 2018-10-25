@@ -28,12 +28,14 @@ release_filegroup(
         "configure.sh",
         "master.yaml",
         "node.yaml",
+        "shutdown.sh",
     ],
     visibility = ["//visibility:public"],
 )
 
 pkg_tar(
     name = "gci-trusty-manifests",
+    srcs = glob(["gke-internal-configure-helper.sh"]),
     files = {
         "//cluster/gce/gci/mounter": "gci-mounter",
         "configure-helper.sh": "gci-configure-helper.sh",

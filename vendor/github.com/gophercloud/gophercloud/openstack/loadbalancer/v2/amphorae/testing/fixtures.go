@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-
 	"time"
 
 	"github.com/gophercloud/gophercloud/openstack/loadbalancer/v2/amphorae"

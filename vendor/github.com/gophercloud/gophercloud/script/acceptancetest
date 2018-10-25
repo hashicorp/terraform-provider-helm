@@ -22,6 +22,43 @@ if [[ $? != 0 ]]; then
   failed=1
 fi
 
+# Networking v2 - extensions
+go test -v -timeout $timeout -tags "fixtures acceptance" ./acceptance/openstack/networking/v2/extensions
+if [[ $? != 0 ]]; then
+  failed=1
+fi
+
+# Networking v2 - layer3
+go test -v -timeout $timeout -tags "fixtures acceptance" ./acceptance/openstack/networking/v2/extensions/layer3
+if [[ $? != 0 ]]; then
+  failed=1
+fi
+
+# Networking v2 - networkipavailabilities
+# requires bug fix
+go test -v -timeout $timeout -tags "fixtures acceptance" ./acceptance/openstack/networking/v2/extensions/networkipavailabilities
+if [[ $? != 0 ]]; then
+  failed=1
+fi
+
+# Networking v2 - portsbinding
+go test -v -timeout $timeout -tags "fixtures acceptance" ./acceptance/openstack/networking/v2/extensions/portsbinding
+if [[ $? != 0 ]]; then
+  failed=1
+fi
+
+# Networking v2 - rbacpolicies
+go test -v -timeout $timeout -tags "fixtures acceptance" ./acceptance/openstack/networking/v2/extensions/rbacpolicies
+if [[ $? != 0 ]]; then
+  failed=1
+fi
+
+# Networking v2 - subnetpools
+go test -v -timeout $timeout -tags "fixtures acceptance" ./acceptance/openstack/networking/v2/extensions/subnetpools
+if [[ $? != 0 ]]; then
+  failed=1
+fi
+
 # Block Storage v2
 go test -v -timeout $timeout -tags "fixtures acceptance" ./acceptance/openstack/blockstorage/v2/
 if [[ $? != 0 ]]; then
@@ -30,6 +67,12 @@ fi
 
 # Block Storage v3
 go test -v -timeout $timeout -tags "fixtures acceptance" ./acceptance/openstack/blockstorage/v3/
+if [[ $? != 0 ]]; then
+  failed=1
+fi
+
+# Block Storage extensions
+go test -v -timeout $timeout -tags "fixtures acceptance" ./acceptance/openstack/blockstorage/extensions/
 if [[ $? != 0 ]]; then
   failed=1
 fi

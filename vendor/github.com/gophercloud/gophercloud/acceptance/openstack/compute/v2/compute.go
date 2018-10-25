@@ -12,6 +12,7 @@ import (
 	"github.com/gophercloud/gophercloud/acceptance/clients"
 	"github.com/gophercloud/gophercloud/acceptance/tools"
 	"github.com/gophercloud/gophercloud/openstack/blockstorage/v2/volumes"
+	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/aggregates"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/attachinterfaces"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/bootfromvolume"
 	dsr "github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/defsecrules"
@@ -28,8 +29,6 @@ import (
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/flavors"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
 	th "github.com/gophercloud/gophercloud/testhelper"
-
-	"github.com/gophercloud/gophercloud/openstack/compute/v2/extensions/aggregates"
 	"golang.org/x/crypto/ssh"
 )
 

@@ -523,3 +523,26 @@ func CompleteLifecycle(client *gophercloud.ServiceClient, id string, opts Comple
 
 	return
 }
+
+func (opts AddNodesOpts) ToClusterNodeMap(nodeAction string) (map[string]interface{}, error) {
+	return gophercloud.BuildRequestBody(opts, nodeAction)
+}
+
+// NodeOpts params
+type AddNodesOpts struct {
+	Nodes []string `json:"nodes" required:"true"`
+}
+
+func AddNodes(client *gophercloud.ServiceClient, id string, opts AddNodesOpts) (r ActionResult) {
+	b, err := opts.ToClusterNodeMap("add_nodes")
+	if err != nil {
+		r.Err = err
+		return
+	}
+	var result *http.Response
+	result, r.Err = client.Post(nodeURL(client, id), b, &r.Body, &gophercloud.RequestOpts{
+		OkCodes: []int{202},
+	})
+	r.Header = result.Header
+	return
+}

@@ -30,7 +30,7 @@ Example to List Clusters
 		Name: "testcluster",
 	}
 
-	allPages, err := clusters.ListDetail(serviceClient, listOpts).AllPages()
+	allPages, err := clusters.List(serviceClient, listOpts).AllPages()
 	if err != nil {
 		panic(err)
 	}
@@ -222,6 +222,18 @@ Example to Complete Life Cycle
 	if err != nil {
 		panic(err)
 	}
+
+Example to add nodes to a cluster
+
+	addNodesOpts := clusters.AddNodesOpts{
+		Nodes: []string{"node-123"},
+	}
+	clusterID := "b7b870e3-d3c5-4a93-b9d7-846c53b2c2da"
+	actionID, err := clusters.AddNodes(serviceClient, clusterID, addNodesOpts).Extract()
+	if err != nil {
+		panic(err)
+	}
+    fmt.Println("action=", actionID)
 
 */
 package clusters

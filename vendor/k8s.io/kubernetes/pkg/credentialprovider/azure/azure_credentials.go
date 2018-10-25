@@ -17,18 +17,20 @@ limitations under the License.
 package azure
 
 import (
+	"context"
 	"io"
 	"io/ioutil"
 	"os"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/arm/containerregistry"
+	"github.com/Azure/azure-sdk-for-go/services/containerregistry/mgmt/2017-10-01/containerregistry"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/ghodss/yaml"
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"
+
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/azure/auth"
 	"k8s.io/kubernetes/pkg/credentialprovider"
 )
@@ -50,9 +52,46 @@ func init() {
 		})
 }
 
+func getContextWithCancel() (context.Context, context.CancelFunc) {
+	return context.WithCancel(context.Background())
+}
+
 // RegistriesClient is a testable interface for the ACR client List operation.
 type RegistriesClient interface {
-	List() (containerregistry.RegistryListResult, error)
+	List(ctx context.Context) ([]containerregistry.Registry, error)
+}
+
+// azRegistriesClient implements RegistriesClient.
+type azRegistriesClient struct {
+	client containerregistry.RegistriesClient
+}
+
+func newAzRegistriesClient(subscriptionID, endpoint string, token *adal.ServicePrincipalToken) *azRegistriesClient {
+	registryClient := containerregistry.NewRegistriesClient(subscriptionID)
+	registryClient.BaseURI = endpoint
+	registryClient.Authorizer = autorest.NewBearerAuthorizer(token)
+
+	return &azRegistriesClient{
+		client: registryClient,
+	}
+}
+
+func (az *azRegistriesClient) List(ctx context.Context) ([]containerregistry.Registry, error) {
+	iterator, err := az.client.ListComplete(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]containerregistry.Registry, 0)
+	for ; iterator.NotDone(); err = iterator.Next() {
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, iterator.Value())
+	}
+
+	return result, nil
 }
 
 // NewACRProvider parses the specified configFile and returns a DockerConfigProvider
@@ -130,35 +169,30 @@ func (a *acrProvider) Enabled() bool {
 		return false
 	}
 
-	registryClient := containerregistry.NewRegistriesClient(a.config.SubscriptionID)
-	registryClient.BaseURI = a.environment.ResourceManagerEndpoint
-	registryClient.Authorizer = autorest.NewBearerAuthorizer(a.servicePrincipalToken)
-	a.registryClient = registryClient
-
+	a.registryClient = newAzRegistriesClient(a.config.SubscriptionID, a.environment.ResourceManagerEndpoint, a.servicePrincipalToken)
 	return true
 }
 
 func (a *acrProvider) Provide() credentialprovider.DockerConfig {
 	cfg := credentialprovider.DockerConfig{}
+	ctx, cancel := getContextWithCancel()
+	defer cancel()
 
 	if a.config.UseManagedIdentityExtension {
 		glog.V(4).Infof("listing registries")
-		res, err := a.registryClient.List()
+		result, err := a.registryClient.List(ctx)
 		if err != nil {
 			glog.Errorf("Failed to list registries: %v", err)
 			return cfg
 		}
 
-		for ix := range *res.Value {
-			loginServer := getLoginServer((*res.Value)[ix])
+		for ix := range result {
+			loginServer := getLoginServer(result[ix])
 			glog.V(2).Infof("loginServer: %s", loginServer)
-			var cred *credentialprovider.DockerConfigEntry
-
-			cred, err = getACRDockerEntryFromARMToken(a, loginServer)
+			cred, err := getACRDockerEntryFromARMToken(a, loginServer)
 			if err != nil {
 				continue
 			}
-
 			cfg[loginServer] = *cred
 		}
 	} else {
@@ -172,7 +206,6 @@ func (a *acrProvider) Provide() credentialprovider.DockerConfig {
 			cfg[url] = *cred
 		}
 	}
-
 	return cfg
 }
 

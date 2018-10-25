@@ -77,10 +77,14 @@ func newVersionCmd(c helm.Interface, out io.Writer) *cobra.Command {
 		},
 	}
 	f := cmd.Flags()
+	settings.AddFlagsTLS(f)
 	f.BoolVarP(&version.showClient, "client", "c", false, "client version only")
 	f.BoolVarP(&version.showServer, "server", "s", false, "server version only")
 	f.BoolVar(&version.short, "short", false, "print the version number")
 	f.StringVar(&version.template, "template", "", "template for version string format")
+
+	// set defaults from environment
+	settings.InitTLS(f)
 
 	return cmd
 }
@@ -144,7 +148,7 @@ func getK8sVersion() (*apiVersion.Info, error) {
 }
 
 func formatVersion(v *pb.Version, short bool) string {
-	if short {
+	if short && v.GitCommit != "" {
 		return fmt.Sprintf("%s+g%s", v.SemVer, v.GitCommit[:7])
 	}
 	return fmt.Sprintf("%#v", v)

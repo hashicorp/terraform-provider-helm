@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2016 The Kubernetes Authors.
 #
@@ -27,6 +27,8 @@ set -o pipefail
 
 readonly UUID_MNT_PREFIX="/mnt/disks/by-uuid/google-local-ssds"
 readonly UUID_BLOCK_PREFIX="/dev/disk/by-uuid/google-local-ssds"
+readonly COREDNS_AUTOSCALER="Deployment/coredns"
+readonly KUBEDNS_AUTOSCALER="Deployment/kube-dns"
 
 # Use --retry-connrefused opt only if it's supported by curl.
 CURL_RETRY_CONNREFUSED=""
@@ -893,8 +895,9 @@ function create-kubelet-kubeconfig() {
     echo "Must provide API server address to create Kubelet kubeconfig file!"
     exit 1
   fi
-  echo "Creating kubelet kubeconfig file"
-  cat <<EOF >/var/lib/kubelet/bootstrap-kubeconfig
+  if [[ "${CREATE_BOOTSTRAP_KUBECONFIG:-true}" == "true" ]]; then
+    echo "Creating kubelet bootstrap-kubeconfig file"
+    cat <<EOF >/var/lib/kubelet/bootstrap-kubeconfig
 apiVersion: v1
 kind: Config
 users:
@@ -914,6 +917,13 @@ contexts:
   name: service-account-context
 current-context: service-account-context
 EOF
+  elif [[ "${FETCH_BOOTSTRAP_KUBECONFIG:-false}" == "true" ]]; then
+    echo "Fetching kubelet bootstrap-kubeconfig file from metadata"
+    get-metadata-value "instance/attributes/bootstrap-kubeconfig" >/var/lib/kubelet/bootstrap-kubeconfig
+  else
+    echo "Fetching kubelet kubeconfig file from metadata"
+    get-metadata-value "instance/attributes/kubeconfig" >/var/lib/kubelet/kubeconfig
+  fi
 }
 
 # Uses KUBELET_CA_CERT (falling back to CA_CERT), KUBELET_CERT, and KUBELET_KEY
@@ -1230,7 +1240,15 @@ function prepare-kube-proxy-manifest-variables {
     params+=" --feature-gates=${FEATURE_GATES}"
   fi
   if [[ "${KUBE_PROXY_MODE:-}" == "ipvs" ]];then
-    params+=" --proxy-mode=ipvs --feature-gates=SupportIPVSProxyMode=true"
+    sudo modprobe -a ip_vs ip_vs_rr ip_vs_wrr ip_vs_sh nf_conntrack_ipv4
+    if [[ $? -eq 0 ]];
+    then
+      params+=" --proxy-mode=ipvs"
+    else
+      # If IPVS modules are not present, make sure the node does not come up as
+      # healthy.
+      exit 1
+    fi
   fi
   params+=" --iptables-sync-period=1m --iptables-min-sync-period=10s --ipvs-sync-period=1m --ipvs-min-sync-period=10s"
   if [[ -n "${KUBEPROXY_TEST_ARGS:-}" ]]; then
@@ -1244,10 +1262,6 @@ function prepare-kube-proxy-manifest-variables {
     kube_cache_mutation_detector_env_name="- name: KUBE_CACHE_MUTATION_DETECTOR"
     kube_cache_mutation_detector_env_value="value: \"${ENABLE_CACHE_MUTATION_DETECTOR}\""
   fi
-  local pod_priority=""
-  if [[ "${ENABLE_POD_PRIORITY:-}" == "true" ]]; then
-    pod_priority="priorityClassName: system-node-critical"
-  fi
   sed -i -e "s@{{kubeconfig}}@${kubeconfig}@g" ${src_file}
   sed -i -e "s@{{pillar\['kube_docker_registry'\]}}@${kube_docker_registry}@g" ${src_file}
   sed -i -e "s@{{pillar\['kube-proxy_docker_tag'\]}}@${kube_proxy_docker_tag}@g" ${src_file}
@@ -1255,7 +1269,6 @@ function prepare-kube-proxy-manifest-variables {
   sed -i -e "s@{{container_env}}@${container_env}@g" ${src_file}
   sed -i -e "s@{{kube_cache_mutation_detector_env_name}}@${kube_cache_mutation_detector_env_name}@g" ${src_file}
   sed -i -e "s@{{kube_cache_mutation_detector_env_value}}@${kube_cache_mutation_detector_env_value}@g" ${src_file}
-  sed -i -e "s@{{pod_priority}}@${pod_priority}@g" ${src_file}
   sed -i -e "s@{{ cpurequest }}@100m@g" ${src_file}
   sed -i -e "s@{{api_servers_with_port}}@${api_servers}@g" ${src_file}
   sed -i -e "s@{{kubernetes_service_host_env_value}}@${KUBERNETES_MASTER_NAME}@g" ${src_file}
@@ -1356,7 +1369,8 @@ function prepare-etcd-manifest {
 }
 
 function start-etcd-empty-dir-cleanup-pod {
-  cp "${KUBE_HOME}/kube-manifests/kubernetes/gci-trusty/etcd-empty-dir-cleanup/etcd-empty-dir-cleanup.yaml" "/etc/kubernetes/manifests"
+  local -r src_file="${KUBE_HOME}/kube-manifests/kubernetes/gci-trusty/etcd-empty-dir-cleanup.yaml"
+  cp "${src_file}" "/etc/kubernetes/manifests"
 }
 
 # Starts etcd server pod (and etcd-events pod if needed).
@@ -1583,8 +1597,6 @@ function start-kube-apiserver {
       fi
     fi
     if [[ "${ADVANCED_AUDIT_BACKEND:-}" == *"webhook"* ]]; then
-      params+=" --audit-webhook-mode=batch"
-
       # Create the audit webhook config file, and mount it into the apiserver pod.
       local -r audit_webhook_config_file="/etc/audit_webhook.config"
       params+=" --audit-webhook-config-file=${audit_webhook_config_file}"
@@ -1595,6 +1607,8 @@ function start-kube-apiserver {
       # Batching parameters
       if [[ -n "${ADVANCED_AUDIT_WEBHOOK_MODE:-}" ]]; then
         params+=" --audit-webhook-mode=${ADVANCED_AUDIT_WEBHOOK_MODE}"
+      else
+        params+=" --audit-webhook-mode=batch"
       fi
       if [[ -n "${ADVANCED_AUDIT_WEBHOOK_BUFFER_SIZE:-}" ]]; then
         params+=" --audit-webhook-batch-buffer-size=${ADVANCED_AUDIT_WEBHOOK_BUFFER_SIZE}"
@@ -1623,6 +1637,9 @@ function start-kube-apiserver {
 
   if [[ "${ENABLE_APISERVER_LOGS_HANDLER:-}" == "false" ]]; then
     params+=" --enable-logs-handler=false"
+  fi
+  if [[ "${APISERVER_SET_KUBELET_CA:-false}" == "true" ]]; then
+    params+=" --kubelet-certificate-authority=${CA_CERT_BUNDLE_PATH}"
   fi
 
   local admission_controller_config_mount=""
@@ -1658,7 +1675,7 @@ function start-kube-apiserver {
       params+=" --ssh-keyfile=/etc/srv/sshproxy/.sshkeyfile"
     fi
   elif [[ -n "${PROJECT_ID:-}" && -n "${TOKEN_URL:-}" && -n "${TOKEN_BODY:-}" && -n "${NODE_NETWORK:-}" ]]; then
-    local -r vm_external_ip=$(curl --retry 5 --retry-delay 3 ${CURL_RETRY_CONNREFUSED} --fail --silent -H 'Metadata-Flavor: Google' "http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip")
+    local -r vm_external_ip=$(get-metadata-value "instance/network-interfaces/0/access-configs/0/external-ip")
     if [[ -n "${PROXY_SSH_USER:-}" ]]; then
       params+=" --advertise-address=${vm_external_ip}"
       params+=" --ssh-user=${PROXY_SSH_USER}"
@@ -1915,6 +1932,9 @@ function start-kube-controller-manager {
     params+=" --pv-recycler-pod-template-filepath-nfs=$PV_RECYCLER_OVERRIDE_TEMPLATE"
     params+=" --pv-recycler-pod-template-filepath-hostpath=$PV_RECYCLER_OVERRIDE_TEMPLATE"
   fi
+  if [[ -n "${RUN_CONTROLLERS:-}" ]]; then
+    params+=" --controllers=${RUN_CONTROLLERS}"
+  fi
 
   local -r kube_rc_docker_tag=$(cat /home/kubernetes/kube-docker-files/kube-controller-manager.docker_tag)
   local container_env=""
@@ -2052,6 +2072,20 @@ function download-extra-addons {
   "${curl_cmd[@]}"
 }
 
+# A function that fetches a GCE metadata value and echoes it out.
+#
+# $1: URL path after /computeMetadata/v1/ (without heading slash).
+function get-metadata-value {
+    curl \
+        --retry 5 \
+        --retry-delay 3 \
+        ${CURL_RETRY_CONNREFUSED} \
+        --fail \
+        --silent \
+        -H 'Metadata-Flavor: Google' \
+        "http://metadata/computeMetadata/v1/${1}"
+}
+
 # A helper function for copying manifests and setting dir/files
 # permissions.
 #
@@ -2133,10 +2167,16 @@ function start-fluentd-resource-update {
   wait-for-apiserver-and-update-fluentd &
 }
 
-# Update {{ container-runtime }} with actual container runtime name.
+# Update {{ container-runtime }} with actual container runtime name,
+# and {{ container-runtime-endpoint }} with actual container runtime
+# endpoint.
 function update-container-runtime {
-  local -r configmap_yaml="$1"
-  sed -i -e "s@{{ *container_runtime *}}@${CONTAINER_RUNTIME_NAME:-docker}@g" "${configmap_yaml}"
+  local -r file="$1"
+  local -r container_runtime_endpoint="${CONTAINER_RUNTIME_ENDPOINT:-unix:///var/run/dockershim.sock}"
+  sed -i \
+    -e "s@{{ *container_runtime *}}@${CONTAINER_RUNTIME_NAME:-docker}@g" \
+    -e "s@{{ *container_runtime_endpoint *}}@${container_runtime_endpoint#unix://}@g" \
+    "${file}"
 }
 
 # Remove configuration in yaml file if node journal is not enabled.
@@ -2174,18 +2214,25 @@ function update-dashboard-controller {
 
 # Sets up the manifests of coreDNS for k8s addons.
 function setup-coredns-manifest {
-  local -r coredns_file="${dst_dir}/dns/coredns.yaml"
-  mv "${dst_dir}/dns/coredns.yaml.in" "${coredns_file}"
+  local -r coredns_file="${dst_dir}/dns/coredns/coredns.yaml"
+  mv "${dst_dir}/dns/coredns/coredns.yaml.in" "${coredns_file}"
   # Replace the salt configurations with variable values.
   sed -i -e "s@{{ *pillar\['dns_domain'\] *}}@${DNS_DOMAIN}@g" "${coredns_file}"
   sed -i -e "s@{{ *pillar\['dns_server'\] *}}@${DNS_SERVER_IP}@g" "${coredns_file}"
   sed -i -e "s@{{ *pillar\['service_cluster_ip_range'\] *}}@${SERVICE_CLUSTER_IP_RANGE}@g" "${coredns_file}"
+
+  if [[ "${ENABLE_DNS_HORIZONTAL_AUTOSCALER:-}" == "true" ]]; then
+    setup-addon-manifests "addons" "dns-horizontal-autoscaler" "gce"
+    local -r dns_autoscaler_file="${dst_dir}/dns-horizontal-autoscaler/dns-horizontal-autoscaler.yaml"
+    sed -i'' -e "s@{{.Target}}@${COREDNS_AUTOSCALER}@g" "${dns_autoscaler_file}"
+  fi
 }
 
 # Sets up the manifests of Fluentd configmap and yamls for k8s addons.
 function setup-fluentd {
   local -r dst_dir="$1"
   local -r fluentd_gcp_yaml="${dst_dir}/fluentd-gcp/fluentd-gcp-ds.yaml"
+  local -r fluentd_gcp_scaler_yaml="${dst_dir}/fluentd-gcp/scaler-deployment.yaml"
   # Ingest logs against new resources like "k8s_container" and "k8s_node" if
   # LOGGING_STACKDRIVER_RESOURCE_TYPES is "new".
   # Ingest logs against old resources like "gke_container" and "gce_instance" if
@@ -2200,6 +2247,7 @@ function setup-fluentd {
   sed -i -e "s@{{ fluentd_gcp_configmap_name }}@${fluentd_gcp_configmap_name}@g" "${fluentd_gcp_yaml}"
   fluentd_gcp_yaml_version="${FLUENTD_GCP_YAML_VERSION:-v3.1.0}"
   sed -i -e "s@{{ fluentd_gcp_yaml_version }}@${fluentd_gcp_yaml_version}@g" "${fluentd_gcp_yaml}"
+  sed -i -e "s@{{ fluentd_gcp_yaml_version }}@${fluentd_gcp_yaml_version}@g" "${fluentd_gcp_scaler_yaml}"
   fluentd_gcp_version="${FLUENTD_GCP_VERSION:-0.3-1.5.34-1-k8s-1}"
   sed -i -e "s@{{ fluentd_gcp_version }}@${fluentd_gcp_version}@g" "${fluentd_gcp_yaml}"
   update-prometheus-to-sd-parameters ${fluentd_gcp_yaml}
@@ -2210,8 +2258,8 @@ function setup-fluentd {
 
 # Sets up the manifests of kube-dns for k8s addons.
 function setup-kube-dns-manifest {
-  local -r kubedns_file="${dst_dir}/dns/kube-dns.yaml"
-  mv "${dst_dir}/dns/kube-dns.yaml.in" "${kubedns_file}"
+  local -r kubedns_file="${dst_dir}/dns/kube-dns/kube-dns.yaml"
+  mv "${dst_dir}/dns/kube-dns/kube-dns.yaml.in" "${kubedns_file}"
   if [ -n "${CUSTOM_KUBE_DNS_YAML:-}" ]; then
     # Replace with custom GKE kube-dns deployment.
     cat > "${kubedns_file}" <<EOF
@@ -2225,6 +2273,21 @@ EOF
 
   if [[ "${ENABLE_DNS_HORIZONTAL_AUTOSCALER:-}" == "true" ]]; then
     setup-addon-manifests "addons" "dns-horizontal-autoscaler" "gce"
+    local -r dns_autoscaler_file="${dst_dir}/dns-horizontal-autoscaler/dns-horizontal-autoscaler.yaml"
+    sed -i'' -e "s@{{.Target}}@${KUBEDNS_AUTOSCALER}@g" "${dns_autoscaler_file}"
+  fi
+}
+
+# Sets up the manifests of netd for k8s addons.
+function setup-netd-manifest {
+  local -r netd_file="${dst_dir}/netd/netd.yaml"
+  mkdir -p "${dst_dir}/netd"
+  touch "${netd_file}"
+  if [ -n "${CUSTOM_NETD_YAML:-}" ]; then
+    # Replace with custom GCP netd deployment.
+    cat > "${netd_file}" <<EOF
+$(echo "$CUSTOM_NETD_YAML")
+EOF
   fi
 }
 
@@ -2278,6 +2341,11 @@ EOF
     prepare-kube-proxy-manifest-variables "$src_dir/kube-proxy/kube-proxy-ds.yaml"
     setup-addon-manifests "addons" "kube-proxy"
   fi
+  # Setup prometheus stack for monitoring kubernetes cluster
+  if [[ "${ENABLE_PROMETHEUS_MONITORING:-}" == "true" ]]; then
+    setup-addon-manifests "addons" "prometheus"
+  fi
+  # Setup cluster monitoring using heapster
   if [[ "${ENABLE_CLUSTER_MONITORING:-}" == "influxdb" ]] || \
      [[ "${ENABLE_CLUSTER_MONITORING:-}" == "google" ]] || \
      [[ "${ENABLE_CLUSTER_MONITORING:-}" == "stackdriver" ]] || \
@@ -2347,12 +2415,16 @@ EOF
     setup-addon-manifests "addons" "device-plugins/nvidia-gpu"
   fi
   if [[ "${ENABLE_CLUSTER_DNS:-}" == "true" ]]; then
-    setup-addon-manifests "addons" "dns"
     if [[ "${CLUSTER_DNS_CORE_DNS:-}" == "true" ]]; then
+      setup-addon-manifests "addons" "dns/coredns"
       setup-coredns-manifest
     else
+      setup-addon-manifests "addons" "dns/kube-dns"
       setup-kube-dns-manifest
     fi
+  fi
+  if [[ "${ENABLE_NETD:-}" == "true" ]]; then
+    setup-netd-manifest
   fi
   if [[ "${ENABLE_NODE_LOGGING:-}" == "true" ]] && \
      [[ "${LOGGING_DESTINATION:-}" == "elasticsearch" ]] && \
@@ -2424,8 +2496,9 @@ EOF
 # Starts an image-puller - used in test clusters.
 function start-image-puller {
   echo "Start image-puller"
-  cp "${KUBE_HOME}/kube-manifests/kubernetes/gci-trusty/e2e-image-puller.manifest" \
-    /etc/kubernetes/manifests/
+  local -r e2e_image_puller_manifest="${KUBE_HOME}/kube-manifests/kubernetes/gci-trusty/e2e-image-puller.manifest"
+  update-container-runtime "${e2e_image_puller_manifest}"
+  cp "${e2e_image_puller_manifest}" /etc/kubernetes/manifests/
 }
 
 # Setups manifests for ingress controller and gce-specific policies for service controller.
@@ -2471,6 +2544,15 @@ function setup-kubelet-dir {
     mount -B -o remount,exec,suid,dev /var/lib/kubelet
 }
 
+# Override for GKE custom master setup scripts (no-op outside of GKE).
+function gke-master-start {
+  if [[ -e "${KUBE_HOME}/bin/gke-internal-configure-helper.sh" ]]; then
+    echo "Running GKE internal configuration script"
+    . "${KUBE_HOME}/bin/gke-internal-configure-helper.sh"
+    gke-internal-master-start
+  fi
+}
+
 function reset-motd {
   # kubelet is installed both on the master and nodes, and the version is easy to parse (unlike kubectl)
   local -r version="$("${KUBE_HOME}"/bin/kubelet --version=true | cut -f2 -d " ")"
@@ -2510,6 +2592,16 @@ EOF
 function override-kubectl {
     echo "overriding kubectl"
     echo "export PATH=${KUBE_HOME}/bin:\$PATH" > /etc/profile.d/kube_env.sh
+    # Add ${KUBE_HOME}/bin into sudoer secure path.
+    local sudo_path
+    sudo_path=$(sudo env | grep "^PATH=")
+    if [[ -n "${sudo_path}" ]]; then
+      sudo_path=${sudo_path#PATH=}
+      (
+        umask 027
+        echo "Defaults secure_path=\"${KUBE_HOME}/bin:${sudo_path}\"" > /etc/sudoers.d/kube_secure_path
+      )
+    fi
 }
 
 function override-pv-recycler {
@@ -2561,6 +2653,12 @@ function main() {
 
   source "${KUBE_HOME}/kube-env"
 
+
+  if [[ -f "${KUBE_HOME}/kubelet-config.yaml" ]]; then
+    echo "Found Kubelet config file at ${KUBE_HOME}/kubelet-config.yaml"
+    KUBELET_CONFIG_FILE_ARG="--config ${KUBE_HOME}/kubelet-config.yaml"
+  fi
+
   if [[ -e "${KUBE_HOME}/kube-master-certs" ]]; then
     source "${KUBE_HOME}/kube-master-certs"
   fi
@@ -2591,6 +2689,7 @@ function main() {
     create-master-kubelet-auth
     create-master-etcd-auth
     override-pv-recycler
+    gke-master-start
   else
     create-node-pki
     create-kubelet-kubeconfig ${KUBERNETES_MASTER_NAME}
@@ -2612,6 +2711,7 @@ function main() {
   if [[ "${KUBERNETES_MASTER:-}" == "true" ]]; then
     compute-master-manifest-variables
     start-etcd-servers
+    start-etcd-empty-dir-cleanup-pod
     start-kube-apiserver
     start-kube-controller-manager
     start-kube-scheduler

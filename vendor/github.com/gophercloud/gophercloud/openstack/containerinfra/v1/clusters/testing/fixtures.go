@@ -247,3 +247,14 @@ func HandleUpdateClusterSuccessfully(t *testing.T) {
 		fmt.Fprint(w, UpdateResponse)
 	})
 }
+
+func HandleDeleteClusterSuccessfully(t *testing.T) {
+	th.Mux.HandleFunc("/v1/clusters/"+clusterUUID, func(w http.ResponseWriter, r *http.Request) {
+		th.TestMethod(t, r, "DELETE")
+		th.TestHeader(t, r, "X-Auth-Token", fake.TokenID)
+
+		w.Header().Add("Content-Type", "application/json")
+		w.Header().Add("X-OpenStack-Request-Id", requestUUID)
+		w.WriteHeader(http.StatusNoContent)
+	})
+}

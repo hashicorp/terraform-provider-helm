@@ -15,12 +15,12 @@ const NetworkIPAvailabilityListResult = `
             "project_id": "fb57277ef2f84a0e85b9018ec2dedbf7",
             "subnet_ip_availability": [
                 {
-                    "cidr": "10.0.0.64/26",
-                    "ip_version": 4,
+                    "cidr": "fdbc:bf53:567e::/64",
+                    "ip_version": 6,
                     "subnet_id": "497ac4d3-0b92-42cf-82de-71302ab2b656",
-                    "subnet_name": "second-private-subnet",
-                    "total_ips": 61,
-                    "used_ips": 12
+                    "subnet_name": "ipv6-private-subnet",
+                    "total_ips": 18446744073709552000,
+                    "used_ips": 2
                 },
                 {
                     "cidr": "10.0.0.0/26",
@@ -63,24 +63,24 @@ var NetworkIPAvailability1 = networkipavailabilities.NetworkIPAvailability{
 	NetworkName: "private",
 	ProjectID:   "fb57277ef2f84a0e85b9018ec2dedbf7",
 	TenantID:    "fb57277ef2f84a0e85b9018ec2dedbf7",
-	TotalIPs:    122,
-	UsedIPs:     14,
+	TotalIPs:    "122",
+	UsedIPs:     "14",
 	SubnetIPAvailabilities: []networkipavailabilities.SubnetIPAvailability{
 		{
 			SubnetID:   "497ac4d3-0b92-42cf-82de-71302ab2b656",
-			SubnetName: "second-private-subnet",
-			CIDR:       "10.0.0.64/26",
-			IPVersion:  int(gophercloud.IPv4),
-			TotalIPs:   61,
-			UsedIPs:    12,
+			SubnetName: "ipv6-private-subnet",
+			CIDR:       "fdbc:bf53:567e::/64",
+			IPVersion:  int(gophercloud.IPv6),
+			TotalIPs:   "18446744073709552000",
+			UsedIPs:    "2",
 		},
 		{
 			SubnetID:   "521f47e7-c4fb-452c-b71a-851da38cc571",
 			SubnetName: "private-subnet",
 			CIDR:       "10.0.0.0/26",
 			IPVersion:  int(gophercloud.IPv4),
-			TotalIPs:   61,
-			UsedIPs:    2,
+			TotalIPs:   "61",
+			UsedIPs:    "2",
 		},
 	},
 }
@@ -91,16 +91,16 @@ var NetworkIPAvailability2 = networkipavailabilities.NetworkIPAvailability{
 	NetworkName: "public",
 	ProjectID:   "424e7cf0243c468ca61732ba45973b3e",
 	TenantID:    "424e7cf0243c468ca61732ba45973b3e",
-	TotalIPs:    253,
-	UsedIPs:     3,
+	TotalIPs:    "253",
+	UsedIPs:     "3",
 	SubnetIPAvailabilities: []networkipavailabilities.SubnetIPAvailability{
 		{
 			SubnetID:   "4afe6e5f-9649-40db-b18f-64c7ead942bd",
 			SubnetName: "public-subnet",
 			CIDR:       "203.0.113.0/24",
 			IPVersion:  int(gophercloud.IPv4),
-			TotalIPs:   253,
-			UsedIPs:    3,
+			TotalIPs:   "253",
+			UsedIPs:    "3",
 		},
 	},
 }

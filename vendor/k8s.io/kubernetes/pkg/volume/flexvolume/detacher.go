@@ -49,24 +49,17 @@ func (d *flexVolumeDetacher) Detach(volumeName string, hostName types.NodeName) 
 // UnmountDevice is part of the volume.Detacher interface.
 func (d *flexVolumeDetacher) UnmountDevice(deviceMountPath string) error {
 
-	pathExists, pathErr := util.PathExists(deviceMountPath)
-	if !pathExists {
+	if pathExists, pathErr := util.PathExists(deviceMountPath); pathErr != nil {
+		return fmt.Errorf("Error checking if path exists: %v", pathErr)
+	} else if !pathExists {
 		glog.Warningf("Warning: Unmount skipped because path does not exist: %v", deviceMountPath)
 		return nil
-	}
-	if pathErr != nil && !util.IsCorruptedMnt(pathErr) {
-		return fmt.Errorf("Error checking path: %v", pathErr)
 	}
 
 	notmnt, err := isNotMounted(d.plugin.host.GetMounter(d.plugin.GetPluginName()), deviceMountPath)
 	if err != nil {
-		if util.IsCorruptedMnt(err) {
-			notmnt = false // Corrupted error is assumed to be mounted.
-		} else {
-			return err
-		}
+		return err
 	}
-
 	if notmnt {
 		glog.Warningf("Warning: Path: %v already unmounted", deviceMountPath)
 	} else {

@@ -44,14 +44,11 @@ func (f *flexVolumeUnmounter) TearDown() error {
 
 func (f *flexVolumeUnmounter) TearDownAt(dir string) error {
 
-	pathExists, pathErr := util.PathExists(dir)
-	if !pathExists {
+	if pathExists, pathErr := util.PathExists(dir); pathErr != nil {
+		return fmt.Errorf("Error checking if path exists: %v", pathErr)
+	} else if !pathExists {
 		glog.Warningf("Warning: Unmount skipped because path does not exist: %v", dir)
 		return nil
-	}
-
-	if pathErr != nil && !util.IsCorruptedMnt(pathErr) {
-		return fmt.Errorf("Error checking path: %v", pathErr)
 	}
 
 	call := f.plugin.NewDriverCall(unmountCmd)

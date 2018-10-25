@@ -18,6 +18,10 @@ func createURL(client *gophercloud.ServiceClient) string {
 	return commonURL(client)
 }
 
+func deleteURL(client *gophercloud.ServiceClient, id string) string {
+	return idURL(client, id)
+}
+
 func getURL(c *gophercloud.ServiceClient, id string) string {
 	return c.ServiceURL("clusters", id)
 }

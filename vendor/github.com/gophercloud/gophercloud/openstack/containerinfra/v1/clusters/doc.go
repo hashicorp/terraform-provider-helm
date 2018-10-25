@@ -73,5 +73,13 @@ Example to Update a Cluster
 	}
 	fmt.Printf("%s\n", clusterUUID)
 
+Example to Delete a Cluster
+
+	clusterUUID := "dc6d336e3fc4c0a951b5698cd1236ee"
+	err := clusters.Delete(serviceClient, clusterUUID).ExtractErr()
+	if err != nil {
+		panic(err)
+	}
+
 */
 package clusters

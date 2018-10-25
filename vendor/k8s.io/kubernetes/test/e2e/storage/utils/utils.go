@@ -162,7 +162,7 @@ func TestVolumeUnmountsFromDeletedPodWithForceOption(c clientset.Interface, f *f
 	nodeIP = nodeIP + ":22"
 
 	By("Expecting the volume mount to be found.")
-	result, err := framework.SSH(fmt.Sprintf("mount | grep %s | grep --invert-match volume-subpaths", clientPod.UID), nodeIP, framework.TestContext.Provider)
+	result, err := framework.SSH(fmt.Sprintf("mount | grep %s | grep -v volume-subpaths", clientPod.UID), nodeIP, framework.TestContext.Provider)
 	framework.LogSSHResult(result)
 	Expect(err).NotTo(HaveOccurred(), "Encountered SSH error.")
 	Expect(result.Code).To(BeZero(), fmt.Sprintf("Expected grep exit code of 0, got %d", result.Code))
@@ -204,7 +204,7 @@ func TestVolumeUnmountsFromDeletedPodWithForceOption(c clientset.Interface, f *f
 	}
 
 	By("Expecting the volume mount not to be found.")
-	result, err = framework.SSH(fmt.Sprintf("mount | grep %s | grep --invert-match volume-subpaths", clientPod.UID), nodeIP, framework.TestContext.Provider)
+	result, err = framework.SSH(fmt.Sprintf("mount | grep %s | grep -v volume-subpaths", clientPod.UID), nodeIP, framework.TestContext.Provider)
 	framework.LogSSHResult(result)
 	Expect(err).NotTo(HaveOccurred(), "Encountered SSH error.")
 	Expect(result.Stdout).To(BeEmpty(), "Expected grep stdout to be empty (i.e. no mount found).")
@@ -222,12 +222,12 @@ func TestVolumeUnmountsFromDeletedPodWithForceOption(c clientset.Interface, f *f
 
 // TestVolumeUnmountsFromDeletedPod tests that a volume unmounts if the client pod was deleted while the kubelet was down.
 func TestVolumeUnmountsFromDeletedPod(c clientset.Interface, f *framework.Framework, clientPod *v1.Pod) {
-	TestVolumeUnmountsFromDeletedPodWithForceOption(c, f, clientPod, false /* forceDelete */, false /* checkSubpath */)
+	TestVolumeUnmountsFromDeletedPodWithForceOption(c, f, clientPod, false, false)
 }
 
 // TestVolumeUnmountsFromFoceDeletedPod tests that a volume unmounts if the client pod was forcefully deleted while the kubelet was down.
 func TestVolumeUnmountsFromForceDeletedPod(c clientset.Interface, f *framework.Framework, clientPod *v1.Pod) {
-	TestVolumeUnmountsFromDeletedPodWithForceOption(c, f, clientPod, true /* forceDelete */, false /* checkSubpath */)
+	TestVolumeUnmountsFromDeletedPodWithForceOption(c, f, clientPod, true, false)
 }
 
 // RunInPodWithVolume runs a command in a pod with given claim mounted to /mnt directory.

@@ -131,6 +131,30 @@ func CreateCluster(t *testing.T, client *gophercloud.ServiceClient, clusterTempl
 	return clusterID, nil
 }
 
+func DeleteCluster(t *testing.T, client *gophercloud.ServiceClient, id string) {
+	t.Logf("Attempting to delete cluster: %s", id)
+
+	r := clusters.Delete(client, id)
+	err := clusters.Delete(client, id).ExtractErr()
+	deleteRequestID := ""
+	idKey := "X-Openstack-Request-Id"
+	if len(r.Header[idKey]) > 0 {
+		deleteRequestID = r.Header[idKey][0]
+	}
+	if err != nil {
+		t.Fatalf("Error deleting cluster. requestID=%s clusterID=%s: err%s:", deleteRequestID, id, err)
+	}
+
+	err = WaitForCluster(client, id, "DELETE_COMPLETE")
+	if err != nil {
+		t.Fatalf("Error deleting cluster %s: %s:", id, err)
+	}
+
+	t.Logf("Successfully deleted cluster: %s", id)
+
+	return
+}
+
 func WaitForCluster(client *gophercloud.ServiceClient, clusterID string, status string) error {
 	return tools.WaitFor(func() (bool, error) {
 		cluster, err := clusters.Get(client, clusterID).Extract()

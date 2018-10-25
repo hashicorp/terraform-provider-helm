@@ -81,5 +81,30 @@ Example to Delete a Profile
 		panic(err)
 	}
 
+Example to Validate a profile
+
+	serviceClient.Microversion = "1.2"
+
+	validateOpts := profiles.ValidateOpts{
+		Spec: profiles.Spec{
+			Properties: map[string]interface{}{
+				"flavor":   "t2.micro",
+				"image":    "cirros-0.3.4-x86_64-uec",
+				"key_name": "oskey",
+				"name":     "cirros_server",
+				"networks": []interface{}{
+					map[string]interface{}{"network": "private"},
+				},
+			},
+			Type:    "os.nova.server",
+			Version: "1.0",
+		},
+	}
+
+	profile, err := profiles.Validate(serviceClient, validateOpts).Extract()
+	if err != nil {
+		panic(err)
+	}
+
 */
 package profiles

@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -110,6 +109,21 @@ func DefaultNameSystem() string {
 	return "sorting_namer"
 }
 
+func apiTypeFilterFunc(c *generator.Context, t *types.Type) bool {
+	// There is a conflict between this codegen and codecgen, we should avoid types generated for codecgen
+	if strings.HasPrefix(t.Name.Name, "codecSelfer") {
+		return false
+	}
+	pkg := c.Universe.Package(t.Name.Package)
+	if hasOpenAPITagValue(pkg.Comments, tagValueTrue) {
+		return !hasOpenAPITagValue(t.CommentLines, tagValueFalse)
+	}
+	if hasOpenAPITagValue(t.CommentLines, tagValueTrue) {
+		return true
+	}
+	return false
+}
+
 func Packages(context *generator.Context, arguments *args.GeneratorArgs) generator.Packages {
 	boilerplate, err := arguments.LoadGoBoilerplate()
 	if err != nil {
@@ -126,6 +140,14 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 	if customArgs, ok := arguments.CustomArgs.(*generatorargs.CustomArgs); ok {
 		reportFilename = customArgs.ReportFilename
 	}
+	context.FileTypes[apiViolationFileType] = apiViolationFile{}
+	siblingPath := ""
+	if len(arguments.OutputBase) > 0 {
+		siblingPath = strings.Repeat(
+			".."+string([]rune{filepath.Separator}),
+			len(filepath.SplitList(arguments.OutputBase)),
+		)
+	}
 
 	return generator.Packages{
 		&generator.DefaultPackage{
@@ -133,22 +155,21 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 			PackagePath: arguments.OutputPackagePath,
 			HeaderText:  header,
 			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
-				return []generator.Generator{NewOpenAPIGen(arguments.OutputFileBaseName, arguments.OutputPackagePath, context, newAPILinter(), reportFilename)}
+				return []generator.Generator{
+					newOpenAPIGen(
+						arguments.OutputFileBaseName,
+						arguments.OutputPackagePath,
+					),
+				}
 			},
-			FilterFunc: func(c *generator.Context, t *types.Type) bool {
-				// There is a conflict between this codegen and codecgen, we should avoid types generated for codecgen
-				if strings.HasPrefix(t.Name.Name, "codecSelfer") {
-					return false
-				}
-				pkg := context.Universe.Package(t.Name.Package)
-				if hasOpenAPITagValue(pkg.Comments, tagValueTrue) {
-					return !hasOpenAPITagValue(t.CommentLines, tagValueFalse)
-				}
-				if hasOpenAPITagValue(t.CommentLines, tagValueTrue) {
-					return true
-				}
-				return false
+			FilterFunc: apiTypeFilterFunc,
+		},
+		&generator.DefaultPackage{
+			PackagePath: siblingPath,
+			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
+				return []generator.Generator{newAPIViolationGen(reportFilename)}
 			},
+			FilterFunc: apiTypeFilterFunc,
 		},
 	}
 }
@@ -162,24 +183,17 @@ const (
 type openAPIGen struct {
 	generator.DefaultGen
 	// TargetPackage is the package that will get GetOpenAPIDefinitions function returns all open API definitions.
-	targetPackage  string
-	imports        namer.ImportTracker
-	types          []*types.Type
-	context        *generator.Context
-	linter         *apiLinter
-	reportFilename string
+	targetPackage string
+	imports       namer.ImportTracker
 }
 
-func NewOpenAPIGen(sanitizedName string, targetPackage string, context *generator.Context, linter *apiLinter, reportFilename string) generator.Generator {
+func newOpenAPIGen(sanitizedName string, targetPackage string) generator.Generator {
 	return &openAPIGen{
 		DefaultGen: generator.DefaultGen{
 			OptionalName: sanitizedName,
 		},
-		imports:        generator.NewImportTracker(),
-		targetPackage:  targetPackage,
-		context:        context,
-		linter:         linter,
-		reportFilename: reportFilename,
+		imports:       generator.NewImportTracker(),
+		targetPackage: targetPackage,
 	}
 }
 
@@ -196,15 +210,6 @@ func (g *openAPIGen) Namers(c *generator.Context) namer.NameSystems {
 			PrependPackageNames: 4, // enough to fully qualify from k8s.io/api/...
 		},
 	}
-}
-
-func (g *openAPIGen) Filter(c *generator.Context, t *types.Type) bool {
-	// There is a conflict between this codegen and codecgen, we should avoid types generated for codecgen
-	if strings.HasPrefix(t.Name.Name, "codecSelfer") {
-		return false
-	}
-	g.types = append(g.types, t)
-	return true
 }
 
 func (g *openAPIGen) isOtherPackage(pkg string) bool {
@@ -239,7 +244,7 @@ func (g *openAPIGen) Init(c *generator.Context, w io.Writer) error {
 	sw.Do("func GetOpenAPIDefinitions(ref $.ReferenceCallback|raw$) map[string]$.OpenAPIDefinition|raw$ {\n", argsFromType(nil))
 	sw.Do("return map[string]$.OpenAPIDefinition|raw${\n", argsFromType(nil))
 
-	for _, t := range g.types {
+	for _, t := range c.Order {
 		err := newOpenAPITypeWriter(sw).generateCall(t)
 		if err != nil {
 			return err
@@ -253,10 +258,6 @@ func (g *openAPIGen) Init(c *generator.Context, w io.Writer) error {
 }
 
 func (g *openAPIGen) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
-	glog.V(5).Infof("validating API rules for type %v", t)
-	if err := g.linter.validate(t); err != nil {
-		return err
-	}
 	glog.V(5).Infof("generating for type %v", t)
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 	err := newOpenAPITypeWriter(sw).generate(t)
@@ -676,29 +677,5 @@ func (g openAPITypeWriter) generateSliceProperty(t *types.Type) error {
 		return fmt.Errorf("slice Element kind %v is not supported in %v", elemType.Kind, t)
 	}
 	g.Do("},\n},\n},\n", nil)
-	return nil
-}
-
-// Finalize prints the API rule violations to report file (if specified from arguments) or stdout (default)
-func (g *openAPIGen) Finalize(c *generator.Context, w io.Writer) error {
-	// If report file isn't specified, return error to force user to choose either stdout ("-") or a file name
-	if len(g.reportFilename) == 0 {
-		return fmt.Errorf("empty report file name: please provide a valid file name or use the default \"-\" (stdout)")
-	}
-	// If stdout is specified, print violations and return error
-	if g.reportFilename == "-" {
-		return g.linter.report(os.Stdout)
-	}
-	// Otherwise, print violations to report file and return nil
-	f, err := os.Create(g.reportFilename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	g.linter.report(f)
-	// NOTE: we don't return error here because we assume that the report file will
-	// get evaluated afterwards to determine if error should be raised. For example,
-	// you can have make rules that compare the report file with existing known
-	// violations (whitelist) and determine no error if no change is detected.
 	return nil
 }

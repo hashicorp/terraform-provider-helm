@@ -70,6 +70,12 @@ var (
 	// This is the IPv4 loopback, not localhost, because we have to force IPv4
 	// for Dockerized Helm: https://github.com/kubernetes/helm/issues/1410
 	localRepositoryURL = "http://127.0.0.1:8879/charts"
+	tlsServerName      string // overrides the server name used to verify the hostname on the returned certificates from the server.
+	tlsCaCertFile      string // path to TLS CA certificate file
+	tlsCertFile        string // path to TLS certificate file
+	tlsKeyFile         string // path to TLS key file
+	tlsVerify          bool   // enable TLS and verify remote certificates
+	tlsEnable          bool   // enable TLS
 )
 
 type initCmd struct {
@@ -121,11 +127,16 @@ func newInitCmd(out io.Writer) *cobra.Command {
 	f.BoolVar(&i.skipRefresh, "skip-refresh", false, "do not refresh (download) the local repository cache")
 	f.BoolVar(&i.wait, "wait", false, "block until Tiller is running and ready to receive requests")
 
+	// TODO: replace TLS flags with pkg/helm/environment.AddFlagsTLS() in Helm 3
+	//
+	// NOTE (bacongobbler): we can't do this in Helm 2 because the flag names differ, and `helm init --tls-ca-cert`
+	// doesn't conform with the rest of the TLS flag names (should be --tiller-tls-ca-cert in Helm 3)
 	f.BoolVar(&tlsEnable, "tiller-tls", false, "install Tiller with TLS enabled")
 	f.BoolVar(&tlsVerify, "tiller-tls-verify", false, "install Tiller with TLS enabled and to verify remote certificates")
 	f.StringVar(&tlsKeyFile, "tiller-tls-key", "", "path to TLS key file to install with Tiller")
 	f.StringVar(&tlsCertFile, "tiller-tls-cert", "", "path to TLS certificate file to install with Tiller")
 	f.StringVar(&tlsCaCertFile, "tls-ca-cert", "", "path to CA root certificate")
+	f.StringVar(&tlsServerName, "tiller-tls-hostname", settings.TillerHost, "the server name used to verify the hostname on the returned certificates from Tiller")
 
 	f.StringVar(&stableRepositoryURL, "stable-repo-url", stableRepositoryURL, "URL for stable repository")
 	f.StringVar(&localRepositoryURL, "local-repo-url", localRepositoryURL, "URL for local repository")
@@ -138,6 +149,7 @@ func newInitCmd(out io.Writer) *cobra.Command {
 	f.StringVar(&i.opts.NodeSelectors, "node-selectors", "", "labels to specify the node on which Tiller is installed (app=tiller,helm=rocks)")
 	f.VarP(&i.opts.Output, "output", "o", "skip installation and output Tiller's manifest in specified format (json or yaml)")
 	f.StringArrayVar(&i.opts.Values, "override", []string{}, "override values for the Tiller Deployment manifest (can specify multiple or separate values with commas: key1=val1,key2=val2)")
+	f.BoolVar(&i.opts.AutoMountServiceAccountToken, "automount-service-account-token", true, "auto-mount the given service account to tiller")
 
 	return cmd
 }
@@ -164,6 +176,14 @@ func (i *initCmd) tlsOptions() error {
 				return errors.New("missing required TLS CA file")
 			}
 		}
+
+		// FIXME: remove once we use pkg/helm/environment.AddFlagsTLS() in Helm 3
+		settings.TLSEnable = tlsEnable
+		settings.TLSVerify = tlsVerify
+		settings.TLSServerName = tlsServerName
+		settings.TLSCaCertFile = tlsCaCertFile
+		settings.TLSCertFile = tlsCertFile
+		settings.TLSKeyFile = tlsKeyFile
 	}
 	return nil
 }
@@ -272,7 +292,7 @@ func (i *initCmd) run() error {
 				if err := installer.Upgrade(i.kubeClient, &i.opts); err != nil {
 					return fmt.Errorf("error when upgrading: %s", err)
 				}
-				if err := i.ping(); err != nil {
+				if err := i.ping(i.opts.SelectImage()); err != nil {
 					return err
 				}
 				fmt.Fprintln(i.out, "\nTiller (the Helm server-side component) has been upgraded to the current version.")
@@ -288,7 +308,7 @@ func (i *initCmd) run() error {
 					"For more information on securing your installation see: https://docs.helm.sh/using_helm/#securing-your-helm-installation")
 			}
 		}
-		if err := i.ping(); err != nil {
+		if err := i.ping(i.opts.SelectImage()); err != nil {
 			return err
 		}
 	} else {
@@ -299,13 +319,13 @@ func (i *initCmd) run() error {
 	return nil
 }
 
-func (i *initCmd) ping() error {
+func (i *initCmd) ping(image string) error {
 	if i.wait {
 		_, kubeClient, err := getKubeClient(settings.KubeContext, settings.KubeConfig)
 		if err != nil {
 			return err
 		}
-		if !watchTillerUntilReady(settings.TillerNamespace, kubeClient, settings.TillerConnectionTimeout) {
+		if !watchTillerUntilReady(settings.TillerNamespace, kubeClient, settings.TillerConnectionTimeout, image) {
 			return fmt.Errorf("tiller was not found. polling deadline exceeded")
 		}
 
@@ -437,7 +457,7 @@ func ensureRepoFileFormat(file string, out io.Writer) error {
 // want to wait before we call New().
 //
 // Returns true if it exists. If the timeout was reached and it could not find the pod, it returns false.
-func watchTillerUntilReady(namespace string, client kubernetes.Interface, timeout int64) bool {
+func watchTillerUntilReady(namespace string, client kubernetes.Interface, timeout int64, newImage string) bool {
 	deadlinePollingChan := time.NewTimer(time.Duration(timeout) * time.Second).C
 	checkTillerPodTicker := time.NewTicker(500 * time.Millisecond)
 	doneChan := make(chan bool)
@@ -446,8 +466,8 @@ func watchTillerUntilReady(namespace string, client kubernetes.Interface, timeou
 
 	go func() {
 		for range checkTillerPodTicker.C {
-			_, err := portforwarder.GetTillerPodName(client.CoreV1(), namespace)
-			if err == nil {
+			image, err := portforwarder.GetTillerPodImage(client.CoreV1(), namespace)
+			if err == nil && image == newImage {
 				doneChan <- true
 				break
 			}

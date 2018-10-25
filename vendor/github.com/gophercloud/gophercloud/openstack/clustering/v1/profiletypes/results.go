@@ -41,7 +41,7 @@ func ExtractProfileTypes(r pagination.Page) ([]ProfileType, error) {
 	return s.ProfileTypes, err
 }
 
-// ProfileTypePage contains a single page of all profiles from a ListDetails call.
+// ProfileTypePage contains a single page of all profiles from a List call.
 type ProfileTypePage struct {
 	pagination.LinkedPageBase
 }

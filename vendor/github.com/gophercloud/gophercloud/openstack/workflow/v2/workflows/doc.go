@@ -4,7 +4,9 @@ Package workflows provides interaction with the workflows API in the OpenStack M
 Workflow represents a process that can be described in a various number of ways and that can do some job interesting to the end user.
 Each workflow consists of tasks (at least one) describing what exact steps should be made during workflow execution.
 
-Example to list workflows
+Workflow definition is written in Mistral Workflow Language v2. You can find all specification here: https://docs.openstack.org/mistral/latest/user/wf_lang_v2.html
+
+List workflows
 
 	listOpts := workflows.ListOpts{
 		Namespace: "some-namespace",
@@ -24,53 +26,48 @@ Example to list workflows
 		fmt.Printf("%+v\n", workflow)
 	}
 
-Example to get a workflow by its ID
+Get a workflow
 
-	workflow, err := workflows.Get(mistralClient, "workflow-id").Extract()
+	workflow, err := workflows.Get(mistralClient, "604a3a1e-94e3-4066-a34a-aa56873ef236").Extract()
 	if err != nil {
 		t.Fatalf("Unable to get workflow %s: %v", id, err)
 	}
 
 	fmt.Printf("%+v\n", workflow)
 
-Example to create a workflow
+Create a workflow
 
 	workflowDefinition := `---
-version: '2.0'
+      version: '2.0'
 
-create_vm:
-description: Simple workflow example
-type: direct
+      workflow_echo:
+        description: Simple workflow example
+        type: direct
+        input:
+          - msg
 
-input:
-	- vm_name
-	- image_ref
-	- flavor_ref
-output:
-	vm_id: <% $.vm_id %>
-
-tasks:
-	create_server:
-	action: nova.servers_create name=<% $.vm_name %> image=<% $.image_ref %> flavor=<% $.flavor_ref %>
-	publish:
-		vm_id: <% task(create_server).result.id %>
-	on-success:
-		- wait_for_instance
-
-	wait_for_instance:
-	action: nova.servers_find id=<% $.vm_id %> status='ACTIVE'
-	retry:
-		delay: 5
-		count: 15`
+        tasks:
+          test:
+            action: std.echo output="<% $.msg %>"`
 
 	createOpts := &workflows.CreateOpts{
 		Definition: strings.NewReader(workflowDefinition),
+		Scope: "private",
 		Namespace: "some-namespace",
 	}
 
-	execution, err := workflows.Create(mistralClient, opts).Extract()
+	workflow, err := workflows.Create(mistralClient, opts).Extract()
 	if err != nil {
 		panic(err)
+	}
+
+	fmt.Printf("%+v\n", workflow)
+
+Delete a workflow
+
+	res := workflows.Delete(fake.ServiceClient(), "604a3a1e-94e3-4066-a34a-aa56873ef236")
+	if res.Err != nil {
+		panic(res.Err)
 	}
 */
 package workflows

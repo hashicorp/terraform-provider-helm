@@ -28,10 +28,7 @@ func scheduleSuccessEvent(ns, podName, nodeName string) func(*v1.Event) bool {
 		return e.Type == v1.EventTypeNormal &&
 			e.Reason == "Scheduled" &&
 			strings.HasPrefix(e.Name, podName) &&
-			// Check event message for 1.11+ (1.11 included)
-			(strings.Contains(e.Message, fmt.Sprintf("Successfully assigned %v/%v to %v", ns, podName, nodeName)) ||
-				// Check event message for 1.10- (1.10 included)
-				strings.Contains(e.Message, fmt.Sprintf("Successfully assigned %v to %v", podName, nodeName)))
+			strings.Contains(e.Message, fmt.Sprintf("Successfully assigned %v/%v to %v", ns, podName, nodeName))
 	}
 }
 
