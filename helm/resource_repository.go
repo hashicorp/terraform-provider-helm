@@ -113,11 +113,6 @@ func resourceRepositoryCreate(d *schema.ResourceData, meta interface{}) error {
 func resourceRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 
-	err := resourceRepositoryCreate(d, m)
-	if err != nil {
-		return err
-	}
-
 	r, err := getRepository(d, m)
 	if err != nil {
 		return err
