@@ -1,5 +1,4 @@
-## 0.6.1 (Unreleased)
-## 0.6.0 (October 24, 2018)
+## 0.6.0 (Unreleased)
 
 - Re-release after induction into 'terraform-providers'. This is to align to the de-facto repository version sequence.
 
