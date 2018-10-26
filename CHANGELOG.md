@@ -1,4 +1,7 @@
 ## 0.6.2 (Unreleased)
+
+- Bug fix: A recursion between the read and create methods as described in PR #137
+
 ## 0.6.1 (October 25, 2018)
 
 - Re-release after induction into 'terraform-providers'. This is to align to the de-facto repository version sequence.
