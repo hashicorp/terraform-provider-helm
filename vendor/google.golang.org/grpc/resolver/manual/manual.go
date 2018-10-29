@@ -16,8 +16,7 @@
  *
  */
 
-// Package manual defines a resolver that can be used to manually send resolved
-// addresses to ClientConn.
+// Package manual contains a resolver for testing purpose only.
 package manual
 
 import (
@@ -40,22 +39,12 @@ type Resolver struct {
 	scheme string
 
 	// Fields actually belong to the resolver.
-	cc             resolver.ClientConn
-	bootstrapAddrs []resolver.Address
-}
-
-// InitialAddrs adds resolved addresses to the resolver so that
-// NewAddress doesn't need to be explicitly called after Dial.
-func (r *Resolver) InitialAddrs(addrs []resolver.Address) {
-	r.bootstrapAddrs = addrs
+	cc resolver.ClientConn
 }
 
 // Build returns itself for Resolver, because it's both a builder and a resolver.
 func (r *Resolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOption) (resolver.Resolver, error) {
 	r.cc = cc
-	if r.bootstrapAddrs != nil {
-		r.NewAddress(r.bootstrapAddrs)
-	}
 	return r, nil
 }
 
@@ -81,7 +70,7 @@ func (r *Resolver) NewServiceConfig(sc string) {
 }
 
 // GenerateAndRegisterManualResolver generates a random scheme and a Resolver
-// with it. It also registers this Resolver.
+// with it. It also regieter this Resolver.
 // It returns the Resolver and a cleanup function to unregister it.
 func GenerateAndRegisterManualResolver() (*Resolver, func()) {
 	scheme := strconv.FormatInt(time.Now().UnixNano(), 36)

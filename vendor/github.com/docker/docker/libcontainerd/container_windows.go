@@ -1,16 +1,18 @@
 package libcontainerd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/Microsoft/hcsshim"
-	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/pkg/system"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/sys/windows"
 )
 
 type container struct {
@@ -80,8 +82,22 @@ func (ctr *container) start(attachStdio StdioCallback) error {
 
 	// Configure the environment for the process
 	createProcessParms.Environment = setupEnvironmentVariables(ctr.ociSpec.Process.Env)
-	createProcessParms.CommandLine = strings.Join(ctr.ociSpec.Process.Args, " ")
+	if ctr.ociSpec.Platform.OS == "windows" {
+		createProcessParms.CommandLine = strings.Join(ctr.ociSpec.Process.Args, " ")
+	} else {
+		createProcessParms.CommandArgs = ctr.ociSpec.Process.Args
+	}
 	createProcessParms.User = ctr.ociSpec.Process.User.Username
+
+	// LCOW requires the raw OCI spec passed through HCS and onwards to GCS for the utility VM.
+	if system.LCOWSupported() && ctr.ociSpec.Platform.OS == "linux" {
+		ociBuf, err := json.Marshal(ctr.ociSpec)
+		if err != nil {
+			return err
+		}
+		ociRaw := json.RawMessage(ociBuf)
+		createProcessParms.OCISpecification = &ociRaw
+	}
 
 	// Start the command running in the container.
 	newProcess, err := ctr.hcsContainer.CreateProcess(createProcessParms)
@@ -169,7 +185,7 @@ func (ctr *container) waitProcessExitCode(process *process) int {
 	// Block indefinitely for the process to exit.
 	err := process.hcsProcess.Wait()
 	if err != nil {
-		if herr, ok := err.(*hcsshim.ProcessError); ok && herr.Err != syscall.ERROR_BROKEN_PIPE {
+		if herr, ok := err.(*hcsshim.ProcessError); ok && herr.Err != windows.ERROR_BROKEN_PIPE {
 			logrus.Warnf("libcontainerd: Wait() failed (container may have been killed): %s", err)
 		}
 		// Fall through here, do not return. This ensures we attempt to continue the
@@ -179,7 +195,7 @@ func (ctr *container) waitProcessExitCode(process *process) int {
 
 	exitCode, err := process.hcsProcess.ExitCode()
 	if err != nil {
-		if herr, ok := err.(*hcsshim.ProcessError); ok && herr.Err != syscall.ERROR_BROKEN_PIPE {
+		if herr, ok := err.(*hcsshim.ProcessError); ok && herr.Err != windows.ERROR_BROKEN_PIPE {
 			logrus.Warnf("libcontainerd: unable to get exit code from container %s", ctr.containerID)
 		}
 		// Since we got an error retrieving the exit code, make sure that the code we return
@@ -201,8 +217,17 @@ func (ctr *container) waitExit(process *process, isFirstProcessToStart bool) err
 	logrus.Debugln("libcontainerd: waitExit() on pid", process.systemPid)
 
 	exitCode := ctr.waitProcessExitCode(process)
-	// Lock the container while shutting down
+	// Lock the container while removing the process/container from the list
 	ctr.client.lock(ctr.containerID)
+
+	if !isFirstProcessToStart {
+		ctr.cleanProcess(process.friendlyName)
+	} else {
+		ctr.client.deleteContainer(ctr.containerID)
+	}
+
+	// Unlock here so other threads are unblocked
+	ctr.client.unlock(ctr.containerID)
 
 	// Assume the container has exited
 	si := StateInfo{
@@ -218,13 +243,15 @@ func (ctr *container) waitExit(process *process, isFirstProcessToStart bool) err
 	// But it could have been an exec'd process which exited
 	if !isFirstProcessToStart {
 		si.State = StateExitProcess
-		ctr.cleanProcess(process.friendlyName)
 	} else {
-		updatePending, err := ctr.hcsContainer.HasPendingUpdates()
-		if err != nil {
-			logrus.Warnf("libcontainerd: HasPendingUpdates() failed (container may have been killed): %s", err)
-		} else {
-			si.UpdatePending = updatePending
+		// Pending updates is only applicable for WCOW
+		if ctr.ociSpec.Platform.OS == "windows" {
+			updatePending, err := ctr.hcsContainer.HasPendingUpdates()
+			if err != nil {
+				logrus.Warnf("libcontainerd: HasPendingUpdates() failed (container may have been killed): %s", err)
+			} else {
+				si.UpdatePending = updatePending
+			}
 		}
 
 		logrus.Debugf("libcontainerd: shutting down container %s", ctr.containerID)
@@ -236,19 +263,11 @@ func (ctr *container) waitExit(process *process, isFirstProcessToStart bool) err
 		if err := ctr.hcsContainer.Close(); err != nil {
 			logrus.Error(err)
 		}
-
-		// Remove process from list if we have exited
-		if si.State == StateExit {
-			ctr.client.deleteContainer(ctr.containerID)
-		}
 	}
 
 	if err := process.hcsProcess.Close(); err != nil {
 		logrus.Errorf("libcontainerd: hcsProcess.Close(): %v", err)
 	}
-
-	// Unlock here before we call back into the daemon to update state
-	ctr.client.unlock(ctr.containerID)
 
 	// Call into the backend to notify it of the state change.
 	logrus.Debugf("libcontainerd: waitExit() calling backend.StateChanged %+v", si)

@@ -81,17 +81,6 @@ type AuthOptions struct {
 	// TokenID allows users to authenticate (possibly as another user) with an
 	// authentication token ID.
 	TokenID string `json:"-"`
-
-	// Scope determines the scoping of the authentication request.
-	Scope *AuthScope `json:"-"`
-}
-
-// AuthScope allows a created token to be limited to a specific domain or project.
-type AuthScope struct {
-	ProjectID   string
-	ProjectName string
-	DomainID    string
-	DomainName  string
 }
 
 // ToTokenV2CreateMap allows AuthOptions to satisfy the AuthOptionsBuilder
@@ -274,83 +263,85 @@ func (opts *AuthOptions) ToTokenV3CreateMap(scope map[string]interface{}) (map[s
 }
 
 func (opts *AuthOptions) ToTokenV3ScopeMap() (map[string]interface{}, error) {
-	// For backwards compatibility.
-	// If AuthOptions.Scope was not set, try to determine it.
-	// This works well for common scenarios.
-	if opts.Scope == nil {
-		opts.Scope = new(AuthScope)
-		if opts.TenantID != "" {
-			opts.Scope.ProjectID = opts.TenantID
-		} else {
-			if opts.TenantName != "" {
-				opts.Scope.ProjectName = opts.TenantName
-				opts.Scope.DomainID = opts.DomainID
-				opts.Scope.DomainName = opts.DomainName
-			}
+
+	var scope struct {
+		ProjectID   string
+		ProjectName string
+		DomainID    string
+		DomainName  string
+	}
+
+	if opts.TenantID != "" {
+		scope.ProjectID = opts.TenantID
+	} else {
+		if opts.TenantName != "" {
+			scope.ProjectName = opts.TenantName
+			scope.DomainID = opts.DomainID
+			scope.DomainName = opts.DomainName
 		}
 	}
 
-	if opts.Scope.ProjectName != "" {
+	if scope.ProjectName != "" {
 		// ProjectName provided: either DomainID or DomainName must also be supplied.
 		// ProjectID may not be supplied.
-		if opts.Scope.DomainID == "" && opts.Scope.DomainName == "" {
+		if scope.DomainID == "" && scope.DomainName == "" {
 			return nil, ErrScopeDomainIDOrDomainName{}
 		}
-		if opts.Scope.ProjectID != "" {
+		if scope.ProjectID != "" {
 			return nil, ErrScopeProjectIDOrProjectName{}
 		}
 
-		if opts.Scope.DomainID != "" {
+		if scope.DomainID != "" {
 			// ProjectName + DomainID
 			return map[string]interface{}{
 				"project": map[string]interface{}{
-					"name":   &opts.Scope.ProjectName,
-					"domain": map[string]interface{}{"id": &opts.Scope.DomainID},
+					"name":   &scope.ProjectName,
+					"domain": map[string]interface{}{"id": &scope.DomainID},
 				},
 			}, nil
 		}
 
-		if opts.Scope.DomainName != "" {
+		if scope.DomainName != "" {
 			// ProjectName + DomainName
 			return map[string]interface{}{
 				"project": map[string]interface{}{
-					"name":   &opts.Scope.ProjectName,
-					"domain": map[string]interface{}{"name": &opts.Scope.DomainName},
+					"name":   &scope.ProjectName,
+					"domain": map[string]interface{}{"name": &scope.DomainName},
 				},
 			}, nil
 		}
-	} else if opts.Scope.ProjectID != "" {
+	} else if scope.ProjectID != "" {
 		// ProjectID provided. ProjectName, DomainID, and DomainName may not be provided.
-		if opts.Scope.DomainID != "" {
+		if scope.DomainID != "" {
 			return nil, ErrScopeProjectIDAlone{}
 		}
-		if opts.Scope.DomainName != "" {
+		if scope.DomainName != "" {
 			return nil, ErrScopeProjectIDAlone{}
 		}
 
 		// ProjectID
 		return map[string]interface{}{
 			"project": map[string]interface{}{
-				"id": &opts.Scope.ProjectID,
+				"id": &scope.ProjectID,
 			},
 		}, nil
-	} else if opts.Scope.DomainID != "" {
+	} else if scope.DomainID != "" {
 		// DomainID provided. ProjectID, ProjectName, and DomainName may not be provided.
-		if opts.Scope.DomainName != "" {
+		if scope.DomainName != "" {
 			return nil, ErrScopeDomainIDOrDomainName{}
 		}
 
 		// DomainID
 		return map[string]interface{}{
 			"domain": map[string]interface{}{
-				"id": &opts.Scope.DomainID,
+				"id": &scope.DomainID,
 			},
 		}, nil
-	} else if opts.Scope.DomainName != "" {
+	} else if scope.DomainName != "" {
 		// DomainName
 		return map[string]interface{}{
 			"domain": map[string]interface{}{
-				"name": &opts.Scope.DomainName,
+				"name": &scope.DomainName,
 			},
 		}, nil
 	}

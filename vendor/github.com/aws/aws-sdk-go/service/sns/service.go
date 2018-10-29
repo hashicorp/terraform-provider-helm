@@ -29,9 +29,8 @@ var initRequest func(*request.Request)
 
 // Service information constants
 const (
-	ServiceName = "sns"       // Name of service.
-	EndpointsID = ServiceName // ID to lookup a service endpoint with.
-	ServiceID   = "SNS"       // ServiceID is a unique identifer of a specific service.
+	ServiceName = "sns"       // Service endpoint prefix API calls made to.
+	EndpointsID = ServiceName // Service ID for Regions and Endpoints metadata.
 )
 
 // New creates a new instance of the SNS client with a session.
@@ -56,7 +55,6 @@ func newClient(cfg aws.Config, handlers request.Handlers, endpoint, signingRegio
 			cfg,
 			metadata.ClientInfo{
 				ServiceName:   ServiceName,
-				ServiceID:     ServiceID,
 				SigningName:   signingName,
 				SigningRegion: signingRegion,
 				Endpoint:      endpoint,

@@ -38,7 +38,7 @@ var _ volume.ProvisionableVolumePlugin = &azureFilePlugin{}
 // azure cloud provider should implement it
 type azureCloudProvider interface {
 	// create a file share
-	CreateFileShare(shareName, accountName, accountType, location string, requestGiB int) (string, string, error)
+	CreateFileShare(shareName, accountName, accountType, resourceGroup, location string, requestGiB int) (string, string, error)
 	// delete a file share
 	DeleteFileShare(accountName, accountKey, shareName string) error
 	// resize a file share
@@ -131,12 +131,15 @@ type azureFileProvisioner struct {
 
 var _ volume.Provisioner = &azureFileProvisioner{}
 
-func (a *azureFileProvisioner) Provision() (*v1.PersistentVolume, error) {
+func (a *azureFileProvisioner) Provision(selectedNode *v1.Node, allowedTopologies []v1.TopologySelectorTerm) (*v1.PersistentVolume, error) {
 	if !util.AccessModesContainedInAll(a.plugin.GetAccessModes(), a.options.PVC.Spec.AccessModes) {
 		return nil, fmt.Errorf("invalid AccessModes %v: only AccessModes %v are supported", a.options.PVC.Spec.AccessModes, a.plugin.GetAccessModes())
 	}
+	if util.CheckPersistentVolumeClaimModeBlock(a.options.PVC) {
+		return nil, fmt.Errorf("%s does not support block volume provisioning", a.plugin.GetPluginName())
+	}
 
-	var sku, location, account string
+	var sku, resourceGroup, location, account string
 
 	// File share name has a length limit of 63, and it cannot contain two consecutive '-'s.
 	name := util.GenerateVolumeName(a.options.ClusterName, a.options.PVName, 63)
@@ -157,6 +160,8 @@ func (a *azureFileProvisioner) Provision() (*v1.PersistentVolume, error) {
 			account = v
 		case "secretnamespace":
 			secretNamespace = v
+		case "resourcegroup":
+			resourceGroup = v
 		default:
 			return nil, fmt.Errorf("invalid option %q for volume plugin %s", k, a.plugin.GetPluginName())
 		}
@@ -166,7 +171,7 @@ func (a *azureFileProvisioner) Provision() (*v1.PersistentVolume, error) {
 		return nil, fmt.Errorf("claim.Spec.Selector is not supported for dynamic provisioning on Azure file")
 	}
 
-	account, key, err := a.azureProvider.CreateFileShare(name, account, sku, location, requestGiB)
+	account, key, err := a.azureProvider.CreateFileShare(name, account, sku, resourceGroup, location, requestGiB)
 	if err != nil {
 		return nil, err
 	}

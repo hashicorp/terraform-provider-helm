@@ -50,7 +50,6 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	imageutils "k8s.io/kubernetes/test/utils/image"
 
-	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -67,6 +66,10 @@ const (
 
 	// Waiting period for volume server (Ceph, ...) to initialize itself.
 	VolumeServerPodStartupSleep = 20 * time.Second
+
+	// Waiting period for pod to be cleaned up and unmount its volumes so we
+	// don't tear down containers with NFS/Ceph/Gluster server too early.
+	PodCleanupTimeout = 20 * time.Second
 )
 
 // Configuration of one tests. The test consist of:
@@ -182,7 +185,7 @@ func NewISCSIServer(cs clientset.Interface, namespace string) (config VolumeTest
 }
 
 // CephRBD-specific wrapper for CreateStorageServer.
-func NewRBDServer(cs clientset.Interface, namespace string) (config VolumeTestConfig, pod *v1.Pod, ip string) {
+func NewRBDServer(cs clientset.Interface, namespace string) (config VolumeTestConfig, pod *v1.Pod, secret *v1.Secret, ip string) {
 	config = VolumeTestConfig{
 		Namespace:   namespace,
 		Prefix:      "rbd",
@@ -201,7 +204,28 @@ func NewRBDServer(cs clientset.Interface, namespace string) (config VolumeTestCo
 	Logf("sleeping a bit to give ceph server time to initialize")
 	time.Sleep(VolumeServerPodStartupSleep)
 
-	return config, pod, ip
+	// create secrets for the server
+	secret = &v1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: config.Prefix + "-secret",
+		},
+		Data: map[string][]byte{
+			// from test/images/volumes-tester/rbd/keyring
+			"key": []byte("AQDRrKNVbEevChAAEmRC+pW/KBVHxa0w/POILA=="),
+		},
+		Type: "kubernetes.io/rbd",
+	}
+
+	secret, err := cs.CoreV1().Secrets(config.Namespace).Create(secret)
+	if err != nil {
+		Failf("Failed to create secrets for Ceph RBD: %v", err)
+	}
+
+	return config, pod, secret, ip
 }
 
 // Wrapper for StartVolumeServer(). A storage server config is passed in, and a pod pointer
@@ -335,30 +359,13 @@ func VolumeTestCleanup(f *Framework, config VolumeTestConfig) {
 	defer GinkgoRecover()
 
 	client := f.ClientSet
-	podClient := client.CoreV1().Pods(config.Namespace)
 
-	err := podClient.Delete(config.Prefix+"-client", nil)
-	if err != nil {
-		// Log the error before failing test: if the test has already failed,
-		// framework.ExpectNoError() won't print anything to logs!
-		glog.Warningf("Failed to delete client pod: %v", err)
-		ExpectNoError(err, "Failed to delete client pod: %v", err)
-	}
+	err := DeletePodWithWaitByName(f, client, config.Prefix+"-client", config.Namespace)
+	Expect(err).To(BeNil(), "Failed waiting for pod %v to be not running in namespace %v", config.Prefix+"-client", config.Namespace)
 
 	if config.ServerImage != "" {
-		if err := f.WaitForPodTerminated(config.Prefix+"-client", ""); !apierrs.IsNotFound(err) {
-			ExpectNoError(err, "Failed to wait client pod terminated: %v", err)
-		}
-		// See issue #24100.
-		// Prevent umount errors by making sure making sure the client pod exits cleanly *before* the volume server pod exits.
-		By("sleeping a bit so client can stop and unmount")
-		time.Sleep(20 * time.Second)
-
-		err = podClient.Delete(config.Prefix+"-server", nil)
-		if err != nil {
-			glog.Warningf("Failed to delete server pod: %v", err)
-			ExpectNoError(err, "Failed to delete server pod: %v", err)
-		}
+		err := DeletePodWithWaitByName(f, client, config.Prefix+"-server", config.Namespace)
+		Expect(err).To(BeNil(), "Failed waiting for pod %v to be not running in namespace %v", config.Prefix+"-server", config.Namespace)
 	}
 }
 
@@ -448,7 +455,7 @@ func TestVolumeClient(client clientset.Interface, config VolumeTestConfig, fsGro
 // Insert index.html with given content into given volume. It does so by
 // starting and auxiliary pod which writes the file there.
 // The volume must be writable.
-func InjectHtml(client clientset.Interface, config VolumeTestConfig, volume v1.VolumeSource, content string) {
+func InjectHtml(f *Framework, client clientset.Interface, config VolumeTestConfig, volume v1.VolumeSource, content string) {
 	By(fmt.Sprint("starting ", config.Prefix, " injector"))
 	podClient := client.CoreV1().Pods(config.Namespace)
 
@@ -495,7 +502,8 @@ func InjectHtml(client clientset.Interface, config VolumeTestConfig, volume v1.V
 	}
 
 	defer func() {
-		podClient.Delete(config.Prefix+"-injector", nil)
+		err := DeletePodWithWaitByName(f, client, injectPod.GetName(), config.Namespace)
+		Expect(err).To(BeNil(), "Failed deleting pod %v in namespace %v", injectPod.GetName(), config.Namespace)
 	}()
 
 	injectPod, err := podClient.Create(injectPod)

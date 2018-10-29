@@ -5,27 +5,27 @@ package waf
 const (
 
 	// ErrCodeDisallowedNameException for service response error code
-	// "WAFDisallowedNameException".
+	// "DisallowedNameException".
 	//
 	// The name specified is invalid.
-	ErrCodeDisallowedNameException = "WAFDisallowedNameException"
+	ErrCodeDisallowedNameException = "DisallowedNameException"
 
 	// ErrCodeInternalErrorException for service response error code
-	// "WAFInternalErrorException".
+	// "InternalErrorException".
 	//
 	// The operation failed because of a system problem, even though the request
 	// was valid. Retry your request.
-	ErrCodeInternalErrorException = "WAFInternalErrorException"
+	ErrCodeInternalErrorException = "InternalErrorException"
 
 	// ErrCodeInvalidAccountException for service response error code
-	// "WAFInvalidAccountException".
+	// "InvalidAccountException".
 	//
 	// The operation failed because you tried to create, update, or delete an object
 	// by using an invalid account identifier.
-	ErrCodeInvalidAccountException = "WAFInvalidAccountException"
+	ErrCodeInvalidAccountException = "InvalidAccountException"
 
 	// ErrCodeInvalidOperationException for service response error code
-	// "WAFInvalidOperationException".
+	// "InvalidOperationException".
 	//
 	// The operation failed because there was nothing to do. For example:
 	//
@@ -41,12 +41,15 @@ const (
 	//    * You tried to add a Rule to a WebACL, but the Rule already exists in
 	//    the specified WebACL.
 	//
+	//    * You tried to add an IP address to an IPSet, but the IP address already
+	//    exists in the specified IPSet.
+	//
 	//    * You tried to add a ByteMatchTuple to a ByteMatchSet, but the ByteMatchTuple
 	//    already exists in the specified WebACL.
-	ErrCodeInvalidOperationException = "WAFInvalidOperationException"
+	ErrCodeInvalidOperationException = "InvalidOperationException"
 
 	// ErrCodeInvalidParameterException for service response error code
-	// "WAFInvalidParameterException".
+	// "InvalidParameterException".
 	//
 	// The operation failed because AWS WAF didn't recognize a parameter in the
 	// request. For example:
@@ -68,59 +71,26 @@ const (
 	//    BLOCK, or COUNT.
 	//
 	//    * You tried to update a ByteMatchSet with a FieldToMatchType other than
-	//    HEADER, METHOD, QUERY_STRING, URI, or BODY.
+	//    HEADER, QUERY_STRING, or URI.
 	//
 	//    * You tried to update a ByteMatchSet with a Field of HEADER but no value
 	//    for Data.
 	//
 	//    * Your request references an ARN that is malformed, or corresponds to
 	//    a resource with which a web ACL cannot be associated.
-	ErrCodeInvalidParameterException = "WAFInvalidParameterException"
-
-	// ErrCodeInvalidPermissionPolicyException for service response error code
-	// "WAFInvalidPermissionPolicyException".
-	//
-	// The operation failed because the specified policy is not in the proper format.
-	//
-	// The policy is subject to the following restrictions:
-	//
-	//    * You can attach only one policy with each PutPermissionPolicy request.
-	//
-	//    * The policy must include an Effect, Action and Principal.
-	//
-	//    * Effect must specify Allow.
-	//
-	//    * The Action in the policy must be waf:UpdateWebACL, waf-regional:UpdateWebACL,
-	//    waf:GetRuleGroup and waf-regional:GetRuleGroup . Any extra or wildcard
-	//    actions in the policy will be rejected.
-	//
-	//    * The policy cannot include a Resource parameter.
-	//
-	//    * The ARN in the request must be a valid WAF RuleGroup ARN and the RuleGroup
-	//    must exist in the same region.
-	//
-	//    * The user making the request must be the owner of the RuleGroup.
-	//
-	//    * Your policy must be composed using IAM Policy version 2012-10-17.
-	ErrCodeInvalidPermissionPolicyException = "WAFInvalidPermissionPolicyException"
-
-	// ErrCodeInvalidRegexPatternException for service response error code
-	// "WAFInvalidRegexPatternException".
-	//
-	// The regular expression (regex) you specified in RegexPatternString is invalid.
-	ErrCodeInvalidRegexPatternException = "WAFInvalidRegexPatternException"
+	ErrCodeInvalidParameterException = "InvalidParameterException"
 
 	// ErrCodeLimitsExceededException for service response error code
-	// "WAFLimitsExceededException".
+	// "LimitsExceededException".
 	//
 	// The operation exceeds a resource limit, for example, the maximum number of
 	// WebACL objects that you can create for an AWS account. For more information,
 	// see Limits (http://docs.aws.amazon.com/waf/latest/developerguide/limits.html)
 	// in the AWS WAF Developer Guide.
-	ErrCodeLimitsExceededException = "WAFLimitsExceededException"
+	ErrCodeLimitsExceededException = "LimitsExceededException"
 
 	// ErrCodeNonEmptyEntityException for service response error code
-	// "WAFNonEmptyEntityException".
+	// "NonEmptyEntityException".
 	//
 	// The operation failed because you tried to delete an object that isn't empty.
 	// For example:
@@ -134,10 +104,10 @@ const (
 	//    objects.
 	//
 	//    * You tried to delete an IPSet that references one or more IP addresses.
-	ErrCodeNonEmptyEntityException = "WAFNonEmptyEntityException"
+	ErrCodeNonEmptyEntityException = "NonEmptyEntityException"
 
 	// ErrCodeNonexistentContainerException for service response error code
-	// "WAFNonexistentContainerException".
+	// "NonexistentContainerException".
 	//
 	// The operation failed because you tried to add an object to or delete an object
 	// from another object that doesn't exist. For example:
@@ -153,16 +123,16 @@ const (
 	//
 	//    * You tried to add a ByteMatchTuple to or delete a ByteMatchTuple from
 	//    a ByteMatchSet that doesn't exist.
-	ErrCodeNonexistentContainerException = "WAFNonexistentContainerException"
+	ErrCodeNonexistentContainerException = "NonexistentContainerException"
 
 	// ErrCodeNonexistentItemException for service response error code
-	// "WAFNonexistentItemException".
+	// "NonexistentItemException".
 	//
 	// The operation failed because the referenced object doesn't exist.
-	ErrCodeNonexistentItemException = "WAFNonexistentItemException"
+	ErrCodeNonexistentItemException = "NonexistentItemException"
 
 	// ErrCodeReferencedItemException for service response error code
-	// "WAFReferencedItemException".
+	// "ReferencedItemException".
 	//
 	// The operation failed because you tried to delete an object that is still
 	// in use. For example:
@@ -170,18 +140,12 @@ const (
 	//    * You tried to delete a ByteMatchSet that is still referenced by a Rule.
 	//
 	//    * You tried to delete a Rule that is still referenced by a WebACL.
-	ErrCodeReferencedItemException = "WAFReferencedItemException"
+	ErrCodeReferencedItemException = "ReferencedItemException"
 
 	// ErrCodeStaleDataException for service response error code
-	// "WAFStaleDataException".
+	// "StaleDataException".
 	//
 	// The operation failed because you tried to create, update, or delete an object
 	// by using a change token that has already been used.
-	ErrCodeStaleDataException = "WAFStaleDataException"
-
-	// ErrCodeSubscriptionNotFoundException for service response error code
-	// "WAFSubscriptionNotFoundException".
-	//
-	// The specified subscription does not exist.
-	ErrCodeSubscriptionNotFoundException = "WAFSubscriptionNotFoundException"
+	ErrCodeStaleDataException = "StaleDataException"
 )

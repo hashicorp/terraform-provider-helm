@@ -21,9 +21,6 @@ const (
 
 	// ErrCodeDependencyThrottleException for service response error code
 	// "DependencyThrottle".
-	//
-	// A request made by Elastic Load Balancing to another service exceeds the maximum
-	// request rate permitted for your account.
 	ErrCodeDependencyThrottleException = "DependencyThrottle"
 
 	// ErrCodeDuplicateAccessPointNameException for service response error code
@@ -93,12 +90,6 @@ const (
 	//
 	// The specified load balancer attribute does not exist.
 	ErrCodeLoadBalancerAttributeNotFoundException = "LoadBalancerAttributeNotFound"
-
-	// ErrCodeOperationNotPermittedException for service response error code
-	// "OperationNotPermitted".
-	//
-	// This operation is not allowed.
-	ErrCodeOperationNotPermittedException = "OperationNotPermitted"
 
 	// ErrCodePolicyNotFoundException for service response error code
 	// "PolicyNotFound".

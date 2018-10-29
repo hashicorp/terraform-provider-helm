@@ -34,9 +34,8 @@ func (r *Event) UnmarshalJSON(b []byte) error {
 	type tmp Event
 	var s struct {
 		tmp
-		Time string `json:"event_time"`
+		Time gophercloud.JSONRFC3339NoZ `json:"event_time"`
 	}
-
 	err := json.Unmarshal(b, &s)
 	if err != nil {
 		return err
@@ -44,16 +43,7 @@ func (r *Event) UnmarshalJSON(b []byte) error {
 
 	*r = Event(s.tmp)
 
-	if s.Time != "" {
-		t, err := time.Parse(time.RFC3339, s.Time)
-		if err != nil {
-			t, err = time.Parse(gophercloud.RFC3339NoZ, s.Time)
-			if err != nil {
-				return err
-			}
-		}
-		r.Time = t
-	}
+	r.Time = time.Time(s.Time)
 
 	return nil
 }

@@ -20,12 +20,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"net"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"google.golang.org/grpc"
@@ -34,8 +33,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
-	"google.golang.org/grpc/internal/syscall"
-	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/testdata"
 )
 
@@ -59,15 +56,15 @@ func printServerConfig(config *testpb.ServerConfig) {
 	//     will always start sync server
 	// - async server threads
 	// - core list
-	grpclog.Infof(" * server type: %v (ignored, always starts sync server)", config.ServerType)
-	grpclog.Infof(" * async server threads: %v (ignored)", config.AsyncServerThreads)
+	grpclog.Printf(" * server type: %v (ignored, always starts sync server)", config.ServerType)
+	grpclog.Printf(" * async server threads: %v (ignored)", config.AsyncServerThreads)
 	// TODO: use cores specified by CoreList when setting list of cores is supported in go.
-	grpclog.Infof(" * core list: %v (ignored)", config.CoreList)
+	grpclog.Printf(" * core list: %v (ignored)", config.CoreList)
 
-	grpclog.Infof(" - security params: %v", config.SecurityParams)
-	grpclog.Infof(" - core limit: %v", config.CoreLimit)
-	grpclog.Infof(" - port: %v", config.Port)
-	grpclog.Infof(" - payload config: %v", config.PayloadConfig)
+	grpclog.Printf(" - security params: %v", config.SecurityParams)
+	grpclog.Printf(" - core limit: %v", config.CoreLimit)
+	grpclog.Printf(" - port: %v", config.Port)
+	grpclog.Printf(" - payload config: %v", config.PayloadConfig)
 }
 
 func startBenchmarkServer(config *testpb.ServerConfig, serverPort int) (*benchmarkServer, error) {
@@ -89,7 +86,7 @@ func startBenchmarkServer(config *testpb.ServerConfig, serverPort int) (*benchma
 	case testpb.ServerType_ASYNC_SERVER:
 	case testpb.ServerType_ASYNC_GENERIC_SERVER:
 	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unknown server type: %v", config.ServerType)
+		return nil, grpc.Errorf(codes.InvalidArgument, "unknow server type: %v", config.ServerType)
 	}
 
 	// Set security options.
@@ -112,54 +109,56 @@ func startBenchmarkServer(config *testpb.ServerConfig, serverPort int) (*benchma
 	if port == 0 {
 		port = serverPort
 	}
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		grpclog.Fatalf("Failed to listen: %v", err)
-	}
-	addr := lis.Addr().String()
 
 	// Create different benchmark server according to config.
-	var closeFunc func()
+	var (
+		addr      string
+		closeFunc func()
+		err       error
+	)
 	if config.PayloadConfig != nil {
 		switch payload := config.PayloadConfig.Payload.(type) {
 		case *testpb.PayloadConfig_BytebufParams:
 			opts = append(opts, grpc.CustomCodec(byteBufCodec{}))
-			closeFunc = benchmark.StartServer(benchmark.ServerInfo{
+			addr, closeFunc = benchmark.StartServer(benchmark.ServerInfo{
+				Addr:     ":" + strconv.Itoa(port),
 				Type:     "bytebuf",
 				Metadata: payload.BytebufParams.RespSize,
-				Listener: lis,
 			}, opts...)
 		case *testpb.PayloadConfig_SimpleParams:
-			closeFunc = benchmark.StartServer(benchmark.ServerInfo{
-				Type:     "protobuf",
-				Listener: lis,
+			addr, closeFunc = benchmark.StartServer(benchmark.ServerInfo{
+				Addr: ":" + strconv.Itoa(port),
+				Type: "protobuf",
 			}, opts...)
 		case *testpb.PayloadConfig_ComplexParams:
-			return nil, status.Errorf(codes.Unimplemented, "unsupported payload config: %v", config.PayloadConfig)
+			return nil, grpc.Errorf(codes.Unimplemented, "unsupported payload config: %v", config.PayloadConfig)
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "unknown payload config: %v", config.PayloadConfig)
+			return nil, grpc.Errorf(codes.InvalidArgument, "unknow payload config: %v", config.PayloadConfig)
 		}
 	} else {
 		// Start protobuf server if payload config is nil.
-		closeFunc = benchmark.StartServer(benchmark.ServerInfo{
-			Type:     "protobuf",
-			Listener: lis,
+		addr, closeFunc = benchmark.StartServer(benchmark.ServerInfo{
+			Addr: ":" + strconv.Itoa(port),
+			Type: "protobuf",
 		}, opts...)
 	}
 
-	grpclog.Infof("benchmark server listening at %v", addr)
+	grpclog.Printf("benchmark server listening at %v", addr)
 	addrSplitted := strings.Split(addr, ":")
 	p, err := strconv.Atoi(addrSplitted[len(addrSplitted)-1])
 	if err != nil {
 		grpclog.Fatalf("failed to get port number from server address: %v", err)
 	}
 
+	rusage := new(syscall.Rusage)
+	syscall.Getrusage(syscall.RUSAGE_SELF, rusage)
+
 	return &benchmarkServer{
 		port:            p,
 		cores:           numOfCores,
 		closeFunc:       closeFunc,
 		lastResetTime:   time.Now(),
-		rusageLastReset: syscall.GetRusage(),
+		rusageLastReset: rusage,
 	}, nil
 }
 
@@ -169,8 +168,9 @@ func (bs *benchmarkServer) getStats(reset bool) *testpb.ServerStats {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
 	wallTimeElapsed := time.Since(bs.lastResetTime).Seconds()
-	rusageLatest := syscall.GetRusage()
-	uTimeElapsed, sTimeElapsed := syscall.CPUTimeDiff(bs.rusageLastReset, rusageLatest)
+	rusageLatest := new(syscall.Rusage)
+	syscall.Getrusage(syscall.RUSAGE_SELF, rusageLatest)
+	uTimeElapsed, sTimeElapsed := cpuTimeDiff(bs.rusageLastReset, rusageLatest)
 
 	if reset {
 		bs.lastResetTime = time.Now()

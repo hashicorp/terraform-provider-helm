@@ -14,7 +14,7 @@ const opCreateReplicationJob = "CreateReplicationJob"
 
 // CreateReplicationJobRequest generates a "aws/request.Request" representing the
 // client's request for the CreateReplicationJob operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -35,7 +35,7 @@ const opCreateReplicationJob = "CreateReplicationJob"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/CreateReplicationJob
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/CreateReplicationJob
 func (c *SMS) CreateReplicationJobRequest(input *CreateReplicationJobInput) (req *request.Request, output *CreateReplicationJobOutput) {
 	op := &request.Operation{
 		Name:       opCreateReplicationJob,
@@ -96,7 +96,7 @@ func (c *SMS) CreateReplicationJobRequest(input *CreateReplicationJobInput) (req
 //   * ErrCodeInternalError "InternalError"
 //   An internal error has occured.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/CreateReplicationJob
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/CreateReplicationJob
 func (c *SMS) CreateReplicationJob(input *CreateReplicationJobInput) (*CreateReplicationJobOutput, error) {
 	req, out := c.CreateReplicationJobRequest(input)
 	return out, req.Send()
@@ -122,7 +122,7 @@ const opDeleteReplicationJob = "DeleteReplicationJob"
 
 // DeleteReplicationJobRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteReplicationJob operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -143,7 +143,7 @@ const opDeleteReplicationJob = "DeleteReplicationJob"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteReplicationJob
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteReplicationJob
 func (c *SMS) DeleteReplicationJobRequest(input *DeleteReplicationJobInput) (req *request.Request, output *DeleteReplicationJobOutput) {
 	op := &request.Operation{
 		Name:       opDeleteReplicationJob,
@@ -194,7 +194,7 @@ func (c *SMS) DeleteReplicationJobRequest(input *DeleteReplicationJobInput) (req
 //   * ErrCodeReplicationJobNotFoundException "ReplicationJobNotFoundException"
 //   The specified Replication Job cannot be found.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteReplicationJob
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteReplicationJob
 func (c *SMS) DeleteReplicationJob(input *DeleteReplicationJobInput) (*DeleteReplicationJobOutput, error) {
 	req, out := c.DeleteReplicationJobRequest(input)
 	return out, req.Send()
@@ -220,7 +220,7 @@ const opDeleteServerCatalog = "DeleteServerCatalog"
 
 // DeleteServerCatalogRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteServerCatalog operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -241,7 +241,7 @@ const opDeleteServerCatalog = "DeleteServerCatalog"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteServerCatalog
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteServerCatalog
 func (c *SMS) DeleteServerCatalogRequest(input *DeleteServerCatalogInput) (req *request.Request, output *DeleteServerCatalogOutput) {
 	op := &request.Operation{
 		Name:       opDeleteServerCatalog,
@@ -288,7 +288,7 @@ func (c *SMS) DeleteServerCatalogRequest(input *DeleteServerCatalogInput) (req *
 //   The request is missing a required parameter. Ensure that you have supplied
 //   all the required parameters for the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteServerCatalog
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteServerCatalog
 func (c *SMS) DeleteServerCatalog(input *DeleteServerCatalogInput) (*DeleteServerCatalogOutput, error) {
 	req, out := c.DeleteServerCatalogRequest(input)
 	return out, req.Send()
@@ -314,7 +314,7 @@ const opDisassociateConnector = "DisassociateConnector"
 
 // DisassociateConnectorRequest generates a "aws/request.Request" representing the
 // client's request for the DisassociateConnector operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -335,7 +335,7 @@ const opDisassociateConnector = "DisassociateConnector"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DisassociateConnector
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DisassociateConnector
 func (c *SMS) DisassociateConnectorRequest(input *DisassociateConnectorInput) (req *request.Request, output *DisassociateConnectorOutput) {
 	op := &request.Operation{
 		Name:       opDisassociateConnector,
@@ -381,7 +381,7 @@ func (c *SMS) DisassociateConnectorRequest(input *DisassociateConnectorInput) (r
 //   A parameter specified in the request is not valid, is unsupported, or cannot
 //   be used.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DisassociateConnector
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DisassociateConnector
 func (c *SMS) DisassociateConnector(input *DisassociateConnectorInput) (*DisassociateConnectorOutput, error) {
 	req, out := c.DisassociateConnectorRequest(input)
 	return out, req.Send()
@@ -407,7 +407,7 @@ const opGetConnectors = "GetConnectors"
 
 // GetConnectorsRequest generates a "aws/request.Request" representing the
 // client's request for the GetConnectors operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -428,7 +428,7 @@ const opGetConnectors = "GetConnectors"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetConnectors
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetConnectors
 func (c *SMS) GetConnectorsRequest(input *GetConnectorsInput) (req *request.Request, output *GetConnectorsOutput) {
 	op := &request.Operation{
 		Name:       opGetConnectors,
@@ -467,7 +467,7 @@ func (c *SMS) GetConnectorsRequest(input *GetConnectorsInput) (req *request.Requ
 //   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
 //   This user does not have permissions to perform this operation.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetConnectors
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetConnectors
 func (c *SMS) GetConnectors(input *GetConnectorsInput) (*GetConnectorsOutput, error) {
 	req, out := c.GetConnectorsRequest(input)
 	return out, req.Send()
@@ -543,7 +543,7 @@ const opGetReplicationJobs = "GetReplicationJobs"
 
 // GetReplicationJobsRequest generates a "aws/request.Request" representing the
 // client's request for the GetReplicationJobs operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -564,7 +564,7 @@ const opGetReplicationJobs = "GetReplicationJobs"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationJobs
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationJobs
 func (c *SMS) GetReplicationJobsRequest(input *GetReplicationJobsInput) (req *request.Request, output *GetReplicationJobsOutput) {
 	op := &request.Operation{
 		Name:       opGetReplicationJobs,
@@ -612,7 +612,7 @@ func (c *SMS) GetReplicationJobsRequest(input *GetReplicationJobsInput) (req *re
 //   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
 //   This user does not have permissions to perform this operation.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationJobs
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationJobs
 func (c *SMS) GetReplicationJobs(input *GetReplicationJobsInput) (*GetReplicationJobsOutput, error) {
 	req, out := c.GetReplicationJobsRequest(input)
 	return out, req.Send()
@@ -688,7 +688,7 @@ const opGetReplicationRuns = "GetReplicationRuns"
 
 // GetReplicationRunsRequest generates a "aws/request.Request" representing the
 // client's request for the GetReplicationRuns operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -709,7 +709,7 @@ const opGetReplicationRuns = "GetReplicationRuns"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationRuns
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationRuns
 func (c *SMS) GetReplicationRunsRequest(input *GetReplicationRunsInput) (req *request.Request, output *GetReplicationRunsOutput) {
 	op := &request.Operation{
 		Name:       opGetReplicationRuns,
@@ -757,7 +757,7 @@ func (c *SMS) GetReplicationRunsRequest(input *GetReplicationRunsInput) (req *re
 //   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
 //   This user does not have permissions to perform this operation.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationRuns
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationRuns
 func (c *SMS) GetReplicationRuns(input *GetReplicationRunsInput) (*GetReplicationRunsOutput, error) {
 	req, out := c.GetReplicationRunsRequest(input)
 	return out, req.Send()
@@ -833,7 +833,7 @@ const opGetServers = "GetServers"
 
 // GetServersRequest generates a "aws/request.Request" representing the
 // client's request for the GetServers operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -854,7 +854,7 @@ const opGetServers = "GetServers"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetServers
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetServers
 func (c *SMS) GetServersRequest(input *GetServersInput) (req *request.Request, output *GetServersOutput) {
 	op := &request.Operation{
 		Name:       opGetServers,
@@ -893,7 +893,7 @@ func (c *SMS) GetServersRequest(input *GetServersInput) (req *request.Request, o
 //   * ErrCodeUnauthorizedOperationException "UnauthorizedOperationException"
 //   This user does not have permissions to perform this operation.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetServers
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetServers
 func (c *SMS) GetServers(input *GetServersInput) (*GetServersOutput, error) {
 	req, out := c.GetServersRequest(input)
 	return out, req.Send()
@@ -969,7 +969,7 @@ const opImportServerCatalog = "ImportServerCatalog"
 
 // ImportServerCatalogRequest generates a "aws/request.Request" representing the
 // client's request for the ImportServerCatalog operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -990,7 +990,7 @@ const opImportServerCatalog = "ImportServerCatalog"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/ImportServerCatalog
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/ImportServerCatalog
 func (c *SMS) ImportServerCatalogRequest(input *ImportServerCatalogInput) (req *request.Request, output *ImportServerCatalogOutput) {
 	op := &request.Operation{
 		Name:       opImportServerCatalog,
@@ -1042,7 +1042,7 @@ func (c *SMS) ImportServerCatalogRequest(input *ImportServerCatalogInput) (req *
 //   No connectors are available to handle this request. Please associate connector(s)
 //   and verify any existing connectors are healthy and can respond to requests.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/ImportServerCatalog
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/ImportServerCatalog
 func (c *SMS) ImportServerCatalog(input *ImportServerCatalogInput) (*ImportServerCatalogOutput, error) {
 	req, out := c.ImportServerCatalogRequest(input)
 	return out, req.Send()
@@ -1068,7 +1068,7 @@ const opStartOnDemandReplicationRun = "StartOnDemandReplicationRun"
 
 // StartOnDemandReplicationRunRequest generates a "aws/request.Request" representing the
 // client's request for the StartOnDemandReplicationRun operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1089,7 +1089,7 @@ const opStartOnDemandReplicationRun = "StartOnDemandReplicationRun"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/StartOnDemandReplicationRun
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/StartOnDemandReplicationRun
 func (c *SMS) StartOnDemandReplicationRunRequest(input *StartOnDemandReplicationRunInput) (req *request.Request, output *StartOnDemandReplicationRunOutput) {
 	op := &request.Operation{
 		Name:       opStartOnDemandReplicationRun,
@@ -1141,7 +1141,7 @@ func (c *SMS) StartOnDemandReplicationRunRequest(input *StartOnDemandReplication
 //   * ErrCodeReplicationRunLimitExceededException "ReplicationRunLimitExceededException"
 //   This user has exceeded the maximum allowed Replication Run limit.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/StartOnDemandReplicationRun
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/StartOnDemandReplicationRun
 func (c *SMS) StartOnDemandReplicationRun(input *StartOnDemandReplicationRunInput) (*StartOnDemandReplicationRunOutput, error) {
 	req, out := c.StartOnDemandReplicationRunRequest(input)
 	return out, req.Send()
@@ -1167,7 +1167,7 @@ const opUpdateReplicationJob = "UpdateReplicationJob"
 
 // UpdateReplicationJobRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateReplicationJob operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1188,7 +1188,7 @@ const opUpdateReplicationJob = "UpdateReplicationJob"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/UpdateReplicationJob
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/UpdateReplicationJob
 func (c *SMS) UpdateReplicationJobRequest(input *UpdateReplicationJobInput) (req *request.Request, output *UpdateReplicationJobOutput) {
 	op := &request.Operation{
 		Name:       opUpdateReplicationJob,
@@ -1244,7 +1244,7 @@ func (c *SMS) UpdateReplicationJobRequest(input *UpdateReplicationJobInput) (req
 //   * ErrCodeInternalError "InternalError"
 //   An internal error has occured.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/UpdateReplicationJob
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/UpdateReplicationJob
 func (c *SMS) UpdateReplicationJob(input *UpdateReplicationJobInput) (*UpdateReplicationJobOutput, error) {
 	req, out := c.UpdateReplicationJobRequest(input)
 	return out, req.Send()
@@ -1267,11 +1267,12 @@ func (c *SMS) UpdateReplicationJobWithContext(ctx aws.Context, input *UpdateRepl
 }
 
 // Object representing a Connector
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/Connector
 type Connector struct {
 	_ struct{} `type:"structure"`
 
 	// Timestamp of an operation
-	AssociatedOn *time.Time `locationName:"associatedOn" type:"timestamp"`
+	AssociatedOn *time.Time `locationName:"associatedOn" type:"timestamp" timestampFormat:"unix"`
 
 	// List of Connector Capabilities
 	CapabilityList []*string `locationName:"capabilityList" locationNameList:"item" type:"list"`
@@ -1285,7 +1286,7 @@ type Connector struct {
 	// Hardware (MAC) address
 	MacAddress *string `locationName:"macAddress" type:"string"`
 
-	// Status of on-premises Connector
+	// Status of on-premise Connector
 	Status *string `locationName:"status" type:"string" enum:"ConnectorStatus"`
 
 	// Connector version string
@@ -1371,6 +1372,7 @@ func (s *Connector) SetVmManagerType(v string) *Connector {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/CreateReplicationJobRequest
 type CreateReplicationJobInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1393,7 +1395,7 @@ type CreateReplicationJobInput struct {
 	// Timestamp of an operation
 	//
 	// SeedReplicationTime is a required field
-	SeedReplicationTime *time.Time `locationName:"seedReplicationTime" type:"timestamp" required:"true"`
+	SeedReplicationTime *time.Time `locationName:"seedReplicationTime" type:"timestamp" timestampFormat:"unix" required:"true"`
 
 	// Unique Identifier for a server
 	//
@@ -1466,6 +1468,7 @@ func (s *CreateReplicationJobInput) SetServerId(v string) *CreateReplicationJobI
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/CreateReplicationJobResponse
 type CreateReplicationJobOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -1489,6 +1492,7 @@ func (s *CreateReplicationJobOutput) SetReplicationJobId(v string) *CreateReplic
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteReplicationJobRequest
 type DeleteReplicationJobInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1527,6 +1531,7 @@ func (s *DeleteReplicationJobInput) SetReplicationJobId(v string) *DeleteReplica
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteReplicationJobResponse
 type DeleteReplicationJobOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -1541,6 +1546,7 @@ func (s DeleteReplicationJobOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteServerCatalogRequest
 type DeleteServerCatalogInput struct {
 	_ struct{} `type:"structure"`
 }
@@ -1555,6 +1561,7 @@ func (s DeleteServerCatalogInput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DeleteServerCatalogResponse
 type DeleteServerCatalogOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -1569,6 +1576,7 @@ func (s DeleteServerCatalogOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DisassociateConnectorRequest
 type DisassociateConnectorInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1607,6 +1615,7 @@ func (s *DisassociateConnectorInput) SetConnectorId(v string) *DisassociateConne
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/DisassociateConnectorResponse
 type DisassociateConnectorOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -1621,6 +1630,7 @@ func (s DisassociateConnectorOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetConnectorsRequest
 type GetConnectorsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1654,6 +1664,7 @@ func (s *GetConnectorsInput) SetNextToken(v string) *GetConnectorsInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetConnectorsResponse
 type GetConnectorsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -1686,6 +1697,7 @@ func (s *GetConnectorsOutput) SetNextToken(v string) *GetConnectorsOutput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationJobsRequest
 type GetReplicationJobsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1728,6 +1740,7 @@ func (s *GetReplicationJobsInput) SetReplicationJobId(v string) *GetReplicationJ
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationJobsResponse
 type GetReplicationJobsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -1760,6 +1773,7 @@ func (s *GetReplicationJobsOutput) SetReplicationJobList(v []*ReplicationJob) *G
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationRunsRequest
 type GetReplicationRunsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1817,6 +1831,7 @@ func (s *GetReplicationRunsInput) SetReplicationJobId(v string) *GetReplicationR
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetReplicationRunsResponse
 type GetReplicationRunsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -1858,6 +1873,7 @@ func (s *GetReplicationRunsOutput) SetReplicationRunList(v []*ReplicationRun) *G
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetServersRequest
 type GetServersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1891,11 +1907,12 @@ func (s *GetServersInput) SetNextToken(v string) *GetServersInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/GetServersResponse
 type GetServersOutput struct {
 	_ struct{} `type:"structure"`
 
 	// Timestamp of an operation
-	LastModifiedOn *time.Time `locationName:"lastModifiedOn" type:"timestamp"`
+	LastModifiedOn *time.Time `locationName:"lastModifiedOn" type:"timestamp" timestampFormat:"unix"`
 
 	// Pagination token to pass as input to API call
 	NextToken *string `locationName:"nextToken" type:"string"`
@@ -1941,6 +1958,7 @@ func (s *GetServersOutput) SetServerList(v []*Server) *GetServersOutput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/ImportServerCatalogRequest
 type ImportServerCatalogInput struct {
 	_ struct{} `type:"structure"`
 }
@@ -1955,6 +1973,7 @@ func (s ImportServerCatalogInput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/ImportServerCatalogResponse
 type ImportServerCatalogOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -1970,6 +1989,7 @@ func (s ImportServerCatalogOutput) GoString() string {
 }
 
 // Object representing a Replication Job
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/ReplicationJob
 type ReplicationJob struct {
 	_ struct{} `type:"structure"`
 
@@ -1988,7 +2008,7 @@ type ReplicationJob struct {
 	LicenseType *string `locationName:"licenseType" type:"string" enum:"LicenseType"`
 
 	// Timestamp of an operation
-	NextReplicationRunStartTime *time.Time `locationName:"nextReplicationRunStartTime" type:"timestamp"`
+	NextReplicationRunStartTime *time.Time `locationName:"nextReplicationRunStartTime" type:"timestamp" timestampFormat:"unix"`
 
 	// The unique identifier for a Replication Job.
 	ReplicationJobId *string `locationName:"replicationJobId" type:"string"`
@@ -2000,7 +2020,7 @@ type ReplicationJob struct {
 	RoleName *string `locationName:"roleName" type:"string"`
 
 	// Timestamp of an operation
-	SeedReplicationTime *time.Time `locationName:"seedReplicationTime" type:"timestamp"`
+	SeedReplicationTime *time.Time `locationName:"seedReplicationTime" type:"timestamp" timestampFormat:"unix"`
 
 	// Unique Identifier for a server
 	ServerId *string `locationName:"serverId" type:"string"`
@@ -2113,6 +2133,7 @@ func (s *ReplicationJob) SetVmServer(v *VmServer) *ReplicationJob {
 }
 
 // Object representing a Replication Run
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/ReplicationRun
 type ReplicationRun struct {
 	_ struct{} `type:"structure"`
 
@@ -2120,7 +2141,7 @@ type ReplicationRun struct {
 	AmiId *string `locationName:"amiId" type:"string"`
 
 	// Timestamp of an operation
-	CompletedTime *time.Time `locationName:"completedTime" type:"timestamp"`
+	CompletedTime *time.Time `locationName:"completedTime" type:"timestamp" timestampFormat:"unix"`
 
 	// The description for a Replication Job/Run.
 	Description *string `locationName:"description" type:"string"`
@@ -2129,7 +2150,7 @@ type ReplicationRun struct {
 	ReplicationRunId *string `locationName:"replicationRunId" type:"string"`
 
 	// Timestamp of an operation
-	ScheduledStartTime *time.Time `locationName:"scheduledStartTime" type:"timestamp"`
+	ScheduledStartTime *time.Time `locationName:"scheduledStartTime" type:"timestamp" timestampFormat:"unix"`
 
 	// Current state of Replication Run
 	State *string `locationName:"state" type:"string" enum:"ReplicationRunState"`
@@ -2200,6 +2221,7 @@ func (s *ReplicationRun) SetType(v string) *ReplicationRun {
 }
 
 // Object representing a server
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/Server
 type Server struct {
 	_ struct{} `type:"structure"`
 
@@ -2259,6 +2281,7 @@ func (s *Server) SetVmServer(v *VmServer) *Server {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/StartOnDemandReplicationRunRequest
 type StartOnDemandReplicationRunInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2306,6 +2329,7 @@ func (s *StartOnDemandReplicationRunInput) SetReplicationJobId(v string) *StartO
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/StartOnDemandReplicationRunResponse
 type StartOnDemandReplicationRunOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2329,6 +2353,7 @@ func (s *StartOnDemandReplicationRunOutput) SetReplicationRunId(v string) *Start
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/UpdateReplicationJobRequest
 type UpdateReplicationJobInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2344,7 +2369,7 @@ type UpdateReplicationJobInput struct {
 	LicenseType *string `locationName:"licenseType" type:"string" enum:"LicenseType"`
 
 	// Timestamp of an operation
-	NextReplicationRunStartTime *time.Time `locationName:"nextReplicationRunStartTime" type:"timestamp"`
+	NextReplicationRunStartTime *time.Time `locationName:"nextReplicationRunStartTime" type:"timestamp" timestampFormat:"unix"`
 
 	// The unique identifier for a Replication Job.
 	//
@@ -2414,6 +2439,7 @@ func (s *UpdateReplicationJobInput) SetRoleName(v string) *UpdateReplicationJobI
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/UpdateReplicationJobResponse
 type UpdateReplicationJobOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -2429,6 +2455,7 @@ func (s UpdateReplicationJobOutput) GoString() string {
 }
 
 // Object representing a VM server
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/VmServer
 type VmServer struct {
 	_ struct{} `type:"structure"`
 
@@ -2489,6 +2516,7 @@ func (s *VmServer) SetVmServerAddress(v *VmServerAddress) *VmServer {
 }
 
 // Object representing a server's location
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/sms-2016-10-24/VmServerAddress
 type VmServerAddress struct {
 	_ struct{} `type:"structure"`
 
@@ -2527,7 +2555,7 @@ const (
 	ConnectorCapabilityVsphere = "VSPHERE"
 )
 
-// Status of on-premises Connector
+// Status of on-premise Connector
 const (
 	// ConnectorStatusHealthy is a ConnectorStatus enum value
 	ConnectorStatusHealthy = "HEALTHY"

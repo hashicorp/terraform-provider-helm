@@ -7,7 +7,6 @@
     "protocol":"json",
     "serviceAbbreviation":"Amazon MTurk",
     "serviceFullName":"Amazon Mechanical Turk",
-    "serviceId":"MTurk",
     "signatureVersion":"v4",
     "targetPrefix":"MTurkRequesterServiceV20170117",
     "uid":"mturk-requester-2017-01-17"
@@ -1011,14 +1010,6 @@
         "NumberOfAssignmentsCompleted":{"shape":"Integer"}
       }
     },
-    "HITAccessActions":{
-      "type":"string",
-      "enum":[
-        "Accept",
-        "PreviewAndAccept",
-        "DiscoverPreviewAndAccept"
-      ]
-    },
     "HITLayoutParameter":{
       "type":"structure",
       "required":[
@@ -1385,11 +1376,7 @@
         "Comparator":{"shape":"Comparator"},
         "IntegerValues":{"shape":"IntegerList"},
         "LocaleValues":{"shape":"LocaleList"},
-        "RequiredToPreview":{
-          "shape":"Boolean",
-          "deprecated":true
-        },
-        "ActionsGuarded":{"shape":"HITAccessActions"}
+        "RequiredToPreview":{"shape":"Boolean"}
       }
     },
     "QualificationRequirementList":{

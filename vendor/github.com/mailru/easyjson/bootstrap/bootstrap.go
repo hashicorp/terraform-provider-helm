@@ -22,11 +22,10 @@ type Generator struct {
 	PkgPath, PkgName string
 	Types            []string
 
-	NoStdMarshalers       bool
-	SnakeCase             bool
-	LowerCamelCase        bool
-	OmitEmpty             bool
-	DisallowUnknownFields bool
+	NoStdMarshalers bool
+	SnakeCase       bool
+	LowerCamelCase  bool
+	OmitEmpty       bool
 
 	OutName   string
 	BuildTags string
@@ -121,9 +120,6 @@ func (g *Generator) writeMain() (path string, err error) {
 	if g.NoStdMarshalers {
 		fmt.Fprintln(f, "  g.NoStdMarshalers()")
 	}
-	if g.DisallowUnknownFields {
-		fmt.Fprintln(f, "  g.DisallowUnknownFields()")
-	}
 
 	sort.Strings(g.Types)
 	for _, v := range g.Types {
@@ -169,10 +165,9 @@ func (g *Generator) Run() error {
 		defer os.Remove(f.Name()) // will not remove after rename
 	}
 
-	cmd := exec.Command("go", "run", "-tags", g.BuildTags, filepath.Base(path))
+	cmd := exec.Command("go", "run", "-tags", g.BuildTags, path)
 	cmd.Stdout = f
 	cmd.Stderr = os.Stderr
-	cmd.Dir = filepath.Dir(path)
 	if err = cmd.Run(); err != nil {
 		return err
 	}

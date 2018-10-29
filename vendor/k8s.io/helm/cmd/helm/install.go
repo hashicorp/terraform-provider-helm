@@ -37,8 +37,8 @@ import (
 	"k8s.io/helm/pkg/getter"
 	"k8s.io/helm/pkg/helm"
 	"k8s.io/helm/pkg/kube"
-	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/proto/hapi/release"
+	"k8s.io/helm/pkg/renderutil"
 	"k8s.io/helm/pkg/repo"
 	"k8s.io/helm/pkg/strvals"
 )
@@ -193,6 +193,7 @@ func newInstallCmd(c helm.Interface, out io.Writer) *cobra.Command {
 	}
 
 	f := cmd.Flags()
+	settings.AddFlagsTLS(f)
 	f.VarP(&inst.valueFiles, "values", "f", "specify values in a YAML file or a URL(can specify multiple)")
 	f.StringVarP(&inst.name, "name", "n", "", "release name. If unspecified, it will autogenerate one for you")
 	f.StringVar(&inst.namespace, "namespace", "", "namespace to install the release into. Defaults to the current kube config namespace.")
@@ -218,6 +219,9 @@ func newInstallCmd(c helm.Interface, out io.Writer) *cobra.Command {
 	f.BoolVar(&inst.devel, "devel", false, "use development versions, too. Equivalent to version '>0.0.0-0'. If --version is set, this is ignored.")
 	f.BoolVar(&inst.depUp, "dep-up", false, "run helm dependency update before installing the chart")
 	f.StringVar(&inst.description, "description", "", "specify a description for the release")
+
+	// set defaults from environment
+	settings.InitTLS(f)
 
 	return cmd
 }
@@ -254,7 +258,7 @@ func (i *installCmd) run() error {
 		// If checkDependencies returns an error, we have unfulfilled dependencies.
 		// As of Helm 2.4.0, this is treated as a stopping condition:
 		// https://github.com/kubernetes/helm/issues/2209
-		if err := checkDependencies(chartRequested, req); err != nil {
+		if err := renderutil.CheckDependencies(chartRequested, req); err != nil {
 			if i.depUp {
 				man := &downloader.Manager{
 					Out:        i.out,
@@ -513,29 +517,6 @@ func defaultNamespace() string {
 		return ns
 	}
 	return "default"
-}
-
-func checkDependencies(ch *chart.Chart, reqs *chartutil.Requirements) error {
-	missing := []string{}
-
-	deps := ch.GetDependencies()
-	for _, r := range reqs.Dependencies {
-		found := false
-		for _, d := range deps {
-			if d.Metadata.Name == r.Name {
-				found = true
-				break
-			}
-		}
-		if !found {
-			missing = append(missing, r.Name)
-		}
-	}
-
-	if len(missing) > 0 {
-		return fmt.Errorf("found in requirements.yaml, but missing in charts/ directory: %s", strings.Join(missing, ", "))
-	}
-	return nil
 }
 
 //readFile load a file from the local directory or a remote file with a url.

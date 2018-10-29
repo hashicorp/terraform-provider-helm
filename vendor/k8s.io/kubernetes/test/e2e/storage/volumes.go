@@ -51,13 +51,11 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	clientset "k8s.io/client-go/kubernetes"
 	kubeletapis "k8s.io/kubernetes/pkg/kubelet/apis"
 	"k8s.io/kubernetes/test/e2e/framework"
 	"k8s.io/kubernetes/test/e2e/storage/utils"
 	vspheretest "k8s.io/kubernetes/test/e2e/storage/vsphere"
-	imageutils "k8s.io/kubernetes/test/utils/image"
 )
 
 func DeleteCinderVolume(name string) error {
@@ -129,7 +127,7 @@ var _ = utils.SIGDescribe("Volumes", func() {
 	Describe("GlusterFS", func() {
 		It("should be mountable", func() {
 			//TODO (copejon) GFS is not supported on debian image.
-			framework.SkipUnlessNodeOSDistroIs("gci", "ubuntu")
+			framework.SkipUnlessNodeOSDistroIs("gci", "ubuntu", "custom")
 
 			// create gluster server and endpoints
 			config, _, _ := framework.NewGlusterfsServer(cs, namespace.Name)
@@ -200,34 +198,9 @@ var _ = utils.SIGDescribe("Volumes", func() {
 
 	Describe("Ceph RBD [Feature:Volumes]", func() {
 		It("should be mountable", func() {
-			config, _, serverIP := framework.NewRBDServer(cs, namespace.Name)
+			config, _, secret, serverIP := framework.NewRBDServer(cs, namespace.Name)
 			defer framework.VolumeTestCleanup(f, config)
-
-			// create secrets for the server
-			secret := v1.Secret{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: config.Prefix + "-secret",
-				},
-				Data: map[string][]byte{
-					// from test/images/volumes-tester/rbd/keyring
-					"key": []byte("AQDRrKNVbEevChAAEmRC+pW/KBVHxa0w/POILA=="),
-				},
-				Type: "kubernetes.io/rbd",
-			}
-
-			secClient := cs.CoreV1().Secrets(config.Namespace)
-
-			defer func() {
-				secClient.Delete(config.Prefix+"-secret", nil)
-			}()
-
-			if _, err := secClient.Create(&secret); err != nil {
-				framework.Failf("Failed to create secrets for Ceph RBD: %v", err)
-			}
+			defer cs.CoreV1().Secrets(config.Namespace).Delete(secret.Name, nil)
 
 			tests := []framework.VolumeTest{
 				{
@@ -238,7 +211,7 @@ var _ = utils.SIGDescribe("Volumes", func() {
 							RBDImage:     "foo",
 							RadosUser:    "admin",
 							SecretRef: &v1.LocalObjectReference{
-								Name: config.Prefix + "-secret",
+								Name: secret.Name,
 							},
 							FSType: "ext2",
 						},
@@ -258,45 +231,9 @@ var _ = utils.SIGDescribe("Volumes", func() {
 	////////////////////////////////////////////////////////////////////////
 	Describe("CephFS [Feature:Volumes]", func() {
 		It("should be mountable", func() {
-			config := framework.VolumeTestConfig{
-				Namespace:   namespace.Name,
-				Prefix:      "cephfs",
-				ServerImage: imageutils.GetE2EImage(imageutils.VolumeCephServer),
-				ServerPorts: []int{6789},
-			}
-
+			config, _, secret, serverIP := framework.NewRBDServer(cs, namespace.Name)
 			defer framework.VolumeTestCleanup(f, config)
-			_, serverIP := framework.CreateStorageServer(cs, config)
-			By("sleeping a bit to give ceph server time to initialize")
-			time.Sleep(framework.VolumeServerPodStartupSleep)
-
-			// create ceph secret
-			secret := &v1.Secret{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: config.Prefix + "-secret",
-				},
-				// Must use the ceph keyring at contrib/for-tests/volumes-ceph/ceph/init.sh
-				// and encode in base64
-				Data: map[string][]byte{
-					"key": []byte("AQAMgXhVwBCeDhAA9nlPaFyfUSatGD4drFWDvQ=="),
-				},
-				Type: "kubernetes.io/cephfs",
-			}
-
-			defer func() {
-				if err := cs.CoreV1().Secrets(namespace.Name).Delete(secret.Name, nil); err != nil {
-					framework.Failf("unable to delete secret %v: %v", secret.Name, err)
-				}
-			}()
-
-			var err error
-			if secret, err = cs.CoreV1().Secrets(namespace.Name).Create(secret); err != nil {
-				framework.Failf("unable to create test secret %s: %v", secret.Name, err)
-			}
+			defer cs.CoreV1().Secrets(config.Namespace).Delete(secret.Name, nil)
 
 			tests := []framework.VolumeTest{
 				{
@@ -304,7 +241,7 @@ var _ = utils.SIGDescribe("Volumes", func() {
 						CephFS: &v1.CephFSVolumeSource{
 							Monitors:  []string{serverIP + ":6789"},
 							User:      "kube",
-							SecretRef: &v1.LocalObjectReference{Name: config.Prefix + "-secret"},
+							SecretRef: &v1.LocalObjectReference{Name: secret.Name},
 							ReadOnly:  true,
 						},
 					},
@@ -384,7 +321,7 @@ var _ = utils.SIGDescribe("Volumes", func() {
 				},
 			}
 
-			framework.InjectHtml(cs, config, tests[0].Volume, tests[0].ExpectedContent)
+			framework.InjectHtml(f, cs, config, tests[0].Volume, tests[0].ExpectedContent)
 
 			fsGroup := int64(1234)
 			framework.TestVolumeClient(cs, config, &fsGroup, tests)
@@ -419,7 +356,7 @@ var _ = utils.SIGDescribe("Volumes", func() {
 		It("should be mountable with xfs", func() {
 			// xfs is not supported on gci
 			// and not installed by default on debian
-			framework.SkipUnlessNodeOSDistroIs("ubuntu")
+			framework.SkipUnlessNodeOSDistroIs("ubuntu", "custom")
 			testGCEPD(f, config, cs, "xfs")
 		})
 	})
@@ -537,7 +474,7 @@ var _ = utils.SIGDescribe("Volumes", func() {
 				},
 			}
 
-			framework.InjectHtml(cs, config, tests[0].Volume, tests[0].ExpectedContent)
+			framework.InjectHtml(f, cs, config, tests[0].Volume, tests[0].ExpectedContent)
 
 			fsGroup := int64(1234)
 			framework.TestVolumeClient(cs, config, &fsGroup, tests)
@@ -586,7 +523,7 @@ var _ = utils.SIGDescribe("Volumes", func() {
 				},
 			}
 
-			framework.InjectHtml(cs, config, tests[0].Volume, tests[0].ExpectedContent)
+			framework.InjectHtml(f, cs, config, tests[0].Volume, tests[0].ExpectedContent)
 
 			fsGroup := int64(1234)
 			framework.TestVolumeClient(cs, config, &fsGroup, tests)
@@ -599,11 +536,8 @@ func testGCEPD(f *framework.Framework, config framework.VolumeTestConfig, cs cli
 	volumeName, err := framework.CreatePDWithRetry()
 	Expect(err).NotTo(HaveOccurred())
 	defer func() {
-		// - Get NodeName from the pod spec to which the volume is mounted.
-		// - Force detach and delete.
-		pod, err := f.PodClient().Get(config.Prefix+"-client", metav1.GetOptions{})
-		Expect(err).NotTo(HaveOccurred(), "Failed getting pod %q.", config.Prefix+"-client")
-		detachAndDeletePDs(volumeName, []types.NodeName{types.NodeName(pod.Spec.NodeName)})
+		err := framework.DeletePDWithRetry(volumeName)
+		Expect(err).NotTo(HaveOccurred(), "Failed deleting PD.", volumeName)
 	}()
 
 	defer func() {
@@ -627,7 +561,7 @@ func testGCEPD(f *framework.Framework, config framework.VolumeTestConfig, cs cli
 		},
 	}
 
-	framework.InjectHtml(cs, config, tests[0].Volume, tests[0].ExpectedContent)
+	framework.InjectHtml(f, cs, config, tests[0].Volume, tests[0].ExpectedContent)
 
 	fsGroup := int64(1234)
 	framework.TestVolumeClient(cs, config, &fsGroup, tests)

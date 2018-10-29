@@ -14,7 +14,7 @@ const opGetEntitlements = "GetEntitlements"
 
 // GetEntitlementsRequest generates a "aws/request.Request" representing the
 // client's request for the GetEntitlements operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -35,7 +35,7 @@ const opGetEntitlements = "GetEntitlements"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/entitlement.marketplace-2017-01-11/GetEntitlements
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/entitlement.marketplace-2017-01-11/GetEntitlements
 func (c *MarketplaceEntitlementService) GetEntitlementsRequest(input *GetEntitlementsInput) (req *request.Request, output *GetEntitlementsOutput) {
 	op := &request.Operation{
 		Name:       opGetEntitlements,
@@ -75,7 +75,7 @@ func (c *MarketplaceEntitlementService) GetEntitlementsRequest(input *GetEntitle
 //   An internal error has occurred. Retry your request. If the problem persists,
 //   post a message with details on the AWS forums.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/entitlement.marketplace-2017-01-11/GetEntitlements
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/entitlement.marketplace-2017-01-11/GetEntitlements
 func (c *MarketplaceEntitlementService) GetEntitlements(input *GetEntitlementsInput) (*GetEntitlementsOutput, error) {
 	req, out := c.GetEntitlementsRequest(input)
 	return out, req.Send()
@@ -100,6 +100,7 @@ func (c *MarketplaceEntitlementService) GetEntitlementsWithContext(ctx aws.Conte
 // An entitlement represents capacity in a product owned by the customer. For
 // example, a customer might own some number of users or seats in an SaaS application
 // or some amount of data capacity in a multi-tenant database.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/entitlement.marketplace-2017-01-11/Entitlement
 type Entitlement struct {
 	_ struct{} `type:"structure"`
 
@@ -118,7 +119,7 @@ type Entitlement struct {
 	// the expiration date is the date at which the customer will renew or cancel
 	// their contract. Customers who are opting to renew their contract will still
 	// have entitlements with an expiration date.
-	ExpirationDate *time.Time `type:"timestamp"`
+	ExpirationDate *time.Time `type:"timestamp" timestampFormat:"unix"`
 
 	// The product code for which the given entitlement applies. Product codes are
 	// provided by AWS Marketplace when the product listing is created.
@@ -171,6 +172,7 @@ func (s *Entitlement) SetValue(v *EntitlementValue) *Entitlement {
 
 // The EntitlementValue represents the amount of capacity that the customer
 // is entitled to for the product.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/entitlement.marketplace-2017-01-11/EntitlementValue
 type EntitlementValue struct {
 	_ struct{} `type:"structure"`
 
@@ -226,6 +228,7 @@ func (s *EntitlementValue) SetStringValue(v string) *EntitlementValue {
 }
 
 // The GetEntitlementsRequest contains parameters for the GetEntitlements operation.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/entitlement.marketplace-2017-01-11/GetEntitlementsRequest
 type GetEntitlementsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -302,6 +305,7 @@ func (s *GetEntitlementsInput) SetProductCode(v string) *GetEntitlementsInput {
 }
 
 // The GetEntitlementsRequest contains results from the GetEntitlements operation.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/entitlement.marketplace-2017-01-11/GetEntitlementsResult
 type GetEntitlementsOutput struct {
 	_ struct{} `type:"structure"`
 

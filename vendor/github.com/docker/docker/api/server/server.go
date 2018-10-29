@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/errors"
 	"github.com/docker/docker/api/server/httputils"
 	"github.com/docker/docker/api/server/middleware"
 	"github.com/docker/docker/api/server/router"
+	"github.com/docker/docker/api/server/router/debug"
+	"github.com/docker/docker/dockerversion"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
@@ -91,13 +93,12 @@ func (s *Server) serveAPI() error {
 		}(srv)
 	}
 
-	for i := 0; i < len(s.servers); i++ {
+	for range s.servers {
 		err := <-chErrors
 		if err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -128,7 +129,7 @@ func (s *Server) makeHTTPHandler(handler httputils.APIFunc) http.HandlerFunc {
 		// apply to all requests. Data that is specific to the
 		// immediate function being called should still be passed
 		// as 'args' on the function call.
-		ctx := context.WithValue(context.Background(), httputils.UAStringKey, r.Header.Get("User-Agent"))
+		ctx := context.WithValue(context.Background(), dockerversion.UAStringKey, r.Header.Get("User-Agent"))
 		handlerFunc := s.handlerWithGlobalMiddlewares(handler)
 
 		vars := mux.Vars(r)
@@ -138,11 +139,9 @@ func (s *Server) makeHTTPHandler(handler httputils.APIFunc) http.HandlerFunc {
 
 		if err := handlerFunc(ctx, w, r, vars); err != nil {
 			statusCode := httputils.GetHTTPErrorStatusCode(err)
-			errFormat := "%v"
-			if statusCode == http.StatusInternalServerError {
-				errFormat = "%+v"
+			if statusCode >= 500 {
+				logrus.Errorf("Handler for %s %s returned error: %v", r.Method, r.URL.Path, err)
 			}
-			logrus.Errorf("Handler for %s %s returned error: "+errFormat, r.Method, r.URL.Path, err)
 			httputils.MakeErrorHandler(err)(w, r)
 		}
 	}
@@ -150,13 +149,10 @@ func (s *Server) makeHTTPHandler(handler httputils.APIFunc) http.HandlerFunc {
 
 // InitRouter initializes the list of routers for the server.
 // This method also enables the Go profiler if enableProfiler is true.
-func (s *Server) InitRouter(enableProfiler bool, routers ...router.Router) {
+func (s *Server) InitRouter(routers ...router.Router) {
 	s.routers = append(s.routers, routers...)
 
 	m := s.createMux()
-	if enableProfiler {
-		profilerSetup(m)
-	}
 	s.routerSwapper = &routerSwapper{
 		router: m,
 	}
@@ -177,6 +173,13 @@ func (s *Server) createMux() *mux.Router {
 		}
 	}
 
+	debugRouter := debug.NewRouter()
+	s.routers = append(s.routers, debugRouter)
+	for _, r := range debugRouter.Routes() {
+		f := s.makeHTTPHandler(r.Handler())
+		m.Path("/debug" + r.Path()).Handler(f)
+	}
+
 	err := errors.NewRequestNotFoundError(fmt.Errorf("page not found"))
 	notFoundHandler := httputils.MakeErrorHandler(err)
 	m.HandleFunc(versionMatcher+"/{path:.*}", notFoundHandler)
@@ -195,16 +198,4 @@ func (s *Server) Wait(waitChan chan error) {
 		return
 	}
 	waitChan <- nil
-}
-
-// DisableProfiler reloads the server mux without adding the profiler routes.
-func (s *Server) DisableProfiler() {
-	s.routerSwapper.Swap(s.createMux())
-}
-
-// EnableProfiler reloads the server mux adding the profiler routes.
-func (s *Server) EnableProfiler() {
-	m := s.createMux()
-	profilerSetup(m)
-	s.routerSwapper.Swap(m)
 }

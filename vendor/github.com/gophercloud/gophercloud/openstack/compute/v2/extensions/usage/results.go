@@ -117,67 +117,21 @@ func (u *ServerUsage) UnmarshalJSON(b []byte) error {
 // SingleTenantPage stores a single, only page of TenantUsage results from a
 // SingleTenant call.
 type SingleTenantPage struct {
-	pagination.LinkedPageBase
+	pagination.SinglePageBase
 }
 
 // IsEmpty determines whether or not a SingleTenantPage is empty.
-func (r SingleTenantPage) IsEmpty() (bool, error) {
-	ks, err := ExtractSingleTenant(r)
+func (page SingleTenantPage) IsEmpty() (bool, error) {
+	ks, err := ExtractSingleTenant(page)
 	return ks == nil, err
-}
-
-// NextPageURL uses the response's embedded link reference to navigate to the
-// next page of results.
-func (r SingleTenantPage) NextPageURL() (string, error) {
-	var s struct {
-		Links []gophercloud.Link `json:"tenant_usage_links"`
-	}
-	err := r.ExtractInto(&s)
-	if err != nil {
-		return "", err
-	}
-	return gophercloud.ExtractNextURL(s.Links)
 }
 
 // ExtractSingleTenant interprets a SingleTenantPage as a TenantUsage result.
 func ExtractSingleTenant(page pagination.Page) (*TenantUsage, error) {
 	var s struct {
-		TenantUsage *TenantUsage `json:"tenant_usage"`
+		TenantUsage      *TenantUsage       `json:"tenant_usage"`
+		TenantUsageLinks []gophercloud.Link `json:"tenant_usage_links"`
 	}
 	err := (page.(SingleTenantPage)).ExtractInto(&s)
 	return s.TenantUsage, err
-}
-
-// AllTenantsPage stores a single, only page of TenantUsage results from a
-// AllTenants call.
-type AllTenantsPage struct {
-	pagination.LinkedPageBase
-}
-
-// ExtractAllTenants interprets a AllTenantsPage as a TenantUsage result.
-func ExtractAllTenants(page pagination.Page) ([]TenantUsage, error) {
-	var s struct {
-		TenantUsages []TenantUsage `json:"tenant_usages"`
-	}
-	err := (page.(AllTenantsPage)).ExtractInto(&s)
-	return s.TenantUsages, err
-}
-
-// IsEmpty determines whether or not an AllTenantsPage is empty.
-func (r AllTenantsPage) IsEmpty() (bool, error) {
-	usages, err := ExtractAllTenants(r)
-	return len(usages) == 0, err
-}
-
-// NextPageURL uses the response's embedded link reference to navigate to the
-// next page of results.
-func (r AllTenantsPage) NextPageURL() (string, error) {
-	var s struct {
-		Links []gophercloud.Link `json:"tenant_usages_links"`
-	}
-	err := r.ExtractInto(&s)
-	if err != nil {
-		return "", err
-	}
-	return gophercloud.ExtractNextURL(s.Links)
 }

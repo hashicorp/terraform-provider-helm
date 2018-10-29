@@ -5,13 +5,13 @@ package cloudtrail
 const (
 
 	// ErrCodeARNInvalidException for service response error code
-	// "CloudTrailARNInvalidException".
+	// "ARNInvalidException".
 	//
 	// This exception is thrown when an operation is called with an invalid trail
 	// ARN. The format of a trail ARN is:
 	//
 	// arn:aws:cloudtrail:us-east-1:123456789012:trail/MyTrail
-	ErrCodeARNInvalidException = "CloudTrailARNInvalidException"
+	ErrCodeARNInvalidException = "ARNInvalidException"
 
 	// ErrCodeCloudWatchLogsDeliveryUnavailableException for service response error code
 	// "CloudWatchLogsDeliveryUnavailableException".

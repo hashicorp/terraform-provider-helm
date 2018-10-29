@@ -29,9 +29,8 @@ var initRequest func(*request.Request)
 
 // Service information constants
 const (
-	ServiceName = "pinpoint"  // Name of service.
-	EndpointsID = ServiceName // ID to lookup a service endpoint with.
-	ServiceID   = "Pinpoint"  // ServiceID is a unique identifer of a specific service.
+	ServiceName = "pinpoint"  // Service endpoint prefix API calls made to.
+	EndpointsID = ServiceName // Service ID for Regions and Endpoints metadata.
 )
 
 // New creates a new instance of the Pinpoint client with a session.
@@ -46,20 +45,19 @@ const (
 //     svc := pinpoint.New(mySession, aws.NewConfig().WithRegion("us-west-2"))
 func New(p client.ConfigProvider, cfgs ...*aws.Config) *Pinpoint {
 	c := p.ClientConfig(EndpointsID, cfgs...)
-	if c.SigningNameDerived || len(c.SigningName) == 0 {
-		c.SigningName = "mobiletargeting"
-	}
 	return newClient(*c.Config, c.Handlers, c.Endpoint, c.SigningRegion, c.SigningName)
 }
 
 // newClient creates, initializes and returns a new service client instance.
 func newClient(cfg aws.Config, handlers request.Handlers, endpoint, signingRegion, signingName string) *Pinpoint {
+	if len(signingName) == 0 {
+		signingName = "mobiletargeting"
+	}
 	svc := &Pinpoint{
 		Client: client.New(
 			cfg,
 			metadata.ClientInfo{
 				ServiceName:   ServiceName,
-				ServiceID:     ServiceID,
 				SigningName:   signingName,
 				SigningRegion: signingRegion,
 				Endpoint:      endpoint,

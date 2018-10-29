@@ -39,7 +39,6 @@ type Features struct {
 	ReqSizeBytes       int
 	RespSizeBytes      int
 	EnableCompressor   bool
-	EnableChannelz     bool
 }
 
 // String returns the textual output of the Features as string.
@@ -47,13 +46,6 @@ func (f Features) String() string {
 	return fmt.Sprintf("traceMode_%t-latency_%s-kbps_%#v-MTU_%#v-maxConcurrentCalls_"+
 		"%#v-reqSize_%#vB-respSize_%#vB-Compressor_%t", f.EnableTrace,
 		f.Latency.String(), f.Kbps, f.Mtu, f.MaxConcurrentCalls, f.ReqSizeBytes, f.RespSizeBytes, f.EnableCompressor)
-}
-
-// ConciseString returns the concise textual output of the Features as string, skipping
-// setting with default value.
-func (f Features) ConciseString() string {
-	noneEmptyPos := []bool{f.EnableTrace, f.Latency != 0, f.Kbps != 0, f.Mtu != 0, true, true, true, f.EnableCompressor, f.EnableChannelz}
-	return PartialPrintString(noneEmptyPos, f, false)
 }
 
 // PartialPrintString can print certain features with different format.
@@ -71,7 +63,7 @@ func PartialPrintString(noneEmptyPos []bool, f Features, shared bool) string {
 		linker = "_"
 	}
 	if noneEmptyPos[0] {
-		s += fmt.Sprintf("%sTrace%s%t%s", prefix, linker, f.EnableTrace, suffix)
+		s += fmt.Sprintf("%sTrace%s%t%s", prefix, linker, f.EnableCompressor, suffix)
 	}
 	if shared && f.NetworkMode != "" {
 		s += fmt.Sprintf("Network: %s \n", f.NetworkMode)
@@ -99,9 +91,6 @@ func PartialPrintString(noneEmptyPos []bool, f Features, shared bool) string {
 	}
 	if noneEmptyPos[7] {
 		s += fmt.Sprintf("%sCompressor%s%t%s", prefix, linker, f.EnableCompressor, suffix)
-	}
-	if noneEmptyPos[8] {
-		s += fmt.Sprintf("%sChannelz%s%t%s", prefix, linker, f.EnableChannelz, suffix)
 	}
 	return s
 }
@@ -266,7 +255,7 @@ func (stats *Stats) maybeUpdate() {
 	stats.dirty = false
 
 	if stats.durations.Len() != 0 {
-		var percentToObserve = []int{50, 90, 99}
+		var percentToObserve = []int{50, 90}
 		// First data record min unit from the latency result.
 		stats.result.Latency = append(stats.result.Latency, percentLatency{Percent: -1, Value: stats.unit})
 		for _, position := range percentToObserve {

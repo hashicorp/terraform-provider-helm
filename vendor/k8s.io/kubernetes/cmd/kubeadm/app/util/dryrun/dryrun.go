@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,6 +42,13 @@ func NewFileToPrint(realPath, printPath string) FileToPrint {
 		RealPath:  realPath,
 		PrintPath: printPath,
 	}
+}
+
+// PrintDryRunFile is a helper method around PrintDryRunFiles
+func PrintDryRunFile(fileName, realDir, printDir string, w io.Writer) error {
+	return PrintDryRunFiles([]FileToPrint{
+		NewFileToPrint(filepath.Join(realDir, fileName), filepath.Join(printDir, fileName)),
+	}, w)
 }
 
 // PrintDryRunFiles prints the contents of the FileToPrints given to it to the writer w
@@ -81,7 +89,7 @@ func NewWaiter() apiclient.Waiter {
 
 // WaitForAPI just returns a dummy nil, to indicate that the program should just proceed
 func (w *Waiter) WaitForAPI() error {
-	fmt.Println("[dryrun] Would wait for the API Server's /healthz endpoint to return 'ok'")
+	fmt.Println("[dryrun] Would wait for the API Server's /healthz endpoint to return 'ok'")
 	return nil
 }
 
@@ -99,7 +107,7 @@ func (w *Waiter) WaitForPodToDisappear(podName string) error {
 
 // WaitForHealthyKubelet blocks until the kubelet /healthz endpoint returns 'ok'
 func (w *Waiter) WaitForHealthyKubelet(_ time.Duration, healthzEndpoint string) error {
-	fmt.Printf("[dryrun] Would make sure the kubelet %q endpoint is healthy\n", healthzEndpoint)
+	fmt.Printf("[dryrun] Would make sure the kubelet %q endpoint is healthy\n", healthzEndpoint)
 	return nil
 }
 

@@ -5,11 +5,11 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"syscall"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/libcontainerd"
 	"github.com/docker/docker/pkg/system"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/sys/windows"
 )
 
 var defaultDaemonConfigFile = ""
@@ -29,14 +29,20 @@ func getDaemonConfDir(root string) string {
 	return filepath.Join(root, `\config`)
 }
 
-// notifySystem sends a message to the host when the server is ready to be used
-func notifySystem() {
+// preNotifySystem sends a message to the host when the API is active, but before the daemon is
+func preNotifySystem() {
+	// start the service now to prevent timeouts waiting for daemon to start
+	// but still (eventually) complete all requests that are sent after this
 	if service != nil {
 		err := service.started()
 		if err != nil {
 			logrus.Fatal(err)
 		}
 	}
+}
+
+// notifySystem sends a message to the host when the server is ready to be used
+func notifySystem() {
 }
 
 // notifyShutdown is called after the daemon shuts down but before the process exits.
@@ -52,14 +58,14 @@ func notifyShutdown(err error) {
 // setupConfigReloadTrap configures a Win32 event to reload the configuration.
 func (cli *DaemonCli) setupConfigReloadTrap() {
 	go func() {
-		sa := syscall.SecurityAttributes{
+		sa := windows.SecurityAttributes{
 			Length: 0,
 		}
 		ev := "Global\\docker-daemon-config-" + fmt.Sprint(os.Getpid())
 		if h, _ := system.CreateEvent(&sa, false, false, ev); h != 0 {
 			logrus.Debugf("Config reload - waiting signal at %s", ev)
 			for {
-				syscall.WaitForSingleObject(h, syscall.INFINITE)
+				windows.WaitForSingleObject(h, windows.INFINITE)
 				cli.reloadConfig()
 			}
 		}

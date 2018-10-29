@@ -7,7 +7,6 @@
     "protocol":"json",
     "serviceAbbreviation":"KMS",
     "serviceFullName":"AWS Key Management Service",
-    "serviceId":"KMS",
     "signatureVersion":"v4",
     "targetPrefix":"TrentService",
     "uid":"kms-2014-11-01"
@@ -491,7 +490,6 @@
       },
       "input":{"shape":"RetireGrantRequest"},
       "errors":[
-        {"shape":"InvalidArnException"},
         {"shape":"InvalidGrantTokenException"},
         {"shape":"InvalidGrantIdException"},
         {"shape":"NotFoundException"},
@@ -667,8 +665,7 @@
       "type":"structure",
       "required":[
         "KeyId",
-        "GranteePrincipal",
-        "Operations"
+        "GranteePrincipal"
       ],
       "members":{
         "KeyId":{"shape":"KeyIdType"},
@@ -1187,7 +1184,6 @@
     "ListAliasesRequest":{
       "type":"structure",
       "members":{
-        "KeyId":{"shape":"KeyIdType"},
         "Limit":{"shape":"LimitType"},
         "Marker":{"shape":"MarkerType"}
       }
@@ -1284,7 +1280,7 @@
     },
     "MarkerType":{
       "type":"string",
-      "max":1024,
+      "max":320,
       "min":1,
       "pattern":"[\\u0020-\\u00FF]*"
     },

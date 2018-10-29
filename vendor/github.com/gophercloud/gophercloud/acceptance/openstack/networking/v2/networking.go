@@ -281,30 +281,6 @@ func CreateSubnetWithSubnetPool(t *testing.T, client *gophercloud.ServiceClient,
 	return subnet, nil
 }
 
-// CreateSubnetWithSubnetPoolNoCIDR will create a subnet associated with the
-// provided subnetpool on the specified Network ID.
-// An error will be returned if the subnet or the subnetpool could not be created.
-func CreateSubnetWithSubnetPoolNoCIDR(t *testing.T, client *gophercloud.ServiceClient, networkID string, subnetPoolID string) (*subnets.Subnet, error) {
-	subnetName := tools.RandomString("TESTACC-", 8)
-	createOpts := subnets.CreateOpts{
-		NetworkID:    networkID,
-		IPVersion:    4,
-		Name:         subnetName,
-		EnableDHCP:   gophercloud.Disabled,
-		SubnetPoolID: subnetPoolID,
-	}
-
-	t.Logf("Attempting to create subnet: %s", subnetName)
-
-	subnet, err := subnets.Create(client, createOpts).Extract()
-	if err != nil {
-		return subnet, err
-	}
-
-	t.Logf("Successfully created subnet.")
-	return subnet, nil
-}
-
 // DeleteNetwork will delete a network with a specified ID. A fatal error will
 // occur if the delete was not successful. This works best when used as a
 // deferred function.

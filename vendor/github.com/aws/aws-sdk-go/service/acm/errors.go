@@ -19,7 +19,10 @@ const (
 	// ErrCodeInvalidStateException for service response error code
 	// "InvalidStateException".
 	//
-	// Processing has reached an invalid state.
+	// Processing has reached an invalid state. For example, this exception can
+	// occur if the specified domain is not using email validation, or the current
+	// certificate status does not permit the requested operation. See the exception
+	// message returned by ACM to determine which state is not valid.
 	ErrCodeInvalidStateException = "InvalidStateException"
 
 	// ErrCodeInvalidTagException for service response error code
@@ -32,7 +35,11 @@ const (
 	// ErrCodeLimitExceededException for service response error code
 	// "LimitExceededException".
 	//
-	// An ACM limit has been exceeded.
+	// An ACM limit has been exceeded. For example, you may have input more domains
+	// than are allowed or you've requested too many certificates for your account.
+	// See the exception message returned by ACM to determine which limit you have
+	// violated. For more information about ACM limits, see the Limits (http://docs.aws.amazon.com/acm/latest/userguide/acm-limits.html)
+	// topic.
 	ErrCodeLimitExceededException = "LimitExceededException"
 
 	// ErrCodeRequestInProgressException for service response error code
@@ -52,7 +59,7 @@ const (
 	// ErrCodeResourceNotFoundException for service response error code
 	// "ResourceNotFoundException".
 	//
-	// The specified certificate cannot be found in the caller's account or the
+	// The specified certificate cannot be found in the caller's account, or the
 	// caller's account cannot be found.
 	ErrCodeResourceNotFoundException = "ResourceNotFoundException"
 

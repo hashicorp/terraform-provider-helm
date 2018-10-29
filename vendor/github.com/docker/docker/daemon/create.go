@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Sirupsen/logrus"
 	apierrors "github.com/docker/docker/api/errors"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
@@ -19,9 +18,10 @@ import (
 	"github.com/docker/docker/layer"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/stringid"
+	"github.com/docker/docker/pkg/system"
 	"github.com/docker/docker/runconfig"
-	volumestore "github.com/docker/docker/volume/store"
-	"github.com/opencontainers/runc/libcontainer/label"
+	"github.com/opencontainers/selinux/go-selinux/label"
+	"github.com/sirupsen/logrus"
 )
 
 // CreateManagedContainer creates a container that is managed by a Service
@@ -76,6 +76,16 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (
 		err       error
 	)
 
+	// TODO: @jhowardmsft LCOW support - at a later point, can remove the hard-coding
+	// to force the platform to be linux.
+	// Default the platform if not supplied
+	if params.Platform == "" {
+		params.Platform = runtime.GOOS
+	}
+	if system.LCOWSupported() {
+		params.Platform = "linux"
+	}
+
 	if params.Config.Image != "" {
 		img, err = daemon.GetImage(params.Config.Image)
 		if err != nil {
@@ -83,9 +93,23 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (
 		}
 
 		if runtime.GOOS == "solaris" && img.OS != "solaris " {
-			return nil, errors.New("Platform on which parent image was created is not Solaris")
+			return nil, errors.New("platform on which parent image was created is not Solaris")
 		}
 		imgID = img.ID()
+
+		if runtime.GOOS == "windows" && img.OS == "linux" && !system.LCOWSupported() {
+			return nil, errors.New("platform on which parent image was created is not Windows")
+		}
+	}
+
+	// Make sure the platform requested matches the image
+	if img != nil {
+		if params.Platform != img.Platform() {
+			// Ignore this in LCOW mode. @jhowardmsft TODO - This will need revisiting later.
+			if !system.LCOWSupported() {
+				return nil, fmt.Errorf("cannot create a %s container from a %s image", params.Platform, img.Platform())
+			}
+		}
 	}
 
 	if err := daemon.mergeAndVerifyConfig(params.Config, img); err != nil {
@@ -96,7 +120,7 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (
 		return nil, err
 	}
 
-	if container, err = daemon.newContainer(params.Name, params.Config, params.HostConfig, imgID, managed); err != nil {
+	if container, err = daemon.newContainer(params.Name, params.Platform, params.Config, params.HostConfig, imgID, managed); err != nil {
 		return nil, err
 	}
 	defer func() {
@@ -118,14 +142,11 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (
 		return nil, err
 	}
 
-	rootUID, rootGID, err := idtools.GetRootUIDGID(daemon.uidMaps, daemon.gidMaps)
-	if err != nil {
+	rootIDs := daemon.idMappings.RootPair()
+	if err := idtools.MkdirAndChown(container.Root, 0700, rootIDs); err != nil {
 		return nil, err
 	}
-	if err := idtools.MkdirAs(container.Root, 0700, rootUID, rootGID); err != nil {
-		return nil, err
-	}
-	if err := idtools.MkdirAs(container.CheckpointDir(), 0700, rootUID, rootGID); err != nil {
+	if err := idtools.MkdirAndChown(container.CheckpointDir(), 0700, rootIDs); err != nil {
 		return nil, err
 	}
 
@@ -143,24 +164,37 @@ func (daemon *Daemon) create(params types.ContainerCreateConfig, managed bool) (
 	}
 	// Make sure NetworkMode has an acceptable value. We do this to ensure
 	// backwards API compatibility.
-	container.HostConfig = runconfig.SetDefaultNetModeIfBlank(container.HostConfig)
+	runconfig.SetDefaultNetModeIfBlank(container.HostConfig)
 
 	daemon.updateContainerNetworkSettings(container, endpointsConfigs)
-
-	if err := container.ToDisk(); err != nil {
-		logrus.Errorf("Error saving new container to disk: %v", err)
-		return nil, err
-	}
 	if err := daemon.Register(container); err != nil {
 		return nil, err
 	}
+	stateCtr.set(container.ID, "stopped")
 	daemon.LogContainerEvent(container, "create")
 	return container, nil
 }
 
-func (daemon *Daemon) generateSecurityOpt(ipcMode containertypes.IpcMode, pidMode containertypes.PidMode, privileged bool) ([]string, error) {
+func toHostConfigSelinuxLabels(labels []string) []string {
+	for i, l := range labels {
+		labels[i] = "label=" + l
+	}
+	return labels
+}
+
+func (daemon *Daemon) generateSecurityOpt(hostConfig *containertypes.HostConfig) ([]string, error) {
+	for _, opt := range hostConfig.SecurityOpt {
+		con := strings.Split(opt, "=")
+		if con[0] == "label" {
+			// Caller overrode SecurityOpts
+			return nil, nil
+		}
+	}
+	ipcMode := hostConfig.IpcMode
+	pidMode := hostConfig.PidMode
+	privileged := hostConfig.Privileged
 	if ipcMode.IsHost() || pidMode.IsHost() || privileged {
-		return label.DisableSecOpt(), nil
+		return toHostConfigSelinuxLabels(label.DisableSecOpt()), nil
 	}
 
 	var ipcLabel []string
@@ -174,7 +208,7 @@ func (daemon *Daemon) generateSecurityOpt(ipcMode containertypes.IpcMode, pidMod
 		}
 		ipcLabel = label.DupSecOpt(c.ProcessLabel)
 		if pidContainer == "" {
-			return ipcLabel, err
+			return toHostConfigSelinuxLabels(ipcLabel), err
 		}
 	}
 	if pidContainer != "" {
@@ -185,7 +219,7 @@ func (daemon *Daemon) generateSecurityOpt(ipcMode containertypes.IpcMode, pidMod
 
 		pidLabel = label.DupSecOpt(c.ProcessLabel)
 		if ipcContainer == "" {
-			return pidLabel, err
+			return toHostConfigSelinuxLabels(pidLabel), err
 		}
 	}
 
@@ -195,7 +229,7 @@ func (daemon *Daemon) generateSecurityOpt(ipcMode containertypes.IpcMode, pidMod
 				return nil, fmt.Errorf("--ipc and --pid containers SELinux labels aren't the same")
 			}
 		}
-		return pidLabel, nil
+		return toHostConfigSelinuxLabels(pidLabel), nil
 	}
 	return nil, nil
 }
@@ -203,15 +237,20 @@ func (daemon *Daemon) generateSecurityOpt(ipcMode containertypes.IpcMode, pidMod
 func (daemon *Daemon) setRWLayer(container *container.Container) error {
 	var layerID layer.ChainID
 	if container.ImageID != "" {
-		img, err := daemon.imageStore.Get(container.ImageID)
+		img, err := daemon.stores[container.Platform].imageStore.Get(container.ImageID)
 		if err != nil {
 			return err
 		}
 		layerID = img.RootFS.ChainID()
 	}
 
-	rwLayer, err := daemon.layerStore.CreateRWLayer(container.ID, layerID, container.MountLabel, daemon.getLayerInit(), container.HostConfig.StorageOpt)
+	rwLayerOpts := &layer.CreateRWLayerOpts{
+		MountLabel: container.MountLabel,
+		InitFunc:   daemon.getLayerInit(),
+		StorageOpt: container.HostConfig.StorageOpt,
+	}
 
+	rwLayer, err := daemon.stores[container.Platform].layerStore.CreateRWLayer(container.ID, layerID, rwLayerOpts)
 	if err != nil {
 		return err
 	}
@@ -229,9 +268,6 @@ func (daemon *Daemon) VolumeCreate(name, driverName string, opts, labels map[str
 
 	v, err := daemon.volumes.Create(name, driverName, opts, labels)
 	if err != nil {
-		if volumestore.IsNameConflict(err) {
-			return nil, fmt.Errorf("A volume named %s already exists. Choose a different volume name.", name)
-		}
 		return nil, err
 	}
 

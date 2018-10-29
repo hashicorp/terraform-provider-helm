@@ -27,7 +27,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	storage "github.com/Azure/azure-sdk-for-go/arm/storage"
+	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
 	azstorage "github.com/Azure/azure-sdk-for-go/storage"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/glog"
@@ -79,7 +79,7 @@ func newBlobDiskController(common *controllerCommon) (*BlobDiskController, error
 // If no storage account is given, search all the storage accounts associated with the resource group and pick one that
 // fits storage type and location.
 func (c *BlobDiskController) CreateVolume(blobName, accountName, accountType, location string, requestGB int) (string, string, int, error) {
-	account, key, err := c.common.cloud.ensureStorageAccount(accountName, accountType, location, dedicatedDiskAccountNamePrefix)
+	account, key, err := c.common.cloud.ensureStorageAccount(accountName, accountType, c.common.resourceGroup, location, dedicatedDiskAccountNamePrefix)
 	if err != nil {
 		return "", "", 0, fmt.Errorf("could not get storage key for storage account %s: %v", accountName, err)
 	}
@@ -107,7 +107,7 @@ func (c *BlobDiskController) DeleteVolume(diskURI string) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse vhd URI %v", err)
 	}
-	key, err := c.common.cloud.getStorageAccesskey(accountName)
+	key, err := c.common.cloud.getStorageAccesskey(accountName, c.common.resourceGroup)
 	if err != nil {
 		return fmt.Errorf("no key for storage account %s, err %v", accountName, err)
 	}
@@ -277,7 +277,10 @@ func (c *BlobDiskController) getStorageAccountKey(SAName string) (string, error)
 	if account, exists := c.accounts[SAName]; exists && account.key != "" {
 		return c.accounts[SAName].key, nil
 	}
-	listKeysResult, err := c.common.cloud.StorageAccountClient.ListKeys(c.common.resourceGroup, SAName)
+
+	ctx, cancel := getContextWithCancel()
+	defer cancel()
+	listKeysResult, err := c.common.cloud.StorageAccountClient.ListKeys(ctx, c.common.resourceGroup, SAName)
 	if err != nil {
 		return "", err
 	}
@@ -432,7 +435,9 @@ func (c *BlobDiskController) getDiskCount(SAName string) (int, error) {
 }
 
 func (c *BlobDiskController) getAllStorageAccounts() (map[string]*storageAccountState, error) {
-	accountListResult, err := c.common.cloud.StorageAccountClient.ListByResourceGroup(c.common.resourceGroup)
+	ctx, cancel := getContextWithCancel()
+	defer cancel()
+	accountListResult, err := c.common.cloud.StorageAccountClient.ListByResourceGroup(ctx, c.common.resourceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -483,13 +488,15 @@ func (c *BlobDiskController) createStorageAccount(storageAccountName string, sto
 		glog.V(2).Infof("azureDisk - Creating storage account %s type %s", storageAccountName, string(storageAccountType))
 
 		cp := storage.AccountCreateParameters{
-			Sku:      &storage.Sku{Name: storageAccountType},
-			Tags:     &map[string]*string{"created-by": to.StringPtr("azure-dd")},
+			Sku: &storage.Sku{Name: storageAccountType},
+			// switch to use StorageV2 as it's recommended according to https://docs.microsoft.com/en-us/azure/storage/common/storage-account-options
+			Kind:     storage.StorageV2,
+			Tags:     map[string]*string{"created-by": to.StringPtr("azure-dd")},
 			Location: &location}
-		cancel := make(chan struct{})
+		ctx, cancel := getContextWithCancel()
+		defer cancel()
 
-		_, errChan := c.common.cloud.StorageAccountClient.Create(c.common.resourceGroup, storageAccountName, cp, cancel)
-		err := <-errChan
+		_, err := c.common.cloud.StorageAccountClient.Create(ctx, c.common.resourceGroup, storageAccountName, cp)
 		if err != nil {
 			return fmt.Errorf(fmt.Sprintf("Create Storage Account: %s, error: %s", storageAccountName, err))
 		}
@@ -584,7 +591,9 @@ func (c *BlobDiskController) findSANameForDisk(storageAccountType storage.SkuNam
 
 //Gets storage account exist, provisionStatus, Error if any
 func (c *BlobDiskController) getStorageAccountState(storageAccountName string) (bool, storage.ProvisioningState, error) {
-	account, err := c.common.cloud.StorageAccountClient.GetProperties(c.common.resourceGroup, storageAccountName)
+	ctx, cancel := getContextWithCancel()
+	defer cancel()
+	account, err := c.common.cloud.StorageAccountClient.GetProperties(ctx, c.common.resourceGroup, storageAccountName)
 	if err != nil {
 		return false, "", err
 	}

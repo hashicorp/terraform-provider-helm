@@ -7,7 +7,6 @@
     "protocol":"json",
     "serviceAbbreviation":"Amazon SSM",
     "serviceFullName":"Amazon Simple Systems Manager (SSM)",
-    "serviceId":"SSM",
     "signatureVersion":"v4",
     "targetPrefix":"AmazonSSM",
     "uid":"ssm-2014-11-06"
@@ -25,8 +24,7 @@
         {"shape":"InvalidResourceType"},
         {"shape":"InvalidResourceId"},
         {"shape":"InternalServerError"},
-        {"shape":"TooManyTagsError"},
-        {"shape":"TooManyUpdates"}
+        {"shape":"TooManyTagsError"}
       ]
     },
     "CancelCommand":{
@@ -171,8 +169,7 @@
       "errors":[
         {"shape":"InvalidActivationId"},
         {"shape":"InvalidActivation"},
-        {"shape":"InternalServerError"},
-        {"shape":"TooManyUpdates"}
+        {"shape":"InternalServerError"}
       ]
     },
     "DeleteAssociation":{
@@ -204,22 +201,6 @@
         {"shape":"InvalidDocument"},
         {"shape":"InvalidDocumentOperation"},
         {"shape":"AssociatedInstances"}
-      ]
-    },
-    "DeleteInventory":{
-      "name":"DeleteInventory",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"DeleteInventoryRequest"},
-      "output":{"shape":"DeleteInventoryResult"},
-      "errors":[
-        {"shape":"InternalServerError"},
-        {"shape":"InvalidTypeNameException"},
-        {"shape":"InvalidOptionException"},
-        {"shape":"InvalidDeleteInventoryParametersException"},
-        {"shape":"InvalidInventoryRequestException"}
       ]
     },
     "DeleteMaintenanceWindow":{
@@ -368,35 +349,6 @@
         {"shape":"InvalidInstanceId"}
       ]
     },
-    "DescribeAssociationExecutionTargets":{
-      "name":"DescribeAssociationExecutionTargets",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"DescribeAssociationExecutionTargetsRequest"},
-      "output":{"shape":"DescribeAssociationExecutionTargetsResult"},
-      "errors":[
-        {"shape":"InternalServerError"},
-        {"shape":"AssociationDoesNotExist"},
-        {"shape":"InvalidNextToken"},
-        {"shape":"AssociationExecutionDoesNotExist"}
-      ]
-    },
-    "DescribeAssociationExecutions":{
-      "name":"DescribeAssociationExecutions",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"DescribeAssociationExecutionsRequest"},
-      "output":{"shape":"DescribeAssociationExecutionsResult"},
-      "errors":[
-        {"shape":"InternalServerError"},
-        {"shape":"AssociationDoesNotExist"},
-        {"shape":"InvalidNextToken"}
-      ]
-    },
     "DescribeAutomationExecutions":{
       "name":"DescribeAutomationExecutions",
       "http":{
@@ -406,25 +358,7 @@
       "input":{"shape":"DescribeAutomationExecutionsRequest"},
       "output":{"shape":"DescribeAutomationExecutionsResult"},
       "errors":[
-        {"shape":"InvalidFilterKey"},
-        {"shape":"InvalidFilterValue"},
         {"shape":"InvalidNextToken"},
-        {"shape":"InternalServerError"}
-      ]
-    },
-    "DescribeAutomationStepExecutions":{
-      "name":"DescribeAutomationStepExecutions",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"DescribeAutomationStepExecutionsRequest"},
-      "output":{"shape":"DescribeAutomationStepExecutionsResult"},
-      "errors":[
-        {"shape":"AutomationExecutionNotFoundException"},
-        {"shape":"InvalidNextToken"},
-        {"shape":"InvalidFilterKey"},
-        {"shape":"InvalidFilterValue"},
         {"shape":"InternalServerError"}
       ]
     },
@@ -569,20 +503,6 @@
         {"shape":"InvalidNextToken"}
       ]
     },
-    "DescribeInventoryDeletions":{
-      "name":"DescribeInventoryDeletions",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"DescribeInventoryDeletionsRequest"},
-      "output":{"shape":"DescribeInventoryDeletionsResult"},
-      "errors":[
-        {"shape":"InternalServerError"},
-        {"shape":"InvalidDeletionIdException"},
-        {"shape":"InvalidNextToken"}
-      ]
-    },
     "DescribeMaintenanceWindowExecutionTaskInvocations":{
       "name":"DescribeMaintenanceWindowExecutionTaskInvocations",
       "http":{
@@ -712,20 +632,6 @@
         {"shape":"InternalServerError"}
       ]
     },
-    "DescribeSessions":{
-      "name":"DescribeSessions",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"DescribeSessionsRequest"},
-      "output":{"shape":"DescribeSessionsResponse"},
-      "errors":[
-        {"shape":"InternalServerError"},
-        {"shape":"InvalidFilterKey"},
-        {"shape":"InvalidNextToken"}
-      ]
-    },
     "GetAutomationExecution":{
       "name":"GetAutomationExecution",
       "http":{
@@ -753,18 +659,6 @@
         {"shape":"InvalidInstanceId"},
         {"shape":"InvalidPluginName"},
         {"shape":"InvocationDoesNotExist"}
-      ]
-    },
-    "GetConnectionStatus":{
-      "name":"GetConnectionStatus",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"GetConnectionStatusRequest"},
-      "output":{"shape":"GetConnectionStatusResponse"},
-      "errors":[
-        {"shape":"InternalServerError"}
       ]
     },
     "GetDefaultPatchBaseline":{
@@ -817,10 +711,8 @@
       "errors":[
         {"shape":"InternalServerError"},
         {"shape":"InvalidFilter"},
-        {"shape":"InvalidInventoryGroupException"},
         {"shape":"InvalidNextToken"},
         {"shape":"InvalidTypeNameException"},
-        {"shape":"InvalidAggregatorException"},
         {"shape":"InvalidResultAttributeException"}
       ]
     },
@@ -914,8 +806,7 @@
       "errors":[
         {"shape":"InternalServerError"},
         {"shape":"InvalidKeyId"},
-        {"shape":"ParameterNotFound"},
-        {"shape":"ParameterVersionNotFound"}
+        {"shape":"ParameterNotFound"}
       ]
     },
     "GetParameterHistory":{
@@ -987,22 +878,6 @@
       "output":{"shape":"GetPatchBaselineForPatchGroupResult"},
       "errors":[
         {"shape":"InternalServerError"}
-      ]
-    },
-    "LabelParameterVersion":{
-      "name":"LabelParameterVersion",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"LabelParameterVersionRequest"},
-      "output":{"shape":"LabelParameterVersionResult"},
-      "errors":[
-        {"shape":"InternalServerError"},
-        {"shape":"TooManyUpdates"},
-        {"shape":"ParameterNotFound"},
-        {"shape":"ParameterVersionNotFound"},
-        {"shape":"ParameterVersionLabelLimitExceeded"}
       ]
     },
     "ListAssociationVersions":{
@@ -1253,7 +1128,6 @@
         {"shape":"HierarchyLevelLimitExceededException"},
         {"shape":"HierarchyTypeMismatchException"},
         {"shape":"InvalidAllowedPatternException"},
-        {"shape":"ParameterMaxVersionLimitExceeded"},
         {"shape":"ParameterPatternMismatchException"},
         {"shape":"UnsupportedParameterType"}
       ]
@@ -1330,20 +1204,6 @@
       "errors":[
         {"shape":"InvalidResourceType"},
         {"shape":"InvalidResourceId"},
-        {"shape":"InternalServerError"},
-        {"shape":"TooManyUpdates"}
-      ]
-    },
-    "ResumeSession":{
-      "name":"ResumeSession",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"ResumeSessionRequest"},
-      "output":{"shape":"ResumeSessionResponse"},
-      "errors":[
-        {"shape":"DoesNotExistException"},
         {"shape":"InternalServerError"}
       ]
     },
@@ -1357,7 +1217,6 @@
       "output":{"shape":"SendAutomationSignalResult"},
       "errors":[
         {"shape":"AutomationExecutionNotFoundException"},
-        {"shape":"AutomationStepNotFoundException"},
         {"shape":"InvalidAutomationSignalException"},
         {"shape":"InternalServerError"}
       ]
@@ -1375,26 +1234,12 @@
         {"shape":"InternalServerError"},
         {"shape":"InvalidInstanceId"},
         {"shape":"InvalidDocument"},
-        {"shape":"InvalidDocumentVersion"},
         {"shape":"InvalidOutputFolder"},
         {"shape":"InvalidParameters"},
         {"shape":"UnsupportedPlatformType"},
         {"shape":"MaxDocumentSizeExceeded"},
         {"shape":"InvalidRole"},
         {"shape":"InvalidNotificationConfig"}
-      ]
-    },
-    "StartAssociationsOnce":{
-      "name":"StartAssociationsOnce",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"StartAssociationsOnceRequest"},
-      "output":{"shape":"StartAssociationsOnceResult"},
-      "errors":[
-        {"shape":"InvalidAssociation"},
-        {"shape":"AssociationDoesNotExist"}
       ]
     },
     "StartAutomationExecution":{
@@ -1411,21 +1256,6 @@
         {"shape":"AutomationExecutionLimitExceededException"},
         {"shape":"AutomationDefinitionVersionNotFoundException"},
         {"shape":"IdempotentParameterMismatch"},
-        {"shape":"InvalidTarget"},
-        {"shape":"InternalServerError"}
-      ]
-    },
-    "StartSession":{
-      "name":"StartSession",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"StartSessionRequest"},
-      "output":{"shape":"StartSessionResponse"},
-      "errors":[
-        {"shape":"InvalidDocument"},
-        {"shape":"TargetNotConnected"},
         {"shape":"InternalServerError"}
       ]
     },
@@ -1439,20 +1269,6 @@
       "output":{"shape":"StopAutomationExecutionResult"},
       "errors":[
         {"shape":"AutomationExecutionNotFoundException"},
-        {"shape":"InvalidAutomationStatusUpdateException"},
-        {"shape":"InternalServerError"}
-      ]
-    },
-    "TerminateSession":{
-      "name":"TerminateSession",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"TerminateSessionRequest"},
-      "output":{"shape":"TerminateSessionResponse"},
-      "errors":[
-        {"shape":"DoesNotExistException"},
         {"shape":"InternalServerError"}
       ]
     },
@@ -1603,7 +1419,10 @@
     },
     "AccountIdList":{
       "type":"list",
-      "member":{"shape":"AccountId"},
+      "member":{
+        "shape":"AccountId",
+        "locationName":"AccountId"
+      },
       "max":20
     },
     "Activation":{
@@ -1660,7 +1479,6 @@
       "type":"string",
       "max":10
     },
-    "AggregatorSchemaOnly":{"type":"boolean"},
     "AllowedPattern":{
       "type":"string",
       "max":1024,
@@ -1728,7 +1546,10 @@
     },
     "AssociationDescriptionList":{
       "type":"list",
-      "member":{"shape":"AssociationDescription"}
+      "member":{
+        "shape":"AssociationDescription",
+        "locationName":"AssociationDescription"
+      }
     },
     "AssociationDoesNotExist":{
       "type":"structure",
@@ -1736,110 +1557,6 @@
         "Message":{"shape":"String"}
       },
       "exception":true
-    },
-    "AssociationExecution":{
-      "type":"structure",
-      "members":{
-        "AssociationId":{"shape":"AssociationId"},
-        "AssociationVersion":{"shape":"AssociationVersion"},
-        "ExecutionId":{"shape":"AssociationExecutionId"},
-        "Status":{"shape":"StatusName"},
-        "DetailedStatus":{"shape":"StatusName"},
-        "CreatedTime":{"shape":"DateTime"},
-        "LastExecutionDate":{"shape":"DateTime"},
-        "ResourceCountByStatus":{"shape":"ResourceCountByStatus"}
-      }
-    },
-    "AssociationExecutionDoesNotExist":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
-      },
-      "exception":true
-    },
-    "AssociationExecutionFilter":{
-      "type":"structure",
-      "required":[
-        "Key",
-        "Value",
-        "Type"
-      ],
-      "members":{
-        "Key":{"shape":"AssociationExecutionFilterKey"},
-        "Value":{"shape":"AssociationExecutionFilterValue"},
-        "Type":{"shape":"AssociationFilterOperatorType"}
-      }
-    },
-    "AssociationExecutionFilterKey":{
-      "type":"string",
-      "enum":[
-        "ExecutionId",
-        "Status",
-        "CreatedTime"
-      ]
-    },
-    "AssociationExecutionFilterList":{
-      "type":"list",
-      "member":{"shape":"AssociationExecutionFilter"},
-      "min":1
-    },
-    "AssociationExecutionFilterValue":{
-      "type":"string",
-      "min":1
-    },
-    "AssociationExecutionId":{
-      "type":"string",
-      "pattern":"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-    },
-    "AssociationExecutionTarget":{
-      "type":"structure",
-      "members":{
-        "AssociationId":{"shape":"AssociationId"},
-        "AssociationVersion":{"shape":"AssociationVersion"},
-        "ExecutionId":{"shape":"AssociationExecutionId"},
-        "ResourceId":{"shape":"AssociationResourceId"},
-        "ResourceType":{"shape":"AssociationResourceType"},
-        "Status":{"shape":"StatusName"},
-        "DetailedStatus":{"shape":"StatusName"},
-        "LastExecutionDate":{"shape":"DateTime"},
-        "OutputSource":{"shape":"OutputSource"}
-      }
-    },
-    "AssociationExecutionTargetsFilter":{
-      "type":"structure",
-      "required":[
-        "Key",
-        "Value"
-      ],
-      "members":{
-        "Key":{"shape":"AssociationExecutionTargetsFilterKey"},
-        "Value":{"shape":"AssociationExecutionTargetsFilterValue"}
-      }
-    },
-    "AssociationExecutionTargetsFilterKey":{
-      "type":"string",
-      "enum":[
-        "Status",
-        "ResourceId",
-        "ResourceType"
-      ]
-    },
-    "AssociationExecutionTargetsFilterList":{
-      "type":"list",
-      "member":{"shape":"AssociationExecutionTargetsFilter"},
-      "min":1
-    },
-    "AssociationExecutionTargetsFilterValue":{
-      "type":"string",
-      "min":1
-    },
-    "AssociationExecutionTargetsList":{
-      "type":"list",
-      "member":{"shape":"AssociationExecutionTarget"}
-    },
-    "AssociationExecutionsList":{
-      "type":"list",
-      "member":{"shape":"AssociationExecution"}
     },
     "AssociationFilter":{
       "type":"structure",
@@ -1866,16 +1583,11 @@
     },
     "AssociationFilterList":{
       "type":"list",
-      "member":{"shape":"AssociationFilter"},
+      "member":{
+        "shape":"AssociationFilter",
+        "locationName":"AssociationFilter"
+      },
       "min":1
-    },
-    "AssociationFilterOperatorType":{
-      "type":"string",
-      "enum":[
-        "EQUAL",
-        "LESS_THAN",
-        "GREATER_THAN"
-      ]
     },
     "AssociationFilterValue":{
       "type":"string",
@@ -1885,12 +1597,6 @@
       "type":"string",
       "pattern":"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
     },
-    "AssociationIdList":{
-      "type":"list",
-      "member":{"shape":"AssociationId"},
-      "max":10,
-      "min":1
-    },
     "AssociationLimitExceeded":{
       "type":"structure",
       "members":{
@@ -1899,7 +1605,10 @@
     },
     "AssociationList":{
       "type":"list",
-      "member":{"shape":"Association"}
+      "member":{
+        "shape":"Association",
+        "locationName":"Association"
+      }
     },
     "AssociationName":{
       "type":"string",
@@ -1912,16 +1621,6 @@
         "DetailedStatus":{"shape":"StatusName"},
         "AssociationStatusAggregatedCount":{"shape":"AssociationStatusAggregatedCount"}
       }
-    },
-    "AssociationResourceId":{
-      "type":"string",
-      "max":100,
-      "min":1
-    },
-    "AssociationResourceType":{
-      "type":"string",
-      "max":50,
-      "min":1
     },
     "AssociationStatus":{
       "type":"structure",
@@ -2019,22 +1718,9 @@
         "ExecutionEndTime":{"shape":"DateTime"},
         "AutomationExecutionStatus":{"shape":"AutomationExecutionStatus"},
         "StepExecutions":{"shape":"StepExecutionList"},
-        "StepExecutionsTruncated":{"shape":"Boolean"},
         "Parameters":{"shape":"AutomationParameterMap"},
         "Outputs":{"shape":"AutomationParameterMap"},
-        "FailureMessage":{"shape":"String"},
-        "Mode":{"shape":"ExecutionMode"},
-        "ParentAutomationExecutionId":{"shape":"AutomationExecutionId"},
-        "ExecutedBy":{"shape":"String"},
-        "CurrentStepName":{"shape":"String"},
-        "CurrentAction":{"shape":"String"},
-        "TargetParameterName":{"shape":"AutomationParameterKey"},
-        "Targets":{"shape":"Targets"},
-        "TargetMaps":{"shape":"TargetMaps"},
-        "ResolvedTargets":{"shape":"ResolvedTargets"},
-        "MaxConcurrency":{"shape":"MaxConcurrency"},
-        "MaxErrors":{"shape":"MaxErrors"},
-        "Target":{"shape":"String"}
+        "FailureMessage":{"shape":"String"}
       }
     },
     "AutomationExecutionFilter":{
@@ -2052,12 +1738,7 @@
       "type":"string",
       "enum":[
         "DocumentNamePrefix",
-        "ExecutionStatus",
-        "ExecutionId",
-        "ParentExecutionId",
-        "CurrentAction",
-        "StartTimeBefore",
-        "StartTimeAfter"
+        "ExecutionStatus"
       ]
     },
     "AutomationExecutionFilterList":{
@@ -2100,24 +1781,14 @@
         "ExecutionEndTime":{"shape":"DateTime"},
         "ExecutedBy":{"shape":"String"},
         "LogFile":{"shape":"String"},
-        "Outputs":{"shape":"AutomationParameterMap"},
-        "Mode":{"shape":"ExecutionMode"},
-        "ParentAutomationExecutionId":{"shape":"AutomationExecutionId"},
-        "CurrentStepName":{"shape":"String"},
-        "CurrentAction":{"shape":"String"},
-        "FailureMessage":{"shape":"String"},
-        "TargetParameterName":{"shape":"AutomationParameterKey"},
-        "Targets":{"shape":"Targets"},
-        "TargetMaps":{"shape":"TargetMaps"},
-        "ResolvedTargets":{"shape":"ResolvedTargets"},
-        "MaxConcurrency":{"shape":"MaxConcurrency"},
-        "MaxErrors":{"shape":"MaxErrors"},
-        "Target":{"shape":"String"}
+        "Outputs":{"shape":"AutomationParameterMap"}
       }
     },
     "AutomationExecutionMetadataList":{
       "type":"list",
-      "member":{"shape":"AutomationExecutionMetadata"}
+      "member":{"shape":"AutomationExecutionMetadata"},
+      "max":50,
+      "min":0
     },
     "AutomationExecutionNotFoundException":{
       "type":"structure",
@@ -2134,7 +1805,6 @@
         "Waiting",
         "Success",
         "TimedOut",
-        "Cancelling",
         "Cancelled",
         "Failed"
       ]
@@ -2161,13 +1831,6 @@
       "member":{"shape":"AutomationParameterValue"},
       "max":10,
       "min":0
-    },
-    "AutomationStepNotFoundException":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
-      },
-      "exception":true
     },
     "BaselineDescription":{
       "type":"string",
@@ -2206,26 +1869,11 @@
       "max":64,
       "min":1
     },
-    "CloudWatchLogGroupName":{
-      "type":"string",
-      "max":512,
-      "min":1,
-      "pattern":"[\\.\\-_/#A-Za-z0-9]+"
-    },
-    "CloudWatchOutputConfig":{
-      "type":"structure",
-      "members":{
-        "CloudWatchLogGroupName":{"shape":"CloudWatchLogGroupName"},
-        "CloudWatchOutputEnabled":{"shape":"CloudWatchOutputEnabled"}
-      }
-    },
-    "CloudWatchOutputEnabled":{"type":"boolean"},
     "Command":{
       "type":"structure",
       "members":{
         "CommandId":{"shape":"CommandId"},
         "DocumentName":{"shape":"DocumentName"},
-        "DocumentVersion":{"shape":"DocumentVersion"},
         "Comment":{"shape":"Comment"},
         "ExpiresAfter":{"shape":"DateTime"},
         "Parameters":{"shape":"Parameters"},
@@ -2242,10 +1890,8 @@
         "TargetCount":{"shape":"TargetCount"},
         "CompletedCount":{"shape":"CompletedCount"},
         "ErrorCount":{"shape":"ErrorCount"},
-        "DeliveryTimedOutCount":{"shape":"DeliveryTimedOutCount"},
         "ServiceRole":{"shape":"ServiceRole"},
-        "NotificationConfig":{"shape":"NotificationConfig"},
-        "CloudWatchOutputConfig":{"shape":"CloudWatchOutputConfig"}
+        "NotificationConfig":{"shape":"NotificationConfig"}
       }
     },
     "CommandFilter":{
@@ -2264,20 +1910,17 @@
       "enum":[
         "InvokedAfter",
         "InvokedBefore",
-        "Status",
-        "ExecutionStage",
-        "DocumentName"
+        "Status"
       ]
     },
     "CommandFilterList":{
       "type":"list",
       "member":{"shape":"CommandFilter"},
-      "max":5,
+      "max":3,
       "min":1
     },
     "CommandFilterValue":{
       "type":"string",
-      "max":128,
       "min":1
     },
     "CommandId":{
@@ -2293,7 +1936,6 @@
         "InstanceName":{"shape":"InstanceTagName"},
         "Comment":{"shape":"Comment"},
         "DocumentName":{"shape":"DocumentName"},
-        "DocumentVersion":{"shape":"DocumentVersion"},
         "RequestedDateTime":{"shape":"DateTime"},
         "Status":{"shape":"CommandInvocationStatus"},
         "StatusDetails":{"shape":"StatusDetails"},
@@ -2302,8 +1944,7 @@
         "StandardErrorUrl":{"shape":"Url"},
         "CommandPlugins":{"shape":"CommandPluginList"},
         "ServiceRole":{"shape":"ServiceRole"},
-        "NotificationConfig":{"shape":"NotificationConfig"},
-        "CloudWatchOutputConfig":{"shape":"CloudWatchOutputConfig"}
+        "NotificationConfig":{"shape":"NotificationConfig"}
       }
     },
     "CommandInvocationList":{
@@ -2457,7 +2098,10 @@
     },
     "ComplianceItemList":{
       "type":"list",
-      "member":{"shape":"ComplianceItem"}
+      "member":{
+        "shape":"ComplianceItem",
+        "locationName":"Item"
+      }
     },
     "ComplianceItemTitle":{
       "type":"string",
@@ -2526,11 +2170,17 @@
     },
     "ComplianceStringFilterList":{
       "type":"list",
-      "member":{"shape":"ComplianceStringFilter"}
+      "member":{
+        "shape":"ComplianceStringFilter",
+        "locationName":"ComplianceFilter"
+      }
     },
     "ComplianceStringFilterValueList":{
       "type":"list",
-      "member":{"shape":"ComplianceFilterValue"},
+      "member":{
+        "shape":"ComplianceFilterValue",
+        "locationName":"FilterValue"
+      },
       "max":20,
       "min":1
     },
@@ -2545,7 +2195,10 @@
     },
     "ComplianceSummaryItemList":{
       "type":"list",
-      "member":{"shape":"ComplianceSummaryItem"}
+      "member":{
+        "shape":"ComplianceSummaryItem",
+        "locationName":"Item"
+      }
     },
     "ComplianceTypeCountLimitExceededException":{
       "type":"structure",
@@ -2571,13 +2224,6 @@
       "type":"string",
       "max":255,
       "min":1
-    },
-    "ConnectionStatus":{
-      "type":"string",
-      "enum":[
-        "Connected",
-        "NotConnected"
-      ]
     },
     "CreateActivationRequest":{
       "type":"structure",
@@ -2609,7 +2255,10 @@
     },
     "CreateAssociationBatchRequestEntries":{
       "type":"list",
-      "member":{"shape":"CreateAssociationBatchRequestEntry"},
+      "member":{
+        "shape":"CreateAssociationBatchRequestEntry",
+        "locationName":"entries"
+      },
       "min":1
     },
     "CreateAssociationBatchRequestEntry":{
@@ -2662,9 +2311,7 @@
       "members":{
         "Content":{"shape":"DocumentContent"},
         "Name":{"shape":"DocumentName"},
-        "DocumentType":{"shape":"DocumentType"},
-        "DocumentFormat":{"shape":"DocumentFormat"},
-        "TargetType":{"shape":"TargetType"}
+        "DocumentType":{"shape":"DocumentType"}
       }
     },
     "CreateDocumentResult":{
@@ -2711,13 +2358,8 @@
         "ApprovalRules":{"shape":"PatchRuleGroup"},
         "ApprovedPatches":{"shape":"PatchIdList"},
         "ApprovedPatchesComplianceLevel":{"shape":"PatchComplianceLevel"},
-        "ApprovedPatchesEnableNonSecurity":{
-          "shape":"Boolean",
-          "box":true
-        },
         "RejectedPatches":{"shape":"PatchIdList"},
         "Description":{"shape":"BaselineDescription"},
-        "Sources":{"shape":"PatchSourceList"},
         "ClientToken":{
           "shape":"ClientToken",
           "idempotencyToken":true
@@ -2799,27 +2441,6 @@
       "members":{
       }
     },
-    "DeleteInventoryRequest":{
-      "type":"structure",
-      "required":["TypeName"],
-      "members":{
-        "TypeName":{"shape":"InventoryItemTypeName"},
-        "SchemaDeleteOption":{"shape":"InventorySchemaDeleteOption"},
-        "DryRun":{"shape":"DryRun"},
-        "ClientToken":{
-          "shape":"ClientToken",
-          "idempotencyToken":true
-        }
-      }
-    },
-    "DeleteInventoryResult":{
-      "type":"structure",
-      "members":{
-        "DeletionId":{"shape":"InventoryDeletionId"},
-        "TypeName":{"shape":"InventoryItemTypeName"},
-        "DeletionSummary":{"shape":"InventoryDeletionSummary"}
-      }
-    },
     "DeleteMaintenanceWindowRequest":{
       "type":"structure",
       "required":["WindowId"],
@@ -2884,7 +2505,6 @@
       "members":{
       }
     },
-    "DeliveryTimedOutCount":{"type":"integer"},
     "DeregisterManagedInstanceRequest":{
       "type":"structure",
       "required":["InstanceId"],
@@ -2992,50 +2612,6 @@
         "NextToken":{"shape":"NextToken"}
       }
     },
-    "DescribeAssociationExecutionTargetsRequest":{
-      "type":"structure",
-      "required":[
-        "AssociationId",
-        "ExecutionId"
-      ],
-      "members":{
-        "AssociationId":{"shape":"AssociationId"},
-        "ExecutionId":{"shape":"AssociationExecutionId"},
-        "Filters":{"shape":"AssociationExecutionTargetsFilterList"},
-        "MaxResults":{
-          "shape":"MaxResults",
-          "box":true
-        },
-        "NextToken":{"shape":"NextToken"}
-      }
-    },
-    "DescribeAssociationExecutionTargetsResult":{
-      "type":"structure",
-      "members":{
-        "AssociationExecutionTargets":{"shape":"AssociationExecutionTargetsList"},
-        "NextToken":{"shape":"NextToken"}
-      }
-    },
-    "DescribeAssociationExecutionsRequest":{
-      "type":"structure",
-      "required":["AssociationId"],
-      "members":{
-        "AssociationId":{"shape":"AssociationId"},
-        "Filters":{"shape":"AssociationExecutionFilterList"},
-        "MaxResults":{
-          "shape":"MaxResults",
-          "box":true
-        },
-        "NextToken":{"shape":"NextToken"}
-      }
-    },
-    "DescribeAssociationExecutionsResult":{
-      "type":"structure",
-      "members":{
-        "AssociationExecutions":{"shape":"AssociationExecutionsList"},
-        "NextToken":{"shape":"NextToken"}
-      }
-    },
     "DescribeAssociationRequest":{
       "type":"structure",
       "members":{
@@ -3066,30 +2642,6 @@
       "type":"structure",
       "members":{
         "AutomationExecutionMetadataList":{"shape":"AutomationExecutionMetadataList"},
-        "NextToken":{"shape":"NextToken"}
-      }
-    },
-    "DescribeAutomationStepExecutionsRequest":{
-      "type":"structure",
-      "required":["AutomationExecutionId"],
-      "members":{
-        "AutomationExecutionId":{"shape":"AutomationExecutionId"},
-        "Filters":{"shape":"StepExecutionFilterList"},
-        "NextToken":{"shape":"NextToken"},
-        "MaxResults":{
-          "shape":"MaxResults",
-          "box":true
-        },
-        "ReverseOrder":{
-          "shape":"Boolean",
-          "box":true
-        }
-      }
-    },
-    "DescribeAutomationStepExecutionsResult":{
-      "type":"structure",
-      "members":{
-        "StepExecutions":{"shape":"StepExecutionList"},
         "NextToken":{"shape":"NextToken"}
       }
     },
@@ -3274,24 +2826,6 @@
       "type":"structure",
       "members":{
         "Patches":{"shape":"PatchComplianceDataList"},
-        "NextToken":{"shape":"NextToken"}
-      }
-    },
-    "DescribeInventoryDeletionsRequest":{
-      "type":"structure",
-      "members":{
-        "DeletionId":{"shape":"InventoryDeletionId"},
-        "NextToken":{"shape":"NextToken"},
-        "MaxResults":{
-          "shape":"MaxResults",
-          "box":true
-        }
-      }
-    },
-    "DescribeInventoryDeletionsResult":{
-      "type":"structure",
-      "members":{
-        "InventoryDeletions":{"shape":"InventoryDeletionsList"},
         "NextToken":{"shape":"NextToken"}
       }
     },
@@ -3490,26 +3024,6 @@
         "NextToken":{"shape":"NextToken"}
       }
     },
-    "DescribeSessionsRequest":{
-      "type":"structure",
-      "required":["State"],
-      "members":{
-        "State":{"shape":"SessionState"},
-        "MaxResults":{
-          "shape":"SessionMaxResults",
-          "box":true
-        },
-        "NextToken":{"shape":"NextToken"},
-        "Filters":{"shape":"SessionFilterList"}
-      }
-    },
-    "DescribeSessionsResponse":{
-      "type":"structure",
-      "members":{
-        "Sessions":{"shape":"SessionList"},
-        "NextToken":{"shape":"NextToken"}
-      }
-    },
     "DescriptionInDocument":{"type":"string"},
     "DocumentARN":{
       "type":"string",
@@ -3551,8 +3065,6 @@
         "SchemaVersion":{"shape":"DocumentSchemaVersion"},
         "LatestVersion":{"shape":"DocumentVersion"},
         "DefaultVersion":{"shape":"DocumentVersion"},
-        "DocumentFormat":{"shape":"DocumentFormat"},
-        "TargetType":{"shape":"TargetType"},
         "Tags":{"shape":"TagList"}
       }
     },
@@ -3578,19 +3090,15 @@
     },
     "DocumentFilterList":{
       "type":"list",
-      "member":{"shape":"DocumentFilter"},
+      "member":{
+        "shape":"DocumentFilter",
+        "locationName":"DocumentFilter"
+      },
       "min":1
     },
     "DocumentFilterValue":{
       "type":"string",
       "min":1
-    },
-    "DocumentFormat":{
-      "type":"string",
-      "enum":[
-        "YAML",
-        "JSON"
-      ]
     },
     "DocumentHash":{
       "type":"string",
@@ -3612,14 +3120,15 @@
         "DocumentVersion":{"shape":"DocumentVersion"},
         "DocumentType":{"shape":"DocumentType"},
         "SchemaVersion":{"shape":"DocumentSchemaVersion"},
-        "DocumentFormat":{"shape":"DocumentFormat"},
-        "TargetType":{"shape":"TargetType"},
         "Tags":{"shape":"TagList"}
       }
     },
     "DocumentIdentifierList":{
       "type":"list",
-      "member":{"shape":"DocumentIdentifier"}
+      "member":{
+        "shape":"DocumentIdentifier",
+        "locationName":"DocumentIdentifier"
+      }
     },
     "DocumentKeyValuesFilter":{
       "type":"structure",
@@ -3636,7 +3145,7 @@
     "DocumentKeyValuesFilterList":{
       "type":"list",
       "member":{"shape":"DocumentKeyValuesFilter"},
-      "max":6,
+      "max":5,
       "min":0
     },
     "DocumentKeyValuesFilterValue":{
@@ -3673,7 +3182,10 @@
     "DocumentParameterDescrption":{"type":"string"},
     "DocumentParameterList":{
       "type":"list",
-      "member":{"shape":"DocumentParameter"}
+      "member":{
+        "shape":"DocumentParameter",
+        "locationName":"DocumentParameter"
+      }
     },
     "DocumentParameterName":{"type":"string"},
     "DocumentParameterType":{
@@ -3713,8 +3225,7 @@
       "enum":[
         "Command",
         "Policy",
-        "Automation",
-        "Session"
+        "Automation"
       ]
     },
     "DocumentVersion":{
@@ -3727,8 +3238,7 @@
         "Name":{"shape":"DocumentName"},
         "DocumentVersion":{"shape":"DocumentVersion"},
         "CreatedDate":{"shape":"DateTime"},
-        "IsDefaultVersion":{"shape":"Boolean"},
-        "DocumentFormat":{"shape":"DocumentFormat"}
+        "IsDefaultVersion":{"shape":"Boolean"}
       }
     },
     "DocumentVersionLimitExceeded":{
@@ -3754,7 +3264,6 @@
       },
       "exception":true
     },
-    "DryRun":{"type":"boolean"},
     "DuplicateDocumentContent":{
       "type":"structure",
       "members":{
@@ -3785,13 +3294,6 @@
       "member":{"shape":"EffectivePatch"}
     },
     "ErrorCount":{"type":"integer"},
-    "ExecutionMode":{
-      "type":"string",
-      "enum":[
-        "Auto",
-        "Interactive"
-      ]
-    },
     "ExpirationDate":{"type":"timestamp"},
     "FailedCreateAssociation":{
       "type":"structure",
@@ -3803,7 +3305,10 @@
     },
     "FailedCreateAssociationList":{
       "type":"list",
-      "member":{"shape":"FailedCreateAssociation"}
+      "member":{
+        "shape":"FailedCreateAssociation",
+        "locationName":"FailedCreateAssociationEntry"
+      }
     },
     "FailureDetails":{
       "type":"structure",
@@ -3860,7 +3365,6 @@
         "InstanceId":{"shape":"InstanceId"},
         "Comment":{"shape":"Comment"},
         "DocumentName":{"shape":"DocumentName"},
-        "DocumentVersion":{"shape":"DocumentVersion"},
         "PluginName":{"shape":"CommandPluginName"},
         "ResponseCode":{"shape":"ResponseCode"},
         "ExecutionStartDateTime":{"shape":"StringDateTime"},
@@ -3871,22 +3375,7 @@
         "StandardOutputContent":{"shape":"StandardOutputContent"},
         "StandardOutputUrl":{"shape":"Url"},
         "StandardErrorContent":{"shape":"StandardErrorContent"},
-        "StandardErrorUrl":{"shape":"Url"},
-        "CloudWatchOutputConfig":{"shape":"CloudWatchOutputConfig"}
-      }
-    },
-    "GetConnectionStatusRequest":{
-      "type":"structure",
-      "required":["Target"],
-      "members":{
-        "Target":{"shape":"SessionTarget"}
-      }
-    },
-    "GetConnectionStatusResponse":{
-      "type":"structure",
-      "members":{
-        "Target":{"shape":"SessionTarget"},
-        "Status":{"shape":"ConnectionStatus"}
+        "StandardErrorUrl":{"shape":"Url"}
       }
     },
     "GetDefaultPatchBaselineRequest":{
@@ -3927,8 +3416,7 @@
       "required":["Name"],
       "members":{
         "Name":{"shape":"DocumentARN"},
-        "DocumentVersion":{"shape":"DocumentVersion"},
-        "DocumentFormat":{"shape":"DocumentFormat"}
+        "DocumentVersion":{"shape":"DocumentVersion"}
       }
     },
     "GetDocumentResult":{
@@ -3937,15 +3425,13 @@
         "Name":{"shape":"DocumentARN"},
         "DocumentVersion":{"shape":"DocumentVersion"},
         "Content":{"shape":"DocumentContent"},
-        "DocumentType":{"shape":"DocumentType"},
-        "DocumentFormat":{"shape":"DocumentFormat"}
+        "DocumentType":{"shape":"DocumentType"}
       }
     },
     "GetInventoryRequest":{
       "type":"structure",
       "members":{
         "Filters":{"shape":"InventoryFilterList"},
-        "Aggregators":{"shape":"InventoryAggregatorList"},
         "ResultAttributes":{"shape":"ResultAttributeList"},
         "NextToken":{"shape":"NextToken"},
         "MaxResults":{
@@ -3975,7 +3461,6 @@
           "shape":"GetInventorySchemaMaxResults",
           "box":true
         },
-        "Aggregator":{"shape":"AggregatorSchemaOnly"},
         "SubType":{
           "shape":"IsSubTypeSchema",
           "box":true
@@ -4242,16 +3727,11 @@
         "ApprovalRules":{"shape":"PatchRuleGroup"},
         "ApprovedPatches":{"shape":"PatchIdList"},
         "ApprovedPatchesComplianceLevel":{"shape":"PatchComplianceLevel"},
-        "ApprovedPatchesEnableNonSecurity":{
-          "shape":"Boolean",
-          "box":true
-        },
         "RejectedPatches":{"shape":"PatchIdList"},
         "PatchGroups":{"shape":"PatchGroupList"},
         "CreatedDate":{"shape":"DateTime"},
         "ModifiedDate":{"shape":"DateTime"},
-        "Description":{"shape":"BaselineDescription"},
-        "Sources":{"shape":"PatchSourceList"}
+        "Description":{"shape":"BaselineDescription"}
       }
     },
     "HierarchyLevelLimitExceededException":{
@@ -4423,7 +3903,10 @@
     },
     "InstanceInformationFilterList":{
       "type":"list",
-      "member":{"shape":"InstanceInformationFilter"},
+      "member":{
+        "shape":"InstanceInformationFilter",
+        "locationName":"InstanceInformationFilter"
+      },
       "min":0
     },
     "InstanceInformationFilterValue":{
@@ -4432,13 +3915,19 @@
     },
     "InstanceInformationFilterValueSet":{
       "type":"list",
-      "member":{"shape":"InstanceInformationFilterValue"},
+      "member":{
+        "shape":"InstanceInformationFilterValue",
+        "locationName":"InstanceInformationFilterValue"
+      },
       "max":100,
       "min":1
     },
     "InstanceInformationList":{
       "type":"list",
-      "member":{"shape":"InstanceInformation"}
+      "member":{
+        "shape":"InstanceInformation",
+        "locationName":"InstanceInformation"
+      }
     },
     "InstanceInformationStringFilter":{
       "type":"structure",
@@ -4457,7 +3946,10 @@
     },
     "InstanceInformationStringFilterList":{
       "type":"list",
-      "member":{"shape":"InstanceInformationStringFilter"},
+      "member":{
+        "shape":"InstanceInformationStringFilter",
+        "locationName":"InstanceInformationStringFilter"
+      },
       "min":0
     },
     "InstancePatchState":{
@@ -4546,8 +4038,7 @@
       "members":{
         "Message":{"shape":"String"}
       },
-      "exception":true,
-      "fault":true
+      "exception":true
     },
     "InvalidActivation":{
       "type":"structure",
@@ -4563,24 +4054,10 @@
       },
       "exception":true
     },
-    "InvalidAggregatorException":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
-      },
-      "exception":true
-    },
     "InvalidAllowedPatternException":{
       "type":"structure",
       "members":{
         "message":{"shape":"String"}
-      },
-      "exception":true
-    },
-    "InvalidAssociation":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
       },
       "exception":true
     },
@@ -4605,30 +4082,9 @@
       },
       "exception":true
     },
-    "InvalidAutomationStatusUpdateException":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
-      },
-      "exception":true
-    },
     "InvalidCommandId":{
       "type":"structure",
       "members":{
-      },
-      "exception":true
-    },
-    "InvalidDeleteInventoryParametersException":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
-      },
-      "exception":true
-    },
-    "InvalidDeletionIdException":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
       },
       "exception":true
     },
@@ -4708,21 +4164,7 @@
       },
       "exception":true
     },
-    "InvalidInventoryGroupException":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
-      },
-      "exception":true
-    },
     "InvalidInventoryItemContextException":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
-      },
-      "exception":true
-    },
-    "InvalidInventoryRequestException":{
       "type":"structure",
       "members":{
         "Message":{"shape":"String"}
@@ -4752,13 +4194,6 @@
       "exception":true
     },
     "InvalidNotificationConfig":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
-      },
-      "exception":true
-    },
-    "InvalidOptionException":{
       "type":"structure",
       "members":{
         "Message":{"shape":"String"}
@@ -4851,78 +4286,12 @@
       },
       "exception":true
     },
-    "InventoryAggregator":{
-      "type":"structure",
-      "members":{
-        "Expression":{"shape":"InventoryAggregatorExpression"},
-        "Aggregators":{"shape":"InventoryAggregatorList"},
-        "Groups":{"shape":"InventoryGroupList"}
-      }
-    },
-    "InventoryAggregatorExpression":{
-      "type":"string",
-      "max":1000,
-      "min":1
-    },
-    "InventoryAggregatorList":{
-      "type":"list",
-      "member":{"shape":"InventoryAggregator"},
-      "max":10,
-      "min":1
-    },
     "InventoryAttributeDataType":{
       "type":"string",
       "enum":[
         "string",
         "number"
       ]
-    },
-    "InventoryDeletionId":{"type":"string"},
-    "InventoryDeletionLastStatusMessage":{"type":"string"},
-    "InventoryDeletionLastStatusUpdateTime":{"type":"timestamp"},
-    "InventoryDeletionStartTime":{"type":"timestamp"},
-    "InventoryDeletionStatus":{
-      "type":"string",
-      "enum":[
-        "InProgress",
-        "Complete"
-      ]
-    },
-    "InventoryDeletionStatusItem":{
-      "type":"structure",
-      "members":{
-        "DeletionId":{"shape":"InventoryDeletionId"},
-        "TypeName":{"shape":"InventoryItemTypeName"},
-        "DeletionStartTime":{"shape":"InventoryDeletionStartTime"},
-        "LastStatus":{"shape":"InventoryDeletionStatus"},
-        "LastStatusMessage":{"shape":"InventoryDeletionLastStatusMessage"},
-        "DeletionSummary":{"shape":"InventoryDeletionSummary"},
-        "LastStatusUpdateTime":{"shape":"InventoryDeletionLastStatusUpdateTime"}
-      }
-    },
-    "InventoryDeletionSummary":{
-      "type":"structure",
-      "members":{
-        "TotalCount":{"shape":"TotalCount"},
-        "RemainingCount":{"shape":"RemainingCount"},
-        "SummaryItems":{"shape":"InventoryDeletionSummaryItems"}
-      }
-    },
-    "InventoryDeletionSummaryItem":{
-      "type":"structure",
-      "members":{
-        "Version":{"shape":"InventoryItemSchemaVersion"},
-        "Count":{"shape":"ResourceCount"},
-        "RemainingCount":{"shape":"RemainingCount"}
-      }
-    },
-    "InventoryDeletionSummaryItems":{
-      "type":"list",
-      "member":{"shape":"InventoryDeletionSummaryItem"}
-    },
-    "InventoryDeletionsList":{
-      "type":"list",
-      "member":{"shape":"InventoryDeletionStatusItem"}
     },
     "InventoryFilter":{
       "type":"structure",
@@ -4943,37 +4312,21 @@
     },
     "InventoryFilterList":{
       "type":"list",
-      "member":{"shape":"InventoryFilter"},
+      "member":{
+        "shape":"InventoryFilter",
+        "locationName":"InventoryFilter"
+      },
       "max":5,
       "min":1
     },
     "InventoryFilterValue":{"type":"string"},
     "InventoryFilterValueList":{
       "type":"list",
-      "member":{"shape":"InventoryFilterValue"},
-      "max":40,
-      "min":1
-    },
-    "InventoryGroup":{
-      "type":"structure",
-      "required":[
-        "Name",
-        "Filters"
-      ],
-      "members":{
-        "Name":{"shape":"InventoryGroupName"},
-        "Filters":{"shape":"InventoryFilterList"}
-      }
-    },
-    "InventoryGroupList":{
-      "type":"list",
-      "member":{"shape":"InventoryGroup"},
-      "max":10,
-      "min":1
-    },
-    "InventoryGroupName":{
-      "type":"string",
-      "max":200,
+      "member":{
+        "shape":"InventoryFilterValue",
+        "locationName":"FilterValue"
+      },
+      "max":20,
       "min":1
     },
     "InventoryItem":{
@@ -5005,7 +4358,10 @@
     },
     "InventoryItemAttributeList":{
       "type":"list",
-      "member":{"shape":"InventoryItemAttribute"},
+      "member":{
+        "shape":"InventoryItemAttribute",
+        "locationName":"Attribute"
+      },
       "max":50,
       "min":1
     },
@@ -5040,7 +4396,10 @@
     },
     "InventoryItemList":{
       "type":"list",
-      "member":{"shape":"InventoryItem"},
+      "member":{
+        "shape":"InventoryItem",
+        "locationName":"Item"
+      },
       "max":30,
       "min":1
     },
@@ -5053,8 +4412,7 @@
       "members":{
         "TypeName":{"shape":"InventoryItemTypeName"},
         "Version":{"shape":"InventoryItemSchemaVersion"},
-        "Attributes":{"shape":"InventoryItemAttributeList"},
-        "DisplayName":{"shape":"InventoryTypeDisplayName"}
+        "Attributes":{"shape":"InventoryItemAttributeList"}
       }
     },
     "InventoryItemSchemaResultList":{
@@ -5083,8 +4441,7 @@
         "NotEqual",
         "BeginWith",
         "LessThan",
-        "GreaterThan",
-        "Exists"
+        "GreaterThan"
       ]
     },
     "InventoryResultEntity":{
@@ -5097,7 +4454,10 @@
     "InventoryResultEntityId":{"type":"string"},
     "InventoryResultEntityList":{
       "type":"list",
-      "member":{"shape":"InventoryResultEntity"}
+      "member":{
+        "shape":"InventoryResultEntity",
+        "locationName":"Entity"
+      }
     },
     "InventoryResultItem":{
       "type":"structure",
@@ -5120,14 +4480,6 @@
       "key":{"shape":"InventoryResultItemKey"},
       "value":{"shape":"InventoryResultItem"}
     },
-    "InventorySchemaDeleteOption":{
-      "type":"string",
-      "enum":[
-        "DisableSchema",
-        "DeleteSchema"
-      ]
-    },
-    "InventoryTypeDisplayName":{"type":"string"},
     "InvocationDoesNotExist":{
       "type":"structure",
       "members":{
@@ -5159,28 +4511,6 @@
       "type":"list",
       "member":{"shape":"TagKey"}
     },
-    "LabelParameterVersionRequest":{
-      "type":"structure",
-      "required":[
-        "Name",
-        "Labels"
-      ],
-      "members":{
-        "Name":{"shape":"PSParameterName"},
-        "ParameterVersion":{
-          "shape":"PSParameterVersion",
-          "box":true
-        },
-        "Labels":{"shape":"ParameterLabelList"}
-      }
-    },
-    "LabelParameterVersionResult":{
-      "type":"structure",
-      "members":{
-        "InvalidLabels":{"shape":"ParameterLabelList"}
-      }
-    },
-    "LastResourceDataSyncMessage":{"type":"string"},
     "LastResourceDataSyncStatus":{
       "type":"string",
       "enum":[
@@ -5437,7 +4767,6 @@
         "S3Region":{"shape":"S3Region"}
       }
     },
-    "Long":{"type":"long"},
     "MaintenanceWindowAllowUnassociatedTargets":{"type":"boolean"},
     "MaintenanceWindowAutomationParameters":{
       "type":"structure",
@@ -5901,26 +5230,10 @@
       "enum":[
         "WINDOWS",
         "AMAZON_LINUX",
-        "AMAZON_LINUX_2",
         "UBUNTU",
-        "REDHAT_ENTERPRISE_LINUX",
-        "SUSE",
-        "CENTOS"
+        "REDHAT_ENTERPRISE_LINUX"
       ]
     },
-    "OutputSource":{
-      "type":"structure",
-      "members":{
-        "OutputSourceId":{"shape":"OutputSourceId"},
-        "OutputSourceType":{"shape":"OutputSourceType"}
-      }
-    },
-    "OutputSourceId":{
-      "type":"string",
-      "max":36,
-      "min":36
-    },
-    "OutputSourceType":{"type":"string"},
     "OwnerInformation":{
       "type":"string",
       "max":128,
@@ -5929,31 +5242,20 @@
     },
     "PSParameterName":{
       "type":"string",
-      "max":2048,
+      "max":1024,
       "min":1
-    },
-    "PSParameterSelector":{
-      "type":"string",
-      "max":128,
-      "min":0
     },
     "PSParameterValue":{
       "type":"string",
       "max":4096,
       "min":1
     },
-    "PSParameterVersion":{"type":"long"},
     "Parameter":{
       "type":"structure",
       "members":{
         "Name":{"shape":"PSParameterName"},
         "Type":{"shape":"ParameterType"},
-        "Value":{"shape":"PSParameterValue"},
-        "Version":{"shape":"PSParameterVersion"},
-        "Selector":{"shape":"PSParameterSelector"},
-        "SourceResult":{"shape":"String"},
-        "LastModifiedDate":{"shape":"DateTime"},
-        "ARN":{"shape":"String"}
+        "Value":{"shape":"PSParameterValue"}
       }
     },
     "ParameterAlreadyExists":{
@@ -5966,7 +5268,7 @@
     "ParameterDescription":{
       "type":"string",
       "max":1024,
-      "min":0
+      "min":1
     },
     "ParameterHistory":{
       "type":"structure",
@@ -5978,9 +5280,7 @@
         "LastModifiedUser":{"shape":"String"},
         "Description":{"shape":"ParameterDescription"},
         "Value":{"shape":"PSParameterValue"},
-        "AllowedPattern":{"shape":"AllowedPattern"},
-        "Version":{"shape":"PSParameterVersion"},
-        "Labels":{"shape":"ParameterLabelList"}
+        "AllowedPattern":{"shape":"AllowedPattern"}
       }
     },
     "ParameterHistoryList":{
@@ -5993,17 +5293,6 @@
       "min":1,
       "pattern":"^([a-zA-Z0-9:/_-]+)$"
     },
-    "ParameterLabel":{
-      "type":"string",
-      "max":100,
-      "min":1
-    },
-    "ParameterLabelList":{
-      "type":"list",
-      "member":{"shape":"ParameterLabel"},
-      "max":10,
-      "min":1
-    },
     "ParameterLimitExceeded":{
       "type":"structure",
       "members":{
@@ -6015,13 +5304,6 @@
       "type":"list",
       "member":{"shape":"Parameter"}
     },
-    "ParameterMaxVersionLimitExceeded":{
-      "type":"structure",
-      "members":{
-        "message":{"shape":"String"}
-      },
-      "exception":true
-    },
     "ParameterMetadata":{
       "type":"structure",
       "members":{
@@ -6031,8 +5313,7 @@
         "LastModifiedDate":{"shape":"DateTime"},
         "LastModifiedUser":{"shape":"String"},
         "Description":{"shape":"ParameterDescription"},
-        "AllowedPattern":{"shape":"AllowedPattern"},
-        "Version":{"shape":"PSParameterVersion"}
+        "AllowedPattern":{"shape":"AllowedPattern"}
       }
     },
     "ParameterMetadataList":{
@@ -6073,7 +5354,7 @@
       "type":"string",
       "max":132,
       "min":1,
-      "pattern":"tag:.+|Name|Type|KeyId|Path|Label"
+      "pattern":"tag:.+|Name|Type|KeyId|Path"
     },
     "ParameterStringFilterList":{
       "type":"list",
@@ -6107,20 +5388,6 @@
     "ParameterValueList":{
       "type":"list",
       "member":{"shape":"ParameterValue"}
-    },
-    "ParameterVersionLabelLimitExceeded":{
-      "type":"structure",
-      "members":{
-        "message":{"shape":"String"}
-      },
-      "exception":true
-    },
-    "ParameterVersionNotFound":{
-      "type":"structure",
-      "members":{
-        "message":{"shape":"String"}
-      },
-      "exception":true
     },
     "Parameters":{
       "type":"map",
@@ -6399,10 +5666,6 @@
         "ApproveAfterDays":{
           "shape":"ApproveAfterDays",
           "box":true
-        },
-        "EnableNonSecurity":{
-          "shape":"Boolean",
-          "box":true
         }
       }
     },
@@ -6420,46 +5683,6 @@
       "min":0
     },
     "PatchSeverity":{"type":"string"},
-    "PatchSource":{
-      "type":"structure",
-      "required":[
-        "Name",
-        "Products",
-        "Configuration"
-      ],
-      "members":{
-        "Name":{"shape":"PatchSourceName"},
-        "Products":{"shape":"PatchSourceProductList"},
-        "Configuration":{"shape":"PatchSourceConfiguration"}
-      }
-    },
-    "PatchSourceConfiguration":{
-      "type":"string",
-      "max":512,
-      "min":1,
-      "sensitive":true
-    },
-    "PatchSourceList":{
-      "type":"list",
-      "member":{"shape":"PatchSource"},
-      "max":20,
-      "min":0
-    },
-    "PatchSourceName":{
-      "type":"string",
-      "pattern":"^[a-zA-Z0-9_\\-.]{3,50}$"
-    },
-    "PatchSourceProduct":{
-      "type":"string",
-      "max":128,
-      "min":1
-    },
-    "PatchSourceProductList":{
-      "type":"list",
-      "member":{"shape":"PatchSourceProduct"},
-      "max":20,
-      "min":1
-    },
     "PatchStatus":{
       "type":"structure",
       "members":{
@@ -6487,7 +5710,10 @@
     },
     "PlatformTypeList":{
       "type":"list",
-      "member":{"shape":"PlatformType"}
+      "member":{
+        "shape":"PlatformType",
+        "locationName":"PlatformType"
+      }
     },
     "Product":{"type":"string"},
     "PutComplianceItemsRequest":{
@@ -6513,7 +5739,6 @@
       "members":{
       }
     },
-    "PutInventoryMessage":{"type":"string"},
     "PutInventoryRequest":{
       "type":"structure",
       "required":[
@@ -6528,7 +5753,6 @@
     "PutInventoryResult":{
       "type":"structure",
       "members":{
-        "Message":{"shape":"PutInventoryMessage"}
       }
     },
     "PutParameterRequest":{
@@ -6554,7 +5778,6 @@
     "PutParameterResult":{
       "type":"structure",
       "members":{
-        "Version":{"shape":"PSParameterVersion"}
       }
     },
     "RegisterDefaultPatchBaselineRequest":{
@@ -6620,6 +5843,7 @@
         "WindowId",
         "Targets",
         "TaskArn",
+        "ServiceRoleArn",
         "TaskType",
         "MaxConcurrency",
         "MaxErrors"
@@ -6663,7 +5887,6 @@
       "max":1000,
       "min":1
     },
-    "RemainingCount":{"type":"integer"},
     "RemoveTagsFromResourceRequest":{
       "type":"structure",
       "required":[
@@ -6682,13 +5905,6 @@
       "members":{
       }
     },
-    "ResolvedTargets":{
-      "type":"structure",
-      "members":{
-        "ParameterValues":{"shape":"TargetParameterList"},
-        "Truncated":{"shape":"Boolean"}
-      }
-    },
     "ResourceComplianceSummaryItem":{
       "type":"structure",
       "members":{
@@ -6704,10 +5920,11 @@
     },
     "ResourceComplianceSummaryItemList":{
       "type":"list",
-      "member":{"shape":"ResourceComplianceSummaryItem"}
+      "member":{
+        "shape":"ResourceComplianceSummaryItem",
+        "locationName":"Item"
+      }
     },
-    "ResourceCount":{"type":"integer"},
-    "ResourceCountByStatus":{"type":"string"},
     "ResourceDataSyncAWSKMSKeyARN":{
       "type":"string",
       "max":512,
@@ -6744,8 +5961,7 @@
         "LastSyncTime":{"shape":"LastResourceDataSyncTime"},
         "LastSuccessfulSyncTime":{"shape":"LastSuccessfulResourceDataSyncTime"},
         "LastStatus":{"shape":"LastResourceDataSyncStatus"},
-        "SyncCreatedTime":{"shape":"ResourceDataSyncCreatedTime"},
-        "LastSyncStatusMessage":{"shape":"LastResourceDataSyncMessage"}
+        "SyncCreatedTime":{"shape":"ResourceDataSyncCreatedTime"}
       }
     },
     "ResourceDataSyncItemList":{
@@ -6841,24 +6057,12 @@
     },
     "ResultAttributeList":{
       "type":"list",
-      "member":{"shape":"ResultAttribute"},
+      "member":{
+        "shape":"ResultAttribute",
+        "locationName":"ResultAttribute"
+      },
       "max":1,
       "min":1
-    },
-    "ResumeSessionRequest":{
-      "type":"structure",
-      "required":["SessionId"],
-      "members":{
-        "SessionId":{"shape":"SessionId"}
-      }
-    },
-    "ResumeSessionResponse":{
-      "type":"structure",
-      "members":{
-        "SessionId":{"shape":"SessionId"},
-        "TokenValue":{"shape":"TokenValue"},
-        "StreamUrl":{"shape":"StreamUrl"}
-      }
     },
     "S3BucketName":{
       "type":"string",
@@ -6917,7 +6121,6 @@
         "InstanceIds":{"shape":"InstanceIdList"},
         "Targets":{"shape":"Targets"},
         "DocumentName":{"shape":"DocumentARN"},
-        "DocumentVersion":{"shape":"DocumentVersion"},
         "DocumentHash":{"shape":"DocumentHash"},
         "DocumentHashType":{"shape":"DocumentHashType"},
         "TimeoutSeconds":{
@@ -6932,8 +6135,7 @@
         "MaxConcurrency":{"shape":"MaxConcurrency"},
         "MaxErrors":{"shape":"MaxErrors"},
         "ServiceRoleArn":{"shape":"ServiceRole"},
-        "NotificationConfig":{"shape":"NotificationConfig"},
-        "CloudWatchOutputConfig":{"shape":"CloudWatchOutputConfig"}
+        "NotificationConfig":{"shape":"NotificationConfig"}
       }
     },
     "SendCommandResult":{
@@ -6943,135 +6145,6 @@
       }
     },
     "ServiceRole":{"type":"string"},
-    "Session":{
-      "type":"structure",
-      "members":{
-        "SessionId":{"shape":"SessionId"},
-        "Target":{"shape":"SessionTarget"},
-        "Status":{"shape":"SessionStatus"},
-        "StartDate":{"shape":"DateTime"},
-        "EndDate":{"shape":"DateTime"},
-        "DocumentName":{"shape":"DocumentName"},
-        "Owner":{"shape":"SessionOwner"},
-        "Details":{"shape":"SessionDetails"},
-        "OutputUrl":{"shape":"SessionManagerOutputUrl"}
-      }
-    },
-    "SessionDetails":{
-      "type":"string",
-      "max":1024,
-      "min":1
-    },
-    "SessionFilter":{
-      "type":"structure",
-      "required":[
-        "key",
-        "value"
-      ],
-      "members":{
-        "key":{"shape":"SessionFilterKey"},
-        "value":{"shape":"SessionFilterValue"}
-      }
-    },
-    "SessionFilterKey":{
-      "type":"string",
-      "enum":[
-        "InvokedAfter",
-        "InvokedBefore",
-        "Target",
-        "Owner",
-        "Status"
-      ]
-    },
-    "SessionFilterList":{
-      "type":"list",
-      "member":{"shape":"SessionFilter"},
-      "max":5,
-      "min":1
-    },
-    "SessionFilterValue":{
-      "type":"string",
-      "max":200,
-      "min":1
-    },
-    "SessionId":{
-      "type":"string",
-      "max":96,
-      "min":1
-    },
-    "SessionList":{
-      "type":"list",
-      "member":{"shape":"Session"}
-    },
-    "SessionManagerCloudWatchOutputUrl":{
-      "type":"string",
-      "max":2083,
-      "min":1
-    },
-    "SessionManagerOutputUrl":{
-      "type":"structure",
-      "members":{
-        "S3OutputUrl":{"shape":"SessionManagerS3OutputUrl"},
-        "CloudWatchOutputUrl":{"shape":"SessionManagerCloudWatchOutputUrl"}
-      }
-    },
-    "SessionManagerParameterName":{
-      "type":"string",
-      "max":255,
-      "min":1
-    },
-    "SessionManagerParameterValue":{
-      "type":"string",
-      "max":65535,
-      "min":1
-    },
-    "SessionManagerParameterValueList":{
-      "type":"list",
-      "member":{"shape":"SessionManagerParameterValue"}
-    },
-    "SessionManagerParameters":{
-      "type":"map",
-      "key":{"shape":"SessionManagerParameterName"},
-      "value":{"shape":"SessionManagerParameterValueList"}
-    },
-    "SessionManagerS3OutputUrl":{
-      "type":"string",
-      "max":2083,
-      "min":1
-    },
-    "SessionMaxResults":{
-      "type":"integer",
-      "max":200,
-      "min":1
-    },
-    "SessionOwner":{
-      "type":"string",
-      "max":256,
-      "min":1
-    },
-    "SessionState":{
-      "type":"string",
-      "enum":[
-        "Active",
-        "History"
-      ]
-    },
-    "SessionStatus":{
-      "type":"string",
-      "enum":[
-        "Connected",
-        "Connecting",
-        "Disconnected",
-        "Terminated",
-        "Terminating",
-        "Failed"
-      ]
-    },
-    "SessionTarget":{
-      "type":"string",
-      "max":50,
-      "min":1
-    },
     "SeveritySummary":{
       "type":"structure",
       "members":{
@@ -7087,10 +6160,7 @@
       "type":"string",
       "enum":[
         "Approve",
-        "Reject",
-        "StartStep",
-        "StopStep",
-        "Resume"
+        "Reject"
       ]
     },
     "SnapshotDownloadUrl":{"type":"string"},
@@ -7108,18 +6178,6 @@
       "type":"string",
       "max":24000
     },
-    "StartAssociationsOnceRequest":{
-      "type":"structure",
-      "required":["AssociationIds"],
-      "members":{
-        "AssociationIds":{"shape":"AssociationIdList"}
-      }
-    },
-    "StartAssociationsOnceResult":{
-      "type":"structure",
-      "members":{
-      }
-    },
     "StartAutomationExecutionRequest":{
       "type":"structure",
       "required":["DocumentName"],
@@ -7130,36 +6188,13 @@
           "box":true
         },
         "Parameters":{"shape":"AutomationParameterMap"},
-        "ClientToken":{"shape":"IdempotencyToken"},
-        "Mode":{"shape":"ExecutionMode"},
-        "TargetParameterName":{"shape":"AutomationParameterKey"},
-        "Targets":{"shape":"Targets"},
-        "TargetMaps":{"shape":"TargetMaps"},
-        "MaxConcurrency":{"shape":"MaxConcurrency"},
-        "MaxErrors":{"shape":"MaxErrors"}
+        "ClientToken":{"shape":"IdempotencyToken"}
       }
     },
     "StartAutomationExecutionResult":{
       "type":"structure",
       "members":{
         "AutomationExecutionId":{"shape":"AutomationExecutionId"}
-      }
-    },
-    "StartSessionRequest":{
-      "type":"structure",
-      "required":["Target"],
-      "members":{
-        "Target":{"shape":"SessionTarget"},
-        "DocumentName":{"shape":"DocumentARN"},
-        "Parameters":{"shape":"SessionManagerParameters"}
-      }
-    },
-    "StartSessionResponse":{
-      "type":"structure",
-      "members":{
-        "SessionId":{"shape":"SessionId"},
-        "TokenValue":{"shape":"TokenValue"},
-        "StreamUrl":{"shape":"StreamUrl"}
       }
     },
     "StatusAdditionalInfo":{
@@ -7188,15 +6223,6 @@
       "members":{
         "StepName":{"shape":"String"},
         "Action":{"shape":"AutomationActionName"},
-        "TimeoutSeconds":{
-          "shape":"Long",
-          "box":true
-        },
-        "OnFailure":{"shape":"String"},
-        "MaxAttempts":{
-          "shape":"Integer",
-          "box":true
-        },
         "ExecutionStartTime":{"shape":"DateTime"},
         "ExecutionEndTime":{"shape":"DateTime"},
         "StepStatus":{"shape":"AutomationExecutionStatus"},
@@ -7205,73 +6231,20 @@
         "Outputs":{"shape":"AutomationParameterMap"},
         "Response":{"shape":"String"},
         "FailureMessage":{"shape":"String"},
-        "FailureDetails":{"shape":"FailureDetails"},
-        "StepExecutionId":{"shape":"String"},
-        "OverriddenParameters":{"shape":"AutomationParameterMap"},
-        "IsEnd":{
-          "shape":"Boolean",
-          "box":true
-        },
-        "NextStep":{
-          "shape":"String",
-          "box":true
-        },
-        "IsCritical":{
-          "shape":"Boolean",
-          "box":true
-        },
-        "ValidNextSteps":{"shape":"ValidNextStepList"}
+        "FailureDetails":{"shape":"FailureDetails"}
       }
-    },
-    "StepExecutionFilter":{
-      "type":"structure",
-      "required":[
-        "Key",
-        "Values"
-      ],
-      "members":{
-        "Key":{"shape":"StepExecutionFilterKey"},
-        "Values":{"shape":"StepExecutionFilterValueList"}
-      }
-    },
-    "StepExecutionFilterKey":{
-      "type":"string",
-      "enum":[
-        "StartTimeBefore",
-        "StartTimeAfter",
-        "StepExecutionStatus",
-        "StepExecutionId",
-        "StepName",
-        "Action"
-      ]
-    },
-    "StepExecutionFilterList":{
-      "type":"list",
-      "member":{"shape":"StepExecutionFilter"},
-      "max":6,
-      "min":1
-    },
-    "StepExecutionFilterValue":{
-      "type":"string",
-      "max":150,
-      "min":1
-    },
-    "StepExecutionFilterValueList":{
-      "type":"list",
-      "member":{"shape":"StepExecutionFilterValue"},
-      "max":10,
-      "min":1
     },
     "StepExecutionList":{
       "type":"list",
-      "member":{"shape":"StepExecution"}
+      "member":{"shape":"StepExecution"},
+      "max":100,
+      "min":0
     },
     "StopAutomationExecutionRequest":{
       "type":"structure",
       "required":["AutomationExecutionId"],
       "members":{
-        "AutomationExecutionId":{"shape":"AutomationExecutionId"},
-        "Type":{"shape":"StopType"}
+        "AutomationExecutionId":{"shape":"AutomationExecutionId"}
       }
     },
     "StopAutomationExecutionResult":{
@@ -7279,14 +6252,6 @@
       "members":{
       }
     },
-    "StopType":{
-      "type":"string",
-      "enum":[
-        "Complete",
-        "Cancel"
-      ]
-    },
-    "StreamUrl":{"type":"string"},
     "String":{"type":"string"},
     "StringDateTime":{
       "type":"string",
@@ -7351,51 +6316,6 @@
       "min":1,
       "pattern":"^[\\p{L}\\p{Z}\\p{N}_.:/=\\-@]*$"
     },
-    "TargetMap":{
-      "type":"map",
-      "key":{"shape":"TargetMapKey"},
-      "value":{"shape":"TargetMapValueList"},
-      "max":20,
-      "min":1
-    },
-    "TargetMapKey":{
-      "type":"string",
-      "max":50,
-      "min":1
-    },
-    "TargetMapValue":{
-      "type":"string",
-      "max":50,
-      "min":1
-    },
-    "TargetMapValueList":{
-      "type":"list",
-      "member":{"shape":"TargetMapValue"},
-      "max":25,
-      "min":0
-    },
-    "TargetMaps":{
-      "type":"list",
-      "member":{"shape":"TargetMap"},
-      "max":300,
-      "min":0
-    },
-    "TargetNotConnected":{
-      "type":"structure",
-      "members":{
-        "Message":{"shape":"String"}
-      },
-      "exception":true
-    },
-    "TargetParameterList":{
-      "type":"list",
-      "member":{"shape":"ParameterValue"}
-    },
-    "TargetType":{
-      "type":"string",
-      "max":200,
-      "pattern":"^\\/[\\w\\.\\-\\:\\/]*$"
-    },
     "TargetValue":{"type":"string"},
     "TargetValues":{
       "type":"list",
@@ -7409,28 +6329,10 @@
       "max":5,
       "min":0
     },
-    "TerminateSessionRequest":{
-      "type":"structure",
-      "required":["SessionId"],
-      "members":{
-        "SessionId":{"shape":"SessionId"}
-      }
-    },
-    "TerminateSessionResponse":{
-      "type":"structure",
-      "members":{
-        "SessionId":{"shape":"SessionId"}
-      }
-    },
     "TimeoutSeconds":{
       "type":"integer",
       "max":2592000,
       "min":30
-    },
-    "TokenValue":{
-      "type":"string",
-      "max":300,
-      "min":0
     },
     "TooManyTagsError":{
       "type":"structure",
@@ -7445,7 +6347,6 @@
       },
       "exception":true
     },
-    "TotalCount":{"type":"integer"},
     "TotalSizeLimitExceededException":{
       "type":"structure",
       "members":{
@@ -7555,9 +6456,7 @@
       "members":{
         "Content":{"shape":"DocumentContent"},
         "Name":{"shape":"DocumentName"},
-        "DocumentVersion":{"shape":"DocumentVersion"},
-        "DocumentFormat":{"shape":"DocumentFormat"},
-        "TargetType":{"shape":"TargetType"}
+        "DocumentVersion":{"shape":"DocumentVersion"}
       }
     },
     "UpdateDocumentResult":{
@@ -7712,17 +6611,8 @@
         "ApprovalRules":{"shape":"PatchRuleGroup"},
         "ApprovedPatches":{"shape":"PatchIdList"},
         "ApprovedPatchesComplianceLevel":{"shape":"PatchComplianceLevel"},
-        "ApprovedPatchesEnableNonSecurity":{
-          "shape":"Boolean",
-          "box":true
-        },
         "RejectedPatches":{"shape":"PatchIdList"},
-        "Description":{"shape":"BaselineDescription"},
-        "Sources":{"shape":"PatchSourceList"},
-        "Replace":{
-          "shape":"Boolean",
-          "box":true
-        }
+        "Description":{"shape":"BaselineDescription"}
       }
     },
     "UpdatePatchBaselineResult":{
@@ -7735,27 +6625,13 @@
         "ApprovalRules":{"shape":"PatchRuleGroup"},
         "ApprovedPatches":{"shape":"PatchIdList"},
         "ApprovedPatchesComplianceLevel":{"shape":"PatchComplianceLevel"},
-        "ApprovedPatchesEnableNonSecurity":{
-          "shape":"Boolean",
-          "box":true
-        },
         "RejectedPatches":{"shape":"PatchIdList"},
         "CreatedDate":{"shape":"DateTime"},
         "ModifiedDate":{"shape":"DateTime"},
-        "Description":{"shape":"BaselineDescription"},
-        "Sources":{"shape":"PatchSourceList"}
+        "Description":{"shape":"BaselineDescription"}
       }
     },
     "Url":{"type":"string"},
-    "ValidNextStep":{
-      "type":"string",
-      "max":65535,
-      "min":1
-    },
-    "ValidNextStepList":{
-      "type":"list",
-      "member":{"shape":"ValidNextStep"}
-    },
     "Version":{
       "type":"string",
       "pattern":"^[0-9]{1,6}(\\.[0-9]{1,6}){2,3}$"

@@ -15,7 +15,7 @@ const opCreateBudget = "CreateBudget"
 
 // CreateBudgetRequest generates a "aws/request.Request" representing the
 // client's request for the CreateBudget operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -53,7 +53,7 @@ func (c *Budgets) CreateBudgetRequest(input *CreateBudgetInput) (req *request.Re
 
 // CreateBudget API operation for AWS Budgets.
 //
-// Creates a budget and, if included, notifications and subscribers.
+// Create a new budget
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -64,18 +64,19 @@ func (c *Budgets) CreateBudgetRequest(input *CreateBudgetInput) (req *request.Re
 //
 // Returned Error Codes:
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeCreationLimitExceededException "CreationLimitExceededException"
-//   You've exceeded the notification or subscriber limit.
+//   The exception is thrown when customer tries to create a record (e.g. budget),
+//   but the number this record already exceeds the limitation.
 //
 //   * ErrCodeDuplicateRecordException "DuplicateRecordException"
-//   The budget name already exists. Budget names must be unique within an account.
+//   The exception is thrown when customer tries to create a record (e.g. budget)
+//   that already exists.
 //
 func (c *Budgets) CreateBudget(input *CreateBudgetInput) (*CreateBudgetOutput, error) {
 	req, out := c.CreateBudgetRequest(input)
@@ -102,7 +103,7 @@ const opCreateNotification = "CreateNotification"
 
 // CreateNotificationRequest generates a "aws/request.Request" representing the
 // client's request for the CreateNotification operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -140,8 +141,7 @@ func (c *Budgets) CreateNotificationRequest(input *CreateNotificationInput) (req
 
 // CreateNotification API operation for AWS Budgets.
 //
-// Creates a notification. You must create the budget before you create the
-// associated notification.
+// Create a new Notification with subscribers for a budget
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -152,21 +152,23 @@ func (c *Budgets) CreateNotificationRequest(input *CreateNotificationInput) (req
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 //   * ErrCodeCreationLimitExceededException "CreationLimitExceededException"
-//   You've exceeded the notification or subscriber limit.
+//   The exception is thrown when customer tries to create a record (e.g. budget),
+//   but the number this record already exceeds the limitation.
 //
 //   * ErrCodeDuplicateRecordException "DuplicateRecordException"
-//   The budget name already exists. Budget names must be unique within an account.
+//   The exception is thrown when customer tries to create a record (e.g. budget)
+//   that already exists.
 //
 func (c *Budgets) CreateNotification(input *CreateNotificationInput) (*CreateNotificationOutput, error) {
 	req, out := c.CreateNotificationRequest(input)
@@ -193,7 +195,7 @@ const opCreateSubscriber = "CreateSubscriber"
 
 // CreateSubscriberRequest generates a "aws/request.Request" representing the
 // client's request for the CreateSubscriber operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -231,8 +233,7 @@ func (c *Budgets) CreateSubscriberRequest(input *CreateSubscriberInput) (req *re
 
 // CreateSubscriber API operation for AWS Budgets.
 //
-// Creates a subscriber. You must create the associated budget and notification
-// before you create the subscriber.
+// Create a new Subscriber for a notification
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -243,21 +244,23 @@ func (c *Budgets) CreateSubscriberRequest(input *CreateSubscriberInput) (req *re
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeCreationLimitExceededException "CreationLimitExceededException"
-//   You've exceeded the notification or subscriber limit.
+//   The exception is thrown when customer tries to create a record (e.g. budget),
+//   but the number this record already exceeds the limitation.
 //
 //   * ErrCodeDuplicateRecordException "DuplicateRecordException"
-//   The budget name already exists. Budget names must be unique within an account.
+//   The exception is thrown when customer tries to create a record (e.g. budget)
+//   that already exists.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 func (c *Budgets) CreateSubscriber(input *CreateSubscriberInput) (*CreateSubscriberOutput, error) {
 	req, out := c.CreateSubscriberRequest(input)
@@ -284,7 +287,7 @@ const opDeleteBudget = "DeleteBudget"
 
 // DeleteBudgetRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteBudget operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -322,10 +325,7 @@ func (c *Budgets) DeleteBudgetRequest(input *DeleteBudgetInput) (req *request.Re
 
 // DeleteBudget API operation for AWS Budgets.
 //
-// Deletes a budget. You can delete your budget at any time.
-//
-// Deleting a budget also deletes the notifications and subscribers associated
-// with that budget.
+// Delete a budget and related notifications
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -336,15 +336,15 @@ func (c *Budgets) DeleteBudgetRequest(input *DeleteBudgetInput) (req *request.Re
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 func (c *Budgets) DeleteBudget(input *DeleteBudgetInput) (*DeleteBudgetOutput, error) {
 	req, out := c.DeleteBudgetRequest(input)
@@ -371,7 +371,7 @@ const opDeleteNotification = "DeleteNotification"
 
 // DeleteNotificationRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteNotification operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -409,10 +409,7 @@ func (c *Budgets) DeleteNotificationRequest(input *DeleteNotificationInput) (req
 
 // DeleteNotification API operation for AWS Budgets.
 //
-// Deletes a notification.
-//
-// Deleting a notification also deletes the subscribers associated with the
-// notification.
+// Delete a notification and related subscribers
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -423,15 +420,15 @@ func (c *Budgets) DeleteNotificationRequest(input *DeleteNotificationInput) (req
 //
 // Returned Error Codes:
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 func (c *Budgets) DeleteNotification(input *DeleteNotificationInput) (*DeleteNotificationOutput, error) {
 	req, out := c.DeleteNotificationRequest(input)
@@ -458,7 +455,7 @@ const opDeleteSubscriber = "DeleteSubscriber"
 
 // DeleteSubscriberRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteSubscriber operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -496,9 +493,7 @@ func (c *Budgets) DeleteSubscriberRequest(input *DeleteSubscriberInput) (req *re
 
 // DeleteSubscriber API operation for AWS Budgets.
 //
-// Deletes a subscriber.
-//
-// Deleting the last subscriber to a notification also deletes the notification.
+// Delete a Subscriber for a notification
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -509,15 +504,15 @@ func (c *Budgets) DeleteSubscriberRequest(input *DeleteSubscriberInput) (req *re
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 func (c *Budgets) DeleteSubscriber(input *DeleteSubscriberInput) (*DeleteSubscriberOutput, error) {
 	req, out := c.DeleteSubscriberRequest(input)
@@ -544,7 +539,7 @@ const opDescribeBudget = "DescribeBudget"
 
 // DescribeBudgetRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeBudget operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -582,7 +577,7 @@ func (c *Budgets) DescribeBudgetRequest(input *DescribeBudgetInput) (req *reques
 
 // DescribeBudget API operation for AWS Budgets.
 //
-// Describes a budget.
+// Get a single budget
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -593,15 +588,15 @@ func (c *Budgets) DescribeBudgetRequest(input *DescribeBudgetInput) (req *reques
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 func (c *Budgets) DescribeBudget(input *DescribeBudgetInput) (*DescribeBudgetOutput, error) {
 	req, out := c.DescribeBudgetRequest(input)
@@ -628,7 +623,7 @@ const opDescribeBudgets = "DescribeBudgets"
 
 // DescribeBudgetsRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeBudgets operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -666,7 +661,7 @@ func (c *Budgets) DescribeBudgetsRequest(input *DescribeBudgetsInput) (req *requ
 
 // DescribeBudgets API operation for AWS Budgets.
 //
-// Lists the budgets associated with an account.
+// Get all budgets for an account
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -677,21 +672,22 @@ func (c *Budgets) DescribeBudgetsRequest(input *DescribeBudgetsInput) (req *requ
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 //   * ErrCodeInvalidNextTokenException "InvalidNextTokenException"
-//   The pagination token is invalid.
+//   This exception is thrown if paging token signature didn't match the token,
+//   or the paging token isn't for this request
 //
 //   * ErrCodeExpiredNextTokenException "ExpiredNextTokenException"
-//   The pagination token expired.
+//   This exception is thrown if the paging token is expired - past its TTL
 //
 func (c *Budgets) DescribeBudgets(input *DescribeBudgetsInput) (*DescribeBudgetsOutput, error) {
 	req, out := c.DescribeBudgetsRequest(input)
@@ -718,7 +714,7 @@ const opDescribeNotificationsForBudget = "DescribeNotificationsForBudget"
 
 // DescribeNotificationsForBudgetRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeNotificationsForBudget operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -756,7 +752,7 @@ func (c *Budgets) DescribeNotificationsForBudgetRequest(input *DescribeNotificat
 
 // DescribeNotificationsForBudget API operation for AWS Budgets.
 //
-// Lists the notifications associated with a budget.
+// Get notifications of a budget
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -767,21 +763,22 @@ func (c *Budgets) DescribeNotificationsForBudgetRequest(input *DescribeNotificat
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 //   * ErrCodeInvalidNextTokenException "InvalidNextTokenException"
-//   The pagination token is invalid.
+//   This exception is thrown if paging token signature didn't match the token,
+//   or the paging token isn't for this request
 //
 //   * ErrCodeExpiredNextTokenException "ExpiredNextTokenException"
-//   The pagination token expired.
+//   This exception is thrown if the paging token is expired - past its TTL
 //
 func (c *Budgets) DescribeNotificationsForBudget(input *DescribeNotificationsForBudgetInput) (*DescribeNotificationsForBudgetOutput, error) {
 	req, out := c.DescribeNotificationsForBudgetRequest(input)
@@ -808,7 +805,7 @@ const opDescribeSubscribersForNotification = "DescribeSubscribersForNotification
 
 // DescribeSubscribersForNotificationRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeSubscribersForNotification operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -846,7 +843,7 @@ func (c *Budgets) DescribeSubscribersForNotificationRequest(input *DescribeSubsc
 
 // DescribeSubscribersForNotification API operation for AWS Budgets.
 //
-// Lists the subscribers associated with a notification.
+// Get subscribers of a notification
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -857,21 +854,22 @@ func (c *Budgets) DescribeSubscribersForNotificationRequest(input *DescribeSubsc
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeInvalidNextTokenException "InvalidNextTokenException"
-//   The pagination token is invalid.
+//   This exception is thrown if paging token signature didn't match the token,
+//   or the paging token isn't for this request
 //
 //   * ErrCodeExpiredNextTokenException "ExpiredNextTokenException"
-//   The pagination token expired.
+//   This exception is thrown if the paging token is expired - past its TTL
 //
 func (c *Budgets) DescribeSubscribersForNotification(input *DescribeSubscribersForNotificationInput) (*DescribeSubscribersForNotificationOutput, error) {
 	req, out := c.DescribeSubscribersForNotificationRequest(input)
@@ -898,7 +896,7 @@ const opUpdateBudget = "UpdateBudget"
 
 // UpdateBudgetRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateBudget operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -936,9 +934,7 @@ func (c *Budgets) UpdateBudgetRequest(input *UpdateBudgetInput) (req *request.Re
 
 // UpdateBudget API operation for AWS Budgets.
 //
-// Updates a budget. You can change every part of a budget except for the budgetName
-// and the calculatedSpend. When a budget is modified, the calculatedSpend drops
-// to zero until AWS has new usage data to use for forecasting.
+// Update the information of a budget already created
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -949,15 +945,15 @@ func (c *Budgets) UpdateBudgetRequest(input *UpdateBudgetInput) (req *request.Re
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 func (c *Budgets) UpdateBudget(input *UpdateBudgetInput) (*UpdateBudgetOutput, error) {
 	req, out := c.UpdateBudgetRequest(input)
@@ -984,7 +980,7 @@ const opUpdateNotification = "UpdateNotification"
 
 // UpdateNotificationRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateNotification operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1022,7 +1018,7 @@ func (c *Budgets) UpdateNotificationRequest(input *UpdateNotificationInput) (req
 
 // UpdateNotification API operation for AWS Budgets.
 //
-// Updates a notification.
+// Update the information about a notification already created
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1033,18 +1029,19 @@ func (c *Budgets) UpdateNotificationRequest(input *UpdateNotificationInput) (req
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 //   * ErrCodeDuplicateRecordException "DuplicateRecordException"
-//   The budget name already exists. Budget names must be unique within an account.
+//   The exception is thrown when customer tries to create a record (e.g. budget)
+//   that already exists.
 //
 func (c *Budgets) UpdateNotification(input *UpdateNotificationInput) (*UpdateNotificationOutput, error) {
 	req, out := c.UpdateNotificationRequest(input)
@@ -1071,7 +1068,7 @@ const opUpdateSubscriber = "UpdateSubscriber"
 
 // UpdateSubscriberRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateSubscriber operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1109,7 +1106,7 @@ func (c *Budgets) UpdateSubscriberRequest(input *UpdateSubscriberInput) (req *re
 
 // UpdateSubscriber API operation for AWS Budgets.
 //
-// Updates a subscriber.
+// Update a subscriber
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1120,18 +1117,19 @@ func (c *Budgets) UpdateSubscriberRequest(input *UpdateSubscriberInput) (req *re
 //
 // Returned Error Codes:
 //   * ErrCodeInternalErrorException "InternalErrorException"
-//   An error on the server occurred during the processing of your request. Try
-//   again later.
+//   This exception is thrown on an unknown internal failure.
 //
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
-//   An error on the client occurred. Typically, the cause is an invalid input
-//   value.
+//   This exception is thrown if any request is given an invalid parameter. E.g.,
+//   if a required Date field is null.
 //
 //   * ErrCodeNotFoundException "NotFoundException"
-//   We can’t locate the resource that you specified.
+//   This exception is thrown if a requested entity is not found. E.g., if a budget
+//   id doesn't exist for an account ID.
 //
 //   * ErrCodeDuplicateRecordException "DuplicateRecordException"
-//   The budget name already exists. Budget names must be unique within an account.
+//   The exception is thrown when customer tries to create a record (e.g. budget)
+//   that already exists.
 //
 func (c *Budgets) UpdateSubscriber(input *UpdateSubscriberInput) (*UpdateSubscriberOutput, error) {
 	req, out := c.UpdateSubscriberRequest(input)
@@ -1154,62 +1152,43 @@ func (c *Budgets) UpdateSubscriberWithContext(ctx aws.Context, input *UpdateSubs
 	return out, req.Send()
 }
 
-// Represents the output of the CreateBudget operation. The content consists
-// of the detailed metadata and data file information, and the current status
-// of the budget.
-//
-// The ARN pattern for a budget is: arn:aws:budgetservice::AccountId:budget/budgetName
+// AWS Budget model
 type Budget struct {
 	_ struct{} `type:"structure"`
 
-	// The total amount of cost, usage, or RI utilization that you want to track
-	// with your budget.
+	// A structure that represents either a cost spend or usage spend. Contains
+	// an amount and a unit.
 	//
-	// BudgetLimit is required for cost or usage budgets, but optional for RI utilization
-	// budgets. RI utilization budgets default to the only valid value for RI utilization
-	// budgets, which is 100.
-	BudgetLimit *Spend `type:"structure"`
+	// BudgetLimit is a required field
+	BudgetLimit *Spend `type:"structure" required:"true"`
 
-	// The name of a budget. Unique within accounts. : and \ characters are not
-	// allowed in the BudgetName.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
 
-	// Whether this budget tracks monetary costs, usage, or RI utilization.
+	// The type of a budget. It should be COST, USAGE, or RI_UTILIZATION.
 	//
 	// BudgetType is a required field
 	BudgetType *string `type:"string" required:"true" enum:"BudgetType"`
 
-	// The actual and forecasted cost or usage being tracked by a budget.
+	// A structure that holds the actual and forecasted spend for a budget.
 	CalculatedSpend *CalculatedSpend `type:"structure"`
 
-	// The cost filters applied to a budget, such as service or region.
+	// A map that represents the cost filters applied to the budget.
 	CostFilters map[string][]*string `type:"map"`
 
-	// The types of costs included in this budget.
-	CostTypes *CostTypes `type:"structure"`
+	// This includes the options for getting the cost of a budget.
+	//
+	// CostTypes is a required field
+	CostTypes *CostTypes `type:"structure" required:"true"`
 
-	// The period of time covered by a budget. Has a start date and an end date.
-	// The start date must come before the end date. There are no restrictions on
-	// the end date.
+	// A time period indicating the start date and end date of a budget.
 	//
-	// If you created your budget and didn't specify a start date, AWS defaults
-	// to the start of your chosen time period (i.e. DAILY, MONTHLY, QUARTERLY,
-	// ANNUALLY). For example, if you created your budget on January 24th 2018,
-	// chose DAILY, and didn't set a start date, AWS set your start date to 01/24/18
-	// 00:00 UTC. If you chose MONTHLY, AWS set your start date to 01/01/18 00:00
-	// UTC. If you didn't specify an end date, AWS set your end date to 06/15/87
-	// 00:00 UTC. The defaults are the same for the AWS Billing and Cost Management
-	// console and the API.
-	//
-	// You can change either date with the UpdateBudget operation.
-	//
-	// After the end date, AWS deletes the budget and all associated notifications
-	// and subscribers.
-	TimePeriod *TimePeriod `type:"structure"`
+	// TimePeriod is a required field
+	TimePeriod *TimePeriod `type:"structure" required:"true"`
 
-	// The length of time until a budget resets the actual and forecasted spend.
+	// The time unit of the budget. e.g. MONTHLY, QUARTERLY, etc.
 	//
 	// TimeUnit is a required field
 	TimeUnit *string `type:"string" required:"true" enum:"TimeUnit"`
@@ -1228,11 +1207,20 @@ func (s Budget) GoString() string {
 // Validate inspects the fields of the type to determine if they are valid.
 func (s *Budget) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "Budget"}
+	if s.BudgetLimit == nil {
+		invalidParams.Add(request.NewErrParamRequired("BudgetLimit"))
+	}
 	if s.BudgetName == nil {
 		invalidParams.Add(request.NewErrParamRequired("BudgetName"))
 	}
 	if s.BudgetType == nil {
 		invalidParams.Add(request.NewErrParamRequired("BudgetType"))
+	}
+	if s.CostTypes == nil {
+		invalidParams.Add(request.NewErrParamRequired("CostTypes"))
+	}
+	if s.TimePeriod == nil {
+		invalidParams.Add(request.NewErrParamRequired("TimePeriod"))
 	}
 	if s.TimeUnit == nil {
 		invalidParams.Add(request.NewErrParamRequired("TimeUnit"))
@@ -1245,6 +1233,16 @@ func (s *Budget) Validate() error {
 	if s.CalculatedSpend != nil {
 		if err := s.CalculatedSpend.Validate(); err != nil {
 			invalidParams.AddNested("CalculatedSpend", err.(request.ErrInvalidParams))
+		}
+	}
+	if s.CostTypes != nil {
+		if err := s.CostTypes.Validate(); err != nil {
+			invalidParams.AddNested("CostTypes", err.(request.ErrInvalidParams))
+		}
+	}
+	if s.TimePeriod != nil {
+		if err := s.TimePeriod.Validate(); err != nil {
+			invalidParams.AddNested("TimePeriod", err.(request.ErrInvalidParams))
 		}
 	}
 
@@ -1302,22 +1300,18 @@ func (s *Budget) SetTimeUnit(v string) *Budget {
 	return s
 }
 
-// The spend objects associated with this budget. The actualSpend tracks how
-// much you've used, cost, usage, or RI units, and the forecastedSpend tracks
-// how much you are predicted to spend if your current usage remains steady.
-//
-// For example, if it is the 20th of the month and you have spent 50 dollars
-// on Amazon EC2, your actualSpend is 50 USD, and your forecastedSpend is 75
-// USD.
+// A structure that holds the actual and forecasted spend for a budget.
 type CalculatedSpend struct {
 	_ struct{} `type:"structure"`
 
-	// The amount of cost, usage, or RI units that you have used.
+	// A structure that represents either a cost spend or usage spend. Contains
+	// an amount and a unit.
 	//
 	// ActualSpend is a required field
 	ActualSpend *Spend `type:"structure" required:"true"`
 
-	// The amount of cost, usage, or RI units that you are forecasted to use.
+	// A structure that represents either a cost spend or usage spend. Contains
+	// an amount and a unit.
 	ForecastedSpend *Spend `type:"structure"`
 }
 
@@ -1366,64 +1360,24 @@ func (s *CalculatedSpend) SetForecastedSpend(v *Spend) *CalculatedSpend {
 	return s
 }
 
-// The types of cost included in a budget, such as tax and subscriptions.
+// This includes the options for getting the cost of a budget.
 type CostTypes struct {
 	_ struct{} `type:"structure"`
 
-	// Specifies whether a budget includes credits.
+	// A generic boolean value.
 	//
-	// The default value is true.
-	IncludeCredit *bool `type:"boolean"`
+	// IncludeSubscription is a required field
+	IncludeSubscription *bool `type:"boolean" required:"true"`
 
-	// Specifies whether a budget includes discounts.
+	// A generic boolean value.
 	//
-	// The default value is true.
-	IncludeDiscount *bool `type:"boolean"`
+	// IncludeTax is a required field
+	IncludeTax *bool `type:"boolean" required:"true"`
 
-	// Specifies whether a budget includes non-RI subscription costs.
+	// A generic boolean value.
 	//
-	// The default value is true.
-	IncludeOtherSubscription *bool `type:"boolean"`
-
-	// Specifies whether a budget includes recurring fees such as monthly RI fees.
-	//
-	// The default value is true.
-	IncludeRecurring *bool `type:"boolean"`
-
-	// Specifies whether a budget includes refunds.
-	//
-	// The default value is true.
-	IncludeRefund *bool `type:"boolean"`
-
-	// Specifies whether a budget includes subscriptions.
-	//
-	// The default value is true.
-	IncludeSubscription *bool `type:"boolean"`
-
-	// Specifies whether a budget includes support subscription fees.
-	//
-	// The default value is true.
-	IncludeSupport *bool `type:"boolean"`
-
-	// Specifies whether a budget includes taxes.
-	//
-	// The default value is true.
-	IncludeTax *bool `type:"boolean"`
-
-	// Specifies whether a budget includes upfront RI costs.
-	//
-	// The default value is true.
-	IncludeUpfront *bool `type:"boolean"`
-
-	// Specifies whether a budget uses the amortized rate.
-	//
-	// The default value is false.
-	UseAmortized *bool `type:"boolean"`
-
-	// Specifies whether a budget uses blended rate.
-	//
-	// The default value is false.
-	UseBlended *bool `type:"boolean"`
+	// UseBlended is a required field
+	UseBlended *bool `type:"boolean" required:"true"`
 }
 
 // String returns the string representation
@@ -1436,34 +1390,23 @@ func (s CostTypes) GoString() string {
 	return s.String()
 }
 
-// SetIncludeCredit sets the IncludeCredit field's value.
-func (s *CostTypes) SetIncludeCredit(v bool) *CostTypes {
-	s.IncludeCredit = &v
-	return s
-}
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *CostTypes) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "CostTypes"}
+	if s.IncludeSubscription == nil {
+		invalidParams.Add(request.NewErrParamRequired("IncludeSubscription"))
+	}
+	if s.IncludeTax == nil {
+		invalidParams.Add(request.NewErrParamRequired("IncludeTax"))
+	}
+	if s.UseBlended == nil {
+		invalidParams.Add(request.NewErrParamRequired("UseBlended"))
+	}
 
-// SetIncludeDiscount sets the IncludeDiscount field's value.
-func (s *CostTypes) SetIncludeDiscount(v bool) *CostTypes {
-	s.IncludeDiscount = &v
-	return s
-}
-
-// SetIncludeOtherSubscription sets the IncludeOtherSubscription field's value.
-func (s *CostTypes) SetIncludeOtherSubscription(v bool) *CostTypes {
-	s.IncludeOtherSubscription = &v
-	return s
-}
-
-// SetIncludeRecurring sets the IncludeRecurring field's value.
-func (s *CostTypes) SetIncludeRecurring(v bool) *CostTypes {
-	s.IncludeRecurring = &v
-	return s
-}
-
-// SetIncludeRefund sets the IncludeRefund field's value.
-func (s *CostTypes) SetIncludeRefund(v bool) *CostTypes {
-	s.IncludeRefund = &v
-	return s
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
 // SetIncludeSubscription sets the IncludeSubscription field's value.
@@ -1472,27 +1415,9 @@ func (s *CostTypes) SetIncludeSubscription(v bool) *CostTypes {
 	return s
 }
 
-// SetIncludeSupport sets the IncludeSupport field's value.
-func (s *CostTypes) SetIncludeSupport(v bool) *CostTypes {
-	s.IncludeSupport = &v
-	return s
-}
-
 // SetIncludeTax sets the IncludeTax field's value.
 func (s *CostTypes) SetIncludeTax(v bool) *CostTypes {
 	s.IncludeTax = &v
-	return s
-}
-
-// SetIncludeUpfront sets the IncludeUpfront field's value.
-func (s *CostTypes) SetIncludeUpfront(v bool) *CostTypes {
-	s.IncludeUpfront = &v
-	return s
-}
-
-// SetUseAmortized sets the UseAmortized field's value.
-func (s *CostTypes) SetUseAmortized(v bool) *CostTypes {
-	s.UseAmortized = &v
 	return s
 }
 
@@ -1506,21 +1431,17 @@ func (s *CostTypes) SetUseBlended(v bool) *CostTypes {
 type CreateBudgetInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The budget object that you want to create.
+	// AWS Budget model
 	//
 	// Budget is a required field
 	Budget *Budget `type:"structure" required:"true"`
 
-	// A notification that you want to associate with a budget. A budget can have
-	// up to five notifications, and each notification can have one SNS subscriber
-	// and up to ten email subscribers. If you include notifications and subscribers
-	// in your CreateBudget call, AWS creates the notifications and subscribers
-	// for you.
+	// A list of Notifications, each with a list of subscribers.
 	NotificationsWithSubscribers []*NotificationWithSubscribers `type:"list"`
 }
 
@@ -1605,25 +1526,23 @@ func (s CreateBudgetOutput) GoString() string {
 type CreateNotificationInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget that you want to create
-	// a notification for.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The name of the budget that you want AWS to notified you about. Budget names
-	// must be unique within an account.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
 
-	// The notification that you want to create.
+	// Notification model. Each budget may contain multiple notifications with different
+	// settings.
 	//
 	// Notification is a required field
 	Notification *Notification `type:"structure" required:"true"`
 
-	// A list of subscribers that you want to associate with the notification. Each
-	// notification can have one SNS subscriber and up to ten email subscribers.
+	// A list of subscribers.
 	//
 	// Subscribers is a required field
 	Subscribers []*Subscriber `min:"1" type:"list" required:"true"`
@@ -1725,24 +1644,24 @@ func (s CreateNotificationOutput) GoString() string {
 type CreateSubscriberInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId associated with the budget that you want to create a subscriber
-	// for.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The name of the budget that you want to subscribe to. Budget names must be
-	// unique within an account.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
 
-	// The notification that you want to create a subscriber for.
+	// Notification model. Each budget may contain multiple notifications with different
+	// settings.
 	//
 	// Notification is a required field
 	Notification *Notification `type:"structure" required:"true"`
 
-	// The subscriber that you want to associate with a budget notification.
+	// Subscriber model. Each notification may contain multiple subscribers with
+	// different addresses.
 	//
 	// Subscriber is a required field
 	Subscriber *Subscriber `type:"structure" required:"true"`
@@ -1836,12 +1755,12 @@ func (s CreateSubscriberOutput) GoString() string {
 type DeleteBudgetInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget that you want to delete.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The name of the budget that you want to delete.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
@@ -1907,18 +1826,18 @@ func (s DeleteBudgetOutput) GoString() string {
 type DeleteNotificationInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget whose notification you want
-	// to delete.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The name of the budget whose notification you want to delete.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
 
-	// The notification that you want to delete.
+	// Notification model. Each budget may contain multiple notifications with different
+	// settings.
 	//
 	// Notification is a required field
 	Notification *Notification `type:"structure" required:"true"`
@@ -1998,23 +1917,24 @@ func (s DeleteNotificationOutput) GoString() string {
 type DeleteSubscriberInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget whose subscriber you want
-	// to delete.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The name of the budget whose subscriber you want to delete.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
 
-	// The notification whose subscriber you want to delete.
+	// Notification model. Each budget may contain multiple notifications with different
+	// settings.
 	//
 	// Notification is a required field
 	Notification *Notification `type:"structure" required:"true"`
 
-	// The subscriber that you want to delete.
+	// Subscriber model. Each notification may contain multiple subscribers with
+	// different addresses.
 	//
 	// Subscriber is a required field
 	Subscriber *Subscriber `type:"structure" required:"true"`
@@ -2108,13 +2028,12 @@ func (s DeleteSubscriberOutput) GoString() string {
 type DescribeBudgetInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget that you want a description
-	// of.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The name of the budget that you want a description of.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
@@ -2165,7 +2084,7 @@ func (s *DescribeBudgetInput) SetBudgetName(v string) *DescribeBudgetInput {
 type DescribeBudgetOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The description of the budget.
+	// AWS Budget model
 	Budget *Budget `type:"structure"`
 }
 
@@ -2189,16 +2108,16 @@ func (s *DescribeBudgetOutput) SetBudget(v *Budget) *DescribeBudgetOutput {
 type DescribeBudgetsInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budgets that you want descriptions
-	// of.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// Optional integer. Specifies the maximum number of results to return in response.
+	// An integer to represent how many entries a paginated response contains. Maximum
+	// is set to 100.
 	MaxResults *int64 `min:"1" type:"integer"`
 
-	// The pagination token that indicates the next set of results to retrieve.
+	// A generic String.
 	NextToken *string `type:"string"`
 }
 
@@ -2253,11 +2172,10 @@ func (s *DescribeBudgetsInput) SetNextToken(v string) *DescribeBudgetsInput {
 type DescribeBudgetsOutput struct {
 	_ struct{} `type:"structure"`
 
-	// A list of budgets.
+	// A list of budgets
 	Budgets []*Budget `type:"list"`
 
-	// The pagination token that indicates the next set of results that you can
-	// retrieve.
+	// A generic String.
 	NextToken *string `type:"string"`
 }
 
@@ -2287,21 +2205,21 @@ func (s *DescribeBudgetsOutput) SetNextToken(v string) *DescribeBudgetsOutput {
 type DescribeNotificationsForBudgetInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget whose notifications you
-	// want descriptions of.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The name of the budget whose notifications you want descriptions of.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
 
-	// Optional integer. Specifies the maximum number of results to return in response.
+	// An integer to represent how many entries a paginated response contains. Maximum
+	// is set to 100.
 	MaxResults *int64 `min:"1" type:"integer"`
 
-	// The pagination token that indicates the next set of results to retrieve.
+	// A generic String.
 	NextToken *string `type:"string"`
 }
 
@@ -2365,11 +2283,10 @@ func (s *DescribeNotificationsForBudgetInput) SetNextToken(v string) *DescribeNo
 type DescribeNotificationsForBudgetOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The pagination token that indicates the next set of results that you can
-	// retrieve.
+	// A generic String.
 	NextToken *string `type:"string"`
 
-	// A list of notifications associated with a budget.
+	// A list of notifications.
 	Notifications []*Notification `type:"list"`
 }
 
@@ -2399,24 +2316,25 @@ func (s *DescribeNotificationsForBudgetOutput) SetNotifications(v []*Notificatio
 type DescribeSubscribersForNotificationInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget whose subscribers you want
-	// descriptions of.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The name of the budget whose subscribers you want descriptions of.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
 
-	// Optional integer. Specifies the maximum number of results to return in response.
+	// An integer to represent how many entries a paginated response contains. Maximum
+	// is set to 100.
 	MaxResults *int64 `min:"1" type:"integer"`
 
-	// The pagination token that indicates the next set of results to retrieve.
+	// A generic String.
 	NextToken *string `type:"string"`
 
-	// The notification whose subscribers you want to list.
+	// Notification model. Each budget may contain multiple notifications with different
+	// settings.
 	//
 	// Notification is a required field
 	Notification *Notification `type:"structure" required:"true"`
@@ -2496,11 +2414,10 @@ func (s *DescribeSubscribersForNotificationInput) SetNotification(v *Notificatio
 type DescribeSubscribersForNotificationOutput struct {
 	_ struct{} `type:"structure"`
 
-	// The pagination token that indicates the next set of results that you can
-	// retrieve.
+	// A generic String.
 	NextToken *string `type:"string"`
 
-	// A list of subscribers associated with a notification.
+	// A list of subscribers.
 	Subscribers []*Subscriber `min:"1" type:"list"`
 }
 
@@ -2526,41 +2443,28 @@ func (s *DescribeSubscribersForNotificationOutput) SetSubscribers(v []*Subscribe
 	return s
 }
 
-// A notification associated with a budget. A budget can have up to five notifications.
-//
-// Each notification must have at least one subscriber. A notification can have
-// one SNS subscriber and up to ten email subscribers, for a total of 11 subscribers.
-//
-// For example, if you have a budget for 200 dollars and you want to be notified
-// when you go over 160 dollars, create a notification with the following parameters:
-//
-//    * A notificationType of ACTUAL
-//
-//    * A comparisonOperator of GREATER_THAN
-//
-//    * A notification threshold of 80
+// Notification model. Each budget may contain multiple notifications with different
+// settings.
 type Notification struct {
 	_ struct{} `type:"structure"`
 
-	// The comparison used for this notification.
+	// The comparison operator of a notification. Currently we support less than,
+	// equal to and greater than.
 	//
 	// ComparisonOperator is a required field
 	ComparisonOperator *string `type:"string" required:"true" enum:"ComparisonOperator"`
 
-	// Whether the notification is for how much you have spent (ACTUAL) or for how
-	// much you are forecasted to spend (FORECASTED).
+	// The type of a notification. It should be ACTUAL or FORECASTED.
 	//
 	// NotificationType is a required field
 	NotificationType *string `type:"string" required:"true" enum:"NotificationType"`
 
-	// The threshold associated with a notification. Thresholds are always a percentage.
+	// The threshold of a notification. It should be a number between 0 and 1,000,000,000.
 	//
 	// Threshold is a required field
 	Threshold *float64 `min:"0.1" type:"double" required:"true"`
 
-	// The type of threshold for a notification. For ACTUAL thresholds, AWS notifies
-	// you when you go over the threshold, and for FORECASTED thresholds AWS notifies
-	// you when you are forecasted to go over the threshold.
+	// The type of threshold for a notification. It can be PERCENTAGE or ABSOLUTE_VALUE.
 	ThresholdType *string `type:"string" enum:"ThresholdType"`
 }
 
@@ -2620,17 +2524,18 @@ func (s *Notification) SetThresholdType(v string) *Notification {
 	return s
 }
 
-// A notification with subscribers. A notification can have one SNS subscriber
-// and up to ten email subscribers, for a total of 11 subscribers.
+// A structure to relate notification and a list of subscribers who belong to
+// the notification.
 type NotificationWithSubscribers struct {
 	_ struct{} `type:"structure"`
 
-	// The notification associated with a budget.
+	// Notification model. Each budget may contain multiple notifications with different
+	// settings.
 	//
 	// Notification is a required field
 	Notification *Notification `type:"structure" required:"true"`
 
-	// A list of subscribers who are subscribed to this notification.
+	// A list of subscribers.
 	//
 	// Subscribers is a required field
 	Subscribers []*Subscriber `min:"1" type:"list" required:"true"`
@@ -2692,24 +2597,17 @@ func (s *NotificationWithSubscribers) SetSubscribers(v []*Subscriber) *Notificat
 	return s
 }
 
-// The amount of cost or usage being measured for a budget.
-//
-// For example, a Spend for 3 GB of S3 usage would have the following parameters:
-//
-//    * An Amount of 3
-//
-//    * A unit of GB
+// A structure that represents either a cost spend or usage spend. Contains
+// an amount and a unit.
 type Spend struct {
 	_ struct{} `type:"structure"`
 
-	// The cost or usage amount associated with a budget forecast, actual spend,
-	// or budget threshold.
+	// A string to represent NumericValue.
 	//
 	// Amount is a required field
 	Amount *string `type:"string" required:"true"`
 
-	// The unit of measurement used for the budget forecast, actual spend, or budget
-	// threshold, such as dollars or GB.
+	// A string to represent budget spend unit. It should be not null and not empty.
 	//
 	// Unit is a required field
 	Unit *string `min:"1" type:"string" required:"true"`
@@ -2756,24 +2654,17 @@ func (s *Spend) SetUnit(v string) *Spend {
 	return s
 }
 
-// The subscriber to a budget notification. The subscriber consists of a subscription
-// type and either an Amazon Simple Notification Service topic or an email address.
-//
-// For example, an email subscriber would have the following parameters:
-//
-//    * A subscriptionType of EMAIL
-//
-//    * An address of example@example.com
+// Subscriber model. Each notification may contain multiple subscribers with
+// different addresses.
 type Subscriber struct {
 	_ struct{} `type:"structure"`
 
-	// The address that AWS sends budget notifications to, either an SNS topic or
-	// an email.
+	// A generic String.
 	//
 	// Address is a required field
-	Address *string `min:"1" type:"string" required:"true"`
+	Address *string `type:"string" required:"true"`
 
-	// The type of notification that AWS sends to a subscriber.
+	// The subscription type of the subscriber. It can be SMS or EMAIL.
 	//
 	// SubscriptionType is a required field
 	SubscriptionType *string `type:"string" required:"true" enum:"SubscriptionType"`
@@ -2794,9 +2685,6 @@ func (s *Subscriber) Validate() error {
 	invalidParams := request.ErrInvalidParams{Context: "Subscriber"}
 	if s.Address == nil {
 		invalidParams.Add(request.NewErrParamRequired("Address"))
-	}
-	if s.Address != nil && len(*s.Address) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("Address", 1))
 	}
 	if s.SubscriptionType == nil {
 		invalidParams.Add(request.NewErrParamRequired("SubscriptionType"))
@@ -2820,30 +2708,19 @@ func (s *Subscriber) SetSubscriptionType(v string) *Subscriber {
 	return s
 }
 
-// The period of time covered by a budget. Has a start date and an end date.
-// The start date must come before the end date. There are no restrictions on
-// the end date.
+// A time period indicating the start date and end date of a budget.
 type TimePeriod struct {
 	_ struct{} `type:"structure"`
 
-	// The end date for a budget. If you didn't specify an end date, AWS set your
-	// end date to 06/15/87 00:00 UTC. The defaults are the same for the AWS Billing
-	// and Cost Management console and the API.
+	// A generic timestamp. In Java it is transformed to a Date object.
 	//
-	// After the end date, AWS deletes the budget and all associated notifications
-	// and subscribers. You can change your end date with the UpdateBudget operation.
-	End *time.Time `type:"timestamp"`
+	// End is a required field
+	End *time.Time `type:"timestamp" timestampFormat:"unix" required:"true"`
 
-	// The start date for a budget. If you created your budget and didn't specify
-	// a start date, AWS defaults to the start of your chosen time period (i.e.
-	// DAILY, MONTHLY, QUARTERLY, ANNUALLY). For example, if you created your budget
-	// on January 24th 2018, chose DAILY, and didn't set a start date, AWS set your
-	// start date to 01/24/18 00:00 UTC. If you chose MONTHLY, AWS set your start
-	// date to 01/01/18 00:00 UTC. The defaults are the same for the AWS Billing
-	// and Cost Management console and the API.
+	// A generic timestamp. In Java it is transformed to a Date object.
 	//
-	// You can change your start date with the UpdateBudget operation.
-	Start *time.Time `type:"timestamp"`
+	// Start is a required field
+	Start *time.Time `type:"timestamp" timestampFormat:"unix" required:"true"`
 }
 
 // String returns the string representation
@@ -2854,6 +2731,22 @@ func (s TimePeriod) String() string {
 // GoString returns the string representation
 func (s TimePeriod) GoString() string {
 	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *TimePeriod) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "TimePeriod"}
+	if s.End == nil {
+		invalidParams.Add(request.NewErrParamRequired("End"))
+	}
+	if s.Start == nil {
+		invalidParams.Add(request.NewErrParamRequired("Start"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
 }
 
 // SetEnd sets the End field's value.
@@ -2872,12 +2765,12 @@ func (s *TimePeriod) SetStart(v time.Time) *TimePeriod {
 type UpdateBudgetInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget that you want to update.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The budget that you want to update your budget to.
+	// AWS Budget model
 	//
 	// NewBudget is a required field
 	NewBudget *Budget `type:"structure" required:"true"`
@@ -2948,23 +2841,24 @@ func (s UpdateBudgetOutput) GoString() string {
 type UpdateNotificationInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget whose notification you want
-	// to update.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The name of the budget whose notification you want to update.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
 
-	// The updated notification to be associated with a budget.
+	// Notification model. Each budget may contain multiple notifications with different
+	// settings.
 	//
 	// NewNotification is a required field
 	NewNotification *Notification `type:"structure" required:"true"`
 
-	// The previous notification associated with a budget.
+	// Notification model. Each budget may contain multiple notifications with different
+	// settings.
 	//
 	// OldNotification is a required field
 	OldNotification *Notification `type:"structure" required:"true"`
@@ -3058,28 +2952,30 @@ func (s UpdateNotificationOutput) GoString() string {
 type UpdateSubscriberInput struct {
 	_ struct{} `type:"structure"`
 
-	// The accountId that is associated with the budget whose subscriber you want
-	// to update.
+	// Account Id of the customer. It should be a 12 digit number.
 	//
 	// AccountId is a required field
 	AccountId *string `min:"12" type:"string" required:"true"`
 
-	// The name of the budget whose subscriber you want to update.
+	// A string represents the budget name. No ":" and "\" character is allowed.
 	//
 	// BudgetName is a required field
 	BudgetName *string `type:"string" required:"true"`
 
-	// The updated subscriber associated with a budget notification.
+	// Subscriber model. Each notification may contain multiple subscribers with
+	// different addresses.
 	//
 	// NewSubscriber is a required field
 	NewSubscriber *Subscriber `type:"structure" required:"true"`
 
-	// The notification whose subscriber you want to update.
+	// Notification model. Each budget may contain multiple notifications with different
+	// settings.
 	//
 	// Notification is a required field
 	Notification *Notification `type:"structure" required:"true"`
 
-	// The previous subscriber associated with a budget notification.
+	// Subscriber model. Each notification may contain multiple subscribers with
+	// different addresses.
 	//
 	// OldSubscriber is a required field
 	OldSubscriber *Subscriber `type:"structure" required:"true"`
@@ -3193,9 +3089,6 @@ const (
 
 	// BudgetTypeRiUtilization is a BudgetType enum value
 	BudgetTypeRiUtilization = "RI_UTILIZATION"
-
-	// BudgetTypeRiCoverage is a BudgetType enum value
-	BudgetTypeRiCoverage = "RI_COVERAGE"
 )
 
 // The comparison operator of a notification. Currently we support less than,

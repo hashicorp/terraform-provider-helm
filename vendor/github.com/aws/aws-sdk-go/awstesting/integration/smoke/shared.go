@@ -79,8 +79,8 @@ func init() {
 			gucumber.T.Errorf("no error returned")
 		}
 		if ok {
-			if a := err.Error(); len(a) == 0 {
-				gucumber.T.Errorf("expect string length to be greater than zero")
+			if e, a := data, err.Error(); !strings.Contains(a, e) {
+				gucumber.T.Errorf("expect %v to be in %v, was not", e, a)
 			}
 		}
 	})
@@ -138,8 +138,8 @@ func init() {
 		if !ok {
 			gucumber.T.Errorf("no error returned")
 		}
-		if a := err.Error(); len(a) == 0 {
-			gucumber.T.Errorf("expect string length to be greater than zero")
+		if e, a := data, err.Error(); !strings.Contains(a, e) {
+			gucumber.T.Errorf("expect %v to be in %v, was not", e, a)
 		}
 	})
 

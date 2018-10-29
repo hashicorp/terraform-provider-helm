@@ -676,7 +676,7 @@ the upload will not be considered complete. The format for the final chunk
 will be as follows:
 
 ```
-PUT /v2/<name>/blob/uploads/<uuid>?digest=<digest>
+PUT /v2/<name>/blobs/uploads/<uuid>?digest=<digest>
 Content-Length: <size of chunk>
 Content-Range: <start of range>-<end of range>
 Content-Type: application/octet-stream
@@ -795,7 +795,7 @@ Note that the upload url will not be available forever. If the upload uuid is
 unknown to the registry, a `404 Not Found` response will be returned and the
 client must restart the upload process.
 
-### Deleting a Layer
+#### Deleting a Layer
 
 A layer may be deleted from the registry via its `name` and `digest`. A
 delete may be issued with the following request format:

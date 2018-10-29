@@ -24,24 +24,11 @@ const (
 	// The certificate is invalid.
 	ErrCodeCertificateValidationException = "CertificateValidationException"
 
-	// ErrCodeConflictingResourceUpdateException for service response error code
-	// "ConflictingResourceUpdateException".
-	//
-	// A conflicting resource update exception. This exception is thrown when two
-	// pending updates cause a conflict.
-	ErrCodeConflictingResourceUpdateException = "ConflictingResourceUpdateException"
-
 	// ErrCodeDeleteConflictException for service response error code
 	// "DeleteConflictException".
 	//
 	// You can't delete the resource because it is attached to one or more resources.
 	ErrCodeDeleteConflictException = "DeleteConflictException"
-
-	// ErrCodeIndexNotReadyException for service response error code
-	// "IndexNotReadyException".
-	//
-	// The index is not ready.
-	ErrCodeIndexNotReadyException = "IndexNotReadyException"
 
 	// ErrCodeInternalException for service response error code
 	// "InternalException".
@@ -55,36 +42,16 @@ const (
 	// An unexpected error has occurred.
 	ErrCodeInternalFailureException = "InternalFailureException"
 
-	// ErrCodeInvalidQueryException for service response error code
-	// "InvalidQueryException".
-	//
-	// The query is invalid.
-	ErrCodeInvalidQueryException = "InvalidQueryException"
-
 	// ErrCodeInvalidRequestException for service response error code
 	// "InvalidRequestException".
 	//
 	// The request is not valid.
 	ErrCodeInvalidRequestException = "InvalidRequestException"
 
-	// ErrCodeInvalidResponseException for service response error code
-	// "InvalidResponseException".
-	//
-	// The response is invalid.
-	ErrCodeInvalidResponseException = "InvalidResponseException"
-
-	// ErrCodeInvalidStateTransitionException for service response error code
-	// "InvalidStateTransitionException".
-	//
-	// An attempt was made to change to an invalid state, for example by deleting
-	// a job or a job execution which is "IN_PROGRESS" without setting the force
-	// parameter.
-	ErrCodeInvalidStateTransitionException = "InvalidStateTransitionException"
-
 	// ErrCodeLimitExceededException for service response error code
 	// "LimitExceededException".
 	//
-	// A limit has been exceeded.
+	// The number of attached entities exceeds the limit.
 	ErrCodeLimitExceededException = "LimitExceededException"
 
 	// ErrCodeMalformedPolicyException for service response error code
@@ -92,12 +59,6 @@ const (
 	//
 	// The policy documentation is not valid.
 	ErrCodeMalformedPolicyException = "MalformedPolicyException"
-
-	// ErrCodeNotConfiguredException for service response error code
-	// "NotConfiguredException".
-	//
-	// The resource is not configured.
-	ErrCodeNotConfiguredException = "NotConfiguredException"
 
 	// ErrCodeRegistrationCodeValidationException for service response error code
 	// "RegistrationCodeValidationException".
@@ -116,12 +77,6 @@ const (
 	//
 	// The specified resource does not exist.
 	ErrCodeResourceNotFoundException = "ResourceNotFoundException"
-
-	// ErrCodeResourceRegistrationFailureException for service response error code
-	// "ResourceRegistrationFailureException".
-	//
-	// The resource registration failed.
-	ErrCodeResourceRegistrationFailureException = "ResourceRegistrationFailureException"
 
 	// ErrCodeServiceUnavailableException for service response error code
 	// "ServiceUnavailableException".
@@ -164,8 +119,8 @@ const (
 	// ErrCodeVersionConflictException for service response error code
 	// "VersionConflictException".
 	//
-	// An exception thrown when the version of an entity specified with the expectedVersion
-	// parameter does not match the latest version in the system.
+	// An exception thrown when the version of a thing passed to a command is different
+	// than the version specified with the --version parameter.
 	ErrCodeVersionConflictException = "VersionConflictException"
 
 	// ErrCodeVersionsLimitExceededException for service response error code

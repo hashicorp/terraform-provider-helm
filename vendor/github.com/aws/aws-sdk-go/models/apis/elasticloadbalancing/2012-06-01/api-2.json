@@ -5,7 +5,6 @@
     "endpointPrefix":"elasticloadbalancing",
     "protocol":"query",
     "serviceFullName":"Elastic Load Balancing",
-    "serviceId":"Elastic Load Balancing",
     "signatureVersion":"v4",
     "uid":"elasticloadbalancing-2012-06-01",
     "xmlNamespace":"http://elasticloadbalancing.amazonaws.com/doc/2012-06-01/"
@@ -136,8 +135,7 @@
         {"shape":"InvalidSchemeException"},
         {"shape":"TooManyTagsException"},
         {"shape":"DuplicateTagKeysException"},
-        {"shape":"UnsupportedProtocolException"},
-        {"shape":"OperationNotPermittedException"}
+        {"shape":"UnsupportedProtocolException"}
       ]
     },
     "CreateLoadBalancerListeners":{
@@ -1282,17 +1280,6 @@
       }
     },
     "Name":{"type":"string"},
-    "OperationNotPermittedException":{
-      "type":"structure",
-      "members":{
-      },
-      "error":{
-        "code":"OperationNotPermitted",
-        "httpStatusCode":400,
-        "senderFault":true
-      },
-      "exception":true
-    },
     "PageSize":{
       "type":"integer",
       "max":400,

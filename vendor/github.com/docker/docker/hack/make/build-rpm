@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 # subshell so that we can export PATH and TZ without breaking other things
@@ -54,6 +54,7 @@ set -e
 	make manpages
 
 	# Convert the CHANGELOG.md file into RPM changelog format
+	rm -f contrib/builder/rpm/${PACKAGE_ARCH}/changelog
 	VERSION_REGEX="^\W\W (.*) \((.*)\)$"
 	ENTRY_REGEX="^[-+*] (.*)$"
 	while read -r line || [[ -n "$line" ]]; do
@@ -124,22 +125,21 @@ set -e
 		# selinux policy referencing systemd things won't work on non-systemd versions
 		# of centos or rhel, which we don't support anyways
 		if [ "${suite%.*}" -gt 6 ] && [[ "$version" != opensuse* ]]; then
-			selinuxDir="selinux"
 			if [ -d "./contrib/selinux-$version" ]; then
 				selinuxDir="selinux-${version}"
+				cat >> "$DEST/$version/Dockerfile.build" <<-EOF
+					RUN tar -cz -C /usr/src/${rpmName}/contrib/${selinuxDir} -f /root/rpmbuild/SOURCES/${rpmName}-selinux.tar.gz ${rpmName}-selinux
+					RUN rpmbuild -ba \
+							--define '_gitcommit $DOCKER_GITCOMMIT' \
+							--define '_release $rpmRelease' \
+							--define '_version $rpmVersion' \
+							--define '_origversion $VERSION' \
+							${rpmName}-selinux.spec
+				EOF
 			fi
-			cat >> "$DEST/$version/Dockerfile.build" <<-EOF
-				RUN tar -cz -C /usr/src/${rpmName}/contrib/${selinuxDir} -f /root/rpmbuild/SOURCES/${rpmName}-selinux.tar.gz ${rpmName}-selinux
-				RUN rpmbuild -ba \
-						--define '_gitcommit $DOCKER_GITCOMMIT' \
-						--define '_release $rpmRelease' \
-						--define '_version $rpmVersion' \
-						--define '_origversion $VERSION' \
-						${rpmName}-selinux.spec
-			EOF
 		fi
 		tempImage="docker-temp/build-rpm:$version"
-		( set -x && docker build -t "$tempImage" -f $DEST/$version/Dockerfile.build . )
+		( set -x && docker build ${DOCKER_BUILD_ARGS} -t "$tempImage" -f $DEST/$version/Dockerfile.build . )
 		docker run --rm "$tempImage" bash -c 'cd /root/rpmbuild && tar -c *RPMS' | tar -xvC "$DEST/$version"
 		docker rmi "$tempImage"
 	done

@@ -16,7 +16,7 @@ const opAssociateKmsKey = "AssociateKmsKey"
 
 // AssociateKmsKeyRequest generates a "aws/request.Request" representing the
 // client's request for the AssociateKmsKey operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -37,7 +37,7 @@ const opAssociateKmsKey = "AssociateKmsKey"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/AssociateKmsKey
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/AssociateKmsKey
 func (c *CloudWatchLogs) AssociateKmsKeyRequest(input *AssociateKmsKeyInput) (req *request.Request, output *AssociateKmsKeyOutput) {
 	op := &request.Operation{
 		Name:       opAssociateKmsKey,
@@ -93,7 +93,7 @@ func (c *CloudWatchLogs) AssociateKmsKeyRequest(input *AssociateKmsKeyInput) (re
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/AssociateKmsKey
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/AssociateKmsKey
 func (c *CloudWatchLogs) AssociateKmsKey(input *AssociateKmsKeyInput) (*AssociateKmsKeyOutput, error) {
 	req, out := c.AssociateKmsKeyRequest(input)
 	return out, req.Send()
@@ -119,7 +119,7 @@ const opCancelExportTask = "CancelExportTask"
 
 // CancelExportTaskRequest generates a "aws/request.Request" representing the
 // client's request for the CancelExportTask operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -140,7 +140,7 @@ const opCancelExportTask = "CancelExportTask"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CancelExportTask
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CancelExportTask
 func (c *CloudWatchLogs) CancelExportTaskRequest(input *CancelExportTaskInput) (req *request.Request, output *CancelExportTaskOutput) {
 	op := &request.Operation{
 		Name:       opCancelExportTask,
@@ -185,7 +185,7 @@ func (c *CloudWatchLogs) CancelExportTaskRequest(input *CancelExportTaskInput) (
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CancelExportTask
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CancelExportTask
 func (c *CloudWatchLogs) CancelExportTask(input *CancelExportTaskInput) (*CancelExportTaskOutput, error) {
 	req, out := c.CancelExportTaskRequest(input)
 	return out, req.Send()
@@ -211,7 +211,7 @@ const opCreateExportTask = "CreateExportTask"
 
 // CreateExportTaskRequest generates a "aws/request.Request" representing the
 // client's request for the CreateExportTask operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -232,7 +232,7 @@ const opCreateExportTask = "CreateExportTask"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateExportTask
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateExportTask
 func (c *CloudWatchLogs) CreateExportTaskRequest(input *CreateExportTaskInput) (req *request.Request, output *CreateExportTaskOutput) {
 	op := &request.Operation{
 		Name:       opCreateExportTask,
@@ -290,7 +290,7 @@ func (c *CloudWatchLogs) CreateExportTaskRequest(input *CreateExportTaskInput) (
 //   * ErrCodeResourceAlreadyExistsException "ResourceAlreadyExistsException"
 //   The specified resource already exists.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateExportTask
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateExportTask
 func (c *CloudWatchLogs) CreateExportTask(input *CreateExportTaskInput) (*CreateExportTaskOutput, error) {
 	req, out := c.CreateExportTaskRequest(input)
 	return out, req.Send()
@@ -316,7 +316,7 @@ const opCreateLogGroup = "CreateLogGroup"
 
 // CreateLogGroupRequest generates a "aws/request.Request" representing the
 // client's request for the CreateLogGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -337,7 +337,7 @@ const opCreateLogGroup = "CreateLogGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogGroup
 func (c *CloudWatchLogs) CreateLogGroupRequest(input *CreateLogGroupInput) (req *request.Request, output *CreateLogGroupOutput) {
 	op := &request.Operation{
 		Name:       opCreateLogGroup,
@@ -404,7 +404,7 @@ func (c *CloudWatchLogs) CreateLogGroupRequest(input *CreateLogGroupInput) (req 
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogGroup
 func (c *CloudWatchLogs) CreateLogGroup(input *CreateLogGroupInput) (*CreateLogGroupOutput, error) {
 	req, out := c.CreateLogGroupRequest(input)
 	return out, req.Send()
@@ -430,7 +430,7 @@ const opCreateLogStream = "CreateLogStream"
 
 // CreateLogStreamRequest generates a "aws/request.Request" representing the
 // client's request for the CreateLogStream operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -451,7 +451,7 @@ const opCreateLogStream = "CreateLogStream"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogStream
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogStream
 func (c *CloudWatchLogs) CreateLogStreamRequest(input *CreateLogStreamInput) (req *request.Request, output *CreateLogStreamOutput) {
 	op := &request.Operation{
 		Name:       opCreateLogStream,
@@ -505,7 +505,7 @@ func (c *CloudWatchLogs) CreateLogStreamRequest(input *CreateLogStreamInput) (re
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogStream
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogStream
 func (c *CloudWatchLogs) CreateLogStream(input *CreateLogStreamInput) (*CreateLogStreamOutput, error) {
 	req, out := c.CreateLogStreamRequest(input)
 	return out, req.Send()
@@ -531,7 +531,7 @@ const opDeleteDestination = "DeleteDestination"
 
 // DeleteDestinationRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteDestination operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -552,7 +552,7 @@ const opDeleteDestination = "DeleteDestination"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteDestination
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteDestination
 func (c *CloudWatchLogs) DeleteDestinationRequest(input *DeleteDestinationInput) (req *request.Request, output *DeleteDestinationOutput) {
 	op := &request.Operation{
 		Name:       opDeleteDestination,
@@ -597,7 +597,7 @@ func (c *CloudWatchLogs) DeleteDestinationRequest(input *DeleteDestinationInput)
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteDestination
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteDestination
 func (c *CloudWatchLogs) DeleteDestination(input *DeleteDestinationInput) (*DeleteDestinationOutput, error) {
 	req, out := c.DeleteDestinationRequest(input)
 	return out, req.Send()
@@ -623,7 +623,7 @@ const opDeleteLogGroup = "DeleteLogGroup"
 
 // DeleteLogGroupRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteLogGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -644,7 +644,7 @@ const opDeleteLogGroup = "DeleteLogGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogGroup
 func (c *CloudWatchLogs) DeleteLogGroupRequest(input *DeleteLogGroupInput) (req *request.Request, output *DeleteLogGroupOutput) {
 	op := &request.Operation{
 		Name:       opDeleteLogGroup,
@@ -688,7 +688,7 @@ func (c *CloudWatchLogs) DeleteLogGroupRequest(input *DeleteLogGroupInput) (req 
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogGroup
 func (c *CloudWatchLogs) DeleteLogGroup(input *DeleteLogGroupInput) (*DeleteLogGroupOutput, error) {
 	req, out := c.DeleteLogGroupRequest(input)
 	return out, req.Send()
@@ -714,7 +714,7 @@ const opDeleteLogStream = "DeleteLogStream"
 
 // DeleteLogStreamRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteLogStream operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -735,7 +735,7 @@ const opDeleteLogStream = "DeleteLogStream"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogStream
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogStream
 func (c *CloudWatchLogs) DeleteLogStreamRequest(input *DeleteLogStreamInput) (req *request.Request, output *DeleteLogStreamOutput) {
 	op := &request.Operation{
 		Name:       opDeleteLogStream,
@@ -779,7 +779,7 @@ func (c *CloudWatchLogs) DeleteLogStreamRequest(input *DeleteLogStreamInput) (re
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogStream
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogStream
 func (c *CloudWatchLogs) DeleteLogStream(input *DeleteLogStreamInput) (*DeleteLogStreamOutput, error) {
 	req, out := c.DeleteLogStreamRequest(input)
 	return out, req.Send()
@@ -805,7 +805,7 @@ const opDeleteMetricFilter = "DeleteMetricFilter"
 
 // DeleteMetricFilterRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteMetricFilter operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -826,7 +826,7 @@ const opDeleteMetricFilter = "DeleteMetricFilter"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteMetricFilter
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteMetricFilter
 func (c *CloudWatchLogs) DeleteMetricFilterRequest(input *DeleteMetricFilterInput) (req *request.Request, output *DeleteMetricFilterOutput) {
 	op := &request.Operation{
 		Name:       opDeleteMetricFilter,
@@ -869,7 +869,7 @@ func (c *CloudWatchLogs) DeleteMetricFilterRequest(input *DeleteMetricFilterInpu
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteMetricFilter
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteMetricFilter
 func (c *CloudWatchLogs) DeleteMetricFilter(input *DeleteMetricFilterInput) (*DeleteMetricFilterOutput, error) {
 	req, out := c.DeleteMetricFilterRequest(input)
 	return out, req.Send()
@@ -895,7 +895,7 @@ const opDeleteResourcePolicy = "DeleteResourcePolicy"
 
 // DeleteResourcePolicyRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteResourcePolicy operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -916,7 +916,7 @@ const opDeleteResourcePolicy = "DeleteResourcePolicy"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteResourcePolicy
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteResourcePolicy
 func (c *CloudWatchLogs) DeleteResourcePolicyRequest(input *DeleteResourcePolicyInput) (req *request.Request, output *DeleteResourcePolicyOutput) {
 	op := &request.Operation{
 		Name:       opDeleteResourcePolicy,
@@ -957,7 +957,7 @@ func (c *CloudWatchLogs) DeleteResourcePolicyRequest(input *DeleteResourcePolicy
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteResourcePolicy
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteResourcePolicy
 func (c *CloudWatchLogs) DeleteResourcePolicy(input *DeleteResourcePolicyInput) (*DeleteResourcePolicyOutput, error) {
 	req, out := c.DeleteResourcePolicyRequest(input)
 	return out, req.Send()
@@ -983,7 +983,7 @@ const opDeleteRetentionPolicy = "DeleteRetentionPolicy"
 
 // DeleteRetentionPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteRetentionPolicy operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1004,7 +1004,7 @@ const opDeleteRetentionPolicy = "DeleteRetentionPolicy"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteRetentionPolicy
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteRetentionPolicy
 func (c *CloudWatchLogs) DeleteRetentionPolicyRequest(input *DeleteRetentionPolicyInput) (req *request.Request, output *DeleteRetentionPolicyOutput) {
 	op := &request.Operation{
 		Name:       opDeleteRetentionPolicy,
@@ -1050,7 +1050,7 @@ func (c *CloudWatchLogs) DeleteRetentionPolicyRequest(input *DeleteRetentionPoli
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteRetentionPolicy
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteRetentionPolicy
 func (c *CloudWatchLogs) DeleteRetentionPolicy(input *DeleteRetentionPolicyInput) (*DeleteRetentionPolicyOutput, error) {
 	req, out := c.DeleteRetentionPolicyRequest(input)
 	return out, req.Send()
@@ -1076,7 +1076,7 @@ const opDeleteSubscriptionFilter = "DeleteSubscriptionFilter"
 
 // DeleteSubscriptionFilterRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteSubscriptionFilter operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1097,7 +1097,7 @@ const opDeleteSubscriptionFilter = "DeleteSubscriptionFilter"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteSubscriptionFilter
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteSubscriptionFilter
 func (c *CloudWatchLogs) DeleteSubscriptionFilterRequest(input *DeleteSubscriptionFilterInput) (req *request.Request, output *DeleteSubscriptionFilterOutput) {
 	op := &request.Operation{
 		Name:       opDeleteSubscriptionFilter,
@@ -1140,7 +1140,7 @@ func (c *CloudWatchLogs) DeleteSubscriptionFilterRequest(input *DeleteSubscripti
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteSubscriptionFilter
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteSubscriptionFilter
 func (c *CloudWatchLogs) DeleteSubscriptionFilter(input *DeleteSubscriptionFilterInput) (*DeleteSubscriptionFilterOutput, error) {
 	req, out := c.DeleteSubscriptionFilterRequest(input)
 	return out, req.Send()
@@ -1166,7 +1166,7 @@ const opDescribeDestinations = "DescribeDestinations"
 
 // DescribeDestinationsRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeDestinations operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1187,7 +1187,7 @@ const opDescribeDestinations = "DescribeDestinations"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeDestinations
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeDestinations
 func (c *CloudWatchLogs) DescribeDestinationsRequest(input *DescribeDestinationsInput) (req *request.Request, output *DescribeDestinationsOutput) {
 	op := &request.Operation{
 		Name:       opDescribeDestinations,
@@ -1229,7 +1229,7 @@ func (c *CloudWatchLogs) DescribeDestinationsRequest(input *DescribeDestinations
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeDestinations
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeDestinations
 func (c *CloudWatchLogs) DescribeDestinations(input *DescribeDestinationsInput) (*DescribeDestinationsOutput, error) {
 	req, out := c.DescribeDestinationsRequest(input)
 	return out, req.Send()
@@ -1281,7 +1281,6 @@ func (c *CloudWatchLogs) DescribeDestinationsPages(input *DescribeDestinationsIn
 // for more information on using Contexts.
 func (c *CloudWatchLogs) DescribeDestinationsPagesWithContext(ctx aws.Context, input *DescribeDestinationsInput, fn func(*DescribeDestinationsOutput, bool) bool, opts ...request.Option) error {
 	p := request.Pagination{
-		EndPageOnSameToken: true,
 		NewRequest: func() (*request.Request, error) {
 			var inCpy *DescribeDestinationsInput
 			if input != nil {
@@ -1306,7 +1305,7 @@ const opDescribeExportTasks = "DescribeExportTasks"
 
 // DescribeExportTasksRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeExportTasks operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1327,7 +1326,7 @@ const opDescribeExportTasks = "DescribeExportTasks"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeExportTasks
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeExportTasks
 func (c *CloudWatchLogs) DescribeExportTasksRequest(input *DescribeExportTasksInput) (req *request.Request, output *DescribeExportTasksOutput) {
 	op := &request.Operation{
 		Name:       opDescribeExportTasks,
@@ -1363,7 +1362,7 @@ func (c *CloudWatchLogs) DescribeExportTasksRequest(input *DescribeExportTasksIn
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeExportTasks
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeExportTasks
 func (c *CloudWatchLogs) DescribeExportTasks(input *DescribeExportTasksInput) (*DescribeExportTasksOutput, error) {
 	req, out := c.DescribeExportTasksRequest(input)
 	return out, req.Send()
@@ -1389,7 +1388,7 @@ const opDescribeLogGroups = "DescribeLogGroups"
 
 // DescribeLogGroupsRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeLogGroups operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1410,7 +1409,7 @@ const opDescribeLogGroups = "DescribeLogGroups"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogGroups
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogGroups
 func (c *CloudWatchLogs) DescribeLogGroupsRequest(input *DescribeLogGroupsInput) (req *request.Request, output *DescribeLogGroupsOutput) {
 	op := &request.Operation{
 		Name:       opDescribeLogGroups,
@@ -1452,7 +1451,7 @@ func (c *CloudWatchLogs) DescribeLogGroupsRequest(input *DescribeLogGroupsInput)
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogGroups
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogGroups
 func (c *CloudWatchLogs) DescribeLogGroups(input *DescribeLogGroupsInput) (*DescribeLogGroupsOutput, error) {
 	req, out := c.DescribeLogGroupsRequest(input)
 	return out, req.Send()
@@ -1504,7 +1503,6 @@ func (c *CloudWatchLogs) DescribeLogGroupsPages(input *DescribeLogGroupsInput, f
 // for more information on using Contexts.
 func (c *CloudWatchLogs) DescribeLogGroupsPagesWithContext(ctx aws.Context, input *DescribeLogGroupsInput, fn func(*DescribeLogGroupsOutput, bool) bool, opts ...request.Option) error {
 	p := request.Pagination{
-		EndPageOnSameToken: true,
 		NewRequest: func() (*request.Request, error) {
 			var inCpy *DescribeLogGroupsInput
 			if input != nil {
@@ -1529,7 +1527,7 @@ const opDescribeLogStreams = "DescribeLogStreams"
 
 // DescribeLogStreamsRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeLogStreams operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1550,7 +1548,7 @@ const opDescribeLogStreams = "DescribeLogStreams"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogStreams
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogStreams
 func (c *CloudWatchLogs) DescribeLogStreamsRequest(input *DescribeLogStreamsInput) (req *request.Request, output *DescribeLogStreamsOutput) {
 	op := &request.Operation{
 		Name:       opDescribeLogStreams,
@@ -1599,7 +1597,7 @@ func (c *CloudWatchLogs) DescribeLogStreamsRequest(input *DescribeLogStreamsInpu
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogStreams
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogStreams
 func (c *CloudWatchLogs) DescribeLogStreams(input *DescribeLogStreamsInput) (*DescribeLogStreamsOutput, error) {
 	req, out := c.DescribeLogStreamsRequest(input)
 	return out, req.Send()
@@ -1651,7 +1649,6 @@ func (c *CloudWatchLogs) DescribeLogStreamsPages(input *DescribeLogStreamsInput,
 // for more information on using Contexts.
 func (c *CloudWatchLogs) DescribeLogStreamsPagesWithContext(ctx aws.Context, input *DescribeLogStreamsInput, fn func(*DescribeLogStreamsOutput, bool) bool, opts ...request.Option) error {
 	p := request.Pagination{
-		EndPageOnSameToken: true,
 		NewRequest: func() (*request.Request, error) {
 			var inCpy *DescribeLogStreamsInput
 			if input != nil {
@@ -1676,7 +1673,7 @@ const opDescribeMetricFilters = "DescribeMetricFilters"
 
 // DescribeMetricFiltersRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeMetricFilters operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1697,7 +1694,7 @@ const opDescribeMetricFilters = "DescribeMetricFilters"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeMetricFilters
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeMetricFilters
 func (c *CloudWatchLogs) DescribeMetricFiltersRequest(input *DescribeMetricFiltersInput) (req *request.Request, output *DescribeMetricFiltersOutput) {
 	op := &request.Operation{
 		Name:       opDescribeMetricFilters,
@@ -1743,7 +1740,7 @@ func (c *CloudWatchLogs) DescribeMetricFiltersRequest(input *DescribeMetricFilte
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeMetricFilters
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeMetricFilters
 func (c *CloudWatchLogs) DescribeMetricFilters(input *DescribeMetricFiltersInput) (*DescribeMetricFiltersOutput, error) {
 	req, out := c.DescribeMetricFiltersRequest(input)
 	return out, req.Send()
@@ -1795,7 +1792,6 @@ func (c *CloudWatchLogs) DescribeMetricFiltersPages(input *DescribeMetricFilters
 // for more information on using Contexts.
 func (c *CloudWatchLogs) DescribeMetricFiltersPagesWithContext(ctx aws.Context, input *DescribeMetricFiltersInput, fn func(*DescribeMetricFiltersOutput, bool) bool, opts ...request.Option) error {
 	p := request.Pagination{
-		EndPageOnSameToken: true,
 		NewRequest: func() (*request.Request, error) {
 			var inCpy *DescribeMetricFiltersInput
 			if input != nil {
@@ -1820,7 +1816,7 @@ const opDescribeResourcePolicies = "DescribeResourcePolicies"
 
 // DescribeResourcePoliciesRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeResourcePolicies operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1841,7 +1837,7 @@ const opDescribeResourcePolicies = "DescribeResourcePolicies"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeResourcePolicies
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeResourcePolicies
 func (c *CloudWatchLogs) DescribeResourcePoliciesRequest(input *DescribeResourcePoliciesInput) (req *request.Request, output *DescribeResourcePoliciesOutput) {
 	op := &request.Operation{
 		Name:       opDescribeResourcePolicies,
@@ -1876,7 +1872,7 @@ func (c *CloudWatchLogs) DescribeResourcePoliciesRequest(input *DescribeResource
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeResourcePolicies
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeResourcePolicies
 func (c *CloudWatchLogs) DescribeResourcePolicies(input *DescribeResourcePoliciesInput) (*DescribeResourcePoliciesOutput, error) {
 	req, out := c.DescribeResourcePoliciesRequest(input)
 	return out, req.Send()
@@ -1902,7 +1898,7 @@ const opDescribeSubscriptionFilters = "DescribeSubscriptionFilters"
 
 // DescribeSubscriptionFiltersRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeSubscriptionFilters operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1923,7 +1919,7 @@ const opDescribeSubscriptionFilters = "DescribeSubscriptionFilters"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeSubscriptionFilters
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeSubscriptionFilters
 func (c *CloudWatchLogs) DescribeSubscriptionFiltersRequest(input *DescribeSubscriptionFiltersInput) (req *request.Request, output *DescribeSubscriptionFiltersOutput) {
 	op := &request.Operation{
 		Name:       opDescribeSubscriptionFilters,
@@ -1969,7 +1965,7 @@ func (c *CloudWatchLogs) DescribeSubscriptionFiltersRequest(input *DescribeSubsc
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeSubscriptionFilters
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeSubscriptionFilters
 func (c *CloudWatchLogs) DescribeSubscriptionFilters(input *DescribeSubscriptionFiltersInput) (*DescribeSubscriptionFiltersOutput, error) {
 	req, out := c.DescribeSubscriptionFiltersRequest(input)
 	return out, req.Send()
@@ -2021,7 +2017,6 @@ func (c *CloudWatchLogs) DescribeSubscriptionFiltersPages(input *DescribeSubscri
 // for more information on using Contexts.
 func (c *CloudWatchLogs) DescribeSubscriptionFiltersPagesWithContext(ctx aws.Context, input *DescribeSubscriptionFiltersInput, fn func(*DescribeSubscriptionFiltersOutput, bool) bool, opts ...request.Option) error {
 	p := request.Pagination{
-		EndPageOnSameToken: true,
 		NewRequest: func() (*request.Request, error) {
 			var inCpy *DescribeSubscriptionFiltersInput
 			if input != nil {
@@ -2046,7 +2041,7 @@ const opDisassociateKmsKey = "DisassociateKmsKey"
 
 // DisassociateKmsKeyRequest generates a "aws/request.Request" representing the
 // client's request for the DisassociateKmsKey operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2067,7 +2062,7 @@ const opDisassociateKmsKey = "DisassociateKmsKey"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DisassociateKmsKey
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DisassociateKmsKey
 func (c *CloudWatchLogs) DisassociateKmsKeyRequest(input *DisassociateKmsKeyInput) (req *request.Request, output *DisassociateKmsKeyOutput) {
 	op := &request.Operation{
 		Name:       opDisassociateKmsKey,
@@ -2118,7 +2113,7 @@ func (c *CloudWatchLogs) DisassociateKmsKeyRequest(input *DisassociateKmsKeyInpu
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DisassociateKmsKey
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DisassociateKmsKey
 func (c *CloudWatchLogs) DisassociateKmsKey(input *DisassociateKmsKeyInput) (*DisassociateKmsKeyOutput, error) {
 	req, out := c.DisassociateKmsKeyRequest(input)
 	return out, req.Send()
@@ -2144,7 +2139,7 @@ const opFilterLogEvents = "FilterLogEvents"
 
 // FilterLogEventsRequest generates a "aws/request.Request" representing the
 // client's request for the FilterLogEvents operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2165,7 +2160,7 @@ const opFilterLogEvents = "FilterLogEvents"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/FilterLogEvents
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/FilterLogEvents
 func (c *CloudWatchLogs) FilterLogEventsRequest(input *FilterLogEventsInput) (req *request.Request, output *FilterLogEventsOutput) {
 	op := &request.Operation{
 		Name:       opFilterLogEvents,
@@ -2217,7 +2212,7 @@ func (c *CloudWatchLogs) FilterLogEventsRequest(input *FilterLogEventsInput) (re
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/FilterLogEvents
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/FilterLogEvents
 func (c *CloudWatchLogs) FilterLogEvents(input *FilterLogEventsInput) (*FilterLogEventsOutput, error) {
 	req, out := c.FilterLogEventsRequest(input)
 	return out, req.Send()
@@ -2269,7 +2264,6 @@ func (c *CloudWatchLogs) FilterLogEventsPages(input *FilterLogEventsInput, fn fu
 // for more information on using Contexts.
 func (c *CloudWatchLogs) FilterLogEventsPagesWithContext(ctx aws.Context, input *FilterLogEventsInput, fn func(*FilterLogEventsOutput, bool) bool, opts ...request.Option) error {
 	p := request.Pagination{
-		EndPageOnSameToken: true,
 		NewRequest: func() (*request.Request, error) {
 			var inCpy *FilterLogEventsInput
 			if input != nil {
@@ -2294,7 +2288,7 @@ const opGetLogEvents = "GetLogEvents"
 
 // GetLogEventsRequest generates a "aws/request.Request" representing the
 // client's request for the GetLogEvents operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2315,7 +2309,7 @@ const opGetLogEvents = "GetLogEvents"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/GetLogEvents
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/GetLogEvents
 func (c *CloudWatchLogs) GetLogEventsRequest(input *GetLogEventsInput) (req *request.Request, output *GetLogEventsOutput) {
 	op := &request.Operation{
 		Name:       opGetLogEvents,
@@ -2364,7 +2358,7 @@ func (c *CloudWatchLogs) GetLogEventsRequest(input *GetLogEventsInput) (req *req
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/GetLogEvents
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/GetLogEvents
 func (c *CloudWatchLogs) GetLogEvents(input *GetLogEventsInput) (*GetLogEventsOutput, error) {
 	req, out := c.GetLogEventsRequest(input)
 	return out, req.Send()
@@ -2416,7 +2410,6 @@ func (c *CloudWatchLogs) GetLogEventsPages(input *GetLogEventsInput, fn func(*Ge
 // for more information on using Contexts.
 func (c *CloudWatchLogs) GetLogEventsPagesWithContext(ctx aws.Context, input *GetLogEventsInput, fn func(*GetLogEventsOutput, bool) bool, opts ...request.Option) error {
 	p := request.Pagination{
-		EndPageOnSameToken: true,
 		NewRequest: func() (*request.Request, error) {
 			var inCpy *GetLogEventsInput
 			if input != nil {
@@ -2441,7 +2434,7 @@ const opListTagsLogGroup = "ListTagsLogGroup"
 
 // ListTagsLogGroupRequest generates a "aws/request.Request" representing the
 // client's request for the ListTagsLogGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2462,7 +2455,7 @@ const opListTagsLogGroup = "ListTagsLogGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/ListTagsLogGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/ListTagsLogGroup
 func (c *CloudWatchLogs) ListTagsLogGroupRequest(input *ListTagsLogGroupInput) (req *request.Request, output *ListTagsLogGroupOutput) {
 	op := &request.Operation{
 		Name:       opListTagsLogGroup,
@@ -2497,7 +2490,7 @@ func (c *CloudWatchLogs) ListTagsLogGroupRequest(input *ListTagsLogGroupInput) (
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/ListTagsLogGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/ListTagsLogGroup
 func (c *CloudWatchLogs) ListTagsLogGroup(input *ListTagsLogGroupInput) (*ListTagsLogGroupOutput, error) {
 	req, out := c.ListTagsLogGroupRequest(input)
 	return out, req.Send()
@@ -2523,7 +2516,7 @@ const opPutDestination = "PutDestination"
 
 // PutDestinationRequest generates a "aws/request.Request" representing the
 // client's request for the PutDestination operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2544,7 +2537,7 @@ const opPutDestination = "PutDestination"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestination
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestination
 func (c *CloudWatchLogs) PutDestinationRequest(input *PutDestinationInput) (req *request.Request, output *PutDestinationOutput) {
 	op := &request.Operation{
 		Name:       opPutDestination,
@@ -2592,7 +2585,7 @@ func (c *CloudWatchLogs) PutDestinationRequest(input *PutDestinationInput) (req 
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestination
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestination
 func (c *CloudWatchLogs) PutDestination(input *PutDestinationInput) (*PutDestinationOutput, error) {
 	req, out := c.PutDestinationRequest(input)
 	return out, req.Send()
@@ -2618,7 +2611,7 @@ const opPutDestinationPolicy = "PutDestinationPolicy"
 
 // PutDestinationPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the PutDestinationPolicy operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2639,7 +2632,7 @@ const opPutDestinationPolicy = "PutDestinationPolicy"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestinationPolicy
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestinationPolicy
 func (c *CloudWatchLogs) PutDestinationPolicyRequest(input *PutDestinationPolicyInput) (req *request.Request, output *PutDestinationPolicyOutput) {
 	op := &request.Operation{
 		Name:       opPutDestinationPolicy,
@@ -2682,7 +2675,7 @@ func (c *CloudWatchLogs) PutDestinationPolicyRequest(input *PutDestinationPolicy
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestinationPolicy
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestinationPolicy
 func (c *CloudWatchLogs) PutDestinationPolicy(input *PutDestinationPolicyInput) (*PutDestinationPolicyOutput, error) {
 	req, out := c.PutDestinationPolicyRequest(input)
 	return out, req.Send()
@@ -2708,7 +2701,7 @@ const opPutLogEvents = "PutLogEvents"
 
 // PutLogEventsRequest generates a "aws/request.Request" representing the
 // client's request for the PutLogEvents operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2729,7 +2722,7 @@ const opPutLogEvents = "PutLogEvents"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutLogEvents
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutLogEvents
 func (c *CloudWatchLogs) PutLogEventsRequest(input *PutLogEventsInput) (req *request.Request, output *PutLogEventsOutput) {
 	op := &request.Operation{
 		Name:       opPutLogEvents,
@@ -2769,18 +2762,13 @@ func (c *CloudWatchLogs) PutLogEventsRequest(input *PutLogEventsInput) (req *req
 //    retention period of the log group.
 //
 //    * The log events in the batch must be in chronological ordered by their
-//    time stamp. The time stamp is the time the event occurred, expressed as
-//    the number of milliseconds after Jan 1, 1970 00:00:00 UTC. (In AWS Tools
-//    for PowerShell and the AWS SDK for .NET, the timestamp is specified in
-//    .NET format: yyyy-mm-ddThh:mm:ss. For example, 2017-09-15T13:45:30.)
+//    time stamp (the time the event occurred, expressed as the number of milliseconds
+//    after Jan 1, 1970 00:00:00 UTC).
 //
 //    * The maximum number of log events in a batch is 10,000.
 //
 //    * A batch of log events in a single request cannot span more than 24 hours.
 //    Otherwise, the operation fails.
-//
-// If a call to PutLogEvents returns "UnrecognizedClientException" the most
-// likely cause is an invalid AWS access key ID or secret key.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -2805,10 +2793,7 @@ func (c *CloudWatchLogs) PutLogEventsRequest(input *PutLogEventsInput) (req *req
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-//   * ErrCodeUnrecognizedClientException "UnrecognizedClientException"
-//   The most likely cause is an invalid AWS access key ID or secret key.
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutLogEvents
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutLogEvents
 func (c *CloudWatchLogs) PutLogEvents(input *PutLogEventsInput) (*PutLogEventsOutput, error) {
 	req, out := c.PutLogEventsRequest(input)
 	return out, req.Send()
@@ -2834,7 +2819,7 @@ const opPutMetricFilter = "PutMetricFilter"
 
 // PutMetricFilterRequest generates a "aws/request.Request" representing the
 // client's request for the PutMetricFilter operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2855,7 +2840,7 @@ const opPutMetricFilter = "PutMetricFilter"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutMetricFilter
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutMetricFilter
 func (c *CloudWatchLogs) PutMetricFilterRequest(input *PutMetricFilterInput) (req *request.Request, output *PutMetricFilterOutput) {
 	op := &request.Operation{
 		Name:       opPutMetricFilter,
@@ -2906,7 +2891,7 @@ func (c *CloudWatchLogs) PutMetricFilterRequest(input *PutMetricFilterInput) (re
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutMetricFilter
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutMetricFilter
 func (c *CloudWatchLogs) PutMetricFilter(input *PutMetricFilterInput) (*PutMetricFilterOutput, error) {
 	req, out := c.PutMetricFilterRequest(input)
 	return out, req.Send()
@@ -2932,7 +2917,7 @@ const opPutResourcePolicy = "PutResourcePolicy"
 
 // PutResourcePolicyRequest generates a "aws/request.Request" representing the
 // client's request for the PutResourcePolicy operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -2953,7 +2938,7 @@ const opPutResourcePolicy = "PutResourcePolicy"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutResourcePolicy
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutResourcePolicy
 func (c *CloudWatchLogs) PutResourcePolicyRequest(input *PutResourcePolicyInput) (req *request.Request, output *PutResourcePolicyOutput) {
 	op := &request.Operation{
 		Name:       opPutResourcePolicy,
@@ -2974,7 +2959,7 @@ func (c *CloudWatchLogs) PutResourcePolicyRequest(input *PutResourcePolicyInput)
 //
 // Creates or updates a resource policy allowing other AWS services to put log
 // events to this account, such as Amazon Route 53. An account can have up to
-// 10 resource policies per region.
+// 50 resource policies per region.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -2993,7 +2978,7 @@ func (c *CloudWatchLogs) PutResourcePolicyRequest(input *PutResourcePolicyInput)
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutResourcePolicy
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutResourcePolicy
 func (c *CloudWatchLogs) PutResourcePolicy(input *PutResourcePolicyInput) (*PutResourcePolicyOutput, error) {
 	req, out := c.PutResourcePolicyRequest(input)
 	return out, req.Send()
@@ -3019,7 +3004,7 @@ const opPutRetentionPolicy = "PutRetentionPolicy"
 
 // PutRetentionPolicyRequest generates a "aws/request.Request" representing the
 // client's request for the PutRetentionPolicy operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3040,7 +3025,7 @@ const opPutRetentionPolicy = "PutRetentionPolicy"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutRetentionPolicy
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutRetentionPolicy
 func (c *CloudWatchLogs) PutRetentionPolicyRequest(input *PutRetentionPolicyInput) (req *request.Request, output *PutRetentionPolicyOutput) {
 	op := &request.Operation{
 		Name:       opPutRetentionPolicy,
@@ -3085,7 +3070,7 @@ func (c *CloudWatchLogs) PutRetentionPolicyRequest(input *PutRetentionPolicyInpu
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutRetentionPolicy
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutRetentionPolicy
 func (c *CloudWatchLogs) PutRetentionPolicy(input *PutRetentionPolicyInput) (*PutRetentionPolicyOutput, error) {
 	req, out := c.PutRetentionPolicyRequest(input)
 	return out, req.Send()
@@ -3111,7 +3096,7 @@ const opPutSubscriptionFilter = "PutSubscriptionFilter"
 
 // PutSubscriptionFilterRequest generates a "aws/request.Request" representing the
 // client's request for the PutSubscriptionFilter operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3132,7 +3117,7 @@ const opPutSubscriptionFilter = "PutSubscriptionFilter"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutSubscriptionFilter
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutSubscriptionFilter
 func (c *CloudWatchLogs) PutSubscriptionFilterRequest(input *PutSubscriptionFilterInput) (req *request.Request, output *PutSubscriptionFilterOutput) {
 	op := &request.Operation{
 		Name:       opPutSubscriptionFilter,
@@ -3198,7 +3183,7 @@ func (c *CloudWatchLogs) PutSubscriptionFilterRequest(input *PutSubscriptionFilt
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutSubscriptionFilter
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutSubscriptionFilter
 func (c *CloudWatchLogs) PutSubscriptionFilter(input *PutSubscriptionFilterInput) (*PutSubscriptionFilterOutput, error) {
 	req, out := c.PutSubscriptionFilterRequest(input)
 	return out, req.Send()
@@ -3224,7 +3209,7 @@ const opTagLogGroup = "TagLogGroup"
 
 // TagLogGroupRequest generates a "aws/request.Request" representing the
 // client's request for the TagLogGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3245,7 +3230,7 @@ const opTagLogGroup = "TagLogGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TagLogGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TagLogGroup
 func (c *CloudWatchLogs) TagLogGroupRequest(input *TagLogGroupInput) (req *request.Request, output *TagLogGroupOutput) {
 	op := &request.Operation{
 		Name:       opTagLogGroup,
@@ -3289,7 +3274,7 @@ func (c *CloudWatchLogs) TagLogGroupRequest(input *TagLogGroupInput) (req *reque
 //   * ErrCodeInvalidParameterException "InvalidParameterException"
 //   A parameter is specified incorrectly.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TagLogGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TagLogGroup
 func (c *CloudWatchLogs) TagLogGroup(input *TagLogGroupInput) (*TagLogGroupOutput, error) {
 	req, out := c.TagLogGroupRequest(input)
 	return out, req.Send()
@@ -3315,7 +3300,7 @@ const opTestMetricFilter = "TestMetricFilter"
 
 // TestMetricFilterRequest generates a "aws/request.Request" representing the
 // client's request for the TestMetricFilter operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3336,7 +3321,7 @@ const opTestMetricFilter = "TestMetricFilter"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TestMetricFilter
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TestMetricFilter
 func (c *CloudWatchLogs) TestMetricFilterRequest(input *TestMetricFilterInput) (req *request.Request, output *TestMetricFilterOutput) {
 	op := &request.Operation{
 		Name:       opTestMetricFilter,
@@ -3373,7 +3358,7 @@ func (c *CloudWatchLogs) TestMetricFilterRequest(input *TestMetricFilterInput) (
 //   * ErrCodeServiceUnavailableException "ServiceUnavailableException"
 //   The service cannot complete the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TestMetricFilter
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TestMetricFilter
 func (c *CloudWatchLogs) TestMetricFilter(input *TestMetricFilterInput) (*TestMetricFilterOutput, error) {
 	req, out := c.TestMetricFilterRequest(input)
 	return out, req.Send()
@@ -3399,7 +3384,7 @@ const opUntagLogGroup = "UntagLogGroup"
 
 // UntagLogGroupRequest generates a "aws/request.Request" representing the
 // client's request for the UntagLogGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -3420,7 +3405,7 @@ const opUntagLogGroup = "UntagLogGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/UntagLogGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/UntagLogGroup
 func (c *CloudWatchLogs) UntagLogGroupRequest(input *UntagLogGroupInput) (req *request.Request, output *UntagLogGroupOutput) {
 	op := &request.Operation{
 		Name:       opUntagLogGroup,
@@ -3457,7 +3442,7 @@ func (c *CloudWatchLogs) UntagLogGroupRequest(input *UntagLogGroupInput) (req *r
 //   * ErrCodeResourceNotFoundException "ResourceNotFoundException"
 //   The specified resource does not exist.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/UntagLogGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/UntagLogGroup
 func (c *CloudWatchLogs) UntagLogGroup(input *UntagLogGroupInput) (*UntagLogGroupOutput, error) {
 	req, out := c.UntagLogGroupRequest(input)
 	return out, req.Send()
@@ -3479,6 +3464,7 @@ func (c *CloudWatchLogs) UntagLogGroupWithContext(ctx aws.Context, input *UntagL
 	return out, req.Send()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/AssociateKmsKeyRequest
 type AssociateKmsKeyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3536,6 +3522,7 @@ func (s *AssociateKmsKeyInput) SetLogGroupName(v string) *AssociateKmsKeyInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/AssociateKmsKeyOutput
 type AssociateKmsKeyOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -3550,6 +3537,7 @@ func (s AssociateKmsKeyOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CancelExportTaskRequest
 type CancelExportTaskInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3591,6 +3579,7 @@ func (s *CancelExportTaskInput) SetTaskId(v string) *CancelExportTaskInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CancelExportTaskOutput
 type CancelExportTaskOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -3605,6 +3594,7 @@ func (s CancelExportTaskOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateExportTaskRequest
 type CreateExportTaskInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3731,6 +3721,7 @@ func (s *CreateExportTaskInput) SetTo(v int64) *CreateExportTaskInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateExportTaskResponse
 type CreateExportTaskOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3754,6 +3745,7 @@ func (s *CreateExportTaskOutput) SetTaskId(v string) *CreateExportTaskOutput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogGroupRequest
 type CreateLogGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3818,6 +3810,7 @@ func (s *CreateLogGroupInput) SetTags(v map[string]*string) *CreateLogGroupInput
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogGroupOutput
 type CreateLogGroupOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -3832,6 +3825,7 @@ func (s CreateLogGroupOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogStreamRequest
 type CreateLogStreamInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3890,6 +3884,7 @@ func (s *CreateLogStreamInput) SetLogStreamName(v string) *CreateLogStreamInput 
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/CreateLogStreamOutput
 type CreateLogStreamOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -3904,6 +3899,7 @@ func (s CreateLogStreamOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteDestinationRequest
 type DeleteDestinationInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3945,6 +3941,7 @@ func (s *DeleteDestinationInput) SetDestinationName(v string) *DeleteDestination
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteDestinationOutput
 type DeleteDestinationOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -3959,6 +3956,7 @@ func (s DeleteDestinationOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogGroupRequest
 type DeleteLogGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4000,6 +3998,7 @@ func (s *DeleteLogGroupInput) SetLogGroupName(v string) *DeleteLogGroupInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogGroupOutput
 type DeleteLogGroupOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4014,6 +4013,7 @@ func (s DeleteLogGroupOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogStreamRequest
 type DeleteLogStreamInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4072,6 +4072,7 @@ func (s *DeleteLogStreamInput) SetLogStreamName(v string) *DeleteLogStreamInput 
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteLogStreamOutput
 type DeleteLogStreamOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4086,6 +4087,7 @@ func (s DeleteLogStreamOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteMetricFilterRequest
 type DeleteMetricFilterInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4144,6 +4146,7 @@ func (s *DeleteMetricFilterInput) SetLogGroupName(v string) *DeleteMetricFilterI
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteMetricFilterOutput
 type DeleteMetricFilterOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4158,6 +4161,7 @@ func (s DeleteMetricFilterOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteResourcePolicyRequest
 type DeleteResourcePolicyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4181,6 +4185,7 @@ func (s *DeleteResourcePolicyInput) SetPolicyName(v string) *DeleteResourcePolic
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteResourcePolicyOutput
 type DeleteResourcePolicyOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4195,6 +4200,7 @@ func (s DeleteResourcePolicyOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteRetentionPolicyRequest
 type DeleteRetentionPolicyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4236,6 +4242,7 @@ func (s *DeleteRetentionPolicyInput) SetLogGroupName(v string) *DeleteRetentionP
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteRetentionPolicyOutput
 type DeleteRetentionPolicyOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4250,6 +4257,7 @@ func (s DeleteRetentionPolicyOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteSubscriptionFilterRequest
 type DeleteSubscriptionFilterInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4308,6 +4316,7 @@ func (s *DeleteSubscriptionFilterInput) SetLogGroupName(v string) *DeleteSubscri
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DeleteSubscriptionFilterOutput
 type DeleteSubscriptionFilterOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -4322,6 +4331,7 @@ func (s DeleteSubscriptionFilterOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeDestinationsRequest
 type DescribeDestinationsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4384,6 +4394,7 @@ func (s *DescribeDestinationsInput) SetNextToken(v string) *DescribeDestinations
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeDestinationsResponse
 type DescribeDestinationsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4417,6 +4428,7 @@ func (s *DescribeDestinationsOutput) SetNextToken(v string) *DescribeDestination
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeExportTasksRequest
 type DescribeExportTasksInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4490,6 +4502,7 @@ func (s *DescribeExportTasksInput) SetTaskId(v string) *DescribeExportTasksInput
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeExportTasksResponse
 type DescribeExportTasksOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4523,6 +4536,7 @@ func (s *DescribeExportTasksOutput) SetNextToken(v string) *DescribeExportTasksO
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogGroupsRequest
 type DescribeLogGroupsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4585,6 +4599,7 @@ func (s *DescribeLogGroupsInput) SetNextToken(v string) *DescribeLogGroupsInput 
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogGroupsResponse
 type DescribeLogGroupsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4618,6 +4633,7 @@ func (s *DescribeLogGroupsOutput) SetNextToken(v string) *DescribeLogGroupsOutpu
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogStreamsRequest
 type DescribeLogStreamsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4637,7 +4653,7 @@ type DescribeLogStreamsInput struct {
 
 	// The prefix to match.
 	//
-	// If orderBy is LastEventTime,you cannot specify this parameter.
+	// iIf orderBy is LastEventTime,you cannot specify this parameter.
 	LogStreamNamePrefix *string `locationName:"logStreamNamePrefix" min:"1" type:"string"`
 
 	// The token for the next set of items to return. (You received this token from
@@ -4730,6 +4746,7 @@ func (s *DescribeLogStreamsInput) SetOrderBy(v string) *DescribeLogStreamsInput 
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeLogStreamsResponse
 type DescribeLogStreamsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4763,6 +4780,7 @@ func (s *DescribeLogStreamsOutput) SetNextToken(v string) *DescribeLogStreamsOut
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeMetricFiltersRequest
 type DescribeMetricFiltersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4776,14 +4794,11 @@ type DescribeMetricFiltersInput struct {
 	// The name of the log group.
 	LogGroupName *string `locationName:"logGroupName" min:"1" type:"string"`
 
-	// Filters results to include only those with the specified metric name. If
-	// you include this parameter in your request, you must also include the metricNamespace
-	// parameter.
+	// The name of the CloudWatch metric to which the monitored log information
+	// should be published. For example, you may publish to a metric called ErrorCount.
 	MetricName *string `locationName:"metricName" type:"string"`
 
-	// Filters results to include only those in the specified namespace. If you
-	// include this parameter in your request, you must also include the metricName
-	// parameter.
+	// The namespace of the CloudWatch metric.
 	MetricNamespace *string `locationName:"metricNamespace" type:"string"`
 
 	// The token for the next set of items to return. (You received this token from
@@ -4859,6 +4874,7 @@ func (s *DescribeMetricFiltersInput) SetNextToken(v string) *DescribeMetricFilte
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeMetricFiltersResponse
 type DescribeMetricFiltersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4892,6 +4908,7 @@ func (s *DescribeMetricFiltersOutput) SetNextToken(v string) *DescribeMetricFilt
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeResourcePoliciesRequest
 type DescribeResourcePoliciesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4942,6 +4959,7 @@ func (s *DescribeResourcePoliciesInput) SetNextToken(v string) *DescribeResource
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeResourcePoliciesResponse
 type DescribeResourcePoliciesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4975,6 +4993,7 @@ func (s *DescribeResourcePoliciesOutput) SetResourcePolicies(v []*ResourcePolicy
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeSubscriptionFiltersRequest
 type DescribeSubscriptionFiltersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5054,6 +5073,7 @@ func (s *DescribeSubscriptionFiltersInput) SetNextToken(v string) *DescribeSubsc
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DescribeSubscriptionFiltersResponse
 type DescribeSubscriptionFiltersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5088,6 +5108,7 @@ func (s *DescribeSubscriptionFiltersOutput) SetSubscriptionFilters(v []*Subscrip
 }
 
 // Represents a cross-account destination that receives subscription log events.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/Destination
 type Destination struct {
 	_ struct{} `type:"structure"`
 
@@ -5159,6 +5180,7 @@ func (s *Destination) SetTargetArn(v string) *Destination {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DisassociateKmsKeyRequest
 type DisassociateKmsKeyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5200,6 +5222,7 @@ func (s *DisassociateKmsKeyInput) SetLogGroupName(v string) *DisassociateKmsKeyI
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/DisassociateKmsKeyOutput
 type DisassociateKmsKeyOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -5215,6 +5238,7 @@ func (s DisassociateKmsKeyOutput) GoString() string {
 }
 
 // Represents an export task.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/ExportTask
 type ExportTask struct {
 	_ struct{} `type:"structure"`
 
@@ -5313,6 +5337,7 @@ func (s *ExportTask) SetTo(v int64) *ExportTask {
 }
 
 // Represents the status of an export task.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/ExportTaskExecutionInfo
 type ExportTaskExecutionInfo struct {
 	_ struct{} `type:"structure"`
 
@@ -5348,6 +5373,7 @@ func (s *ExportTaskExecutionInfo) SetCreationTime(v int64) *ExportTaskExecutionI
 }
 
 // Represents the status of an export task.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/ExportTaskStatus
 type ExportTaskStatus struct {
 	_ struct{} `type:"structure"`
 
@@ -5380,6 +5406,7 @@ func (s *ExportTaskStatus) SetMessage(v string) *ExportTaskStatus {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/FilterLogEventsRequest
 type FilterLogEventsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5388,10 +5415,7 @@ type FilterLogEventsInput struct {
 	// not returned.
 	EndTime *int64 `locationName:"endTime" type:"long"`
 
-	// The filter pattern to use. For more information, see Filter and Pattern Syntax
-	// (http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html).
-	//
-	// If not provided, all the events are matched.
+	// The filter pattern to use. If not provided, all the events are matched.
 	FilterPattern *string `locationName:"filterPattern" type:"string"`
 
 	// If the value is true, the operation makes a best effort to provide responses
@@ -5404,24 +5428,12 @@ type FilterLogEventsInput struct {
 	// The maximum number of events to return. The default is 10,000 events.
 	Limit *int64 `locationName:"limit" min:"1" type:"integer"`
 
-	// The name of the log group to search.
+	// The name of the log group.
 	//
 	// LogGroupName is a required field
 	LogGroupName *string `locationName:"logGroupName" min:"1" type:"string" required:"true"`
 
-	// Filters the results to include only events from log streams that have names
-	// starting with this prefix.
-	//
-	// If you specify a value for both logStreamNamePrefix and logStreamNames, but
-	// the value for logStreamNamePrefix does not match any log stream names specified
-	// in logStreamNames, the action returns an InvalidParameterException error.
-	LogStreamNamePrefix *string `locationName:"logStreamNamePrefix" min:"1" type:"string"`
-
-	// Filters the results to only logs from the log streams in this list.
-	//
-	// If you specify a value for both logStreamNamePrefix and logStreamNames, but
-	// the value for logStreamNamePrefix does not match any log stream names specified
-	// in logStreamNames, the action returns an InvalidParameterException error.
+	// Optional list of log stream names.
 	LogStreamNames []*string `locationName:"logStreamNames" min:"1" type:"list"`
 
 	// The token for the next set of events to return. (You received this token
@@ -5455,9 +5467,6 @@ func (s *FilterLogEventsInput) Validate() error {
 	}
 	if s.LogGroupName != nil && len(*s.LogGroupName) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("LogGroupName", 1))
-	}
-	if s.LogStreamNamePrefix != nil && len(*s.LogStreamNamePrefix) < 1 {
-		invalidParams.Add(request.NewErrParamMinLen("LogStreamNamePrefix", 1))
 	}
 	if s.LogStreamNames != nil && len(s.LogStreamNames) < 1 {
 		invalidParams.Add(request.NewErrParamMinLen("LogStreamNames", 1))
@@ -5502,12 +5511,6 @@ func (s *FilterLogEventsInput) SetLogGroupName(v string) *FilterLogEventsInput {
 	return s
 }
 
-// SetLogStreamNamePrefix sets the LogStreamNamePrefix field's value.
-func (s *FilterLogEventsInput) SetLogStreamNamePrefix(v string) *FilterLogEventsInput {
-	s.LogStreamNamePrefix = &v
-	return s
-}
-
 // SetLogStreamNames sets the LogStreamNames field's value.
 func (s *FilterLogEventsInput) SetLogStreamNames(v []*string) *FilterLogEventsInput {
 	s.LogStreamNames = v
@@ -5526,6 +5529,7 @@ func (s *FilterLogEventsInput) SetStartTime(v int64) *FilterLogEventsInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/FilterLogEventsResponse
 type FilterLogEventsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5570,6 +5574,7 @@ func (s *FilterLogEventsOutput) SetSearchedLogStreams(v []*SearchedLogStream) *F
 }
 
 // Represents a matched event.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/FilteredLogEvent
 type FilteredLogEvent struct {
 	_ struct{} `type:"structure"`
 
@@ -5631,12 +5636,13 @@ func (s *FilteredLogEvent) SetTimestamp(v int64) *FilteredLogEvent {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/GetLogEventsRequest
 type GetLogEventsInput struct {
 	_ struct{} `type:"structure"`
 
 	// The end of the time range, expressed as the number of milliseconds after
-	// Jan 1, 1970 00:00:00 UTC. Events with a time stamp equal to or later than
-	// this time are not included.
+	// Jan 1, 1970 00:00:00 UTC. Events with a time stamp later than this time are
+	// not included.
 	EndTime *int64 `locationName:"endTime" type:"long"`
 
 	// The maximum number of log events returned. If you don't specify a value,
@@ -5664,9 +5670,8 @@ type GetLogEventsInput struct {
 	StartFromHead *bool `locationName:"startFromHead" type:"boolean"`
 
 	// The start of the time range, expressed as the number of milliseconds after
-	// Jan 1, 1970 00:00:00 UTC. Events with a time stamp equal to this time or
-	// later than this time are included. Events with a time stamp earlier than
-	// this time are not included.
+	// Jan 1, 1970 00:00:00 UTC. Events with a time stamp earlier than this time
+	// are not included.
 	StartTime *int64 `locationName:"startTime" type:"long"`
 }
 
@@ -5750,6 +5755,7 @@ func (s *GetLogEventsInput) SetStartTime(v int64) *GetLogEventsInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/GetLogEventsResponse
 type GetLogEventsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5757,13 +5763,11 @@ type GetLogEventsOutput struct {
 	Events []*OutputLogEvent `locationName:"events" type:"list"`
 
 	// The token for the next set of items in the backward direction. The token
-	// expires after 24 hours. This token will never be null. If you have reached
-	// the end of the stream, it will return the same token you passed in.
+	// expires after 24 hours.
 	NextBackwardToken *string `locationName:"nextBackwardToken" min:"1" type:"string"`
 
 	// The token for the next set of items in the forward direction. The token expires
-	// after 24 hours. If you have reached the end of the stream, it will return
-	// the same token you passed in.
+	// after 24 hours.
 	NextForwardToken *string `locationName:"nextForwardToken" min:"1" type:"string"`
 }
 
@@ -5797,6 +5801,7 @@ func (s *GetLogEventsOutput) SetNextForwardToken(v string) *GetLogEventsOutput {
 
 // Represents a log event, which is a record of activity that was recorded by
 // the application or resource being monitored.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/InputLogEvent
 type InputLogEvent struct {
 	_ struct{} `type:"structure"`
 
@@ -5805,7 +5810,7 @@ type InputLogEvent struct {
 	// Message is a required field
 	Message *string `locationName:"message" min:"1" type:"string" required:"true"`
 
-	// The time the event occurred, expressed as the number of milliseconds after
+	// The time the event occurred, expressed as the number of milliseconds fter
 	// Jan 1, 1970 00:00:00 UTC.
 	//
 	// Timestamp is a required field
@@ -5853,6 +5858,7 @@ func (s *InputLogEvent) SetTimestamp(v int64) *InputLogEvent {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/ListTagsLogGroupRequest
 type ListTagsLogGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -5894,6 +5900,7 @@ func (s *ListTagsLogGroupInput) SetLogGroupName(v string) *ListTagsLogGroupInput
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/ListTagsLogGroupResponse
 type ListTagsLogGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -5918,6 +5925,7 @@ func (s *ListTagsLogGroupOutput) SetTags(v map[string]*string) *ListTagsLogGroup
 }
 
 // Represents a log group.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/LogGroup
 type LogGroup struct {
 	_ struct{} `type:"structure"`
 
@@ -6000,6 +6008,7 @@ func (s *LogGroup) SetStoredBytes(v int64) *LogGroup {
 
 // Represents a log stream, which is a sequence of log events from a single
 // emitter of logs.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/LogStream
 type LogStream struct {
 	_ struct{} `type:"structure"`
 
@@ -6096,6 +6105,7 @@ func (s *LogStream) SetUploadSequenceToken(v string) *LogStream {
 // Metric filters express how CloudWatch Logs would extract metric observations
 // from ingested log events and transform them into metric data in a CloudWatch
 // metric.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/MetricFilter
 type MetricFilter struct {
 	_ struct{} `type:"structure"`
 
@@ -6160,6 +6170,7 @@ func (s *MetricFilter) SetMetricTransformations(v []*MetricTransformation) *Metr
 }
 
 // Represents a matched event.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/MetricFilterMatchRecord
 type MetricFilterMatchRecord struct {
 	_ struct{} `type:"structure"`
 
@@ -6203,6 +6214,7 @@ func (s *MetricFilterMatchRecord) SetExtractedValues(v map[string]*string) *Metr
 
 // Indicates how to transform ingested log events in to metric data in a CloudWatch
 // metric.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/MetricTransformation
 type MetricTransformation struct {
 	_ struct{} `type:"structure"`
 
@@ -6281,6 +6293,7 @@ func (s *MetricTransformation) SetMetricValue(v string) *MetricTransformation {
 }
 
 // Represents a log event.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/OutputLogEvent
 type OutputLogEvent struct {
 	_ struct{} `type:"structure"`
 
@@ -6324,6 +6337,7 @@ func (s *OutputLogEvent) SetTimestamp(v int64) *OutputLogEvent {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestinationRequest
 type PutDestinationInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6400,6 +6414,7 @@ func (s *PutDestinationInput) SetTargetArn(v string) *PutDestinationInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestinationResponse
 type PutDestinationOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6423,6 +6438,7 @@ func (s *PutDestinationOutput) SetDestination(v *Destination) *PutDestinationOut
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestinationPolicyRequest
 type PutDestinationPolicyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6482,6 +6498,7 @@ func (s *PutDestinationPolicyInput) SetDestinationName(v string) *PutDestination
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutDestinationPolicyOutput
 type PutDestinationPolicyOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -6496,6 +6513,7 @@ func (s PutDestinationPolicyOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutLogEventsRequest
 type PutLogEventsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6597,6 +6615,7 @@ func (s *PutLogEventsInput) SetSequenceToken(v string) *PutLogEventsInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutLogEventsResponse
 type PutLogEventsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6629,6 +6648,7 @@ func (s *PutLogEventsOutput) SetRejectedLogEventsInfo(v *RejectedLogEventsInfo) 
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutMetricFilterRequest
 type PutMetricFilterInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6728,6 +6748,7 @@ func (s *PutMetricFilterInput) SetMetricTransformations(v []*MetricTransformatio
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutMetricFilterOutput
 type PutMetricFilterOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -6742,6 +6763,7 @@ func (s PutMetricFilterOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutResourcePolicyRequest
 type PutResourcePolicyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6752,9 +6774,9 @@ type PutResourcePolicyInput struct {
 	// to put DNS query logs in to the specified log group. Replace "logArn" with
 	// the ARN of your CloudWatch Logs resource, such as a log group or log stream.
 	//
-	// { "Version": "2012-10-17", "Statement": [ { "Sid": "Route53LogsToCloudWatchLogs",
+	// { "Version": "2012-10-17" "Statement": [ { "Sid": "Route53LogsToCloudWatchLogs",
 	// "Effect": "Allow", "Principal": { "Service": [ "route53.amazonaws.com" ]
-	// }, "Action":"logs:PutLogEvents", "Resource": "logArn" } ] }
+	// }, "Action":"logs:PutLogEvents", "Resource": logArn } ] }
 	PolicyDocument *string `locationName:"policyDocument" min:"1" type:"string"`
 
 	// Name of the new policy. This parameter is required.
@@ -6796,6 +6818,7 @@ func (s *PutResourcePolicyInput) SetPolicyName(v string) *PutResourcePolicyInput
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutResourcePolicyResponse
 type PutResourcePolicyOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -6819,6 +6842,7 @@ func (s *PutResourcePolicyOutput) SetResourcePolicy(v *ResourcePolicy) *PutResou
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutRetentionPolicyRequest
 type PutRetentionPolicyInput struct {
 	_ struct{} `type:"structure"`
 
@@ -6876,6 +6900,7 @@ func (s *PutRetentionPolicyInput) SetRetentionInDays(v int64) *PutRetentionPolic
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutRetentionPolicyOutput
 type PutRetentionPolicyOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -6890,6 +6915,7 @@ func (s PutRetentionPolicyOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutSubscriptionFilterRequest
 type PutSubscriptionFilterInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7022,6 +7048,7 @@ func (s *PutSubscriptionFilterInput) SetRoleArn(v string) *PutSubscriptionFilter
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/PutSubscriptionFilterOutput
 type PutSubscriptionFilterOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -7037,6 +7064,7 @@ func (s PutSubscriptionFilterOutput) GoString() string {
 }
 
 // Represents the rejected events.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/RejectedLogEventsInfo
 type RejectedLogEventsInfo struct {
 	_ struct{} `type:"structure"`
 
@@ -7080,6 +7108,7 @@ func (s *RejectedLogEventsInfo) SetTooOldLogEventEndIndex(v int64) *RejectedLogE
 
 // A policy enabling one or more entities to put logs to a log group in this
 // account.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/ResourcePolicy
 type ResourcePolicy struct {
 	_ struct{} `type:"structure"`
 
@@ -7123,6 +7152,7 @@ func (s *ResourcePolicy) SetPolicyName(v string) *ResourcePolicy {
 }
 
 // Represents the search status of a log stream.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/SearchedLogStream
 type SearchedLogStream struct {
 	_ struct{} `type:"structure"`
 
@@ -7156,6 +7186,7 @@ func (s *SearchedLogStream) SetSearchedCompletely(v bool) *SearchedLogStream {
 }
 
 // Represents a subscription filter.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/SubscriptionFilter
 type SubscriptionFilter struct {
 	_ struct{} `type:"structure"`
 
@@ -7237,6 +7268,7 @@ func (s *SubscriptionFilter) SetRoleArn(v string) *SubscriptionFilter {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TagLogGroupRequest
 type TagLogGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7295,6 +7327,7 @@ func (s *TagLogGroupInput) SetTags(v map[string]*string) *TagLogGroupInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TagLogGroupOutput
 type TagLogGroupOutput struct {
 	_ struct{} `type:"structure"`
 }
@@ -7309,6 +7342,7 @@ func (s TagLogGroupOutput) GoString() string {
 	return s.String()
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TestMetricFilterRequest
 type TestMetricFilterInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7367,6 +7401,7 @@ func (s *TestMetricFilterInput) SetLogEventMessages(v []*string) *TestMetricFilt
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/TestMetricFilterResponse
 type TestMetricFilterOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -7390,6 +7425,7 @@ func (s *TestMetricFilterOutput) SetMatches(v []*MetricFilterMatchRecord) *TestM
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/UntagLogGroupRequest
 type UntagLogGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -7448,6 +7484,7 @@ func (s *UntagLogGroupInput) SetTags(v []*string) *UntagLogGroupInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/logs-2014-03-28/UntagLogGroupOutput
 type UntagLogGroupOutput struct {
 	_ struct{} `type:"structure"`
 }

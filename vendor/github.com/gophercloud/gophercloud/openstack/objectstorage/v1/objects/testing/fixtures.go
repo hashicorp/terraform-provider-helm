@@ -21,7 +21,6 @@ func HandleDownloadObjectSuccessfully(t *testing.T) {
 		th.TestHeader(t, r, "X-Auth-Token", fake.TokenID)
 		th.TestHeader(t, r, "Accept", "application/json")
 		w.Header().Set("Date", "Wed, 10 Nov 2009 23:00:00 GMT")
-		w.Header().Set("X-Static-Large-Object", "True")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "Successful download with Gophercloud")
 	})
@@ -244,7 +243,6 @@ func HandleGetObjectSuccessfully(t *testing.T) {
 		th.TestHeader(t, r, "X-Auth-Token", fake.TokenID)
 		th.TestHeader(t, r, "Accept", "application/json")
 		w.Header().Add("X-Object-Meta-Gophercloud-Test", "objects")
-		w.Header().Add("X-Static-Large-Object", "true")
 		w.WriteHeader(http.StatusNoContent)
 	})
 }
