@@ -7,12 +7,14 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"google.golang.org/grpc"
 
 	"github.com/ghodss/yaml"
+	"github.com/hashicorp/terraform/flatmap"
 	"github.com/hashicorp/terraform/helper/schema"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/downloader"
@@ -29,11 +31,14 @@ var ErrReleaseNotFound = errors.New("release not found")
 
 func resourceRelease() *schema.Resource {
 	return &schema.Resource{
-		Create:        resourceReleaseCreate,
-		Read:          resourceReleaseRead,
-		Delete:        resourceReleaseDelete,
-		Update:        resourceReleaseUpdate,
-		Exists:        resourceReleaseExists,
+		Create: resourceReleaseCreate,
+		Read:   resourceReleaseRead,
+		Delete: resourceReleaseDelete,
+		Update: resourceReleaseUpdate,
+		Exists: resourceReleaseExists,
+		Importer: &schema.ResourceImporter{
+			State: resourceReleaseImportState,
+		},
 		CustomizeDiff: resourceDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -423,6 +428,58 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	}
 
 	return false, err
+}
+
+func resourceReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	re, err := regexp.Compile("(?P<name>.+?)---(?P<repository>.+)")
+
+	if err != nil {
+		return nil, fmt.Errorf("Import is not supported. Invalid regex formats.")
+	}
+
+	if fieldValues := re.FindStringSubmatch(d.Id()); fieldValues != nil {
+		for i := 1; i < len(fieldValues); i++ {
+			fieldName := re.SubexpNames()[i]
+			d.Set(fieldName, fieldValues[i])
+		}
+	}
+
+	name := d.Get("name").(string)
+	d.SetId(name)
+
+	m := meta.(*Meta)
+	c, err := m.GetHelmClient()
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := getRelease(c, name)
+	if err != nil {
+		return nil, err
+	}
+
+	d.Set("chart", r.Chart.Metadata.Name)
+	d.Set("version", r.Chart.Metadata.Version)
+	d.Set("namespace", r.Namespace)
+
+	currentMap := map[string]interface{}{}
+	if err := yaml.Unmarshal([]byte(r.Config.Raw), &currentMap); err != nil {
+		return nil, fmt.Errorf("---> %v %s", err, r.Config.Raw)
+	}
+
+	flat := flatmap.Flatten(currentMap)
+
+	set := make([]interface{}, 0)
+	for name, value := range flat {
+		set = append(set, map[string]interface{}{"name": name, "value": value})
+	}
+
+	err = d.Set("set", set)
+	if err != nil {
+		return nil, err
+	}
+
+	return []*schema.ResourceData{d}, nil
 }
 
 func deleteRelease(c helm.Interface, name string, disableWebhooks bool, timeout int64) error {
