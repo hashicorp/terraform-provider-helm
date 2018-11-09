@@ -70,6 +70,12 @@ func Provider() terraform.ResourceProvider {
 				Default:     "default",
 				Description: "Service account to install Tiller with.",
 			},
+			"automount_service_account_token": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				Description: "Auto-mount the given service account to tiller.",
+			},
 			"override": {
 				Type:        schema.TypeList,
 				Optional:    true,
@@ -398,6 +404,7 @@ func (m *Meta) installTillerIfNeeded(d *schema.ResourceData) error {
 	o.Namespace = d.Get("namespace").(string)
 	o.ImageSpec = d.Get("tiller_image").(string)
 	o.ServiceAccount = d.Get("service_account").(string)
+	o.AutoMountServiceAccountToken = d.Get("automount_service_account_token").(bool)
 	o.MaxHistory = d.Get("max_history").(int)
 
 	for _, rule := range d.Get("override").([]interface{}) {
