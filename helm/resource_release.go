@@ -3,7 +3,6 @@ package helm
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -84,6 +83,24 @@ func resourceRelease() *schema.Resource {
 						"value": {
 							Type:     schema.TypeString,
 							Required: true,
+						},
+					},
+				},
+			},
+			"sensitive_set": {
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Custom sensitive values to be merge with the values.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:      schema.TypeString,
+							Required:  true,
+							Sensitive: true,
 						},
 					},
 				},
@@ -544,6 +561,17 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 		}
 	}
 
+	for _, raw := range d.Get("sensitive_set").(*schema.Set).List() {
+		set := raw.(map[string]interface{})
+
+		name := set["name"].(string)
+		value := set["value"].(string)
+
+		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+			return nil, fmt.Errorf("failed parsing key %q with sensitive value, %s", name, err)
+		}
+	}
+
 	for _, raw := range d.Get("set_string").(*schema.Set).List() {
 		set := raw.(map[string]interface{})
 
@@ -555,12 +583,7 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 		}
 	}
 
-	yaml, err := yaml.Marshal(base)
-	if err == nil {
-		log.Printf("---[ values.yaml ]-----------------------------------\n%s\n", yaml)
-	}
-
-	return yaml, err
+	return yaml.Marshal(base)
 }
 
 var all = []release.Status_Code{
