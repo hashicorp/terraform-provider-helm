@@ -87,7 +87,7 @@ func resourceRelease() *schema.Resource {
 					},
 				},
 			},
-			"sensitive_set": {
+			"set_sensitive": {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Description: "Custom sensitive values to be merge with the values.",
@@ -561,7 +561,7 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 		}
 	}
 
-	for _, raw := range d.Get("sensitive_set").(*schema.Set).List() {
+	for _, raw := range d.Get("set_sensitive").(*schema.Set).List() {
 		set := raw.(map[string]interface{})
 
 		name := set["name"].(string)
