@@ -57,6 +57,7 @@ The `set` block supports:
 In addition to the arguments listed above, the following computed attributes are
 exported:
 
+* `release` - The string representation of the rendered template.
 * `metadata` - Block status of the deployed release.
 
 The `metadata` block supports:

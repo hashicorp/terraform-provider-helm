@@ -166,6 +166,11 @@ func resourceRelease() *schema.Resource {
 				Default:     true,
 				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
 			},
+			"manifest": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The string representation of the rendered template.",
+			},
 			"metadata": {
 				Type:        schema.TypeSet,
 				Computed:    true,
@@ -339,6 +344,7 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 	d.SetId(r.Name)
 	d.Set("version", r.Chart.Metadata.Version)
 	d.Set("namespace", r.Namespace)
+	d.Set("manifest", r.Manifest)
 
 	return d.Set("metadata", []map[string]interface{}{{
 		"name":      r.Name,
