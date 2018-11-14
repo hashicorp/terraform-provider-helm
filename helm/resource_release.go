@@ -431,7 +431,7 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 }
 
 func resourceReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	re, err := regexp.Compile("(?P<name>.+?)---(?P<repository>.+)")
+	re, err := regexp.Compile("(?P<repository>.+)\\.(?P<name>.+)")
 
 	if err != nil {
 		return nil, fmt.Errorf("Import is not supported. Invalid regex formats.")

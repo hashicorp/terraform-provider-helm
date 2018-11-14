@@ -71,8 +71,8 @@ The `metadata` block supports:
 
 ## Import
 
-helm_release can be imported using the release name and chart repository, delimited by `---`, e.g.
+helm_release can be imported using the chart repository and release name, delimited by a `.`, e.g.
 
 ```
-$ terraform import helm_release.example my_redis---stable
+$ terraform import helm_release.example stable.my_redis
 ```
