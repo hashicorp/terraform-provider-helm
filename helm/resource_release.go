@@ -14,7 +14,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/ghodss/yaml"
-	"github.com/hashicorp/terraform/flatmap"
 	"github.com/hashicorp/terraform/helper/schema"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/downloader"
@@ -74,12 +73,20 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeList,
 				Optional:    true,
 				Description: "List of values in raw yaml file to pass to helm.",
-				Elem:        &schema.Schema{Type: schema.TypeString},
+				// Ignore changes of this attribute
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
+				Elem: &schema.Schema{Type: schema.TypeString},
 			},
 			"set": {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Description: "Custom values to be merge with the values.",
+				// Ignore changes of this attribute
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -97,6 +104,10 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Description: "Custom string values to be merge with the values.",
+				// Ignore changes of this attribute
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -170,6 +181,11 @@ func resourceRelease() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
+			},
+			"overrides": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The result YAML file got by merging all passed `set`, `set_string` and `values`",
 			},
 			"metadata": {
 				Type:        schema.TypeSet,
@@ -274,10 +290,24 @@ func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name s
 }
 
 func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
+	// Get version from the release metadata
 	c, _, err := getChart(d, meta.(*Meta))
-	if err == nil {
-		return d.SetNew("version", c.Metadata.Version)
+	if err != nil {
+		return err
 	}
+	if err := d.SetNew("version", c.Metadata.Version); err != nil {
+		return err
+	}
+
+	// Merge all "values", "set", "set_string" and assign the result to "overrides"
+	values, err := getValues(d)
+	if err != nil {
+		return err
+	}
+	if err := d.SetNew("overrides", string(values)); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -298,10 +328,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	values, err := getValues(d)
-	if err != nil {
-		return err
-	}
+	values := []byte(d.Get("overrides").(string))
 
 	opts := []helm.InstallOption{
 		helm.ReleaseName(d.Get("name").(string)),
@@ -344,6 +371,7 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 	d.SetId(r.Name)
 	d.Set("version", r.Chart.Metadata.Version)
 	d.Set("namespace", r.Namespace)
+	d.Set("overrides", r.Config.Raw)
 
 	return d.Set("metadata", []map[string]interface{}{{
 		"name":      r.Name,
@@ -359,15 +387,12 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 
-	values, err := getValues(d)
-	if err != nil {
-		return err
-	}
-
 	_, path, err := getChart(d, m)
 	if err != nil {
 		return err
 	}
+
+	values := []byte(d.Get("overrides").(string))
 
 	opts := []helm.UpdateOption{
 		helm.UpdateValueOverrides(values),
@@ -445,7 +470,6 @@ func resourceReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*sc
 	}
 
 	name := d.Get("name").(string)
-	d.SetId(name)
 
 	m := meta.(*Meta)
 	c, err := m.GetHelmClient()
@@ -459,25 +483,7 @@ func resourceReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*sc
 	}
 
 	d.Set("chart", r.Chart.Metadata.Name)
-	d.Set("version", r.Chart.Metadata.Version)
-	d.Set("namespace", r.Namespace)
-
-	currentMap := map[string]interface{}{}
-	if err := yaml.Unmarshal([]byte(r.Config.Raw), &currentMap); err != nil {
-		return nil, fmt.Errorf("---> %v %s", err, r.Config.Raw)
-	}
-
-	flat := flatmap.Flatten(currentMap)
-
-	set := make([]interface{}, 0)
-	for name, value := range flat {
-		set = append(set, map[string]interface{}{"name": name, "value": value})
-	}
-
-	err = d.Set("set", set)
-	if err != nil {
-		return nil, err
-	}
+	setIDAndMetadataFromRelease(d, r)
 
 	return []*schema.ResourceData{d}, nil
 }
@@ -574,7 +580,7 @@ func mergeValues(dest map[string]interface{}, src map[string]interface{}) map[st
 	return dest
 }
 
-func getValues(d *schema.ResourceData) ([]byte, error) {
+func getValues(d resourceGetter) ([]byte, error) {
 	base := map[string]interface{}{}
 
 	for _, raw := range d.Get("values").([]interface{}) {
