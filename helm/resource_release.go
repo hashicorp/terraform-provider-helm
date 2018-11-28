@@ -385,6 +385,21 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 }
 
 func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
+	name := d.Get("name").(string)
+	requestUpdate := false
+
+	// Update the release only if any of values, chart version or reuse_values are changed
+	// OR any of recreate_pods or force_update are set to true:
+	if d.HasChange("overrides") || d.HasChange("version") || d.HasChange("reuse_values") ||
+		d.Get("recreate_pods").(bool) || d.Get("force_update").(bool) {
+		requestUpdate = true
+	}
+
+	if !requestUpdate {
+		log.Printf("[DEBUG] Helm release %s doesn't require an update. Skipping...", name)
+		return nil
+	}
+
 	m := meta.(*Meta)
 
 	_, path, err := getChart(d, m)
@@ -409,7 +424,6 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	name := d.Get("name").(string)
 	res, err := c.UpdateRelease(name, path, opts...)
 	if err != nil {
 		return err
