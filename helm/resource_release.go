@@ -67,26 +67,26 @@ func resourceRelease() *schema.Resource {
 			"devel": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored",
+				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored",
+				// Suppress changes of this attribute if `version` is set
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("version").(string) != ""
+				},
 			},
 			"values": {
 				Type:        schema.TypeList,
 				Optional:    true,
 				Description: "List of values in raw yaml file to pass to helm.",
-				// Ignore changes of this attribute
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
-				Elem: &schema.Schema{Type: schema.TypeString},
+				// Suppress changes of this attribute, it's merged to `overrides`
+				DiffSuppressFunc: suppressAnyDiff,
+				Elem:             &schema.Schema{Type: schema.TypeString},
 			},
 			"set": {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Description: "Custom values to be merge with the values.",
-				// Ignore changes of this attribute
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
+				// Suppress changes of this attribute, it's merged to `overrides`
+				DiffSuppressFunc: suppressAnyDiff,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -104,10 +104,8 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Description: "Custom string values to be merge with the values.",
-				// Ignore changes of this attribute
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
+				// Suppress changes of this attribute, it's merged to `overrides`
+				DiffSuppressFunc: suppressAnyDiff,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -138,7 +136,11 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     os.ExpandEnv("$HOME/.gnupg/pubring.gpg"),
-				Description: "Location of public keys used for verification.",
+				Description: "Location of public keys used for verification. Used only if `verify` is true",
+				// Suppress changes of this attribute if `verify` is false
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return !d.Get("verify").(bool)
+				},
 			},
 			"timeout": {
 				Type:        schema.TypeInt,
@@ -233,6 +235,11 @@ func resourceRelease() *schema.Resource {
 			},
 		},
 	}
+}
+
+// suppressAnyDiff could be used to ultimately suppresses the diff of the resource attribute
+func suppressAnyDiff(k, old, new string, d *schema.ResourceData) bool {
+	return true
 }
 
 // prepareTillerForNewRelease determines the current status of the given release and
