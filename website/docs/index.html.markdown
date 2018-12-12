@@ -18,8 +18,8 @@ The Helm provider is used to deploy software packages in Kubernetes. The provide
 ## Example Usage
 
 ```hcl
-resource "helm_release" "my_database" {
-    name      = "my_datasase"
+resource "helm_release" "mydatabase" {
+    name      = "mydatabase"
     chart     = "stable/mariadb"
 
     set {
