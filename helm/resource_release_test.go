@@ -120,7 +120,6 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.4.1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: bar\n"),
 			),
@@ -130,7 +129,6 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.4.1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: baz\n"),
 			),
