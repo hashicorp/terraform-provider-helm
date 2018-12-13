@@ -377,16 +377,16 @@ func TestGetValues(t *testing.T) {
 
 func testAccHelmReleaseConfigRepository(ns, name string) string {
 	return fmt.Sprintf(`
-		resource "helm_repository" "incubator" {
-			name = "incubator"
-			url  = "https://kubernetes-charts-incubator.storage.googleapis.com"
+		resource "helm_repository" "stable_repo" {
+			name = "stable-repo"
+			url  = "https://kubernetes-charts.storage.googleapis.com"
 		}
 
 		resource "helm_release" "test" {
  			name       = %q
 			namespace  = %q
-			repository = "${helm_repository.incubator.metadata.0.name}"
-  			chart      = "logstash"
+			repository = "${helm_repository.stable_repo.metadata.0.name}"
+  			chart      = "telegraf"
 		}
 	`, name, ns)
 }
@@ -396,8 +396,8 @@ func testAccHelmReleaseConfigRepositoryURL(ns, name string) string {
 		resource "helm_release" "test" {
 			name       = %q
 			namespace  = %q
-			repository = "https://kubernetes-charts-incubator.storage.googleapis.com"
-			chart      = "logstash"
+			repository = "https://kubernetes-charts.storage.googleapis.com"
+			chart      = "telegraf"
 		}
 	`, name, ns)
 }
