@@ -406,7 +406,7 @@ func testAccCheckHelmReleaseDestroy(s *terraform.State) error {
 	// Fix for a flaky test
 	// Helm doesn't instantly delete it's releases causing this test to fail if not waited for a small period of time.
 	// TODO: improve the workaround
-	time.Sleep(30* time.Second)
+	time.Sleep(30 * time.Second)
 
 	m := testAccProvider.Meta()
 	if m == nil {
