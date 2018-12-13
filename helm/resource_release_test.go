@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -120,7 +121,6 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.4.1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: bar\n"),
 			),
@@ -130,7 +130,6 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.4.1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.status", "DEPLOYED"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: baz\n"),
 			),
@@ -257,7 +256,17 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			Config: testAccHelmReleaseConfigLocalDir(testNamespace, testResourceName, chartPath),
+			Config: fmt.Sprintf(`
+			resource "helm_release" "test" {
+				name      = %q
+				namespace = %q
+				chart     = %q
+				set {
+					name = "persistence.enabled"
+					value = "false" # persistent volumes are giving non-related issues when testing
+				}
+			}
+		`, testNamespace, testResourceName, chartPath),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
@@ -271,7 +280,17 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			Config: testAccHelmReleaseConfigLocalDir(testNamespace, testResourceName, chartPath),
+			Config: fmt.Sprintf(`
+			resource "helm_release" "test" {
+				name      = %q
+				namespace = %q
+				chart     = %q
+				set {
+					name = "persistence.enabled"
+					value = "false" # persistent volumes are giving non-related issues when testing
+				}
+			}
+		`, testNamespace, testResourceName, chartPath),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
@@ -358,16 +377,16 @@ func TestGetValues(t *testing.T) {
 
 func testAccHelmReleaseConfigRepository(ns, name string) string {
 	return fmt.Sprintf(`
-		resource "helm_repository" "incubator" {
-			name = "incubator"
-			url  = "https://kubernetes-charts-incubator.storage.googleapis.com"
+		resource "helm_repository" "stable_repo" {
+			name = "stable-repo"
+			url  = "https://kubernetes-charts.storage.googleapis.com"
 		}
 
 		resource "helm_release" "test" {
  			name       = %q
 			namespace  = %q
-			repository = "${helm_repository.incubator.metadata.0.name}"
-  			chart      = "logstash"
+			repository = "${helm_repository.stable_repo.metadata.0.name}"
+  			chart      = "telegraf"
 		}
 	`, name, ns)
 }
@@ -377,13 +396,18 @@ func testAccHelmReleaseConfigRepositoryURL(ns, name string) string {
 		resource "helm_release" "test" {
 			name       = %q
 			namespace  = %q
-			repository = "https://kubernetes-charts-incubator.storage.googleapis.com"
-			chart      = "logstash"
+			repository = "https://kubernetes-charts.storage.googleapis.com"
+			chart      = "telegraf"
 		}
 	`, name, ns)
 }
 
 func testAccCheckHelmReleaseDestroy(s *terraform.State) error {
+	// Fix for a flaky test
+	// Helm doesn't instantly delete it's releases causing this test to fail if not waited for a small period of time.
+	// TODO: improve the workaround
+	time.Sleep(5 * time.Second)
+
 	m := testAccProvider.Meta()
 	if m == nil {
 		return fmt.Errorf("provider not properly initialized")
