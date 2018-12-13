@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
@@ -402,6 +403,11 @@ func testAccHelmReleaseConfigRepositoryURL(ns, name string) string {
 }
 
 func testAccCheckHelmReleaseDestroy(s *terraform.State) error {
+	// Fix for a flaky test
+	// Helm doesn't instantly delete it's releases causing this test to fail if not waited for a small period of time.
+	// TODO: improve the workaround
+	time.Sleep(5 * time.Second)
+
 	m := testAccProvider.Meta()
 	if m == nil {
 		return fmt.Errorf("provider not properly initialized")
