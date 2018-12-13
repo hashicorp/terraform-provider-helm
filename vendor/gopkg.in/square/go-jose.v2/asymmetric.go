@@ -104,9 +104,9 @@ func newRSASigner(sigAlg SignatureAlgorithm, privateKey *rsa.PrivateKey) (recipi
 
 	return recipientSigInfo{
 		sigAlg: sigAlg,
-		publicKey: staticPublicKey(&JSONWebKey{
-			Key: privateKey.Public(),
-		}),
+		publicKey: &JSONWebKey{
+			Key: &privateKey.PublicKey,
+		},
 		signer: &rsaDecrypterSigner{
 			privateKey: privateKey,
 		},
@@ -123,9 +123,9 @@ func newEd25519Signer(sigAlg SignatureAlgorithm, privateKey ed25519.PrivateKey) 
 	}
 	return recipientSigInfo{
 		sigAlg: sigAlg,
-		publicKey: staticPublicKey(&JSONWebKey{
+		publicKey: &JSONWebKey{
 			Key: privateKey.Public(),
-		}),
+		},
 		signer: &edDecrypterSigner{
 			privateKey: privateKey,
 		},
@@ -168,9 +168,9 @@ func newECDSASigner(sigAlg SignatureAlgorithm, privateKey *ecdsa.PrivateKey) (re
 
 	return recipientSigInfo{
 		sigAlg: sigAlg,
-		publicKey: staticPublicKey(&JSONWebKey{
-			Key: privateKey.Public(),
-		}),
+		publicKey: &JSONWebKey{
+			Key: &privateKey.PublicKey,
+		},
 		signer: &ecDecrypterSigner{
 			privateKey: privateKey,
 		},
@@ -466,7 +466,6 @@ func (ctx ecDecrypterSigner) decryptKey(headers rawHeader, recipient *recipientI
 
 	return josecipher.KeyUnwrap(block, recipient.encryptedKey)
 }
-
 func (ctx edDecrypterSigner) signPayload(payload []byte, alg SignatureAlgorithm) (Signature, error) {
 	if alg != EdDSA {
 		return Signature{}, ErrUnsupportedAlgorithm
@@ -532,7 +531,7 @@ func (ctx ecDecrypterSigner) signPayload(payload []byte, alg SignatureAlgorithm)
 		keyBytes++
 	}
 
-	// We serialize the outputs (r and s) into big-endian byte arrays and pad
+	// We serialize the outpus (r and s) into big-endian byte arrays and pad
 	// them with zeros on the left to make sure the sizes work out. Both arrays
 	// must be keyBytes long, and the output must be 2*keyBytes long.
 	rBytes := r.Bytes()

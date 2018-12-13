@@ -29,6 +29,8 @@ import (
 	"syscall"
 
 	"github.com/golang/glog"
+
+	utilfile "k8s.io/kubernetes/pkg/util/file"
 )
 
 // Mounter provides the default implementation of mount.Interface
@@ -118,14 +120,14 @@ func (mounter *Mounter) Unmount(target string) error {
 	return nil
 }
 
-// GetMountRefs finds all other references to the device(drive) referenced
-// by mountPath; returns a list of paths.
+// GetMountRefs : empty implementation here since there is no place to query all mount points on Windows
 func GetMountRefs(mounter Interface, mountPath string) ([]string, error) {
-	refs, err := getAllParentLinks(normalizeWindowsPath(mountPath))
-	if err != nil {
+	if _, err := os.Stat(normalizeWindowsPath(mountPath)); os.IsNotExist(err) {
+		return []string{}, nil
+	} else if err != nil {
 		return nil, err
 	}
-	return refs, nil
+	return []string{mountPath}, nil
 }
 
 // List returns a list of all mounted filesystems. todo
@@ -153,9 +155,13 @@ func (mounter *Mounter) IsLikelyNotMountPoint(file string) (bool, error) {
 	if stat.Mode()&os.ModeSymlink != 0 {
 		target, err := os.Readlink(file)
 		if err != nil {
-			return true, fmt.Errorf("Readlink error: %v", err)
+			return true, fmt.Errorf("readlink error: %v", err)
 		}
-		return !mounter.ExistsPath(target), nil
+		exists, err := mounter.ExistsPath(target)
+		if err != nil {
+			return true, err
+		}
+		return !exists, nil
 	}
 
 	return true, nil
@@ -238,12 +244,8 @@ func (mounter *Mounter) MakeFile(pathname string) error {
 }
 
 // ExistsPath checks whether the path exists
-func (mounter *Mounter) ExistsPath(pathname string) bool {
-	_, err := os.Stat(pathname)
-	if err != nil {
-		return false
-	}
-	return true
+func (mounter *Mounter) ExistsPath(pathname string) (bool, error) {
+	return utilfile.FileExists(pathname)
 }
 
 // check whether hostPath is within volume path
@@ -461,14 +463,44 @@ func getAllParentLinks(path string) ([]string, error) {
 	return links, nil
 }
 
+// GetMountRefs : empty implementation here since there is no place to query all mount points on Windows
+func (mounter *Mounter) GetMountRefs(pathname string) ([]string, error) {
+	if _, err := os.Stat(normalizeWindowsPath(pathname)); os.IsNotExist(err) {
+		return []string{}, nil
+	} else if err != nil {
+		return nil, err
+	}
+	return []string{pathname}, nil
+}
+
+// Note that on windows, it always returns 0. We actually don't set FSGroup on
+// windows platform, see SetVolumeOwnership implementation.
+func (mounter *Mounter) GetFSGroup(pathname string) (int64, error) {
+	return 0, nil
+}
+
 func (mounter *Mounter) GetSELinuxSupport(pathname string) (bool, error) {
 	// Windows does not support SELinux.
 	return false, nil
 }
 
+func (mounter *Mounter) GetMode(pathname string) (os.FileMode, error) {
+	info, err := os.Stat(pathname)
+	if err != nil {
+		return 0, err
+	}
+	return info.Mode(), nil
+}
+
 // SafeMakeDir makes sure that the created directory does not escape given base directory mis-using symlinks.
-func (mounter *Mounter) SafeMakeDir(pathname string, base string, perm os.FileMode) error {
-	return doSafeMakeDir(pathname, base, perm)
+func (mounter *Mounter) SafeMakeDir(subdir string, base string, perm os.FileMode) error {
+	realBase, err := filepath.EvalSymlinks(base)
+	if err != nil {
+		return fmt.Errorf("error resolving symlinks in %s: %s", base, err)
+	}
+
+	realFullPath := filepath.Join(realBase, subdir)
+	return doSafeMakeDir(realFullPath, realBase, perm)
 }
 
 func doSafeMakeDir(pathname string, base string, perm os.FileMode) error {

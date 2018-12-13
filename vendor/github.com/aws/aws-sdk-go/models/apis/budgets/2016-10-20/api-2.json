@@ -7,7 +7,6 @@
     "protocol":"json",
     "serviceAbbreviation":"AWSBudgets",
     "serviceFullName":"AWS Budgets",
-    "serviceId":"Budgets",
     "signatureVersion":"v4",
     "targetPrefix":"AWSBudgetServiceGateway",
     "uid":"budgets-2016-10-20"
@@ -219,7 +218,10 @@
       "type":"structure",
       "required":[
         "BudgetName",
+        "BudgetLimit",
+        "CostTypes",
         "TimeUnit",
+        "TimePeriod",
         "BudgetType"
       ],
       "members":{
@@ -243,8 +245,7 @@
       "enum":[
         "USAGE",
         "COST",
-        "RI_UTILIZATION",
-        "RI_COVERAGE"
+        "RI_UTILIZATION"
       ]
     },
     "Budgets":{
@@ -274,18 +275,15 @@
     },
     "CostTypes":{
       "type":"structure",
+      "required":[
+        "IncludeTax",
+        "IncludeSubscription",
+        "UseBlended"
+      ],
       "members":{
-        "IncludeTax":{"shape":"NullableBoolean"},
-        "IncludeSubscription":{"shape":"NullableBoolean"},
-        "UseBlended":{"shape":"NullableBoolean"},
-        "IncludeRefund":{"shape":"NullableBoolean"},
-        "IncludeCredit":{"shape":"NullableBoolean"},
-        "IncludeUpfront":{"shape":"NullableBoolean"},
-        "IncludeRecurring":{"shape":"NullableBoolean"},
-        "IncludeOtherSubscription":{"shape":"NullableBoolean"},
-        "IncludeSupport":{"shape":"NullableBoolean"},
-        "IncludeDiscount":{"shape":"NullableBoolean"},
-        "UseAmortized":{"shape":"NullableBoolean"}
+        "IncludeTax":{"shape":"GenericBoolean"},
+        "IncludeSubscription":{"shape":"GenericBoolean"},
+        "UseBlended":{"shape":"GenericBoolean"}
       }
     },
     "CreateBudgetRequest":{
@@ -499,6 +497,7 @@
       },
       "exception":true
     },
+    "GenericBoolean":{"type":"boolean"},
     "GenericString":{"type":"string"},
     "GenericTimestamp":{"type":"timestamp"},
     "InternalErrorException":{
@@ -581,13 +580,9 @@
       "type":"list",
       "member":{"shape":"Notification"}
     },
-    "NullableBoolean":{
-      "type":"boolean",
-      "box":true
-    },
     "NumericValue":{
       "type":"string",
-      "pattern":"([0-9]*\\.)?[0-9]+"
+      "pattern":"[0-9]*(\\.)?[0-9]+"
     },
     "Spend":{
       "type":"structure",
@@ -608,12 +603,8 @@
       ],
       "members":{
         "SubscriptionType":{"shape":"SubscriptionType"},
-        "Address":{"shape":"SubscriberAddress"}
+        "Address":{"shape":"GenericString"}
       }
-    },
-    "SubscriberAddress":{
-      "type":"string",
-      "min":1
     },
     "Subscribers":{
       "type":"list",
@@ -637,6 +628,10 @@
     },
     "TimePeriod":{
       "type":"structure",
+      "required":[
+        "Start",
+        "End"
+      ],
       "members":{
         "Start":{"shape":"GenericTimestamp"},
         "End":{"shape":"GenericTimestamp"}

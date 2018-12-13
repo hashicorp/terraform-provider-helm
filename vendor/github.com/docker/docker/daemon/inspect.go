@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/versions/v1p20"
 	"github.com/docker/docker/container"
 	"github.com/docker/docker/daemon/network"
+	"github.com/docker/go-connections/nat"
 )
 
 // ContainerInspect returns low-level information about a
@@ -35,21 +36,22 @@ func (daemon *Daemon) ContainerInspectCurrent(name string, size bool) (*types.Co
 	}
 
 	container.Lock()
-	defer container.Unlock()
 
-	base, err := daemon.getInspectData(container, size)
+	base, err := daemon.getInspectData(container)
 	if err != nil {
+		container.Unlock()
 		return nil, err
 	}
 
 	apiNetworks := make(map[string]*networktypes.EndpointSettings)
 	for name, epConf := range container.NetworkSettings.Networks {
 		if epConf.EndpointSettings != nil {
-			apiNetworks[name] = epConf.EndpointSettings
+			// We must make a copy of this pointer object otherwise it can race with other operations
+			apiNetworks[name] = epConf.EndpointSettings.Copy()
 		}
 	}
 
-	mountPoints := addMountPoints(container)
+	mountPoints := container.GetMountPoints()
 	networkSettings := &types.NetworkSettings{
 		NetworkSettingsBase: types.NetworkSettingsBase{
 			Bridge:                 container.NetworkSettings.Bridge,
@@ -57,13 +59,26 @@ func (daemon *Daemon) ContainerInspectCurrent(name string, size bool) (*types.Co
 			HairpinMode:            container.NetworkSettings.HairpinMode,
 			LinkLocalIPv6Address:   container.NetworkSettings.LinkLocalIPv6Address,
 			LinkLocalIPv6PrefixLen: container.NetworkSettings.LinkLocalIPv6PrefixLen,
-			Ports:                  container.NetworkSettings.Ports,
 			SandboxKey:             container.NetworkSettings.SandboxKey,
 			SecondaryIPAddresses:   container.NetworkSettings.SecondaryIPAddresses,
 			SecondaryIPv6Addresses: container.NetworkSettings.SecondaryIPv6Addresses,
 		},
 		DefaultNetworkSettings: daemon.getDefaultNetworkSettings(container.NetworkSettings.Networks),
 		Networks:               apiNetworks,
+	}
+
+	ports := make(nat.PortMap, len(container.NetworkSettings.Ports))
+	for k, pm := range container.NetworkSettings.Ports {
+		ports[k] = pm
+	}
+	networkSettings.NetworkSettingsBase.Ports = ports
+
+	container.Unlock()
+
+	if size {
+		sizeRw, sizeRootFs := daemon.getSize(base.ID)
+		base.SizeRw = &sizeRw
+		base.SizeRootFs = &sizeRootFs
 	}
 
 	return &types.ContainerJSON{
@@ -84,12 +99,12 @@ func (daemon *Daemon) containerInspect120(name string) (*v1p20.ContainerJSON, er
 	container.Lock()
 	defer container.Unlock()
 
-	base, err := daemon.getInspectData(container, false)
+	base, err := daemon.getInspectData(container)
 	if err != nil {
 		return nil, err
 	}
 
-	mountPoints := addMountPoints(container)
+	mountPoints := container.GetMountPoints()
 	config := &v1p20.ContainerConfig{
 		Config:          container.Config,
 		MacAddress:      container.Config.MacAddress,
@@ -107,7 +122,7 @@ func (daemon *Daemon) containerInspect120(name string) (*v1p20.ContainerJSON, er
 	}, nil
 }
 
-func (daemon *Daemon) getInspectData(container *container.Container, size bool) (*types.ContainerJSONBase, error) {
+func (daemon *Daemon) getInspectData(container *container.Container) (*types.ContainerJSONBase, error) {
 	// make a copy to play with
 	hostConfig := *container.HostConfig
 
@@ -138,7 +153,7 @@ func (daemon *Daemon) getInspectData(container *container.Container, size bool) 
 		Dead:       container.State.Dead,
 		Pid:        container.State.Pid,
 		ExitCode:   container.State.ExitCode(),
-		Error:      container.State.Error(),
+		Error:      container.State.ErrorMsg,
 		StartedAt:  container.State.StartedAt.Format(time.RFC3339Nano),
 		FinishedAt: container.State.FinishedAt.Format(time.RFC3339Nano),
 		Health:     containerHealth,
@@ -155,20 +170,11 @@ func (daemon *Daemon) getInspectData(container *container.Container, size bool) 
 		Name:         container.Name,
 		RestartCount: container.RestartCount,
 		Driver:       container.Driver,
+		Platform:     container.Platform,
 		MountLabel:   container.MountLabel,
 		ProcessLabel: container.ProcessLabel,
 		ExecIDs:      container.GetExecIDs(),
 		HostConfig:   &hostConfig,
-	}
-
-	var (
-		sizeRw     int64
-		sizeRootFs int64
-	)
-	if size {
-		sizeRw, sizeRootFs = daemon.getSize(container)
-		contJSONBase.SizeRw = &sizeRw
-		contJSONBase.SizeRootFs = &sizeRootFs
 	}
 
 	// Now set any platform-specific fields
@@ -191,9 +197,13 @@ func (daemon *Daemon) getInspectData(container *container.Container, size bool) 
 // ContainerExecInspect returns low-level information about the exec
 // command. An error is returned if the exec cannot be found.
 func (daemon *Daemon) ContainerExecInspect(id string) (*backend.ExecInspect, error) {
-	e, err := daemon.getExecConfig(id)
-	if err != nil {
-		return nil, err
+	e := daemon.execCommands.Get(id)
+	if e == nil {
+		return nil, errExecNotFound(id)
+	}
+
+	if container := daemon.containers.Get(e.ContainerID); container == nil {
+		return nil, errExecNotFound(id)
 	}
 
 	pc := inspectExecProcessConfig(e)

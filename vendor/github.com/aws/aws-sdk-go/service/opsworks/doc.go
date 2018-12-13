@@ -46,14 +46,9 @@
 //
 //    * opsworks.us-west-2.amazonaws.com
 //
-//    * opsworks.ca-central-1.amazonaws.com (API only; not available in the
-//    AWS console)
-//
 //    * opsworks.eu-west-1.amazonaws.com
 //
 //    * opsworks.eu-west-2.amazonaws.com
-//
-//    * opsworks.eu-west-3.amazonaws.com
 //
 //    * opsworks.eu-central-1.amazonaws.com
 //
@@ -86,7 +81,7 @@
 //
 // Using the Client
 //
-// To contact AWS OpsWorks with the SDK use the New function to create
+// To AWS OpsWorks with the SDK use the New function to create
 // a new service client. With that client you can make API requests to the service.
 // These clients are safe to use concurrently.
 //

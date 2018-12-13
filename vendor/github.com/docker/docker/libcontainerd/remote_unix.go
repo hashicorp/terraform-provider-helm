@@ -15,17 +15,16 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
-	"github.com/Sirupsen/logrus"
-	containerd "github.com/docker/containerd/api/grpc/types"
+	containerd "github.com/containerd/containerd/api/grpc/types"
 	"github.com/docker/docker/pkg/locker"
-	sysinfo "github.com/docker/docker/pkg/system"
-	"github.com/docker/docker/utils"
+	"github.com/docker/docker/pkg/system"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
+	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -50,7 +49,7 @@ type remote struct {
 	stateDir             string
 	rpcAddr              string
 	startDaemon          bool
-	closeManually        bool
+	closedManually       bool
 	debugLog             bool
 	rpcConn              *grpc.ClientConn
 	clients              []*client
@@ -81,7 +80,7 @@ func New(stateDir string, options ...RemoteOption) (_ Remote, err error) {
 		}
 	}
 
-	if err := sysinfo.MkdirAll(stateDir, 0700); err != nil {
+	if err := system.MkdirAll(stateDir, 0700, ""); err != nil {
 		return nil, err
 	}
 
@@ -97,11 +96,13 @@ func New(stateDir string, options ...RemoteOption) (_ Remote, err error) {
 
 	// don't output the grpc reconnect logging
 	grpclog.SetLogger(log.New(ioutil.Discard, "", log.LstdFlags))
-	dialOpts := append([]grpc.DialOption{grpc.WithInsecure()},
+	dialOpts := []grpc.DialOption{
+		grpc.WithInsecure(),
+		grpc.WithBackoffMaxDelay(2 * time.Second),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
 			return net.DialTimeout("unix", addr, timeout)
 		}),
-	)
+	}
 	conn, err := grpc.Dial(r.rpcAddr, dialOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to containerd: %v", err)
@@ -155,7 +156,7 @@ func (r *remote) handleConnectionChange() {
 		logrus.Debugf("libcontainerd: containerd health check returned error: %v", err)
 
 		if r.daemonPid != -1 {
-			if strings.Contains(err.Error(), "is closing") {
+			if r.closedManually {
 				// Well, we asked for it to stop, just return
 				return
 			}
@@ -164,8 +165,8 @@ func (r *remote) handleConnectionChange() {
 			transientFailureCount++
 			if transientFailureCount >= maxConnectionRetryCount {
 				transientFailureCount = 0
-				if utils.IsProcessAlive(r.daemonPid) {
-					utils.KillProcess(r.daemonPid)
+				if system.IsProcessAlive(r.daemonPid) {
+					system.KillProcess(r.daemonPid)
 				}
 				<-r.daemonWaitCh
 				if err := r.runContainerdDaemon(); err != nil { //FIXME: Handle error
@@ -181,22 +182,22 @@ func (r *remote) Cleanup() {
 	if r.daemonPid == -1 {
 		return
 	}
-	r.closeManually = true
+	r.closedManually = true
 	r.rpcConn.Close()
 	// Ask the daemon to quit
-	syscall.Kill(r.daemonPid, syscall.SIGTERM)
+	unix.Kill(r.daemonPid, unix.SIGTERM)
 
 	// Wait up to 15secs for it to stop
 	for i := time.Duration(0); i < containerdShutdownTimeout; i += time.Second {
-		if !utils.IsProcessAlive(r.daemonPid) {
+		if !system.IsProcessAlive(r.daemonPid) {
 			break
 		}
 		time.Sleep(time.Second)
 	}
 
-	if utils.IsProcessAlive(r.daemonPid) {
+	if system.IsProcessAlive(r.daemonPid) {
 		logrus.Warnf("libcontainerd: containerd (%d) didn't stop within 15 secs, killing it\n", r.daemonPid)
-		syscall.Kill(r.daemonPid, syscall.SIGKILL)
+		unix.Kill(r.daemonPid, unix.SIGKILL)
 	}
 
 	// cleanup some files
@@ -223,7 +224,7 @@ func (r *remote) Client(b Backend) (Client, error) {
 }
 
 func (r *remote) updateEventTimestamp(t time.Time) {
-	f, err := os.OpenFile(r.eventTsPath, syscall.O_CREAT|syscall.O_WRONLY|syscall.O_TRUNC, 0600)
+	f, err := os.OpenFile(r.eventTsPath, unix.O_CREAT|unix.O_WRONLY|unix.O_TRUNC, 0600)
 	if err != nil {
 		logrus.Warnf("libcontainerd: failed to open event timestamp file: %v", err)
 		return
@@ -281,10 +282,23 @@ func (r *remote) startEventsMonitor() error {
 	er := &containerd.EventsRequest{
 		Timestamp: tsp,
 	}
-	events, err := r.apiClient.Events(context.Background(), er, grpc.FailFast(false))
-	if err != nil {
-		return err
+
+	var events containerd.API_EventsClient
+	for {
+		events, err = r.apiClient.Events(context.Background(), er, grpc.FailFast(false))
+		if err == nil {
+			break
+		}
+		logrus.Warnf("libcontainerd: failed to get events from containerd: %q", err)
+
+		if r.closedManually {
+			// ignore error if grpc remote connection is closed manually
+			return nil
+		}
+
+		<-time.After(100 * time.Millisecond)
 	}
+
 	go r.handleEventStream(events)
 	return nil
 }
@@ -294,7 +308,7 @@ func (r *remote) handleEventStream(events containerd.API_EventsClient) {
 		e, err := events.Recv()
 		if err != nil {
 			if grpc.ErrorDesc(err) == transport.ErrConnClosing.Desc &&
-				r.closeManually {
+				r.closedManually {
 				// ignore error if grpc remote connection is closed manually
 				return
 			}
@@ -354,7 +368,7 @@ func (r *remote) runContainerdDaemon() error {
 		if err != nil {
 			return err
 		}
-		if utils.IsProcessAlive(int(pid)) {
+		if system.IsProcessAlive(int(pid)) {
 			logrus.Infof("libcontainerd: previous instance of containerd still alive (%d)", pid)
 			r.daemonPid = int(pid)
 			return nil
@@ -415,21 +429,28 @@ func (r *remote) runContainerdDaemon() error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	logrus.Infof("libcontainerd: new containerd process, pid: %d", cmd.Process.Pid)
-	if err := setOOMScore(cmd.Process.Pid, r.oomScore); err != nil {
-		utils.KillProcess(cmd.Process.Pid)
-		return err
-	}
-	if _, err := f.WriteString(fmt.Sprintf("%d", cmd.Process.Pid)); err != nil {
-		utils.KillProcess(cmd.Process.Pid)
-		return err
-	}
+
+	// unless strictly necessary, do not add anything in between here
+	// as the reaper goroutine below needs to kick in as soon as possible
+	// and any "return" from code paths added here will defeat the reaper
+	// process.
 
 	r.daemonWaitCh = make(chan struct{})
 	go func() {
 		cmd.Wait()
 		close(r.daemonWaitCh)
 	}() // Reap our child when needed
+
+	logrus.Infof("libcontainerd: new containerd process, pid: %d", cmd.Process.Pid)
+	if err := setOOMScore(cmd.Process.Pid, r.oomScore); err != nil {
+		system.KillProcess(cmd.Process.Pid)
+		return err
+	}
+	if _, err := f.WriteString(fmt.Sprintf("%d", cmd.Process.Pid)); err != nil {
+		system.KillProcess(cmd.Process.Pid)
+		return err
+	}
+
 	r.daemonPid = cmd.Process.Pid
 	return nil
 }

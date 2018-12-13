@@ -72,7 +72,7 @@ type Rule struct {
 	IPRange IPRange `json:"ip_range"`
 
 	// The security group ID to which this rule belongs.
-	ParentGroupID string `json:"-"`
+	ParentGroupID string `json:"parent_group_id"`
 
 	// Not documented.
 	Group Group

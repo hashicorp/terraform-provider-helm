@@ -17,6 +17,7 @@ limitations under the License.
 package customresource
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -27,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/generic"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
@@ -108,7 +108,7 @@ func newREST(resource schema.GroupResource, listKind schema.GroupVersionKind, st
 var _ rest.CategoriesProvider = &REST{}
 
 // List returns a list of items matching labels and field according to the store's PredicateFunc.
-func (e *REST) List(ctx genericapirequest.Context, options *metainternalversion.ListOptions) (runtime.Object, error) {
+func (e *REST) List(ctx context.Context, options *metainternalversion.ListOptions) (runtime.Object, error) {
 	l, err := e.Store.List(ctx, options)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (e *REST) List(ctx genericapirequest.Context, options *metainternalversion.
 	return l, nil
 }
 
-func (r *REST) Get(ctx genericapirequest.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
+func (r *REST) Get(ctx context.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
 	o, err := r.Store.Get(ctx, name, options)
 	if err != nil {
 		return nil, err
@@ -170,17 +170,19 @@ type StatusREST struct {
 	store *genericregistry.Store
 }
 
+var _ = rest.Patcher(&StatusREST{})
+
 func (r *StatusREST) New() runtime.Object {
 	return &unstructured.Unstructured{}
 }
 
 // Get retrieves the object from the storage. It is required to support Patch.
-func (r *StatusREST) Get(ctx genericapirequest.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
+func (r *StatusREST) Get(ctx context.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
 	return r.store.Get(ctx, name, options)
 }
 
 // Update alters the status subset of an object.
-func (r *StatusREST) Update(ctx genericapirequest.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
+func (r *StatusREST) Update(ctx context.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
 	return r.store.Update(ctx, name, objInfo, createValidation, updateValidation)
 }
 
@@ -204,7 +206,7 @@ func (r *ScaleREST) New() runtime.Object {
 	return &autoscalingv1.Scale{}
 }
 
-func (r *ScaleREST) Get(ctx genericapirequest.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
+func (r *ScaleREST) Get(ctx context.Context, name string, options *metav1.GetOptions) (runtime.Object, error) {
 	cr, err := r.registry.GetCustomResource(ctx, name, options)
 	if err != nil {
 		return nil, err
@@ -220,7 +222,7 @@ func (r *ScaleREST) Get(ctx genericapirequest.Context, name string, options *met
 	return scaleObject, err
 }
 
-func (r *ScaleREST) Update(ctx genericapirequest.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
+func (r *ScaleREST) Update(ctx context.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
 	cr, err := r.registry.GetCustomResource(ctx, name, &metav1.GetOptions{})
 	if err != nil {
 		return nil, false, err

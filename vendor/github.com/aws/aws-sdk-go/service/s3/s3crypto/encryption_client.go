@@ -7,7 +7,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/internal/sdkio"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 )
@@ -72,11 +71,12 @@ func (c *EncryptionClient) PutObjectRequest(input *s3.PutObjectInput) (*request.
 	req, out := c.S3Client.PutObjectRequest(input)
 
 	// Get Size of file
-	n, err := aws.SeekerLen(input.Body)
+	n, err := input.Body.Seek(0, 2)
 	if err != nil {
 		req.Error = err
 		return req, out
 	}
+	input.Body.Seek(0, 0)
 
 	dst, err := getWriterStore(req, c.TempFolderPath, n >= c.MinFileSize)
 	if err != nil {
@@ -115,7 +115,7 @@ func (c *EncryptionClient) PutObjectRequest(input *s3.PutObjectInput) (*request.
 		shaHex := hex.EncodeToString(sha.GetValue())
 		req.HTTPRequest.Header.Set("X-Amz-Content-Sha256", shaHex)
 
-		dst.Seek(0, sdkio.SeekStart)
+		dst.Seek(0, 0)
 		input.Body = dst
 
 		err = c.SaveStrategy.Save(env, r)
@@ -136,7 +136,7 @@ func (c *EncryptionClient) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOut
 //
 // PutObjectWithContext is the same as PutObject with the additional support for
 // Context input parameters. The Context must not be nil. A nil Context will
-// cause a panic. Use the Context to add deadlining, timeouts, etc. In the future
+// cause a panic. Use the Context to add deadlining, timeouts, ect. In the future
 // this may create sub-contexts for individual underlying requests.
 func (c *EncryptionClient) PutObjectWithContext(ctx aws.Context, input *s3.PutObjectInput, opts ...request.Option) (*s3.PutObjectOutput, error) {
 	req, out := c.PutObjectRequest(input)

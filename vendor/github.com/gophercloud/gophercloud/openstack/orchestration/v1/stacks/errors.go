@@ -31,11 +31,3 @@ type ErrInvalidTemplateFormatVersion struct {
 func (e ErrInvalidTemplateFormatVersion) Error() string {
 	return fmt.Sprintf("Template format version not found.")
 }
-
-type ErrTemplateRequired struct {
-	gophercloud.BaseError
-}
-
-func (e ErrTemplateRequired) Error() string {
-	return fmt.Sprintf("Template required for this function.")
-}

@@ -3,19 +3,16 @@ package httputils
 import (
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
-
-	"github.com/docker/docker/api"
 )
 
 // APIVersionKey is the client's requested API version.
 const APIVersionKey = "api-version"
-
-// UAStringKey is used as key type for user-agent string in net/context struct
-const UAStringKey = "upstream-user-agent"
 
 // APIFunc is an adapter to allow the use of ordinary functions as Docker API endpoints.
 // Any function that has the appropriate signature can be registered as an API endpoint (e.g. getVersion).
@@ -58,7 +55,7 @@ func CheckForJSON(r *http.Request) error {
 	}
 
 	// Otherwise it better be json
-	if api.MatchesContentType(ct, "application/json") {
+	if matchesContentType(ct, "application/json") {
 		return nil
 	}
 	return fmt.Errorf("Content-Type specified (%s) must be 'application/json'", ct)
@@ -78,13 +75,23 @@ func ParseForm(r *http.Request) error {
 
 // VersionFromContext returns an API version from the context using APIVersionKey.
 // It panics if the context value does not have version.Version type.
-func VersionFromContext(ctx context.Context) (ver string) {
+func VersionFromContext(ctx context.Context) string {
 	if ctx == nil {
-		return
+		return ""
 	}
-	val := ctx.Value(APIVersionKey)
-	if val == nil {
-		return
+
+	if val := ctx.Value(APIVersionKey); val != nil {
+		return val.(string)
 	}
-	return val.(string)
+
+	return ""
+}
+
+// matchesContentType validates the content type against the expected one
+func matchesContentType(contentType, expectedType string) bool {
+	mimetype, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		logrus.Errorf("Error parsing media type: %s error: %v", contentType, err)
+	}
+	return err == nil && mimetype == expectedType
 }

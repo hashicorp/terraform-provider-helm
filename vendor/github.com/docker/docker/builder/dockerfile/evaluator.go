@@ -2,7 +2,7 @@
 //
 // It incorporates a dispatch table based on the parser.Node values (see the
 // parser package for more information) that are yielded from the parser itself.
-// Calling NewBuilder with the BuildOpts struct can be used to customize the
+// Calling newBuilder with the BuildOpts struct can be used to customize the
 // experience for execution purposes only. Parsing is controlled in the parser
 // package, and this division of responsibility should be respected.
 //
@@ -20,11 +20,18 @@
 package dockerfile
 
 import (
+	"bytes"
 	"fmt"
+	"runtime"
 	"strings"
 
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/builder"
 	"github.com/docker/docker/builder/dockerfile/command"
 	"github.com/docker/docker/builder/dockerfile/parser"
+	"github.com/docker/docker/pkg/system"
+	"github.com/docker/docker/runconfig/opts"
+	"github.com/pkg/errors"
 )
 
 // Environment variable interpolation will happen on these statements only.
@@ -54,10 +61,36 @@ var allowWordExpansion = map[string]bool{
 	command.Expose: true,
 }
 
-var evaluateTable map[string]func(*Builder, []string, map[string]bool, string) error
+type dispatchRequest struct {
+	builder    *Builder // TODO: replace this with a smaller interface
+	args       []string
+	attributes map[string]bool
+	flags      *BFlags
+	original   string
+	shlex      *ShellLex
+	state      *dispatchState
+	source     builder.Source
+}
+
+func newDispatchRequestFromOptions(options dispatchOptions, builder *Builder, args []string) dispatchRequest {
+	return dispatchRequest{
+		builder:    builder,
+		args:       args,
+		attributes: options.node.Attributes,
+		original:   options.node.Original,
+		flags:      NewBFlagsWithArgs(options.node.Flags),
+		shlex:      options.shlex,
+		state:      options.state,
+		source:     options.source,
+	}
+}
+
+type dispatcher func(dispatchRequest) error
+
+var evaluateTable map[string]dispatcher
 
 func init() {
-	evaluateTable = map[string]func(*Builder, []string, map[string]bool, string) error{
+	evaluateTable = map[string]dispatcher{
 		command.Add:         add,
 		command.Arg:         arg,
 		command.Cmd:         cmd,
@@ -79,6 +112,10 @@ func init() {
 	}
 }
 
+func formatStep(stepN int, stepTotal int) string {
+	return fmt.Sprintf("%d/%d", stepN+1, stepTotal)
+}
+
 // This method is the entrypoint to all statement handling routines.
 //
 // Almost all nodes will have this structure:
@@ -93,113 +130,169 @@ func init() {
 // such as `RUN` in ONBUILD RUN foo. There is special case logic in here to
 // deal with that, at least until it becomes more of a general concern with new
 // features.
-func (b *Builder) dispatch(stepN int, stepTotal int, ast *parser.Node) error {
-	cmd := ast.Value
+func (b *Builder) dispatch(options dispatchOptions) (*dispatchState, error) {
+	node := options.node
+	cmd := node.Value
 	upperCasedCmd := strings.ToUpper(cmd)
 
 	// To ensure the user is given a decent error message if the platform
 	// on which the daemon is running does not support a builder command.
 	if err := platformSupports(strings.ToLower(cmd)); err != nil {
-		return err
+		buildsFailed.WithValues(metricsCommandNotSupportedError).Inc()
+		return nil, err
 	}
 
-	attrs := ast.Attributes
-	original := ast.Original
-	flags := ast.Flags
-	strList := []string{}
-	msg := fmt.Sprintf("Step %d/%d : %s", stepN+1, stepTotal, upperCasedCmd)
+	msg := bytes.NewBufferString(fmt.Sprintf("Step %s : %s%s",
+		options.stepMsg, upperCasedCmd, formatFlags(node.Flags)))
 
-	if len(ast.Flags) > 0 {
-		msg += " " + strings.Join(ast.Flags, " ")
-	}
-
-	if cmd == "onbuild" {
-		if ast.Next == nil {
-			return fmt.Errorf("ONBUILD requires at least one argument")
+	args := []string{}
+	ast := node
+	if cmd == command.Onbuild {
+		var err error
+		ast, args, err = handleOnBuildNode(node, msg)
+		if err != nil {
+			return nil, err
 		}
-		ast = ast.Next.Children[0]
-		strList = append(strList, ast.Value)
-		msg += " " + ast.Value
-
-		if len(ast.Flags) > 0 {
-			msg += " " + strings.Join(ast.Flags, " ")
-		}
-
 	}
 
-	// count the number of nodes that we are going to traverse first
-	// so we can pre-create the argument and message array. This speeds up the
-	// allocation of those list a lot when they have a lot of arguments
-	cursor := ast
-	var n int
-	for cursor.Next != nil {
-		cursor = cursor.Next
-		n++
+	runConfigEnv := options.state.runConfig.Env
+	envs := append(runConfigEnv, b.buildArgs.FilterAllowed(runConfigEnv)...)
+	processFunc := createProcessWordFunc(options.shlex, cmd, envs)
+	words, err := getDispatchArgsFromNode(ast, processFunc, msg)
+	if err != nil {
+		buildsFailed.WithValues(metricsErrorProcessingCommandsError).Inc()
+		return nil, err
 	}
-	msgList := make([]string, n)
+	args = append(args, words...)
 
-	var i int
-	// Append the build-time args to config-environment.
-	// This allows builder config to override the variables, making the behavior similar to
-	// a shell script i.e. `ENV foo bar` overrides value of `foo` passed in build
-	// context. But `ENV foo $foo` will use the value from build context if one
-	// isn't already been defined by a previous ENV primitive.
-	// Note, we get this behavior because we know that ProcessWord() will
-	// stop on the first occurrence of a variable name and not notice
-	// a subsequent one. So, putting the buildArgs list after the Config.Env
-	// list, in 'envs', is safe.
-	envs := b.runConfig.Env
-	for key, val := range b.options.BuildArgs {
-		if !b.isBuildArgAllowed(key) {
-			// skip build-args that are not in allowed list, meaning they have
-			// not been defined by an "ARG" Dockerfile command yet.
-			// This is an error condition but only if there is no "ARG" in the entire
-			// Dockerfile, so we'll generate any necessary errors after we parsed
-			// the entire file (see 'leftoverArgs' processing in evaluator.go )
-			continue
-		}
-		envs = append(envs, fmt.Sprintf("%s=%s", key, *val))
+	fmt.Fprintln(b.Stdout, msg.String())
+
+	f, ok := evaluateTable[cmd]
+	if !ok {
+		buildsFailed.WithValues(metricsUnknownInstructionError).Inc()
+		return nil, fmt.Errorf("unknown instruction: %s", upperCasedCmd)
 	}
-	for ast.Next != nil {
+	options.state.updateRunConfig()
+	err = f(newDispatchRequestFromOptions(options, b, args))
+	return options.state, err
+}
+
+type dispatchOptions struct {
+	state   *dispatchState
+	stepMsg string
+	node    *parser.Node
+	shlex   *ShellLex
+	source  builder.Source
+}
+
+// dispatchState is a data object which is modified by dispatchers
+type dispatchState struct {
+	runConfig  *container.Config
+	maintainer string
+	cmdSet     bool
+	imageID    string
+	baseImage  builder.Image
+	stageName  string
+}
+
+func newDispatchState() *dispatchState {
+	return &dispatchState{runConfig: &container.Config{}}
+}
+
+func (s *dispatchState) updateRunConfig() {
+	s.runConfig.Image = s.imageID
+}
+
+// hasFromImage returns true if the builder has processed a `FROM <image>` line
+func (s *dispatchState) hasFromImage() bool {
+	return s.imageID != "" || (s.baseImage != nil && s.baseImage.ImageID() == "")
+}
+
+func (s *dispatchState) isCurrentStage(target string) bool {
+	if target == "" {
+		return false
+	}
+	return strings.EqualFold(s.stageName, target)
+}
+
+func (s *dispatchState) beginStage(stageName string, image builder.Image) {
+	s.stageName = stageName
+	s.imageID = image.ImageID()
+
+	if image.RunConfig() != nil {
+		s.runConfig = image.RunConfig()
+	} else {
+		s.runConfig = &container.Config{}
+	}
+	s.baseImage = image
+	s.setDefaultPath()
+}
+
+// Add the default PATH to runConfig.ENV if one exists for the platform and there
+// is no PATH set. Note that Windows containers on Windows won't have one as it's set by HCS
+func (s *dispatchState) setDefaultPath() {
+	// TODO @jhowardmsft LCOW Support - This will need revisiting later
+	platform := runtime.GOOS
+	if system.LCOWSupported() {
+		platform = "linux"
+	}
+	if system.DefaultPathEnv(platform) == "" {
+		return
+	}
+	envMap := opts.ConvertKVStringsToMap(s.runConfig.Env)
+	if _, ok := envMap["PATH"]; !ok {
+		s.runConfig.Env = append(s.runConfig.Env, "PATH="+system.DefaultPathEnv(platform))
+	}
+}
+
+func handleOnBuildNode(ast *parser.Node, msg *bytes.Buffer) (*parser.Node, []string, error) {
+	if ast.Next == nil {
+		return nil, nil, errors.New("ONBUILD requires at least one argument")
+	}
+	ast = ast.Next.Children[0]
+	msg.WriteString(" " + ast.Value + formatFlags(ast.Flags))
+	return ast, []string{ast.Value}, nil
+}
+
+func formatFlags(flags []string) string {
+	if len(flags) > 0 {
+		return " " + strings.Join(flags, " ")
+	}
+	return ""
+}
+
+func getDispatchArgsFromNode(ast *parser.Node, processFunc processWordFunc, msg *bytes.Buffer) ([]string, error) {
+	args := []string{}
+	for i := 0; ast.Next != nil; i++ {
 		ast = ast.Next
-		var str string
-		str = ast.Value
-		if replaceEnvAllowed[cmd] {
-			var err error
-			var words []string
-
-			if allowWordExpansion[cmd] {
-				words, err = ProcessWords(str, envs, b.directive.EscapeToken)
-				if err != nil {
-					return err
-				}
-				strList = append(strList, words...)
-			} else {
-				str, err = ProcessWord(str, envs, b.directive.EscapeToken)
-				if err != nil {
-					return err
-				}
-				strList = append(strList, str)
-			}
-		} else {
-			strList = append(strList, str)
+		words, err := processFunc(ast.Value)
+		if err != nil {
+			return nil, err
 		}
-		msgList[i] = ast.Value
-		i++
+		args = append(args, words...)
+		msg.WriteString(" " + ast.Value)
 	}
+	return args, nil
+}
 
-	msg += " " + strings.Join(msgList, " ")
-	fmt.Fprintln(b.Stdout, msg)
+type processWordFunc func(string) ([]string, error)
 
-	// XXX yes, we skip any cmds that are not valid; the parser should have
-	// picked these out already.
-	if f, ok := evaluateTable[cmd]; ok {
-		b.flags = NewBFlags()
-		b.flags.Args = flags
-		return f(b, strList, attrs, original)
+func createProcessWordFunc(shlex *ShellLex, cmd string, envs []string) processWordFunc {
+	switch {
+	case !replaceEnvAllowed[cmd]:
+		return func(word string) ([]string, error) {
+			return []string{word}, nil
+		}
+	case allowWordExpansion[cmd]:
+		return func(word string) ([]string, error) {
+			return shlex.ProcessWords(word, envs)
+		}
+	default:
+		return func(word string) ([]string, error) {
+			word, err := shlex.ProcessWord(word, envs)
+			return []string{word}, err
+		}
 	}
-
-	return fmt.Errorf("Unknown instruction: %s", upperCasedCmd)
 }
 
 // checkDispatch does a simple check for syntax errors of the Dockerfile.
@@ -207,8 +300,7 @@ func (b *Builder) dispatch(stepN int, stepTotal int, ast *parser.Node) error {
 // arg, env, etc., this syntax check will not be complete and could not replace
 // the runtime check. Instead, this function is only a helper that allows
 // user to find out the obvious error in Dockerfile earlier on.
-// onbuild bool: indicate if instruction XXX is part of `ONBUILD XXX` trigger
-func (b *Builder) checkDispatch(ast *parser.Node, onbuild bool) error {
+func checkDispatch(ast *parser.Node) error {
 	cmd := ast.Value
 	upperCasedCmd := strings.ToUpper(cmd)
 
@@ -222,23 +314,14 @@ func (b *Builder) checkDispatch(ast *parser.Node, onbuild bool) error {
 	// least one argument
 	if upperCasedCmd == "ONBUILD" {
 		if ast.Next == nil {
-			return fmt.Errorf("ONBUILD requires at least one argument")
-		}
-	}
-
-	// The instruction is part of ONBUILD trigger (not the instruction itself)
-	if onbuild {
-		switch upperCasedCmd {
-		case "ONBUILD":
-			return fmt.Errorf("Chaining ONBUILD via `ONBUILD ONBUILD` isn't allowed")
-		case "MAINTAINER", "FROM":
-			return fmt.Errorf("%s isn't allowed as an ONBUILD trigger", upperCasedCmd)
+			buildsFailed.WithValues(metricsMissingOnbuildArgumentsError).Inc()
+			return errors.New("ONBUILD requires at least one argument")
 		}
 	}
 
 	if _, ok := evaluateTable[cmd]; ok {
 		return nil
 	}
-
-	return fmt.Errorf("Unknown instruction: %s", upperCasedCmd)
+	buildsFailed.WithValues(metricsUnknownInstructionError).Inc()
+	return errors.Errorf("unknown instruction: %s", upperCasedCmd)
 }

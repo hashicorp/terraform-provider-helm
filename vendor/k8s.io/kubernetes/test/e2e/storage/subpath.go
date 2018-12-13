@@ -624,6 +624,8 @@ func testPodContainerRestart(f *framework.Framework, pod *v1.Pod) {
 }
 
 func testSubpathReconstruction(f *framework.Framework, pod *v1.Pod, forceDelete bool) {
+	// This is mostly copied from TestVolumeUnmountsFromDeletedPodWithForceOption()
+
 	// Change to busybox
 	pod.Spec.Containers[0].Image = "busybox"
 	pod.Spec.Containers[0].Command = []string{"/bin/sh", "-ec", "sleep 100000"}
@@ -645,7 +647,7 @@ func testSubpathReconstruction(f *framework.Framework, pod *v1.Pod, forceDelete 
 	pod, err = f.ClientSet.CoreV1().Pods(f.Namespace.Name).Get(pod.Name, metav1.GetOptions{})
 	Expect(err).ToNot(HaveOccurred(), "while getting pod")
 
-	utils.TestVolumeUnmountsFromDeletedPodWithForceOption(f.ClientSet, f, pod, forceDelete, true /* checkSubpath */)
+	utils.TestVolumeUnmountsFromDeletedPodWithForceOption(f.ClientSet, f, pod, forceDelete, true)
 }
 
 func initVolumeContent(f *framework.Framework, pod *v1.Pod, volumeFilepath, subpathFilepath string) {
@@ -968,7 +970,7 @@ type glusterSource struct {
 }
 
 func initGluster() volSource {
-	framework.SkipUnlessNodeOSDistroIs("gci", "ubuntu")
+	framework.SkipUnlessNodeOSDistroIs("gci", "ubuntu", "custom")
 	return &glusterSource{}
 }
 

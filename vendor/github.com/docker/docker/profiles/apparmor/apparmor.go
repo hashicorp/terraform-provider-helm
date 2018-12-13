@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/pkg/aaparser"
-	"github.com/docker/docker/utils/templates"
+	"github.com/docker/docker/pkg/templates"
 )
 
 var (
@@ -54,10 +54,7 @@ func (p *profileData) generateDefault(out io.Writer) error {
 	}
 	p.Version = ver
 
-	if err := compiled.Execute(out, p); err != nil {
-		return err
-	}
-	return nil
+	return compiled.Execute(out, p)
 }
 
 // macrosExists checks if the passed macro exists.
@@ -84,15 +81,10 @@ func InstallDefault(name string) error {
 	defer os.Remove(profilePath)
 
 	if err := p.generateDefault(f); err != nil {
-		f.Close()
 		return err
 	}
 
-	if err := aaparser.LoadProfile(profilePath); err != nil {
-		return err
-	}
-
-	return nil
+	return aaparser.LoadProfile(profilePath)
 }
 
 // IsLoaded checks if a profile with the given name has been loaded into the

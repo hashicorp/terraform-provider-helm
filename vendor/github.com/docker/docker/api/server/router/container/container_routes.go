@@ -7,17 +7,18 @@ import (
 	"net/http"
 	"strconv"
 	"syscall"
-	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/api"
 	"github.com/docker/docker/api/server/httputils"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/backend"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/versions"
+	containerpkg "github.com/docker/docker/container"
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/docker/docker/pkg/signal"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"golang.org/x/net/websocket"
 )
@@ -90,32 +91,38 @@ func (s *containerRouter) getContainersLogs(ctx context.Context, w http.Response
 	}
 
 	containerName := vars["name"]
-	logsConfig := &backend.ContainerLogsConfig{
-		ContainerLogsOptions: types.ContainerLogsOptions{
-			Follow:     httputils.BoolValue(r, "follow"),
-			Timestamps: httputils.BoolValue(r, "timestamps"),
-			Since:      r.Form.Get("since"),
-			Tail:       r.Form.Get("tail"),
-			ShowStdout: stdout,
-			ShowStderr: stderr,
-			Details:    httputils.BoolValue(r, "details"),
-		},
-		OutStream: w,
+	logsConfig := &types.ContainerLogsOptions{
+		Follow:     httputils.BoolValue(r, "follow"),
+		Timestamps: httputils.BoolValue(r, "timestamps"),
+		Since:      r.Form.Get("since"),
+		Tail:       r.Form.Get("tail"),
+		ShowStdout: stdout,
+		ShowStderr: stderr,
+		Details:    httputils.BoolValue(r, "details"),
 	}
 
-	chStarted := make(chan struct{})
-	if err := s.backend.ContainerLogs(ctx, containerName, logsConfig, chStarted); err != nil {
-		select {
-		case <-chStarted:
-			// The client may be expecting all of the data we're sending to
-			// be multiplexed, so send it through OutStream, which will
-			// have been set up to handle that if needed.
-			fmt.Fprintf(logsConfig.OutStream, "Error running logs job: %v\n", err)
-		default:
-			return err
-		}
+	// doesn't matter what version the client is on, we're using this internally only
+	// also do we need size? i'm thinking no we don't
+	raw, err := s.backend.ContainerInspect(containerName, false, api.DefaultVersion)
+	if err != nil {
+		return err
+	}
+	container, ok := raw.(*types.ContainerJSON)
+	if !ok {
+		// %T prints the type. handy!
+		return fmt.Errorf("expected container to be *types.ContainerJSON but got %T", raw)
 	}
 
+	msgs, err := s.backend.ContainerLogs(ctx, containerName, logsConfig)
+	if err != nil {
+		return err
+	}
+
+	// if has a tty, we're not muxing streams. if it doesn't, we are. simple.
+	// this is the point of no return for writing a response. once we call
+	// WriteLogStream, the response has been started and errors will be
+	// returned in band by WriteLogStream
+	httputils.WriteLogStream(ctx, w, msgs, logsConfig, !container.Config.Tty)
 	return nil
 }
 
@@ -277,13 +284,48 @@ func (s *containerRouter) postContainersUnpause(ctx context.Context, w http.Resp
 }
 
 func (s *containerRouter) postContainersWait(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
-	status, err := s.backend.ContainerWait(vars["name"], -1*time.Second)
+	// Behavior changed in version 1.30 to handle wait condition and to
+	// return headers immediately.
+	version := httputils.VersionFromContext(ctx)
+	legacyBehavior := versions.LessThan(version, "1.30")
+
+	// The wait condition defaults to "not-running".
+	waitCondition := containerpkg.WaitConditionNotRunning
+	if !legacyBehavior {
+		if err := httputils.ParseForm(r); err != nil {
+			return err
+		}
+		switch container.WaitCondition(r.Form.Get("condition")) {
+		case container.WaitConditionNextExit:
+			waitCondition = containerpkg.WaitConditionNextExit
+		case container.WaitConditionRemoved:
+			waitCondition = containerpkg.WaitConditionRemoved
+		}
+	}
+
+	// Note: the context should get canceled if the client closes the
+	// connection since this handler has been wrapped by the
+	// router.WithCancel() wrapper.
+	waitC, err := s.backend.ContainerWait(ctx, vars["name"], waitCondition)
 	if err != nil {
 		return err
 	}
 
-	return httputils.WriteJSON(w, http.StatusOK, &container.ContainerWaitOKBody{
-		StatusCode: int64(status),
+	w.Header().Set("Content-Type", "application/json")
+
+	if !legacyBehavior {
+		// Write response header immediately.
+		w.WriteHeader(http.StatusOK)
+		if flusher, ok := w.(http.Flusher); ok {
+			flusher.Flush()
+		}
+	}
+
+	// Block on the result of the wait operation.
+	status := <-waitC
+
+	return json.NewEncoder(w).Encode(&container.ContainerWaitOKBody{
+		StatusCode: int64(status.ExitCode()),
 	})
 }
 
@@ -368,6 +410,11 @@ func (s *containerRouter) postContainersCreate(ctx context.Context, w http.Respo
 	}
 	version := httputils.VersionFromContext(ctx)
 	adjustCPUShares := versions.LessThan(version, "1.19")
+
+	// When using API 1.24 and under, the client is responsible for removing the container
+	if hostConfig != nil && versions.LessThan(version, "1.25") {
+		hostConfig.AutoRemove = false
+	}
 
 	ccr, err := s.backend.ContainerCreate(types.ContainerCreateConfig{
 		Name:             name,
@@ -497,6 +544,8 @@ func (s *containerRouter) wsContainersAttach(ctx context.Context, w http.Respons
 	done := make(chan struct{})
 	started := make(chan struct{})
 
+	version := httputils.VersionFromContext(ctx)
+
 	setupStreams := func() (io.ReadCloser, io.Writer, io.Writer, error) {
 		wsChan := make(chan *websocket.Conn)
 		h := func(conn *websocket.Conn) {
@@ -511,6 +560,11 @@ func (s *containerRouter) wsContainersAttach(ctx context.Context, w http.Respons
 		}()
 
 		conn := <-wsChan
+		// In case version 1.28 and above, a binary frame will be sent.
+		// See 28176 for details.
+		if versions.GreaterThanOrEqualTo(version, "1.28") {
+			conn.PayloadType = websocket.BinaryFrame
+		}
 		return conn, conn, conn, nil
 	}
 
@@ -546,7 +600,7 @@ func (s *containerRouter) postContainersPrune(ctx context.Context, w http.Respon
 		return err
 	}
 
-	pruneReport, err := s.backend.ContainersPrune(pruneFilters)
+	pruneReport, err := s.backend.ContainersPrune(ctx, pruneFilters)
 	if err != nil {
 		return err
 	}

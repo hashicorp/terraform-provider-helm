@@ -34,7 +34,6 @@ import (
 	testpb "google.golang.org/grpc/benchmark/grpc_testing"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
-	"google.golang.org/grpc/status"
 )
 
 var (
@@ -79,7 +78,7 @@ func (s *workerServer) RunServer(stream testpb.WorkerService_RunServerServer) er
 	var bs *benchmarkServer
 	defer func() {
 		// Close benchmark server when stream ends.
-		grpclog.Infof("closing benchmark server")
+		grpclog.Printf("closing benchmark server")
 		if bs != nil {
 			bs.closeFunc()
 		}
@@ -96,9 +95,9 @@ func (s *workerServer) RunServer(stream testpb.WorkerService_RunServerServer) er
 		var out *testpb.ServerStatus
 		switch argtype := in.Argtype.(type) {
 		case *testpb.ServerArgs_Setup:
-			grpclog.Infof("server setup received:")
+			grpclog.Printf("server setup received:")
 			if bs != nil {
-				grpclog.Infof("server setup received when server already exists, closing the existing server")
+				grpclog.Printf("server setup received when server already exists, closing the existing server")
 				bs.closeFunc()
 			}
 			bs, err = startBenchmarkServer(argtype.Setup, s.serverPort)
@@ -112,10 +111,10 @@ func (s *workerServer) RunServer(stream testpb.WorkerService_RunServerServer) er
 			}
 
 		case *testpb.ServerArgs_Mark:
-			grpclog.Infof("server mark received:")
-			grpclog.Infof(" - %v", argtype)
+			grpclog.Printf("server mark received:")
+			grpclog.Printf(" - %v", argtype)
 			if bs == nil {
-				return status.Error(codes.InvalidArgument, "server does not exist when mark received")
+				return grpc.Errorf(codes.InvalidArgument, "server does not exist when mark received")
 			}
 			out = &testpb.ServerStatus{
 				Stats: bs.getStats(argtype.Mark.Reset_),
@@ -134,7 +133,7 @@ func (s *workerServer) RunClient(stream testpb.WorkerService_RunClientServer) er
 	var bc *benchmarkClient
 	defer func() {
 		// Shut down benchmark client when stream ends.
-		grpclog.Infof("shuting down benchmark client")
+		grpclog.Printf("shuting down benchmark client")
 		if bc != nil {
 			bc.shutdown()
 		}
@@ -151,9 +150,9 @@ func (s *workerServer) RunClient(stream testpb.WorkerService_RunClientServer) er
 		var out *testpb.ClientStatus
 		switch t := in.Argtype.(type) {
 		case *testpb.ClientArgs_Setup:
-			grpclog.Infof("client setup received:")
+			grpclog.Printf("client setup received:")
 			if bc != nil {
-				grpclog.Infof("client setup received when client already exists, shuting down the existing client")
+				grpclog.Printf("client setup received when client already exists, shuting down the existing client")
 				bc.shutdown()
 			}
 			bc, err = startBenchmarkClient(t.Setup)
@@ -165,10 +164,10 @@ func (s *workerServer) RunClient(stream testpb.WorkerService_RunClientServer) er
 			}
 
 		case *testpb.ClientArgs_Mark:
-			grpclog.Infof("client mark received:")
-			grpclog.Infof(" - %v", t)
+			grpclog.Printf("client mark received:")
+			grpclog.Printf(" - %v", t)
 			if bc == nil {
-				return status.Error(codes.InvalidArgument, "client does not exist when mark received")
+				return grpc.Errorf(codes.InvalidArgument, "client does not exist when mark received")
 			}
 			out = &testpb.ClientStatus{
 				Stats: bc.getStats(t.Mark.Reset_),
@@ -182,12 +181,12 @@ func (s *workerServer) RunClient(stream testpb.WorkerService_RunClientServer) er
 }
 
 func (s *workerServer) CoreCount(ctx context.Context, in *testpb.CoreRequest) (*testpb.CoreResponse, error) {
-	grpclog.Infof("core count: %v", runtime.NumCPU())
+	grpclog.Printf("core count: %v", runtime.NumCPU())
 	return &testpb.CoreResponse{Cores: int32(runtime.NumCPU())}, nil
 }
 
 func (s *workerServer) QuitWorker(ctx context.Context, in *testpb.Void) (*testpb.Void, error) {
-	grpclog.Infof("quitting worker")
+	grpclog.Printf("quiting worker")
 	s.stop <- true
 	return &testpb.Void{}, nil
 }
@@ -200,7 +199,7 @@ func main() {
 	if err != nil {
 		grpclog.Fatalf("failed to listen: %v", err)
 	}
-	grpclog.Infof("worker listening at port %v", *driverPort)
+	grpclog.Printf("worker listening at port %v", *driverPort)
 
 	s := grpc.NewServer()
 	stop := make(chan bool)
@@ -221,8 +220,8 @@ func main() {
 
 	if *pprofPort >= 0 {
 		go func() {
-			grpclog.Infoln("Starting pprof server on port " + strconv.Itoa(*pprofPort))
-			grpclog.Infoln(http.ListenAndServe("localhost:"+strconv.Itoa(*pprofPort), nil))
+			grpclog.Println("Starting pprof server on port " + strconv.Itoa(*pprofPort))
+			grpclog.Println(http.ListenAndServe("localhost:"+strconv.Itoa(*pprofPort), nil))
 		}()
 	}
 

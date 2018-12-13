@@ -25,7 +25,8 @@ type Object struct {
 	// Hash represents the MD5 checksum value of the object's content.
 	Hash string `json:"hash"`
 
-	// LastModified is the time the object was last modified.
+	// LastModified is the time the object was last modified, represented
+	// as a string.
 	LastModified time.Time `json:"-"`
 
 	// Name is the unique name for the object.
@@ -39,7 +40,7 @@ func (r *Object) UnmarshalJSON(b []byte) error {
 	type tmp Object
 	var s *struct {
 		tmp
-		LastModified string `json:"last_modified"`
+		LastModified gophercloud.JSONRFC3339MilliNoZ `json:"last_modified"`
 	}
 
 	err := json.Unmarshal(b, &s)
@@ -49,18 +50,10 @@ func (r *Object) UnmarshalJSON(b []byte) error {
 
 	*r = Object(s.tmp)
 
-	if s.LastModified != "" {
-		t, err := time.Parse(gophercloud.RFC3339MilliNoZ, s.LastModified)
-		if err != nil {
-			t, err = time.Parse(gophercloud.RFC3339Milli, s.LastModified)
-			if err != nil {
-				return err
-			}
-		}
-		r.LastModified = t
-	}
+	r.LastModified = time.Time(s.LastModified)
 
 	return nil
+
 }
 
 // ObjectPage is a single page of objects that is returned from a call to the
@@ -141,7 +134,7 @@ type DownloadHeader struct {
 	ETag               string    `json:"Etag"`
 	LastModified       time.Time `json:"-"`
 	ObjectManifest     string    `json:"X-Object-Manifest"`
-	StaticLargeObject  bool      `json:"-"`
+	StaticLargeObject  bool      `json:"X-Static-Large-Object"`
 	TransID            string    `json:"X-Trans-Id"`
 }
 
@@ -149,11 +142,10 @@ func (r *DownloadHeader) UnmarshalJSON(b []byte) error {
 	type tmp DownloadHeader
 	var s struct {
 		tmp
-		ContentLength     string                  `json:"Content-Length"`
-		Date              gophercloud.JSONRFC1123 `json:"Date"`
-		DeleteAt          gophercloud.JSONUnix    `json:"X-Delete-At"`
-		LastModified      gophercloud.JSONRFC1123 `json:"Last-Modified"`
-		StaticLargeObject interface{}             `json:"X-Static-Large-Object"`
+		ContentLength string                  `json:"Content-Length"`
+		Date          gophercloud.JSONRFC1123 `json:"Date"`
+		DeleteAt      gophercloud.JSONUnix    `json:"X-Delete-At"`
+		LastModified  gophercloud.JSONRFC1123 `json:"Last-Modified"`
 	}
 	err := json.Unmarshal(b, &s)
 	if err != nil {
@@ -170,15 +162,6 @@ func (r *DownloadHeader) UnmarshalJSON(b []byte) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	switch t := s.StaticLargeObject.(type) {
-	case string:
-		if t == "True" || t == "true" {
-			r.StaticLargeObject = true
-		}
-	case bool:
-		r.StaticLargeObject = t
 	}
 
 	r.Date = time.Time(s.Date)
@@ -231,7 +214,7 @@ type GetHeader struct {
 	ETag               string    `json:"Etag"`
 	LastModified       time.Time `json:"-"`
 	ObjectManifest     string    `json:"X-Object-Manifest"`
-	StaticLargeObject  bool      `json:"-"`
+	StaticLargeObject  bool      `json:"X-Static-Large-Object"`
 	TransID            string    `json:"X-Trans-Id"`
 }
 
@@ -239,11 +222,10 @@ func (r *GetHeader) UnmarshalJSON(b []byte) error {
 	type tmp GetHeader
 	var s struct {
 		tmp
-		ContentLength     string                  `json:"Content-Length"`
-		Date              gophercloud.JSONRFC1123 `json:"Date"`
-		DeleteAt          gophercloud.JSONUnix    `json:"X-Delete-At"`
-		LastModified      gophercloud.JSONRFC1123 `json:"Last-Modified"`
-		StaticLargeObject interface{}             `json:"X-Static-Large-Object"`
+		ContentLength string                  `json:"Content-Length"`
+		Date          gophercloud.JSONRFC1123 `json:"Date"`
+		DeleteAt      gophercloud.JSONUnix    `json:"X-Delete-At"`
+		LastModified  gophercloud.JSONRFC1123 `json:"Last-Modified"`
 	}
 	err := json.Unmarshal(b, &s)
 	if err != nil {
@@ -260,15 +242,6 @@ func (r *GetHeader) UnmarshalJSON(b []byte) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	switch t := s.StaticLargeObject.(type) {
-	case string:
-		if t == "True" || t == "true" {
-			r.StaticLargeObject = true
-		}
-	case bool:
-		r.StaticLargeObject = t
 	}
 
 	r.Date = time.Time(s.Date)
@@ -418,7 +391,7 @@ func (r UpdateResult) Extract() (*UpdateHeader, error) {
 // DeleteHeader represents the headers returned in the response from a
 // Delete request.
 type DeleteHeader struct {
-	ContentLength int64     `json:"-"`
+	ContentLength int64     `json:"Content-Length"`
 	ContentType   string    `json:"Content-Type"`
 	Date          time.Time `json:"-"`
 	TransID       string    `json:"X-Trans-Id"`

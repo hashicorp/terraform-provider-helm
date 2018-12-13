@@ -1,4 +1,4 @@
-// +build linux freebsd solaris
+// +build linux freebsd solaris openbsd
 
 // Package kernel provides helper function to get, parse and compare kernel
 // versions for different platforms.
@@ -7,7 +7,7 @@ package kernel
 import (
 	"bytes"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // GetKernelVersion gets the current kernel version.

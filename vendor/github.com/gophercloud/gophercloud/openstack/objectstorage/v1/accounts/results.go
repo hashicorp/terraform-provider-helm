@@ -63,7 +63,6 @@ func (r UpdateResult) Extract() (*UpdateHeader, error) {
 // GetHeader represents the headers returned in the response from a Get request.
 type GetHeader struct {
 	BytesUsed      int64     `json:"-"`
-	QuotaBytes     *int64    `json:"-"`
 	ContainerCount int64     `json:"-"`
 	ContentLength  int64     `json:"-"`
 	ObjectCount    int64     `json:"-"`
@@ -79,7 +78,6 @@ func (r *GetHeader) UnmarshalJSON(b []byte) error {
 	var s struct {
 		tmp
 		BytesUsed      string `json:"X-Account-Bytes-Used"`
-		QuotaBytes     string `json:"X-Account-Meta-Quota-Bytes"`
 		ContentLength  string `json:"Content-Length"`
 		ContainerCount string `json:"X-Account-Container-Count"`
 		ObjectCount    string `json:"X-Account-Object-Count"`
@@ -100,17 +98,6 @@ func (r *GetHeader) UnmarshalJSON(b []byte) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	switch s.QuotaBytes {
-	case "":
-		r.QuotaBytes = nil
-	default:
-		v, err := strconv.ParseInt(s.QuotaBytes, 10, 64)
-		if err != nil {
-			return err
-		}
-		r.QuotaBytes = &v
 	}
 
 	switch s.ContentLength {

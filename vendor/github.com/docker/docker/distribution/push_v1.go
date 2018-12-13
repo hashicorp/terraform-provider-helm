@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/docker/distribution/digest"
+	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/client/transport"
 	"github.com/docker/docker/distribution/metadata"
 	"github.com/docker/docker/dockerversion"
@@ -15,8 +14,9 @@ import (
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/stringid"
-	"github.com/docker/docker/reference"
 	"github.com/docker/docker/registry"
+	"github.com/opencontainers/go-digest"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
@@ -118,10 +118,10 @@ type v1DependencyImage struct {
 	v1ImageCommon
 }
 
-func newV1DependencyImage(l layer.Layer, parent *v1DependencyImage) (*v1DependencyImage, error) {
+func newV1DependencyImage(l layer.Layer, parent *v1DependencyImage) *v1DependencyImage {
 	v1ID := digest.Digest(l.ChainID()).Hex()
 
-	config := ""
+	var config string
 	if parent != nil {
 		config = fmt.Sprintf(`{"id":"%s","parent":"%s"}`, v1ID, parent.V1ID())
 	} else {
@@ -133,7 +133,7 @@ func newV1DependencyImage(l layer.Layer, parent *v1DependencyImage) (*v1Dependen
 			config: []byte(config),
 			layer:  l,
 		},
-	}, nil
+	}
 }
 
 // Retrieve the all the images to be uploaded in the correct order
@@ -227,10 +227,7 @@ func (p *v1Pusher) imageListForTag(imgID image.ID, dependenciesSeen map[layer.Ch
 	}
 	l := lsl.Layer
 
-	dependencyImages, parent, err := generateDependencyImages(l.Parent(), dependenciesSeen)
-	if err != nil {
-		return nil, err
-	}
+	dependencyImages, parent := generateDependencyImages(l.Parent(), dependenciesSeen)
 
 	topImage, err := newV1TopImage(imgID, img, l, parent)
 	if err != nil {
@@ -242,32 +239,29 @@ func (p *v1Pusher) imageListForTag(imgID image.ID, dependenciesSeen map[layer.Ch
 	return
 }
 
-func generateDependencyImages(l layer.Layer, dependenciesSeen map[layer.ChainID]*v1DependencyImage) (imageListForThisTag []v1Image, parent *v1DependencyImage, err error) {
+func generateDependencyImages(l layer.Layer, dependenciesSeen map[layer.ChainID]*v1DependencyImage) (imageListForThisTag []v1Image, parent *v1DependencyImage) {
 	if l == nil {
-		return nil, nil, nil
+		return nil, nil
 	}
 
-	imageListForThisTag, parent, err = generateDependencyImages(l.Parent(), dependenciesSeen)
+	imageListForThisTag, parent = generateDependencyImages(l.Parent(), dependenciesSeen)
 
 	if dependenciesSeen != nil {
 		if dependencyImage, present := dependenciesSeen[l.ChainID()]; present {
 			// This layer is already on the list, we can ignore it
 			// and all its parents.
-			return imageListForThisTag, dependencyImage, nil
+			return imageListForThisTag, dependencyImage
 		}
 	}
 
-	dependencyImage, err := newV1DependencyImage(l, parent)
-	if err != nil {
-		return nil, nil, err
-	}
+	dependencyImage := newV1DependencyImage(l, parent)
 	imageListForThisTag = append(imageListForThisTag, dependencyImage)
 
 	if dependenciesSeen != nil {
 		dependenciesSeen[l.ChainID()] = dependencyImage
 	}
 
-	return imageListForThisTag, dependencyImage, nil
+	return imageListForThisTag, dependencyImage
 }
 
 // createImageIndex returns an index of an image's layer IDs and tags.
@@ -362,8 +356,8 @@ func (p *v1Pusher) pushImageToEndpoint(ctx context.Context, endpoint string, ima
 		}
 		if topImage, isTopImage := img.(*v1TopImage); isTopImage {
 			for _, tag := range tags[topImage.imageID] {
-				progress.Messagef(p.config.ProgressOutput, "", "Pushing tag for rev [%s] on {%s}", stringid.TruncateID(v1ID), endpoint+"repositories/"+p.repoInfo.RemoteName()+"/tags/"+tag)
-				if err := p.session.PushRegistryTag(p.repoInfo, v1ID, tag, endpoint); err != nil {
+				progress.Messagef(p.config.ProgressOutput, "", "Pushing tag for rev [%s] on {%s}", stringid.TruncateID(v1ID), endpoint+"repositories/"+reference.Path(p.repoInfo.Name)+"/tags/"+tag)
+				if err := p.session.PushRegistryTag(p.repoInfo.Name, v1ID, tag, endpoint); err != nil {
 					return err
 				}
 			}
@@ -391,7 +385,7 @@ func (p *v1Pusher) pushRepository(ctx context.Context) error {
 
 	// Register all the images in a repository with the registry
 	// If an image is not in this list it will not be associated with the repository
-	repoData, err := p.session.PushImageJSONIndex(p.repoInfo, imageIndex, false, nil)
+	repoData, err := p.session.PushImageJSONIndex(p.repoInfo.Name, imageIndex, false, nil)
 	if err != nil {
 		return err
 	}
@@ -401,7 +395,7 @@ func (p *v1Pusher) pushRepository(ctx context.Context) error {
 			return err
 		}
 	}
-	_, err = p.session.PushImageJSONIndex(p.repoInfo, imageIndex, true, repoData.Endpoints)
+	_, err = p.session.PushImageJSONIndex(p.repoInfo.Name, imageIndex, true, repoData.Endpoints)
 	return err
 }
 

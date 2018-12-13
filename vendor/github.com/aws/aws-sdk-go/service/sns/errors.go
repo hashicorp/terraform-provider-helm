@@ -16,14 +16,6 @@ const (
 	// Exception error indicating endpoint disabled.
 	ErrCodeEndpointDisabledException = "EndpointDisabled"
 
-	// ErrCodeFilterPolicyLimitExceededException for service response error code
-	// "FilterPolicyLimitExceeded".
-	//
-	// Indicates that the number of filter polices in your AWS account exceeds the
-	// limit. To add more filter polices, submit an SNS Limit Increase case in the
-	// AWS Support Center.
-	ErrCodeFilterPolicyLimitExceededException = "FilterPolicyLimitExceeded"
-
 	// ErrCodeInternalErrorException for service response error code
 	// "InternalError".
 	//

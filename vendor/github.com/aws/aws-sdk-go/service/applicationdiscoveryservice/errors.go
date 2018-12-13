@@ -11,10 +11,6 @@ const (
 	// the IAM policy associated with this account.
 	ErrCodeAuthorizationErrorException = "AuthorizationErrorException"
 
-	// ErrCodeConflictErrorException for service response error code
-	// "ConflictErrorException".
-	ErrCodeConflictErrorException = "ConflictErrorException"
-
 	// ErrCodeInvalidParameterException for service response error code
 	// "InvalidParameterException".
 	//
@@ -33,10 +29,6 @@ const (
 	//
 	// This operation is not permitted.
 	ErrCodeOperationNotPermittedException = "OperationNotPermittedException"
-
-	// ErrCodeResourceInUseException for service response error code
-	// "ResourceInUseException".
-	ErrCodeResourceInUseException = "ResourceInUseException"
 
 	// ErrCodeResourceNotFoundException for service response error code
 	// "ResourceNotFoundException".

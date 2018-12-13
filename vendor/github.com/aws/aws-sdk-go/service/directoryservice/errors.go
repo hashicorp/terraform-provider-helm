@@ -67,13 +67,6 @@ const (
 	// One or more parameters are not valid.
 	ErrCodeInvalidParameterException = "InvalidParameterException"
 
-	// ErrCodeInvalidPasswordException for service response error code
-	// "InvalidPasswordException".
-	//
-	// The new password provided by the user does not meet the password complexity
-	// requirements defined in your directory.
-	ErrCodeInvalidPasswordException = "InvalidPasswordException"
-
 	// ErrCodeIpRouteLimitExceededException for service response error code
 	// "IpRouteLimitExceededException".
 	//
@@ -106,10 +99,4 @@ const (
 	//
 	// The operation is not supported.
 	ErrCodeUnsupportedOperationException = "UnsupportedOperationException"
-
-	// ErrCodeUserDoesNotExistException for service response error code
-	// "UserDoesNotExistException".
-	//
-	// The user provided a username that does not exist in your directory.
-	ErrCodeUserDoesNotExistException = "UserDoesNotExistException"
 )

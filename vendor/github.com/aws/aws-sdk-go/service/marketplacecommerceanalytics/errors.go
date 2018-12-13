@@ -5,8 +5,8 @@ package marketplacecommerceanalytics
 const (
 
 	// ErrCodeException for service response error code
-	// "MarketplaceCommerceAnalyticsException".
+	// "Exception".
 	//
 	// This exception is thrown when an internal service error occurs.
-	ErrCodeException = "MarketplaceCommerceAnalyticsException"
+	ErrCodeException = "Exception"
 )

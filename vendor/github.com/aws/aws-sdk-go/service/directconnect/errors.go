@@ -5,11 +5,11 @@ package directconnect
 const (
 
 	// ErrCodeClientException for service response error code
-	// "DirectConnectClientException".
+	// "ClientException".
 	//
 	// The API was called with invalid parameters. The error message will contain
 	// additional details about the cause.
-	ErrCodeClientException = "DirectConnectClientException"
+	ErrCodeClientException = "ClientException"
 
 	// ErrCodeDuplicateTagKeysException for service response error code
 	// "DuplicateTagKeysException".
@@ -18,11 +18,11 @@ const (
 	ErrCodeDuplicateTagKeysException = "DuplicateTagKeysException"
 
 	// ErrCodeServerException for service response error code
-	// "DirectConnectServerException".
+	// "ServerException".
 	//
 	// A server-side error occurred during the API call. The error message will
 	// contain additional details about the cause.
-	ErrCodeServerException = "DirectConnectServerException"
+	ErrCodeServerException = "ServerException"
 
 	// ErrCodeTooManyTagsException for service response error code
 	// "TooManyTagsException".

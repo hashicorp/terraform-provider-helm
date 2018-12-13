@@ -16,11 +16,10 @@ type StateInfo struct {
 	CommonStateInfo
 
 	// Platform specific StateInfo
-
 	UpdatePending bool // Indicates that there are some update operations pending that should be completed by a servicing container.
 }
 
-// Stats contains statics from HCS
+// Stats contains statistics from HCS
 type Stats hcsshim.Statistics
 
 // Resources defines updatable container resource values.
@@ -40,16 +39,15 @@ type FlushOption struct {
 }
 
 // HyperVIsolationOption is a CreateOption that indicates whether the runtime
-// should start the container as a Hyper-V container, and if so, the sandbox path.
+// should start the container as a Hyper-V container.
 type HyperVIsolationOption struct {
-	IsHyperV    bool
-	SandboxPath string `json:",omitempty"`
+	IsHyperV bool
 }
 
 // LayerOption is a CreateOption that indicates to the runtime the layer folder
 // and layer paths for a container.
 type LayerOption struct {
-	// LayerFolder is the path to the current layer folder. Empty for Hyper-V containers.
+	// LayerFolderPath is the path to the current layer folder. Empty for Hyper-V containers.
 	LayerFolderPath string `json:",omitempty"`
 	// Layer paths of the parent layers
 	LayerPaths []string
@@ -60,6 +58,8 @@ type LayerOption struct {
 type NetworkEndpointsOption struct {
 	Endpoints                []string
 	AllowUnqualifiedDNSQuery bool
+	DNSSearchList            []string
+	NetworkSharedContainerID string
 }
 
 // CredentialsOption is a CreateOption that indicates the credentials from

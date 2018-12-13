@@ -12,7 +12,6 @@ import (
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/roles"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/services"
 	"github.com/gophercloud/gophercloud/openstack/identity/v3/users"
-	th "github.com/gophercloud/gophercloud/testhelper"
 )
 
 // CreateProject will create a project with a random name.
@@ -38,8 +37,6 @@ func CreateProject(t *testing.T, client *gophercloud.ServiceClient, c *projects.
 	}
 
 	t.Logf("Successfully created project %s with ID %s", name, project.ID)
-
-	th.AssertEquals(t, project.Name, name)
 
 	return project, nil
 }
@@ -68,8 +65,6 @@ func CreateUser(t *testing.T, client *gophercloud.ServiceClient, c *users.Create
 
 	t.Logf("Successfully created user %s with ID %s", name, user.ID)
 
-	th.AssertEquals(t, user.Name, name)
-
 	return user, nil
 }
 
@@ -96,8 +91,6 @@ func CreateGroup(t *testing.T, client *gophercloud.ServiceClient, c *groups.Crea
 	}
 
 	t.Logf("Successfully created group %s with ID %s", name, group.ID)
-
-	th.AssertEquals(t, group.Name, name)
 
 	return group, nil
 }
@@ -126,8 +119,6 @@ func CreateDomain(t *testing.T, client *gophercloud.ServiceClient, c *domains.Cr
 
 	t.Logf("Successfully created domain %s with ID %s", name, domain.ID)
 
-	th.AssertEquals(t, domain.Name, name)
-
 	return domain, nil
 }
 
@@ -154,8 +145,6 @@ func CreateRole(t *testing.T, client *gophercloud.ServiceClient, c *roles.Create
 	}
 
 	t.Logf("Successfully created role %s with ID %s", name, role.ID)
-
-	th.AssertEquals(t, role.Name, name)
 
 	return role, nil
 }
@@ -184,8 +173,6 @@ func CreateRegion(t *testing.T, client *gophercloud.ServiceClient, c *regions.Cr
 
 	t.Logf("Successfully created region %s", id)
 
-	th.AssertEquals(t, region.ID, id)
-
 	return region, nil
 }
 
@@ -212,8 +199,6 @@ func CreateService(t *testing.T, client *gophercloud.ServiceClient, c *services.
 	}
 
 	t.Logf("Successfully created service %s", service.ID)
-
-	th.AssertEquals(t, service.Extra["name"], name)
 
 	return service, nil
 }

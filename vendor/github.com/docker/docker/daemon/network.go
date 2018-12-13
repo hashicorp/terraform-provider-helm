@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 
-	"github.com/Sirupsen/logrus"
 	apierrors "github.com/docker/docker/api/errors"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
@@ -15,10 +15,12 @@ import (
 	"github.com/docker/docker/pkg/plugingetter"
 	"github.com/docker/docker/runconfig"
 	"github.com/docker/libnetwork"
+	lncluster "github.com/docker/libnetwork/cluster"
 	"github.com/docker/libnetwork/driverapi"
 	"github.com/docker/libnetwork/ipamapi"
 	networktypes "github.com/docker/libnetwork/types"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
@@ -96,105 +98,152 @@ func (daemon *Daemon) GetNetworksByID(partialID string) []libnetwork.Network {
 
 // getAllNetworks returns a list containing all networks
 func (daemon *Daemon) getAllNetworks() []libnetwork.Network {
-	c := daemon.netController
-	list := []libnetwork.Network{}
-	l := func(nw libnetwork.Network) bool {
-		list = append(list, nw)
-		return false
-	}
-	c.WalkNetworks(l)
-
-	return list
+	return daemon.netController.Networks()
 }
 
-func isIngressNetwork(name string) bool {
-	return name == "ingress"
+type ingressJob struct {
+	create  *clustertypes.NetworkCreateRequest
+	ip      net.IP
+	jobDone chan struct{}
 }
 
-var ingressChan = make(chan struct{}, 1)
+var (
+	ingressWorkerOnce  sync.Once
+	ingressJobsChannel chan *ingressJob
+	ingressID          string
+)
 
-func ingressWait() func() {
-	ingressChan <- struct{}{}
-	return func() { <-ingressChan }
+func (daemon *Daemon) startIngressWorker() {
+	ingressJobsChannel = make(chan *ingressJob, 100)
+	go func() {
+		for {
+			select {
+			case r := <-ingressJobsChannel:
+				if r.create != nil {
+					daemon.setupIngress(r.create, r.ip, ingressID)
+					ingressID = r.create.ID
+				} else {
+					daemon.releaseIngress(ingressID)
+					ingressID = ""
+				}
+				close(r.jobDone)
+			}
+		}
+	}()
+}
+
+// enqueueIngressJob adds a ingress add/rm request to the worker queue.
+// It guarantees the worker is started.
+func (daemon *Daemon) enqueueIngressJob(job *ingressJob) {
+	ingressWorkerOnce.Do(daemon.startIngressWorker)
+	ingressJobsChannel <- job
 }
 
 // SetupIngress setups ingress networking.
-func (daemon *Daemon) SetupIngress(create clustertypes.NetworkCreateRequest, nodeIP string) error {
+// The function returns a channel which will signal the caller when the programming is completed.
+func (daemon *Daemon) SetupIngress(create clustertypes.NetworkCreateRequest, nodeIP string) (<-chan struct{}, error) {
 	ip, _, err := net.ParseCIDR(nodeIP)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	done := make(chan struct{})
+	daemon.enqueueIngressJob(&ingressJob{&create, ip, done})
+	return done, nil
+}
+
+// ReleaseIngress releases the ingress networking.
+// The function returns a channel which will signal the caller when the programming is completed.
+func (daemon *Daemon) ReleaseIngress() (<-chan struct{}, error) {
+	done := make(chan struct{})
+	daemon.enqueueIngressJob(&ingressJob{nil, nil, done})
+	return done, nil
+}
+
+func (daemon *Daemon) setupIngress(create *clustertypes.NetworkCreateRequest, ip net.IP, staleID string) {
+	controller := daemon.netController
+	controller.AgentInitWait()
+
+	if staleID != "" && staleID != create.ID {
+		daemon.releaseIngress(staleID)
 	}
 
-	go func() {
-		controller := daemon.netController
-		controller.AgentInitWait()
-
-		if n, err := daemon.GetNetworkByName(create.Name); err == nil && n != nil && n.ID() != create.ID {
-			if err := controller.SandboxDestroy("ingress-sbox"); err != nil {
-				logrus.Errorf("Failed to delete stale ingress sandbox: %v", err)
-				return
-			}
-
-			// Cleanup any stale endpoints that might be left over during previous iterations
-			epList := n.Endpoints()
-			for _, ep := range epList {
-				if err := ep.Delete(true); err != nil {
-					logrus.Errorf("Failed to delete endpoint %s (%s): %v", ep.Name(), ep.ID(), err)
-				}
-			}
-
-			if err := n.Delete(); err != nil {
-				logrus.Errorf("Failed to delete stale ingress network %s: %v", n.ID(), err)
-				return
-			}
-		}
-
-		if _, err := daemon.createNetwork(create.NetworkCreateRequest, create.ID, true); err != nil {
-			// If it is any other error other than already
-			// exists error log error and return.
-			if _, ok := err.(libnetwork.NetworkNameError); !ok {
-				logrus.Errorf("Failed creating ingress network: %v", err)
-				return
-			}
-
-			// Otherwise continue down the call to create or recreate sandbox.
-		}
-
-		n, err := daemon.GetNetworkByID(create.ID)
-		if err != nil {
-			logrus.Errorf("Failed getting ingress network by id after creating: %v", err)
+	if _, err := daemon.createNetwork(create.NetworkCreateRequest, create.ID, true); err != nil {
+		// If it is any other error other than already
+		// exists error log error and return.
+		if _, ok := err.(libnetwork.NetworkNameError); !ok {
+			logrus.Errorf("Failed creating ingress network: %v", err)
 			return
 		}
+		// Otherwise continue down the call to create or recreate sandbox.
+	}
 
-		sb, err := controller.NewSandbox("ingress-sbox", libnetwork.OptionIngress())
-		if err != nil {
-			if _, ok := err.(networktypes.ForbiddenError); !ok {
-				logrus.Errorf("Failed creating ingress sandbox: %v", err)
-			}
+	n, err := daemon.GetNetworkByID(create.ID)
+	if err != nil {
+		logrus.Errorf("Failed getting ingress network by id after creating: %v", err)
+	}
+
+	sb, err := controller.NewSandbox("ingress-sbox", libnetwork.OptionIngress())
+	if err != nil {
+		if _, ok := err.(networktypes.ForbiddenError); !ok {
+			logrus.Errorf("Failed creating ingress sandbox: %v", err)
+		}
+		return
+	}
+
+	ep, err := n.CreateEndpoint("ingress-endpoint", libnetwork.CreateOptionIpam(ip, nil, nil, nil))
+	if err != nil {
+		logrus.Errorf("Failed creating ingress endpoint: %v", err)
+		return
+	}
+
+	if err := ep.Join(sb, nil); err != nil {
+		logrus.Errorf("Failed joining ingress sandbox to ingress endpoint: %v", err)
+		return
+	}
+
+	if err := sb.EnableService(); err != nil {
+		logrus.Errorf("Failed enabling service for ingress sandbox")
+	}
+}
+
+func (daemon *Daemon) releaseIngress(id string) {
+	controller := daemon.netController
+	if err := controller.SandboxDestroy("ingress-sbox"); err != nil {
+		logrus.Errorf("Failed to delete ingress sandbox: %v", err)
+	}
+
+	if id == "" {
+		return
+	}
+
+	n, err := controller.NetworkByID(id)
+	if err != nil {
+		logrus.Errorf("failed to retrieve ingress network %s: %v", id, err)
+		return
+	}
+
+	for _, ep := range n.Endpoints() {
+		if err := ep.Delete(true); err != nil {
+			logrus.Errorf("Failed to delete endpoint %s (%s): %v", ep.Name(), ep.ID(), err)
 			return
 		}
+	}
 
-		ep, err := n.CreateEndpoint("ingress-endpoint", libnetwork.CreateOptionIpam(ip, nil, nil, nil))
-		if err != nil {
-			logrus.Errorf("Failed creating ingress endpoint: %v", err)
-			return
-		}
-
-		if err := ep.Join(sb, nil); err != nil {
-			logrus.Errorf("Failed joining ingress sandbox to ingress endpoint: %v", err)
-		}
-
-		if err := sb.EnableService(); err != nil {
-			logrus.WithError(err).Error("Failed enabling service for ingress sandbox")
-		}
-	}()
-
-	return nil
+	if err := n.Delete(); err != nil {
+		logrus.Errorf("Failed to delete ingress network %s: %v", n.ID(), err)
+		return
+	}
+	return
 }
 
 // SetNetworkBootstrapKeys sets the bootstrap keys.
 func (daemon *Daemon) SetNetworkBootstrapKeys(keys []*networktypes.EncryptionKey) error {
-	return daemon.netController.SetKeys(keys)
+	err := daemon.netController.SetKeys(keys)
+	if err == nil {
+		// Upon successful key setting dispatch the keys available event
+		daemon.cluster.SendClusterEvent(lncluster.EventNetworkKeysAvailable)
+	}
+	return err
 }
 
 // UpdateAttachment notifies the attacher about the attachment config.
@@ -236,13 +285,6 @@ func (daemon *Daemon) CreateNetwork(create types.NetworkCreateRequest) (*types.N
 }
 
 func (daemon *Daemon) createNetwork(create types.NetworkCreateRequest, id string, agent bool) (*types.NetworkCreateResponse, error) {
-	// If there is a pending ingress network creation wait here
-	// since ingress network creation can happen via node download
-	// from manager or task download.
-	if isIngressNetwork(create.Name) {
-		defer ingressWait()()
-	}
-
 	if runconfig.IsPreDefinedNetwork(create.Name) && !agent {
 		err := fmt.Errorf("%s is a pre-defined network and cannot be created", create.Name)
 		return nil, apierrors.NewRequestForbiddenError(err)
@@ -256,6 +298,8 @@ func (daemon *Daemon) createNetwork(create types.NetworkCreateRequest, id string
 		}
 	}
 	if nw != nil {
+		// check if user defined CheckDuplicate, if set true, return err
+		// otherwise prepare a warning message
 		if create.CheckDuplicate {
 			return nil, libnetwork.NetworkNameError(create.Name)
 		}
@@ -273,6 +317,12 @@ func (daemon *Daemon) createNetwork(create types.NetworkCreateRequest, id string
 		libnetwork.NetworkOptionDriverOpts(create.Options),
 		libnetwork.NetworkOptionLabels(create.Labels),
 		libnetwork.NetworkOptionAttachable(create.Attachable),
+		libnetwork.NetworkOptionIngress(create.Ingress),
+		libnetwork.NetworkOptionScope(create.Scope),
+	}
+
+	if create.ConfigOnly {
+		nwOptions = append(nwOptions, libnetwork.NetworkOptionConfigOnly())
 	}
 
 	if create.IPAM != nil {
@@ -292,18 +342,21 @@ func (daemon *Daemon) createNetwork(create types.NetworkCreateRequest, id string
 		nwOptions = append(nwOptions, libnetwork.NetworkOptionPersist(false))
 	}
 
-	if isIngressNetwork(create.Name) {
-		nwOptions = append(nwOptions, libnetwork.NetworkOptionIngress())
+	if create.ConfigFrom != nil {
+		nwOptions = append(nwOptions, libnetwork.NetworkOptionConfigFrom(create.ConfigFrom.Network))
 	}
 
 	n, err := c.NewNetwork(driver, create.Name, id, nwOptions...)
 	if err != nil {
+		if _, ok := err.(libnetwork.ErrDataStoreNotInitialized); ok {
+			return nil, errors.New("This node is not a swarm manager. Use \"docker swarm init\" or \"docker swarm join\" to connect this node to swarm and try again.")
+		}
 		return nil, err
 	}
 
-	daemon.pluginRefCount(driver, driverapi.NetworkPluginEndpointType, plugingetter.ACQUIRE)
+	daemon.pluginRefCount(driver, driverapi.NetworkPluginEndpointType, plugingetter.Acquire)
 	if create.IPAM != nil {
-		daemon.pluginRefCount(create.IPAM.Driver, ipamapi.PluginEndpointType, plugingetter.ACQUIRE)
+		daemon.pluginRefCount(create.IPAM.Driver, ipamapi.PluginEndpointType, plugingetter.Acquire)
 	}
 	daemon.LogNetworkEvent(n, "create")
 
@@ -454,13 +507,29 @@ func (daemon *Daemon) deleteNetwork(networkID string, dynamic bool) error {
 		return apierrors.NewRequestForbiddenError(err)
 	}
 
+	if dynamic && !nw.Info().Dynamic() {
+		if runconfig.IsPreDefinedNetwork(nw.Name()) {
+			// Predefined networks now support swarm services. Make this
+			// a no-op when cluster requests to remove the predefined network.
+			return nil
+		}
+		err := fmt.Errorf("%s is not a dynamic network", nw.Name())
+		return apierrors.NewRequestForbiddenError(err)
+	}
+
 	if err := nw.Delete(); err != nil {
 		return err
 	}
-	daemon.pluginRefCount(nw.Type(), driverapi.NetworkPluginEndpointType, plugingetter.RELEASE)
-	ipamType, _, _, _ := nw.Info().IpamConfig()
-	daemon.pluginRefCount(ipamType, ipamapi.PluginEndpointType, plugingetter.RELEASE)
-	daemon.LogNetworkEvent(nw, "destroy")
+
+	// If this is not a configuration only network, we need to
+	// update the corresponding remote drivers' reference counts
+	if !nw.Info().ConfigOnly() {
+		daemon.pluginRefCount(nw.Type(), driverapi.NetworkPluginEndpointType, plugingetter.Release)
+		ipamType, _, _, _ := nw.Info().IpamConfig()
+		daemon.pluginRefCount(ipamType, ipamapi.PluginEndpointType, plugingetter.Release)
+		daemon.LogNetworkEvent(nw, "destroy")
+	}
+
 	return nil
 }
 

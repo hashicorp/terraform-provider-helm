@@ -1,12 +1,13 @@
 package daemon
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	dockercontainer "github.com/docker/docker/container"
 	"github.com/docker/libnetwork"
+	"github.com/sirupsen/logrus"
 )
 
 // ContainerRename changes the name of a container, using the oldName
@@ -19,7 +20,7 @@ func (daemon *Daemon) ContainerRename(oldName, newName string) error {
 	)
 
 	if oldName == "" || newName == "" {
-		return fmt.Errorf("Neither old nor new names may be empty")
+		return errors.New("Neither old nor new names may be empty")
 	}
 
 	if newName[0] != '/' {
@@ -31,15 +32,15 @@ func (daemon *Daemon) ContainerRename(oldName, newName string) error {
 		return err
 	}
 
+	container.Lock()
+	defer container.Unlock()
+
 	oldName = container.Name
 	oldIsAnonymousEndpoint := container.NetworkSettings.IsAnonymousEndpoint
 
 	if oldName == newName {
-		return fmt.Errorf("Renaming a container with the same name as its current name")
+		return errors.New("Renaming a container with the same name as its current name")
 	}
-
-	container.Lock()
-	defer container.Unlock()
 
 	links := map[string]*dockercontainer.Container{}
 	for k, v := range daemon.linkIndex.children(container) {
@@ -54,7 +55,7 @@ func (daemon *Daemon) ContainerRename(oldName, newName string) error {
 	}
 
 	for k, v := range links {
-		daemon.nameIndex.Reserve(newName+k, v.ID)
+		daemon.containersReplica.ReserveName(newName+k, v.ID)
 		daemon.linkIndex.link(container, v, newName+k)
 	}
 
@@ -67,10 +68,10 @@ func (daemon *Daemon) ContainerRename(oldName, newName string) error {
 			container.NetworkSettings.IsAnonymousEndpoint = oldIsAnonymousEndpoint
 			daemon.reserveName(container.ID, oldName)
 			for k, v := range links {
-				daemon.nameIndex.Reserve(oldName+k, v.ID)
+				daemon.containersReplica.ReserveName(oldName+k, v.ID)
 				daemon.linkIndex.link(container, v, oldName+k)
 				daemon.linkIndex.unlink(newName+k, v, container)
-				daemon.nameIndex.Release(newName + k)
+				daemon.containersReplica.ReleaseName(newName + k)
 			}
 			daemon.releaseName(newName)
 		}
@@ -78,10 +79,10 @@ func (daemon *Daemon) ContainerRename(oldName, newName string) error {
 
 	for k, v := range links {
 		daemon.linkIndex.unlink(oldName+k, v, container)
-		daemon.nameIndex.Release(oldName + k)
+		daemon.containersReplica.ReleaseName(oldName + k)
 	}
 	daemon.releaseName(oldName)
-	if err = container.ToDisk(); err != nil {
+	if err = container.CheckpointTo(daemon.containersReplica); err != nil {
 		return err
 	}
 
@@ -98,14 +99,14 @@ func (daemon *Daemon) ContainerRename(oldName, newName string) error {
 		if err != nil {
 			container.Name = oldName
 			container.NetworkSettings.IsAnonymousEndpoint = oldIsAnonymousEndpoint
-			if e := container.ToDisk(); e != nil {
+			if e := container.CheckpointTo(daemon.containersReplica); e != nil {
 				logrus.Errorf("%s: Failed in writing to Disk on rename failure: %v", container.ID, e)
 			}
 		}
 	}()
 
 	sid = container.NetworkSettings.SandboxID
-	if daemon.netController != nil {
+	if sid != "" && daemon.netController != nil {
 		sb, err = daemon.netController.SandboxByID(sid)
 		if err != nil {
 			return err

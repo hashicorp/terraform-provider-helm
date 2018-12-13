@@ -63,38 +63,17 @@ func (r *ListedStack) UnmarshalJSON(b []byte) error {
 	type tmp ListedStack
 	var s struct {
 		tmp
-		CreationTime string `json:"creation_time"`
-		UpdatedTime  string `json:"updated_time"`
+		CreationTime gophercloud.JSONRFC3339NoZ `json:"creation_time"`
+		UpdatedTime  gophercloud.JSONRFC3339NoZ `json:"updated_time"`
 	}
-
 	err := json.Unmarshal(b, &s)
 	if err != nil {
 		return err
 	}
-
 	*r = ListedStack(s.tmp)
 
-	if s.CreationTime != "" {
-		t, err := time.Parse(time.RFC3339, s.CreationTime)
-		if err != nil {
-			t, err = time.Parse(gophercloud.RFC3339NoZ, s.CreationTime)
-			if err != nil {
-				return err
-			}
-		}
-		r.CreationTime = t
-	}
-
-	if s.UpdatedTime != "" {
-		t, err := time.Parse(time.RFC3339, s.UpdatedTime)
-		if err != nil {
-			t, err = time.Parse(gophercloud.RFC3339NoZ, s.UpdatedTime)
-			if err != nil {
-				return err
-			}
-		}
-		r.UpdatedTime = t
-	}
+	r.CreationTime = time.Time(s.CreationTime)
+	r.UpdatedTime = time.Time(s.UpdatedTime)
 
 	return nil
 }
@@ -133,38 +112,17 @@ func (r *RetrievedStack) UnmarshalJSON(b []byte) error {
 	type tmp RetrievedStack
 	var s struct {
 		tmp
-		CreationTime string `json:"creation_time"`
-		UpdatedTime  string `json:"updated_time"`
+		CreationTime gophercloud.JSONRFC3339NoZ `json:"creation_time"`
+		UpdatedTime  gophercloud.JSONRFC3339NoZ `json:"updated_time"`
 	}
-
 	err := json.Unmarshal(b, &s)
 	if err != nil {
 		return err
 	}
-
 	*r = RetrievedStack(s.tmp)
 
-	if s.CreationTime != "" {
-		t, err := time.Parse(time.RFC3339, s.CreationTime)
-		if err != nil {
-			t, err = time.Parse(gophercloud.RFC3339NoZ, s.CreationTime)
-			if err != nil {
-				return err
-			}
-		}
-		r.CreationTime = t
-	}
-
-	if s.UpdatedTime != "" {
-		t, err := time.Parse(time.RFC3339, s.UpdatedTime)
-		if err != nil {
-			t, err = time.Parse(gophercloud.RFC3339NoZ, s.UpdatedTime)
-			if err != nil {
-				return err
-			}
-		}
-		r.UpdatedTime = t
-	}
+	r.CreationTime = time.Time(s.CreationTime)
+	r.UpdatedTime = time.Time(s.UpdatedTime)
 
 	return nil
 }
@@ -215,38 +173,17 @@ func (r *PreviewedStack) UnmarshalJSON(b []byte) error {
 	type tmp PreviewedStack
 	var s struct {
 		tmp
-		CreationTime string `json:"creation_time"`
-		UpdatedTime  string `json:"updated_time"`
+		CreationTime gophercloud.JSONRFC3339NoZ `json:"creation_time"`
+		UpdatedTime  gophercloud.JSONRFC3339NoZ `json:"updated_time"`
 	}
-
 	err := json.Unmarshal(b, &s)
 	if err != nil {
 		return err
 	}
-
 	*r = PreviewedStack(s.tmp)
 
-	if s.CreationTime != "" {
-		t, err := time.Parse(time.RFC3339, s.CreationTime)
-		if err != nil {
-			t, err = time.Parse(gophercloud.RFC3339NoZ, s.CreationTime)
-			if err != nil {
-				return err
-			}
-		}
-		r.CreationTime = t
-	}
-
-	if s.UpdatedTime != "" {
-		t, err := time.Parse(time.RFC3339, s.UpdatedTime)
-		if err != nil {
-			t, err = time.Parse(gophercloud.RFC3339NoZ, s.UpdatedTime)
-			if err != nil {
-				return err
-			}
-		}
-		r.UpdatedTime = t
-	}
+	r.CreationTime = time.Time(s.CreationTime)
+	r.UpdatedTime = time.Time(s.UpdatedTime)
 
 	return nil
 }

@@ -7,7 +7,6 @@
     "protocol":"json",
     "serviceAbbreviation":"Amazon EMR",
     "serviceFullName":"Amazon Elastic MapReduce",
-    "serviceId":"EMR",
     "signatureVersion":"v4",
     "targetPrefix":"ElasticMapReduce",
     "timestampFormat":"unixTimestamp",
@@ -603,8 +602,7 @@
         "ScaleDownBehavior":{"shape":"ScaleDownBehavior"},
         "CustomAmiId":{"shape":"XmlStringMaxLen256"},
         "EbsRootVolumeSize":{"shape":"Integer"},
-        "RepoUpgradeOnBoot":{"shape":"RepoUpgradeOnBoot"},
-        "KerberosAttributes":{"shape":"KerberosAttributes"}
+        "RepoUpgradeOnBoot":{"shape":"RepoUpgradeOnBoot"}
       }
     },
     "ClusterId":{"type":"string"},
@@ -1418,20 +1416,6 @@
         "HadoopVersion":{"shape":"XmlStringMaxLen256"}
       }
     },
-    "KerberosAttributes":{
-      "type":"structure",
-      "required":[
-        "Realm",
-        "KdcAdminPassword"
-      ],
-      "members":{
-        "Realm":{"shape":"XmlStringMaxLen256"},
-        "KdcAdminPassword":{"shape":"XmlStringMaxLen256"},
-        "CrossRealmTrustPrincipalPassword":{"shape":"XmlStringMaxLen256"},
-        "ADDomainJoinUser":{"shape":"XmlStringMaxLen256"},
-        "ADDomainJoinPassword":{"shape":"XmlStringMaxLen256"}
-      }
-    },
     "KeyValue":{
       "type":"structure",
       "members":{
@@ -1695,8 +1679,7 @@
         "ScaleDownBehavior":{"shape":"ScaleDownBehavior"},
         "CustomAmiId":{"shape":"XmlStringMaxLen256"},
         "EbsRootVolumeSize":{"shape":"Integer"},
-        "RepoUpgradeOnBoot":{"shape":"RepoUpgradeOnBoot"},
-        "KerberosAttributes":{"shape":"KerberosAttributes"}
+        "RepoUpgradeOnBoot":{"shape":"RepoUpgradeOnBoot"}
       }
     },
     "RunJobFlowOutput":{

@@ -7,25 +7,26 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/container"
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/layer"
+	"github.com/docker/docker/pkg/fileutils"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/parsers/kernel"
 	"github.com/docker/docker/pkg/sysinfo"
-	"github.com/docker/docker/reference"
+	refstore "github.com/docker/docker/reference"
 	"github.com/docker/libnetwork"
 	nwconfig "github.com/docker/libnetwork/config"
 	"github.com/docker/libnetwork/drivers/solaris/bridge"
 	"github.com/docker/libnetwork/netlabel"
 	"github.com/docker/libnetwork/netutils"
 	lntypes "github.com/docker/libnetwork/types"
-	"github.com/opencontainers/runc/libcontainer/label"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/opencontainers/selinux/go-selinux/label"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 //#include <zone.h>
@@ -64,6 +65,10 @@ func getCPUResources(config containertypes.Resources) specs.CappedCPU {
 
 func (daemon *Daemon) cleanupMountsByID(id string) error {
 	return nil
+}
+
+func (daemon *Daemon) parseSecurityOpt(container *container.Container, hostConfig *containertypes.HostConfig) error {
+	return parseSecurityOpt(container, hostConfig)
 }
 
 func parseSecurityOpt(container *container.Container, config *containertypes.HostConfig) error {
@@ -138,6 +143,7 @@ func UsingSystemd(config *Config) bool {
 // verifyPlatformContainerSettings performs platform-specific validation of the
 // hostconfig and config structures.
 func verifyPlatformContainerSettings(daemon *Daemon, hostConfig *containertypes.HostConfig, config *containertypes.Config, update bool) ([]string, error) {
+	fixMemorySwappiness(resources)
 	warnings := []string{}
 	sysInfo := sysinfo.New(true)
 	// NOTE: We do not enforce a minimum value for swap limits for zones on Solaris and
@@ -158,7 +164,7 @@ func verifyPlatformContainerSettings(daemon *Daemon, hostConfig *containertypes.
 	}
 	// Solaris NOTE: We allow and encourage setting the swap without setting the memory limit.
 
-	if hostConfig.MemorySwappiness != nil && *hostConfig.MemorySwappiness != -1 && !sysInfo.MemorySwappiness {
+	if hostConfig.MemorySwappiness != nil && !sysInfo.MemorySwappiness {
 		warnings = append(warnings, "Your kernel does not support memory swappiness capabilities, memory swappiness discarded.")
 		logrus.Warnf("Your kernel does not support memory swappiness capabilities, memory swappiness discarded.")
 		hostConfig.MemorySwappiness = nil
@@ -301,9 +307,9 @@ func verifyPlatformContainerSettings(daemon *Daemon, hostConfig *containertypes.
 	return warnings, nil
 }
 
-// platformReload update configuration with platform specific options
-func (daemon *Daemon) platformReload(config *Config) map[string]string {
-	return map[string]string{}
+// reloadPlatform updates configuration with platform specific options
+// and updates the passed attributes
+func (daemon *Daemon) reloadPlatform(config *Config, attributes map[string]string) {
 }
 
 // verifyDaemonSettings performs validation of daemon config struct
@@ -348,7 +354,7 @@ func configureMaxThreads(config *Config) error {
 }
 
 // configureKernelSecuritySupport configures and validate security support for the kernel
-func configureKernelSecuritySupport(config *Config, driverName string) error {
+func configureKernelSecuritySupport(config *config.Config, driverNames []string) error {
 	return nil
 }
 
@@ -491,7 +497,7 @@ func (daemon *Daemon) conditionalUnmountOnCleanup(container *container.Container
 	return daemon.Unmount(container)
 }
 
-func restoreCustomImage(is image.Store, ls layer.Store, rs reference.Store) error {
+func restoreCustomImage(is image.Store, ls layer.Store, rs refstore.Store) error {
 	// Solaris has no custom images to register
 	return nil
 }
@@ -520,4 +526,8 @@ func setupDaemonProcess(config *Config) error {
 
 func (daemon *Daemon) setupSeccompProfile() error {
 	return nil
+}
+
+func getRealPath(path string) (string, error) {
+	return fileutils.ReadSymlinkedDirectory(path)
 }

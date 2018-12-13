@@ -30,7 +30,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/uuid"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/strings"
 	"k8s.io/kubernetes/pkg/volume"
@@ -444,7 +446,6 @@ func (plugin *rbdPlugin) NewBlockVolumeMapper(spec *volume.Spec, pod *v1.Pod, _ 
 		uid = pod.UID
 	}
 	secret := ""
-	// var err error
 	if pod != nil {
 		secretName, secretNs, err := getSecretNameAndNamespace(spec, pod.Namespace)
 		if err != nil {
@@ -519,7 +520,7 @@ func (plugin *rbdPlugin) newUnmapperInternal(volName string, podUID types.UID, m
 }
 
 func (plugin *rbdPlugin) getDeviceNameFromOldMountPath(mounter mount.Interface, mountPath string) (string, error) {
-	refs, err := mount.GetMountRefsByDev(mounter, mountPath)
+	refs, err := mounter.GetMountRefs(mountPath)
 	if err != nil {
 		return "", err
 	}
@@ -578,7 +579,7 @@ type rbdVolumeProvisioner struct {
 
 var _ volume.Provisioner = &rbdVolumeProvisioner{}
 
-func (r *rbdVolumeProvisioner) Provision() (*v1.PersistentVolume, error) {
+func (r *rbdVolumeProvisioner) Provision(selectedNode *v1.Node, allowedTopologies []v1.TopologySelectorTerm) (*v1.PersistentVolume, error) {
 	if !volutil.AccessModesContainedInAll(r.plugin.GetAccessModes(), r.options.PVC.Spec.AccessModes) {
 		return nil, fmt.Errorf("invalid AccessModes %v: only AccessModes %v are supported", r.options.PVC.Spec.AccessModes, r.plugin.GetAccessModes())
 	}
@@ -600,9 +601,7 @@ func (r *rbdVolumeProvisioner) Provision() (*v1.PersistentVolume, error) {
 		switch dstrings.ToLower(k) {
 		case "monitors":
 			arr := dstrings.Split(v, ",")
-			for _, m := range arr {
-				r.Mon = append(r.Mon, m)
-			}
+			r.Mon = append(r.Mon, arr...)
 		case "adminid":
 			r.adminId = v
 		case "adminsecretname":
@@ -701,6 +700,11 @@ func (r *rbdVolumeProvisioner) Provision() (*v1.PersistentVolume, error) {
 		v1.ResourceName(v1.ResourceStorage): resource.MustParse(fmt.Sprintf("%dMi", sizeMB)),
 	}
 	pv.Spec.MountOptions = r.options.MountOptions
+
+	if utilfeature.DefaultFeatureGate.Enabled(features.BlockVolume) {
+		pv.Spec.VolumeMode = r.options.PVC.Spec.VolumeMode
+	}
+
 	return pv, nil
 }
 
@@ -874,8 +878,11 @@ func (rbd *rbdDiskMapper) SetUpDevice() (string, error) {
 	return "", nil
 }
 
+func (rbd *rbdDiskMapper) MapDevice(devicePath, globalMapPath, volumeMapPath, volumeMapName string, podUID types.UID) error {
+	return volutil.MapBlockVolume(devicePath, globalMapPath, volumeMapPath, volumeMapName, podUID)
+}
+
 func (rbd *rbd) rbdGlobalMapPath(spec *volume.Spec) (string, error) {
-	var err error
 	mon, err := getVolumeSourceMonitors(spec)
 	if err != nil {
 		return "", err
@@ -951,14 +958,20 @@ func (rbd *rbdDiskUnmapper) TearDownDevice(mapPath, _ string) error {
 	blkUtil := volumepathhandler.NewBlockVolumePathHandler()
 	loop, err := volumepathhandler.BlockVolumePathHandler.GetLoopDevice(blkUtil, device)
 	if err != nil {
-		return fmt.Errorf("rbd: failed to get loopback for device: %v, err: %v", device, err)
+		if err.Error() != volumepathhandler.ErrDeviceNotFound {
+			return fmt.Errorf("rbd: failed to get loopback for device: %v, err: %v", device, err)
+		}
+		glog.Warning("rbd: loopback for device: % not found", device)
+	} else {
+		if len(loop) != 0 {
+			// Remove loop device before detaching volume since volume detach operation gets busy if volume is opened by loopback.
+			err = volumepathhandler.BlockVolumePathHandler.RemoveLoopDevice(blkUtil, loop)
+			if err != nil {
+				return fmt.Errorf("rbd: failed to remove loopback :%v, err: %v", loop, err)
+			}
+			glog.V(4).Infof("rbd: successfully removed loop device: %s", loop)
+		}
 	}
-	// Remove loop device before detaching volume since volume detach operation gets busy if volume is opened by loopback.
-	err = volumepathhandler.BlockVolumePathHandler.RemoveLoopDevice(blkUtil, loop)
-	if err != nil {
-		return fmt.Errorf("rbd: failed to remove loopback :%v, err: %v", loop, err)
-	}
-	glog.V(4).Infof("rbd: successfully removed loop device: %s", loop)
 
 	err = rbd.manager.DetachBlockDisk(*rbd, mapPath)
 	if err != nil {

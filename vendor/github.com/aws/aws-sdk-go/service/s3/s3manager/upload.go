@@ -241,8 +241,6 @@ type Uploader struct {
 	// E.g: 5GB file, with MaxUploadParts set to 100, will upload the file
 	// as 100, 50MB parts.
 	// With a limited of s3.MaxUploadParts (10,000 parts).
-	//
-	// Defaults to package const's MaxUploadParts value.
 	MaxUploadParts int
 
 	// The client to use when uploading to S3.
@@ -359,7 +357,7 @@ func (u Uploader) Upload(input *UploadInput, options ...func(*Uploader)) (*Uploa
 //
 // UploadWithContext is the same as Upload with the additional support for
 // Context input parameters. The Context must not be nil. A nil Context will
-// cause a panic. Use the context to add deadlining, timeouts, etc. The
+// cause a panic. Use the context to add deadlining, timeouts, ect. The
 // UploadWithContext may create sub-contexts for individual underlying requests.
 //
 // Additional functional options can be provided to configure the individual
@@ -397,7 +395,7 @@ func (u Uploader) UploadWithContext(ctx aws.Context, input *UploadInput, opts ..
 //		},
 //	}
 //
-//	iter := &s3manager.UploadObjectsIterator{Objects: objects}
+//	iter := &s3managee.UploadObjectsIterator{Objects: objects}
 //	if err := svc.UploadWithIterator(aws.BackgroundContext(), iter); err != nil {
 //		return err
 //	}
@@ -445,8 +443,6 @@ type uploader struct {
 
 	readerPos int64 // current reader position
 	totalSize int64 // set to -1 if the size is not known
-
-	bufferPool sync.Pool
 }
 
 // internal logic for deciding whether to upload a single part or use a
@@ -460,7 +456,7 @@ func (u *uploader) upload() (*UploadOutput, error) {
 	}
 
 	// Do one read to determine if we have more than one part
-	reader, _, part, err := u.nextReader()
+	reader, _, err := u.nextReader()
 	if err == io.EOF { // single part
 		return u.singlePart(reader)
 	} else if err != nil {
@@ -468,7 +464,7 @@ func (u *uploader) upload() (*UploadOutput, error) {
 	}
 
 	mu := multiuploader{uploader: u}
-	return mu.upload(reader, part)
+	return mu.upload(reader)
 }
 
 // init will initialize all default options.
@@ -478,13 +474,6 @@ func (u *uploader) init() {
 	}
 	if u.cfg.PartSize == 0 {
 		u.cfg.PartSize = DefaultUploadPartSize
-	}
-	if u.cfg.MaxUploadParts == 0 {
-		u.cfg.MaxUploadParts = MaxUploadParts
-	}
-
-	u.bufferPool = sync.Pool{
-		New: func() interface{} { return make([]byte, u.cfg.PartSize) },
 	}
 
 	// Try to get the total size for some optimizations
@@ -498,7 +487,10 @@ func (u *uploader) initSize() {
 
 	switch r := u.in.Body.(type) {
 	case io.Seeker:
-		n, err := aws.SeekerLen(r)
+		pos, _ := r.Seek(0, 1)
+		defer r.Seek(pos, 0)
+
+		n, err := r.Seek(0, 2)
 		if err != nil {
 			return
 		}
@@ -518,7 +510,7 @@ func (u *uploader) initSize() {
 // This operation increases the shared u.readerPos counter, but note that it
 // does not need to be wrapped in a mutex because nextReader is only called
 // from the main thread.
-func (u *uploader) nextReader() (io.ReadSeeker, int, []byte, error) {
+func (u *uploader) nextReader() (io.ReadSeeker, int, error) {
 	type readerAtSeeker interface {
 		io.ReaderAt
 		io.ReadSeeker
@@ -540,14 +532,14 @@ func (u *uploader) nextReader() (io.ReadSeeker, int, []byte, error) {
 		reader := io.NewSectionReader(r, u.readerPos, n)
 		u.readerPos += n
 
-		return reader, int(n), nil, err
+		return reader, int(n), err
 
 	default:
-		part := u.bufferPool.Get().([]byte)
+		part := make([]byte, u.cfg.PartSize)
 		n, err := readFillBuf(r, part)
 		u.readerPos += int64(n)
 
-		return bytes.NewReader(part[0:n]), n, part, err
+		return bytes.NewReader(part[0:n]), n, err
 	}
 }
 
@@ -597,9 +589,8 @@ type multiuploader struct {
 
 // keeps track of a single chunk of data being sent to S3.
 type chunk struct {
-	buf  io.ReadSeeker
-	part []byte
-	num  int64
+	buf io.ReadSeeker
+	num int64
 }
 
 // completedParts is a wrapper to make parts sortable by their part number,
@@ -612,7 +603,7 @@ func (a completedParts) Less(i, j int) bool { return *a[i].PartNumber < *a[j].Pa
 
 // upload will perform a multipart upload using the firstBuf buffer containing
 // the first chunk of data.
-func (u *multiuploader) upload(firstBuf io.ReadSeeker, firstPart []byte) (*UploadOutput, error) {
+func (u *multiuploader) upload(firstBuf io.ReadSeeker) (*UploadOutput, error) {
 	params := &s3.CreateMultipartUploadInput{}
 	awsutil.Copy(params, u.in)
 
@@ -632,7 +623,7 @@ func (u *multiuploader) upload(firstBuf io.ReadSeeker, firstPart []byte) (*Uploa
 
 	// Send part 1 to the workers
 	var num int64 = 1
-	ch <- chunk{buf: firstBuf, part: firstPart, num: num}
+	ch <- chunk{buf: firstBuf, num: num}
 
 	// Read and queue the rest of the parts
 	for u.geterr() == nil && err == nil {
@@ -653,8 +644,7 @@ func (u *multiuploader) upload(firstBuf io.ReadSeeker, firstPart []byte) (*Uploa
 
 		var reader io.ReadSeeker
 		var nextChunkLen int
-		var part []byte
-		reader, nextChunkLen, part, err = u.nextReader()
+		reader, nextChunkLen, err = u.nextReader()
 
 		if err != nil && err != io.EOF {
 			u.seterr(awserr.New(
@@ -671,7 +661,7 @@ func (u *multiuploader) upload(firstBuf io.ReadSeeker, firstPart []byte) (*Uploa
 			break
 		}
 
-		ch <- chunk{buf: reader, part: part, num: num}
+		ch <- chunk{buf: reader, num: num}
 	}
 
 	// Close the channel, wait for workers, and complete upload
@@ -727,8 +717,6 @@ func (u *multiuploader) send(c chunk) error {
 		PartNumber:           &c.num,
 	}
 	resp, err := u.cfg.S3.UploadPartWithContext(u.ctx, params, u.cfg.RequestOptions...)
-	// put the byte array back into the pool to conserve memory
-	u.bufferPool.Put(c.part)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,7 @@ The utility includes the subcommands `encrypt`, `decrypt`, `sign`, `verify` and
 
 Algorithms are selected via the `--alg` and `--enc` flags, which influence the
 `alg` and `enc` headers in respectively. For JWE, `--alg` specifies the key
-management algorithm (e.g. `RSA-OAEP`) and `--enc` specifies the content
+managment algorithm (e.g. `RSA-OAEP`) and `--enc` specifies the content
 encryption algorithm (e.g. `A128GCM`). For JWS, `--alg` specifies the
 signature algorithm (e.g. `PS256`).
 
@@ -31,25 +31,25 @@ or DER formats.
 
 Takes a plaintext as input, encrypts, and prints the encrypted message.
 
-    echo 'test message' | jose-util encrypt --key public-key.pem --alg RSA-OAEP --enc A128GCM
+    jose-util encrypt -k public-key.pem --alg RSA-OAEP --enc A128GCM
 
 ### Decrypt
 
 Takes an encrypted message (JWE) as input, decrypts, and prints the plaintext.
 
-    jose-util decrypt --key private-key.pem
+    jose-util decrypt -k private-key.pem
 
 ### Sign
 
 Takes a payload as input, signs it, and prints the signed message with the embedded payload.
 
-    jose-util sign --key private-key.pem --alg PS256
+    jose-util sign -k private-key.pem --alg PS256
 
 ### Verify
 
 Reads a signed message (JWS), verifies it, and extracts the payload.
 
-    jose-util verify --key public-key.pem
+    jose-util verify -k public-key.pem
 
 ### Expand
 

@@ -78,6 +78,7 @@ The following arguments are supported:
 * `install_tiller` - (Optional) Install Tiller if it is not already installed.
 * `tiller_image` - (Optional) Tiller image to install.
 * `service_account` - (Optional) Service account to install Tiller with.
+* `automount_service_account_token` - (Optional) Auto-mount the given service account to tiller.
 * `debug` - (Optional)
 * `plugins_disable` - (Optional) Disable plugins. Set HELM_NO_PLUGINS=1 to disable plugins.
 * `enable_tls` - (Optional) Enables TLS communications with the Tiller.

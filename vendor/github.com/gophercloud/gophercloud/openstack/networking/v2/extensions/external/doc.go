@@ -4,13 +4,6 @@ extension for the OpenStack Networking service.
 
 Example to List Networks with External Information
 
-	iTrue := true
-	networkListOpts := networks.ListOpts{}
-	listOpts := external.ListOptsExt{
-		ListOptsBuilder: networkListOpts,
-		External: &iTrue,
-	}
-
 	type NetworkWithExternalExt struct {
 		networks.Network
 		external.NetworkExternalExt
@@ -18,7 +11,7 @@ Example to List Networks with External Information
 
 	var allNetworks []NetworkWithExternalExt
 
-	allPages, err := networks.List(networkClient, listOpts).AllPages()
+	allPages, err := networks.List(networkClient, nil).AllPages()
 	if err != nil {
 		panic(err)
 	}
