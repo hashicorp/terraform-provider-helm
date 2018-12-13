@@ -255,7 +255,17 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			Config: testAccHelmReleaseConfigLocalDir(testNamespace, testResourceName, chartPath),
+			Config: fmt.Sprintf(`
+			resource "helm_release" "test" {
+				name      = %q
+				namespace = %q
+				chart     = %q
+				set {
+					name = "persistence.enabled"
+					value = "false" # persistent volumes are giving non-related issues when testing
+				}
+			}
+		`, testNamespace, testResourceName, chartPath),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
@@ -269,7 +279,17 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			Config: testAccHelmReleaseConfigLocalDir(testNamespace, testResourceName, chartPath),
+			Config: fmt.Sprintf(`
+			resource "helm_release" "test" {
+				name      = %q
+				namespace = %q
+				chart     = %q
+				set {
+					name = "persistence.enabled"
+					value = "false" # persistent volumes are giving non-related issues when testing
+				}
+			}
+		`, testNamespace, testResourceName, chartPath),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
