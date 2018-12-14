@@ -419,10 +419,10 @@ func testAccHelmReleaseConfigRepository(ns, name string) string {
 		}
 
 		resource "helm_release" "test" {
- 			name       = %q
+			name       = %q
 			namespace  = %q
 			repository = "${helm_repository.stable_repo.metadata.0.name}"
-  			chart      = "telegraf"
+			chart      = "coredns"
 		}
 	`, name, ns)
 }
@@ -433,7 +433,7 @@ func testAccHelmReleaseConfigRepositoryURL(ns, name string) string {
 			name       = %q
 			namespace  = %q
 			repository = "https://kubernetes-charts.storage.googleapis.com"
-			chart      = "telegraf"
+			chart      = "coredns"
 		}
 	`, name, ns)
 }
