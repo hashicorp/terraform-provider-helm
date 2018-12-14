@@ -213,12 +213,12 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	malformed := `
 	resource "helm_release" "test" {
-	  name        = "malformed"
-	  chart       = "stable/nginx-ingress"
-	  set {
-	      name = "controller.podAnnotations.\"prometheus\\.io/scrape\""
-	      value = "true"
-	  }
+		name        = "malformed"
+		chart       = "stable/nginx-ingress"
+		set {
+			name = "controller.name"
+			value = "invalid-$%!-character-for-k8s-label"
+		}
 	}
 	`
 
