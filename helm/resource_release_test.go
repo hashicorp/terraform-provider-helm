@@ -100,7 +100,7 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy,
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigValues(
-				testResourceName, testNamespace, "test-empty-values-list", []string{""},
+				testResourceName, testNamespace, "test-empty-values-list", "stable/kibana", []string{""},
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
@@ -117,7 +117,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy,
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigValues(
-				testResourceName, testNamespace, "test-update-values", []string{"foo: bar"},
+				testResourceName, testNamespace, "test-update-values", "stable/kibana", []string{"foo: bar"},
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
@@ -126,7 +126,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			),
 		}, {
 			Config: testAccHelmReleaseConfigValues(
-				testResourceName, testNamespace, "test-update-values", []string{"foo: baz"},
+				testResourceName, testNamespace, "test-update-values", "stable/kibana", []string{"foo: baz"},
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
@@ -144,7 +144,7 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigValues(
 				testResourceName, testNamespace, "test-update-multiple-values",
-				[]string{"foo: bar"},
+				"stable/kibana", []string{"foo: bar"},
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
@@ -154,7 +154,7 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 		}, {
 			Config: testAccHelmReleaseConfigValues(
 				testResourceName, testNamespace, "test-update-multiple-values",
-				[]string{"foo: bar", "foo: baz"},
+				"stable/kibana", []string{"foo: bar", "foo: baz"},
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
@@ -323,7 +323,7 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	`, resource, name, ns, version)
 }
 
-func testAccHelmReleaseConfigValues(resource, ns, name string, values []string) string {
+func testAccHelmReleaseConfigValues(resource, ns, name, chart string, values []string) string {
 	vals := make([]string, len(values))
 	for i, v := range values {
 		vals[i] = strconv.Quote(v)
@@ -332,10 +332,10 @@ func testAccHelmReleaseConfigValues(resource, ns, name string, values []string) 
 		resource "helm_release" "%s" {
  			name      = %q
 			namespace = %q
-  			chart     = "stable/kibana"
+			chart     = %q
 			values    = [ %s ]
 		}
-	`, resource, name, ns, strings.Join(vals, ","))
+	`, resource, name, ns, chart, strings.Join(vals, ","))
 }
 
 func TestGetValues(t *testing.T) {
