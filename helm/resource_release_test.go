@@ -240,6 +240,41 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy,
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigValues(
+				testResourceName, testNamespace, testResourceName, "stable/mariadb",
+				[]string{"master:\n  persistence:\n    enabled: false", "replication:\n  enabled: false"},
+			),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigValues(
+				testResourceName, testNamespace, testResourceName, "stable/mariadb",
+				[]string{"master:\n  persistence:\n    enabled: true", "replication:\n  enabled: false"},
+			),
+			ExpectError:        regexp.MustCompile("forbidden"),
+			ExpectNonEmptyPlan: true,
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "FAILED"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigValues(
+				testResourceName, testNamespace, testResourceName, "stable/mariadb",
+				[]string{"master:\n  persistence:\n    enabled: true", "replication:\n  enabled: false"},
+			),
+			ExpectError:        regexp.MustCompile("forbidden"),
+			ExpectNonEmptyPlan: true,
+		}},
+	})
+}
+
 func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 	dir, err := ioutil.TempDir("", "")
 	if err != nil {
