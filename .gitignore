@@ -5,3 +5,4 @@ assets
 .terraform
 _output/
 .vscode
+/results
