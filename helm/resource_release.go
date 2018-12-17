@@ -14,7 +14,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/ghodss/yaml"
-	"github.com/hashicorp/terraform/flatmap"
 	"github.com/hashicorp/terraform/helper/schema"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/downloader"
@@ -68,18 +67,26 @@ func resourceRelease() *schema.Resource {
 			"devel": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored",
+				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored",
+				// Suppress changes of this attribute if `version` is set
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("version").(string) != ""
+				},
 			},
 			"values": {
 				Type:        schema.TypeList,
 				Optional:    true,
 				Description: "List of values in raw yaml file to pass to helm.",
-				Elem:        &schema.Schema{Type: schema.TypeString},
+				// Suppress changes of this attribute, it's merged to `overrides`
+				DiffSuppressFunc: suppressAnyDiff,
+				Elem:             &schema.Schema{Type: schema.TypeString},
 			},
 			"set": {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Description: "Custom values to be merge with the values.",
+				// Suppress changes of this attribute, it's merged to `overrides`
+				DiffSuppressFunc: suppressAnyDiff,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -97,6 +104,8 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Description: "Custom string values to be merge with the values.",
+				// Suppress changes of this attribute, it's merged to `overrides`
+				DiffSuppressFunc: suppressAnyDiff,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -127,7 +136,11 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     os.ExpandEnv("$HOME/.gnupg/pubring.gpg"),
-				Description: "Location of public keys used for verification.",
+				Description: "Location of public keys used for verification. Used only if `verify` is true",
+				// Suppress changes of this attribute if `verify` is false
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return !d.Get("verify").(bool)
+				},
 			},
 			"timeout": {
 				Type:        schema.TypeInt,
@@ -170,6 +183,11 @@ func resourceRelease() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
+			},
+			"overrides": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The result YAML file got by merging all passed `set`, `set_string` and `values`",
 			},
 			"metadata": {
 				Type:        schema.TypeSet,
@@ -217,6 +235,11 @@ func resourceRelease() *schema.Resource {
 			},
 		},
 	}
+}
+
+// suppressAnyDiff could be used to ultimately suppresses the diff of the resource attribute
+func suppressAnyDiff(k, old, new string, d *schema.ResourceData) bool {
+	return true
 }
 
 // prepareTillerForNewRelease determines the current status of the given release and
@@ -274,10 +297,24 @@ func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name s
 }
 
 func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
+	// Get version from the release metadata
 	c, _, err := getChart(d, meta.(*Meta))
-	if err == nil {
-		return d.SetNew("version", c.Metadata.Version)
+	if err != nil {
+		return err
 	}
+	if err := d.SetNew("version", c.Metadata.Version); err != nil {
+		return err
+	}
+
+	// Merge all "values", "set", "set_string" and assign the result to "overrides"
+	values, err := getValues(d)
+	if err != nil {
+		return err
+	}
+	if err := d.SetNew("overrides", string(values)); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -298,10 +335,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	values, err := getValues(d)
-	if err != nil {
-		return err
-	}
+	values := []byte(d.Get("overrides").(string))
 
 	opts := []helm.InstallOption{
 		helm.ReleaseName(d.Get("name").(string)),
@@ -344,6 +378,7 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 	d.SetId(r.Name)
 	d.Set("version", r.Chart.Metadata.Version)
 	d.Set("namespace", r.Namespace)
+	d.Set("overrides", r.Config.Raw)
 
 	return d.Set("metadata", []map[string]interface{}{{
 		"name":      r.Name,
@@ -357,17 +392,29 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 }
 
 func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
-	m := meta.(*Meta)
+	name := d.Get("name").(string)
+	requestUpdate := false
 
-	values, err := getValues(d)
-	if err != nil {
-		return err
+	// Update the release only if any of values, chart version or reuse_values are changed
+	// OR any of recreate_pods or force_update are set to true:
+	if d.HasChange("overrides") || d.HasChange("version") || d.HasChange("reuse_values") ||
+		d.Get("recreate_pods").(bool) || d.Get("force_update").(bool) {
+		requestUpdate = true
 	}
+
+	if !requestUpdate {
+		log.Printf("[DEBUG] Helm release %s doesn't require an update. Skipping...", name)
+		return nil
+	}
+
+	m := meta.(*Meta)
 
 	_, path, err := getChart(d, m)
 	if err != nil {
 		return err
 	}
+
+	values := []byte(d.Get("overrides").(string))
 
 	opts := []helm.UpdateOption{
 		helm.UpdateValueOverrides(values),
@@ -384,7 +431,6 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	name := d.Get("name").(string)
 	res, err := c.UpdateRelease(name, path, opts...)
 	if err != nil {
 		return err
@@ -445,7 +491,6 @@ func resourceReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*sc
 	}
 
 	name := d.Get("name").(string)
-	d.SetId(name)
 
 	m := meta.(*Meta)
 	c, err := m.GetHelmClient()
@@ -459,25 +504,7 @@ func resourceReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*sc
 	}
 
 	d.Set("chart", r.Chart.Metadata.Name)
-	d.Set("version", r.Chart.Metadata.Version)
-	d.Set("namespace", r.Namespace)
-
-	currentMap := map[string]interface{}{}
-	if err := yaml.Unmarshal([]byte(r.Config.Raw), &currentMap); err != nil {
-		return nil, fmt.Errorf("---> %v %s", err, r.Config.Raw)
-	}
-
-	flat := flatmap.Flatten(currentMap)
-
-	set := make([]interface{}, 0)
-	for name, value := range flat {
-		set = append(set, map[string]interface{}{"name": name, "value": value})
-	}
-
-	err = d.Set("set", set)
-	if err != nil {
-		return nil, err
-	}
+	setIDAndMetadataFromRelease(d, r)
 
 	return []*schema.ResourceData{d}, nil
 }
@@ -574,7 +601,7 @@ func mergeValues(dest map[string]interface{}, src map[string]interface{}) map[st
 	return dest
 }
 
-func getValues(d *schema.ResourceData) ([]byte, error) {
+func getValues(d resourceGetter) ([]byte, error) {
 	base := map[string]interface{}{}
 
 	for _, raw := range d.Get("values").([]interface{}) {
