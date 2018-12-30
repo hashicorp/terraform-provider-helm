@@ -85,7 +85,7 @@ The following arguments are supported:
 * `insecure` - (Optional) Whether server should be accessed without verifying the TLS certificate. Can be sourced from `HELM_HOME`.
 * `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `$HELM_HOME/key.pem`.
 * `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `$HELM_HOME/cert.pem`.
-* `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. CBy default read from `$HELM_HOME/ca.pem`.
+* `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. By default read from `$HELM_HOME/ca.pem`.
 * `kubernetes` - Kubernetes configuration.
 
 The `kubernetes` block supports:
