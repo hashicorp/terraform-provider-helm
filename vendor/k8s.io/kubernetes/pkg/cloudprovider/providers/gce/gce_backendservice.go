@@ -18,6 +18,7 @@ package gce
 
 import (
 	computealpha "google.golang.org/api/compute/v0.alpha"
+	computebeta "google.golang.org/api/compute/v0.beta"
 	compute "google.golang.org/api/compute/v1"
 
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/gce/cloud"
@@ -40,6 +41,16 @@ func (gce *GCECloud) GetGlobalBackendService(name string) (*compute.BackendServi
 
 	mc := newBackendServiceMetricContext("get", "")
 	v, err := gce.c.BackendServices().Get(ctx, meta.GlobalKey(name))
+	return v, mc.Observe(err)
+}
+
+// GetBetaGlobalBackendService retrieves beta backend by name.
+func (gce *GCECloud) GetBetaGlobalBackendService(name string) (*computebeta.BackendService, error) {
+	ctx, cancel := cloud.ContextWithCallTimeout()
+	defer cancel()
+
+	mc := newBackendServiceMetricContextWithVersion("get", "", computeBetaVersion)
+	v, err := gce.c.BetaBackendServices().Get(ctx, meta.GlobalKey(name))
 	return v, mc.Observe(err)
 }
 
@@ -182,4 +193,24 @@ func (gce *GCECloud) GetRegionalBackendServiceHealth(name, region string, instan
 	ref := &compute.ResourceGroupReference{Group: instanceGroupLink}
 	v, err := gce.c.RegionBackendServices().GetHealth(ctx, meta.RegionalKey(name, region), ref)
 	return v, mc.Observe(err)
+}
+
+// SetSecurityPolicyForBetaGlobalBackendService sets the given
+// SecurityPolicyReference for the BackendService identified by the given name.
+func (gce *GCECloud) SetSecurityPolicyForBetaGlobalBackendService(backendServiceName string, securityPolicyReference *computebeta.SecurityPolicyReference) error {
+	ctx, cancel := cloud.ContextWithCallTimeout()
+	defer cancel()
+
+	mc := newBackendServiceMetricContextWithVersion("set_security_policy", "", computeBetaVersion)
+	return mc.Observe(gce.c.BetaBackendServices().SetSecurityPolicy(ctx, meta.GlobalKey(backendServiceName), securityPolicyReference))
+}
+
+// SetSecurityPolicyForAlphaGlobalBackendService sets the given
+// SecurityPolicyReference for the BackendService identified by the given name.
+func (gce *GCECloud) SetSecurityPolicyForAlphaGlobalBackendService(backendServiceName string, securityPolicyReference *computealpha.SecurityPolicyReference) error {
+	ctx, cancel := cloud.ContextWithCallTimeout()
+	defer cancel()
+
+	mc := newBackendServiceMetricContextWithVersion("set_security_policy", "", computeAlphaVersion)
+	return mc.Observe(gce.c.AlphaBackendServices().SetSecurityPolicy(ctx, meta.GlobalKey(backendServiceName), securityPolicyReference))
 }

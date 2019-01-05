@@ -12,9 +12,6 @@ import (
 	fake "github.com/gophercloud/gophercloud/testhelper/client"
 )
 
-var Create_time, _ = time.Parse(time.RFC3339, "2018-06-26T07:58:17Z")
-var Updated_time, _ = time.Parse(time.RFC3339, "2018-06-26T07:59:17Z")
-
 // CreateExpected represents the expected object from a Create request.
 var CreateExpected = &stacks.CreatedStack{
 	ID: "16ef0584-4458-41eb-87c8-0dc8d5f66c87",
@@ -64,7 +61,7 @@ var ListExpected = []stacks.ListedStack{
 		},
 		StatusReason: "Stack CREATE completed successfully",
 		Name:         "postman_stack",
-		CreationTime: Create_time,
+		CreationTime: time.Date(2015, 2, 3, 20, 7, 39, 0, time.UTC),
 		Status:       "CREATE_COMPLETE",
 		ID:           "16ef0584-4458-41eb-87c8-0dc8d5f66c87",
 		Tags:         []string{"rackspace", "atx"},
@@ -79,8 +76,8 @@ var ListExpected = []stacks.ListedStack{
 		},
 		StatusReason: "Stack successfully updated",
 		Name:         "gophercloud-test-stack-2",
-		CreationTime: Create_time,
-		UpdatedTime:  Updated_time,
+		CreationTime: time.Date(2014, 12, 11, 17, 39, 16, 0, time.UTC),
+		UpdatedTime:  time.Date(2014, 12, 11, 17, 40, 37, 0, time.UTC),
 		Status:       "UPDATE_COMPLETE",
 		ID:           "db6977b2-27aa-4775-9ae7-6213212d4ada",
 		Tags:         []string{"sfo", "satx"},
@@ -101,7 +98,7 @@ const FullListOutput = `
     ],
     "stack_status_reason": "Stack CREATE completed successfully",
     "stack_name": "postman_stack",
-    "creation_time": "2018-06-26T07:58:17Z",
+    "creation_time": "2015-02-03T20:07:39",
     "updated_time": null,
     "stack_status": "CREATE_COMPLETE",
     "id": "16ef0584-4458-41eb-87c8-0dc8d5f66c87",
@@ -117,8 +114,8 @@ const FullListOutput = `
     ],
     "stack_status_reason": "Stack successfully updated",
     "stack_name": "gophercloud-test-stack-2",
-    "creation_time": "2018-06-26T07:58:17Z",
-    "updated_time": "2018-06-26T07:59:17Z",
+    "creation_time": "2014-12-11T17:39:16",
+    "updated_time": "2014-12-11T17:40:37",
     "stack_status": "UPDATE_COMPLETE",
     "id": "db6977b2-27aa-4775-9ae7-6213212d4ada",
 	"tags": ["sfo", "satx"]
@@ -161,7 +158,7 @@ var GetExpected = &stacks.RetrievedStack{
 	StatusReason: "Stack CREATE completed successfully",
 	Name:         "postman_stack",
 	Outputs:      []map[string]interface{}{},
-	CreationTime: Create_time,
+	CreationTime: time.Date(2015, 2, 3, 20, 7, 39, 0, time.UTC),
 	Links: []gophercloud.Link{
 		{
 			Href: "http://166.76.160.117:8004/v1/98606384f58d4ad0b3db7d0d779549ac/stacks/postman_stack/16ef0584-4458-41eb-87c8-0dc8d5f66c87",
@@ -190,7 +187,7 @@ const GetOutput = `
     "stack_status_reason": "Stack CREATE completed successfully",
     "stack_name": "postman_stack",
     "outputs": [],
-    "creation_time": "2018-06-26T07:58:17Z",
+    "creation_time": "2015-02-03T20:07:39",
     "links": [
     {
       "href": "http://166.76.160.117:8004/v1/98606384f58d4ad0b3db7d0d779549ac/stacks/postman_stack/16ef0584-4458-41eb-87c8-0dc8d5f66c87",
@@ -236,19 +233,6 @@ func HandleUpdateSuccessfully(t *testing.T) {
 	})
 }
 
-// HandleUpdatePatchSuccessfully creates an HTTP handler at `/stacks/postman_stack/16ef0584-4458-41eb-87c8-0dc8d5f66c87`
-// on the test handler mux that responds with an `Update` response.
-func HandleUpdatePatchSuccessfully(t *testing.T) {
-	th.Mux.HandleFunc("/stacks/gophercloud-test-stack-2/db6977b2-27aa-4775-9ae7-6213212d4ada", func(w http.ResponseWriter, r *http.Request) {
-		th.TestMethod(t, r, "PATCH")
-		th.TestHeader(t, r, "X-Auth-Token", fake.TokenID)
-		th.TestHeader(t, r, "Accept", "application/json")
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusAccepted)
-	})
-}
-
 // HandleDeleteSuccessfully creates an HTTP handler at `/stacks/postman_stack/16ef0584-4458-41eb-87c8-0dc8d5f66c87`
 // on the test handler mux that responds with a `Delete` response.
 func HandleDeleteSuccessfully(t *testing.T) {
@@ -272,7 +256,7 @@ var PreviewExpected = &stacks.PreviewedStack{
 		"OS::stack_id":   "16ef0584-4458-41eb-87c8-0dc8d5f66c87",
 	},
 	Name:         "postman_stack",
-	CreationTime: Create_time,
+	CreationTime: time.Date(2015, 2, 3, 20, 7, 39, 0, time.UTC),
 	Links: []gophercloud.Link{
 		{
 			Href: "http://166.76.160.117:8004/v1/98606384f58d4ad0b3db7d0d779549ac/stacks/postman_stack/16ef0584-4458-41eb-87c8-0dc8d5f66c87",

@@ -24,7 +24,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 )
@@ -36,6 +39,11 @@ const (
 	KStart           KubeletOpt = "start"
 	KStop            KubeletOpt = "stop"
 	KRestart         KubeletOpt = "restart"
+)
+
+const (
+	// ClusterRole name for e2e test Priveledged Pod Security Policy User
+	podSecurityPolicyPrivilegedClusterRoleName = "e2e-test-privileged-psp"
 )
 
 // PodExec wraps RunKubectl to execute a bash cmd in target pod
@@ -162,7 +170,7 @@ func TestVolumeUnmountsFromDeletedPodWithForceOption(c clientset.Interface, f *f
 	nodeIP = nodeIP + ":22"
 
 	By("Expecting the volume mount to be found.")
-	result, err := framework.SSH(fmt.Sprintf("mount | grep %s | grep --invert-match volume-subpaths", clientPod.UID), nodeIP, framework.TestContext.Provider)
+	result, err := framework.SSH(fmt.Sprintf("mount | grep %s | grep -v volume-subpaths", clientPod.UID), nodeIP, framework.TestContext.Provider)
 	framework.LogSSHResult(result)
 	Expect(err).NotTo(HaveOccurred(), "Encountered SSH error.")
 	Expect(result.Code).To(BeZero(), fmt.Sprintf("Expected grep exit code of 0, got %d", result.Code))
@@ -204,7 +212,7 @@ func TestVolumeUnmountsFromDeletedPodWithForceOption(c clientset.Interface, f *f
 	}
 
 	By("Expecting the volume mount not to be found.")
-	result, err = framework.SSH(fmt.Sprintf("mount | grep %s | grep --invert-match volume-subpaths", clientPod.UID), nodeIP, framework.TestContext.Provider)
+	result, err = framework.SSH(fmt.Sprintf("mount | grep %s | grep -v volume-subpaths", clientPod.UID), nodeIP, framework.TestContext.Provider)
 	framework.LogSSHResult(result)
 	Expect(err).NotTo(HaveOccurred(), "Encountered SSH error.")
 	Expect(result.Stdout).To(BeEmpty(), "Expected grep stdout to be empty (i.e. no mount found).")
@@ -222,12 +230,12 @@ func TestVolumeUnmountsFromDeletedPodWithForceOption(c clientset.Interface, f *f
 
 // TestVolumeUnmountsFromDeletedPod tests that a volume unmounts if the client pod was deleted while the kubelet was down.
 func TestVolumeUnmountsFromDeletedPod(c clientset.Interface, f *framework.Framework, clientPod *v1.Pod) {
-	TestVolumeUnmountsFromDeletedPodWithForceOption(c, f, clientPod, false /* forceDelete */, false /* checkSubpath */)
+	TestVolumeUnmountsFromDeletedPodWithForceOption(c, f, clientPod, false, false)
 }
 
 // TestVolumeUnmountsFromFoceDeletedPod tests that a volume unmounts if the client pod was forcefully deleted while the kubelet was down.
 func TestVolumeUnmountsFromForceDeletedPod(c clientset.Interface, f *framework.Framework, clientPod *v1.Pod) {
-	TestVolumeUnmountsFromDeletedPodWithForceOption(c, f, clientPod, true /* forceDelete */, false /* checkSubpath */)
+	TestVolumeUnmountsFromDeletedPodWithForceOption(c, f, clientPod, true, false)
 }
 
 // RunInPodWithVolume runs a command in a pod with given claim mounted to /mnt directory.
@@ -275,4 +283,51 @@ func RunInPodWithVolume(c clientset.Interface, ns, claimName, command string) {
 		framework.DeletePodOrFail(c, ns, pod.Name)
 	}()
 	framework.ExpectNoError(framework.WaitForPodSuccessInNamespaceSlow(c, pod.Name, pod.Namespace))
+}
+
+func PrivilegedTestPSPClusterRoleBinding(client clientset.Interface,
+	namespace string,
+	teardown bool,
+	saNames []string) {
+	bindingString := "Binding"
+	if teardown {
+		bindingString = "Unbinding"
+	}
+	roleBindingClient := client.RbacV1().RoleBindings(namespace)
+	for _, saName := range saNames {
+		By(fmt.Sprintf("%v priviledged Pod Security Policy to the service account %s", bindingString, saName))
+		binding := &rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "psp-" + saName,
+				Namespace: namespace,
+			},
+			Subjects: []rbacv1.Subject{
+				{
+					Kind:      rbacv1.ServiceAccountKind,
+					Name:      saName,
+					Namespace: namespace,
+				},
+			},
+			RoleRef: rbacv1.RoleRef{
+				Kind:     "ClusterRole",
+				Name:     podSecurityPolicyPrivilegedClusterRoleName,
+				APIGroup: "rbac.authorization.k8s.io",
+			},
+		}
+
+		roleBindingClient.Delete(binding.GetName(), &metav1.DeleteOptions{})
+		err := wait.Poll(2*time.Second, 2*time.Minute, func() (bool, error) {
+			_, err := roleBindingClient.Get(binding.GetName(), metav1.GetOptions{})
+			return apierrs.IsNotFound(err), nil
+		})
+		framework.ExpectNoError(err, "Timed out waiting for deletion: %v", err)
+
+		if teardown {
+			continue
+		}
+
+		_, err = roleBindingClient.Create(binding)
+		framework.ExpectNoError(err, "Failed to create %s role binding: %v", binding.GetName(), err)
+
+	}
 }

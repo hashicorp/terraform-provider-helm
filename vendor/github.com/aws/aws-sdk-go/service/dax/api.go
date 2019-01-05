@@ -14,7 +14,7 @@ const opCreateCluster = "CreateCluster"
 
 // CreateClusterRequest generates a "aws/request.Request" representing the
 // client's request for the CreateCluster operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -35,7 +35,7 @@ const opCreateCluster = "CreateCluster"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateCluster
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateCluster
 func (c *DAX) CreateClusterRequest(input *CreateClusterInput) (req *request.Request, output *CreateClusterOutput) {
 	op := &request.Operation{
 		Name:       opCreateCluster,
@@ -100,15 +100,13 @@ func (c *DAX) CreateClusterRequest(input *CreateClusterInput) (req *request.Requ
 //   * ErrCodeTagQuotaPerResourceExceeded "TagQuotaPerResourceExceeded"
 //   You have exceeded the maximum number of tags for this DAX cluster.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateCluster
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateCluster
 func (c *DAX) CreateCluster(input *CreateClusterInput) (*CreateClusterOutput, error) {
 	req, out := c.CreateClusterRequest(input)
 	return out, req.Send()
@@ -134,7 +132,7 @@ const opCreateParameterGroup = "CreateParameterGroup"
 
 // CreateParameterGroupRequest generates a "aws/request.Request" representing the
 // client's request for the CreateParameterGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -155,7 +153,7 @@ const opCreateParameterGroup = "CreateParameterGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateParameterGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateParameterGroup
 func (c *DAX) CreateParameterGroupRequest(input *CreateParameterGroupInput) (req *request.Request, output *CreateParameterGroupOutput) {
 	op := &request.Operation{
 		Name:       opCreateParameterGroup,
@@ -194,15 +192,13 @@ func (c *DAX) CreateParameterGroupRequest(input *CreateParameterGroupInput) (req
 //   * ErrCodeInvalidParameterGroupStateFault "InvalidParameterGroupStateFault"
 //   One or more parameters in a parameter group are in an invalid state.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateParameterGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateParameterGroup
 func (c *DAX) CreateParameterGroup(input *CreateParameterGroupInput) (*CreateParameterGroupOutput, error) {
 	req, out := c.CreateParameterGroupRequest(input)
 	return out, req.Send()
@@ -228,7 +224,7 @@ const opCreateSubnetGroup = "CreateSubnetGroup"
 
 // CreateSubnetGroupRequest generates a "aws/request.Request" representing the
 // client's request for the CreateSubnetGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -249,7 +245,7 @@ const opCreateSubnetGroup = "CreateSubnetGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateSubnetGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateSubnetGroup
 func (c *DAX) CreateSubnetGroupRequest(input *CreateSubnetGroupInput) (req *request.Request, output *CreateSubnetGroupOutput) {
 	op := &request.Operation{
 		Name:       opCreateSubnetGroup,
@@ -292,9 +288,7 @@ func (c *DAX) CreateSubnetGroupRequest(input *CreateSubnetGroupInput) (req *requ
 //   * ErrCodeInvalidSubnet "InvalidSubnet"
 //   An invalid subnet identifier was specified.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateSubnetGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateSubnetGroup
 func (c *DAX) CreateSubnetGroup(input *CreateSubnetGroupInput) (*CreateSubnetGroupOutput, error) {
 	req, out := c.CreateSubnetGroupRequest(input)
 	return out, req.Send()
@@ -320,7 +314,7 @@ const opDecreaseReplicationFactor = "DecreaseReplicationFactor"
 
 // DecreaseReplicationFactorRequest generates a "aws/request.Request" representing the
 // client's request for the DecreaseReplicationFactor operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -341,7 +335,7 @@ const opDecreaseReplicationFactor = "DecreaseReplicationFactor"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DecreaseReplicationFactor
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DecreaseReplicationFactor
 func (c *DAX) DecreaseReplicationFactorRequest(input *DecreaseReplicationFactorInput) (req *request.Request, output *DecreaseReplicationFactorOutput) {
 	op := &request.Operation{
 		Name:       opDecreaseReplicationFactor,
@@ -382,15 +376,13 @@ func (c *DAX) DecreaseReplicationFactorRequest(input *DecreaseReplicationFactorI
 //   * ErrCodeInvalidClusterStateFault "InvalidClusterStateFault"
 //   The requested DAX cluster is not in the available state.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DecreaseReplicationFactor
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DecreaseReplicationFactor
 func (c *DAX) DecreaseReplicationFactor(input *DecreaseReplicationFactorInput) (*DecreaseReplicationFactorOutput, error) {
 	req, out := c.DecreaseReplicationFactorRequest(input)
 	return out, req.Send()
@@ -416,7 +408,7 @@ const opDeleteCluster = "DeleteCluster"
 
 // DeleteClusterRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteCluster operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -437,7 +429,7 @@ const opDeleteCluster = "DeleteCluster"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteCluster
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteCluster
 func (c *DAX) DeleteClusterRequest(input *DeleteClusterInput) (req *request.Request, output *DeleteClusterOutput) {
 	op := &request.Operation{
 		Name:       opDeleteCluster,
@@ -475,15 +467,13 @@ func (c *DAX) DeleteClusterRequest(input *DeleteClusterInput) (req *request.Requ
 //   * ErrCodeInvalidClusterStateFault "InvalidClusterStateFault"
 //   The requested DAX cluster is not in the available state.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteCluster
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteCluster
 func (c *DAX) DeleteCluster(input *DeleteClusterInput) (*DeleteClusterOutput, error) {
 	req, out := c.DeleteClusterRequest(input)
 	return out, req.Send()
@@ -509,7 +499,7 @@ const opDeleteParameterGroup = "DeleteParameterGroup"
 
 // DeleteParameterGroupRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteParameterGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -530,7 +520,7 @@ const opDeleteParameterGroup = "DeleteParameterGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteParameterGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteParameterGroup
 func (c *DAX) DeleteParameterGroupRequest(input *DeleteParameterGroupInput) (req *request.Request, output *DeleteParameterGroupOutput) {
 	op := &request.Operation{
 		Name:       opDeleteParameterGroup,
@@ -566,15 +556,13 @@ func (c *DAX) DeleteParameterGroupRequest(input *DeleteParameterGroupInput) (req
 //   * ErrCodeParameterGroupNotFoundFault "ParameterGroupNotFoundFault"
 //   The specified parameter group does not exist.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteParameterGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteParameterGroup
 func (c *DAX) DeleteParameterGroup(input *DeleteParameterGroupInput) (*DeleteParameterGroupOutput, error) {
 	req, out := c.DeleteParameterGroupRequest(input)
 	return out, req.Send()
@@ -600,7 +588,7 @@ const opDeleteSubnetGroup = "DeleteSubnetGroup"
 
 // DeleteSubnetGroupRequest generates a "aws/request.Request" representing the
 // client's request for the DeleteSubnetGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -621,7 +609,7 @@ const opDeleteSubnetGroup = "DeleteSubnetGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteSubnetGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteSubnetGroup
 func (c *DAX) DeleteSubnetGroupRequest(input *DeleteSubnetGroupInput) (req *request.Request, output *DeleteSubnetGroupOutput) {
 	op := &request.Operation{
 		Name:       opDeleteSubnetGroup,
@@ -658,9 +646,7 @@ func (c *DAX) DeleteSubnetGroupRequest(input *DeleteSubnetGroupInput) (req *requ
 //   * ErrCodeSubnetGroupNotFoundFault "SubnetGroupNotFoundFault"
 //   The requested subnet group name does not refer to an existing subnet group.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteSubnetGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteSubnetGroup
 func (c *DAX) DeleteSubnetGroup(input *DeleteSubnetGroupInput) (*DeleteSubnetGroupOutput, error) {
 	req, out := c.DeleteSubnetGroupRequest(input)
 	return out, req.Send()
@@ -686,7 +672,7 @@ const opDescribeClusters = "DescribeClusters"
 
 // DescribeClustersRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeClusters operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -707,7 +693,7 @@ const opDescribeClusters = "DescribeClusters"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeClusters
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeClusters
 func (c *DAX) DescribeClustersRequest(input *DescribeClustersInput) (req *request.Request, output *DescribeClustersOutput) {
 	op := &request.Operation{
 		Name:       opDescribeClusters,
@@ -755,15 +741,13 @@ func (c *DAX) DescribeClustersRequest(input *DescribeClustersInput) (req *reques
 //   * ErrCodeClusterNotFoundFault "ClusterNotFoundFault"
 //   The requested cluster ID does not refer to an existing DAX cluster.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeClusters
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeClusters
 func (c *DAX) DescribeClusters(input *DescribeClustersInput) (*DescribeClustersOutput, error) {
 	req, out := c.DescribeClustersRequest(input)
 	return out, req.Send()
@@ -789,7 +773,7 @@ const opDescribeDefaultParameters = "DescribeDefaultParameters"
 
 // DescribeDefaultParametersRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeDefaultParameters operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -810,7 +794,7 @@ const opDescribeDefaultParameters = "DescribeDefaultParameters"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeDefaultParameters
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeDefaultParameters
 func (c *DAX) DescribeDefaultParametersRequest(input *DescribeDefaultParametersInput) (req *request.Request, output *DescribeDefaultParametersOutput) {
 	op := &request.Operation{
 		Name:       opDescribeDefaultParameters,
@@ -839,15 +823,13 @@ func (c *DAX) DescribeDefaultParametersRequest(input *DescribeDefaultParametersI
 // API operation DescribeDefaultParameters for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeDefaultParameters
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeDefaultParameters
 func (c *DAX) DescribeDefaultParameters(input *DescribeDefaultParametersInput) (*DescribeDefaultParametersOutput, error) {
 	req, out := c.DescribeDefaultParametersRequest(input)
 	return out, req.Send()
@@ -873,7 +855,7 @@ const opDescribeEvents = "DescribeEvents"
 
 // DescribeEventsRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeEvents operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -894,7 +876,7 @@ const opDescribeEvents = "DescribeEvents"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeEvents
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeEvents
 func (c *DAX) DescribeEventsRequest(input *DescribeEventsInput) (req *request.Request, output *DescribeEventsOutput) {
 	op := &request.Operation{
 		Name:       opDescribeEvents,
@@ -928,15 +910,13 @@ func (c *DAX) DescribeEventsRequest(input *DescribeEventsInput) (req *request.Re
 // API operation DescribeEvents for usage and error information.
 //
 // Returned Error Codes:
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeEvents
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeEvents
 func (c *DAX) DescribeEvents(input *DescribeEventsInput) (*DescribeEventsOutput, error) {
 	req, out := c.DescribeEventsRequest(input)
 	return out, req.Send()
@@ -962,7 +942,7 @@ const opDescribeParameterGroups = "DescribeParameterGroups"
 
 // DescribeParameterGroupsRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeParameterGroups operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -983,7 +963,7 @@ const opDescribeParameterGroups = "DescribeParameterGroups"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParameterGroups
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParameterGroups
 func (c *DAX) DescribeParameterGroupsRequest(input *DescribeParameterGroupsInput) (req *request.Request, output *DescribeParameterGroupsOutput) {
 	op := &request.Operation{
 		Name:       opDescribeParameterGroups,
@@ -1016,15 +996,13 @@ func (c *DAX) DescribeParameterGroupsRequest(input *DescribeParameterGroupsInput
 //   * ErrCodeParameterGroupNotFoundFault "ParameterGroupNotFoundFault"
 //   The specified parameter group does not exist.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParameterGroups
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParameterGroups
 func (c *DAX) DescribeParameterGroups(input *DescribeParameterGroupsInput) (*DescribeParameterGroupsOutput, error) {
 	req, out := c.DescribeParameterGroupsRequest(input)
 	return out, req.Send()
@@ -1050,7 +1028,7 @@ const opDescribeParameters = "DescribeParameters"
 
 // DescribeParametersRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeParameters operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1071,7 +1049,7 @@ const opDescribeParameters = "DescribeParameters"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParameters
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParameters
 func (c *DAX) DescribeParametersRequest(input *DescribeParametersInput) (req *request.Request, output *DescribeParametersOutput) {
 	op := &request.Operation{
 		Name:       opDescribeParameters,
@@ -1103,15 +1081,13 @@ func (c *DAX) DescribeParametersRequest(input *DescribeParametersInput) (req *re
 //   * ErrCodeParameterGroupNotFoundFault "ParameterGroupNotFoundFault"
 //   The specified parameter group does not exist.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParameters
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParameters
 func (c *DAX) DescribeParameters(input *DescribeParametersInput) (*DescribeParametersOutput, error) {
 	req, out := c.DescribeParametersRequest(input)
 	return out, req.Send()
@@ -1137,7 +1113,7 @@ const opDescribeSubnetGroups = "DescribeSubnetGroups"
 
 // DescribeSubnetGroupsRequest generates a "aws/request.Request" representing the
 // client's request for the DescribeSubnetGroups operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1158,7 +1134,7 @@ const opDescribeSubnetGroups = "DescribeSubnetGroups"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeSubnetGroups
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeSubnetGroups
 func (c *DAX) DescribeSubnetGroupsRequest(input *DescribeSubnetGroupsInput) (req *request.Request, output *DescribeSubnetGroupsOutput) {
 	op := &request.Operation{
 		Name:       opDescribeSubnetGroups,
@@ -1191,9 +1167,7 @@ func (c *DAX) DescribeSubnetGroupsRequest(input *DescribeSubnetGroupsInput) (req
 //   * ErrCodeSubnetGroupNotFoundFault "SubnetGroupNotFoundFault"
 //   The requested subnet group name does not refer to an existing subnet group.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeSubnetGroups
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeSubnetGroups
 func (c *DAX) DescribeSubnetGroups(input *DescribeSubnetGroupsInput) (*DescribeSubnetGroupsOutput, error) {
 	req, out := c.DescribeSubnetGroupsRequest(input)
 	return out, req.Send()
@@ -1219,7 +1193,7 @@ const opIncreaseReplicationFactor = "IncreaseReplicationFactor"
 
 // IncreaseReplicationFactorRequest generates a "aws/request.Request" representing the
 // client's request for the IncreaseReplicationFactor operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1240,7 +1214,7 @@ const opIncreaseReplicationFactor = "IncreaseReplicationFactor"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/IncreaseReplicationFactor
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/IncreaseReplicationFactor
 func (c *DAX) IncreaseReplicationFactorRequest(input *IncreaseReplicationFactorInput) (req *request.Request, output *IncreaseReplicationFactorOutput) {
 	op := &request.Operation{
 		Name:       opIncreaseReplicationFactor,
@@ -1288,15 +1262,13 @@ func (c *DAX) IncreaseReplicationFactorRequest(input *IncreaseReplicationFactorI
 //   * ErrCodeNodeQuotaForCustomerExceededFault "NodeQuotaForCustomerExceededFault"
 //   You have attempted to exceed the maximum number of nodes for your AWS account.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/IncreaseReplicationFactor
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/IncreaseReplicationFactor
 func (c *DAX) IncreaseReplicationFactor(input *IncreaseReplicationFactorInput) (*IncreaseReplicationFactorOutput, error) {
 	req, out := c.IncreaseReplicationFactorRequest(input)
 	return out, req.Send()
@@ -1322,7 +1294,7 @@ const opListTags = "ListTags"
 
 // ListTagsRequest generates a "aws/request.Request" representing the
 // client's request for the ListTags operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1343,7 +1315,7 @@ const opListTags = "ListTags"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/ListTags
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/ListTags
 func (c *DAX) ListTagsRequest(input *ListTagsInput) (req *request.Request, output *ListTagsOutput) {
 	op := &request.Operation{
 		Name:       opListTags,
@@ -1382,15 +1354,13 @@ func (c *DAX) ListTagsRequest(input *ListTagsInput) (req *request.Request, outpu
 //   * ErrCodeInvalidClusterStateFault "InvalidClusterStateFault"
 //   The requested DAX cluster is not in the available state.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/ListTags
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/ListTags
 func (c *DAX) ListTags(input *ListTagsInput) (*ListTagsOutput, error) {
 	req, out := c.ListTagsRequest(input)
 	return out, req.Send()
@@ -1416,7 +1386,7 @@ const opRebootNode = "RebootNode"
 
 // RebootNodeRequest generates a "aws/request.Request" representing the
 // client's request for the RebootNode operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1437,7 +1407,7 @@ const opRebootNode = "RebootNode"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/RebootNode
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/RebootNode
 func (c *DAX) RebootNodeRequest(input *RebootNodeInput) (req *request.Request, output *RebootNodeOutput) {
 	op := &request.Operation{
 		Name:       opRebootNode,
@@ -1476,15 +1446,13 @@ func (c *DAX) RebootNodeRequest(input *RebootNodeInput) (req *request.Request, o
 //   * ErrCodeInvalidClusterStateFault "InvalidClusterStateFault"
 //   The requested DAX cluster is not in the available state.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/RebootNode
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/RebootNode
 func (c *DAX) RebootNode(input *RebootNodeInput) (*RebootNodeOutput, error) {
 	req, out := c.RebootNodeRequest(input)
 	return out, req.Send()
@@ -1510,7 +1478,7 @@ const opTagResource = "TagResource"
 
 // TagResourceRequest generates a "aws/request.Request" representing the
 // client's request for the TagResource operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1531,7 +1499,7 @@ const opTagResource = "TagResource"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/TagResource
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/TagResource
 func (c *DAX) TagResourceRequest(input *TagResourceInput) (req *request.Request, output *TagResourceOutput) {
 	op := &request.Operation{
 		Name:       opTagResource,
@@ -1573,15 +1541,13 @@ func (c *DAX) TagResourceRequest(input *TagResourceInput) (req *request.Request,
 //   * ErrCodeInvalidClusterStateFault "InvalidClusterStateFault"
 //   The requested DAX cluster is not in the available state.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/TagResource
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/TagResource
 func (c *DAX) TagResource(input *TagResourceInput) (*TagResourceOutput, error) {
 	req, out := c.TagResourceRequest(input)
 	return out, req.Send()
@@ -1607,7 +1573,7 @@ const opUntagResource = "UntagResource"
 
 // UntagResourceRequest generates a "aws/request.Request" representing the
 // client's request for the UntagResource operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1628,7 +1594,7 @@ const opUntagResource = "UntagResource"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UntagResource
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UntagResource
 func (c *DAX) UntagResourceRequest(input *UntagResourceInput) (req *request.Request, output *UntagResourceOutput) {
 	op := &request.Operation{
 		Name:       opUntagResource,
@@ -1670,15 +1636,13 @@ func (c *DAX) UntagResourceRequest(input *UntagResourceInput) (req *request.Requ
 //   * ErrCodeInvalidClusterStateFault "InvalidClusterStateFault"
 //   The requested DAX cluster is not in the available state.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UntagResource
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UntagResource
 func (c *DAX) UntagResource(input *UntagResourceInput) (*UntagResourceOutput, error) {
 	req, out := c.UntagResourceRequest(input)
 	return out, req.Send()
@@ -1704,7 +1668,7 @@ const opUpdateCluster = "UpdateCluster"
 
 // UpdateClusterRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateCluster operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1725,7 +1689,7 @@ const opUpdateCluster = "UpdateCluster"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateCluster
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateCluster
 func (c *DAX) UpdateClusterRequest(input *UpdateClusterInput) (req *request.Request, output *UpdateClusterOutput) {
 	op := &request.Operation{
 		Name:       opUpdateCluster,
@@ -1768,15 +1732,13 @@ func (c *DAX) UpdateClusterRequest(input *UpdateClusterInput) (req *request.Requ
 //   * ErrCodeParameterGroupNotFoundFault "ParameterGroupNotFoundFault"
 //   The specified parameter group does not exist.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateCluster
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateCluster
 func (c *DAX) UpdateCluster(input *UpdateClusterInput) (*UpdateClusterOutput, error) {
 	req, out := c.UpdateClusterRequest(input)
 	return out, req.Send()
@@ -1802,7 +1764,7 @@ const opUpdateParameterGroup = "UpdateParameterGroup"
 
 // UpdateParameterGroupRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateParameterGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1823,7 +1785,7 @@ const opUpdateParameterGroup = "UpdateParameterGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateParameterGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateParameterGroup
 func (c *DAX) UpdateParameterGroupRequest(input *UpdateParameterGroupInput) (req *request.Request, output *UpdateParameterGroupOutput) {
 	op := &request.Operation{
 		Name:       opUpdateParameterGroup,
@@ -1859,15 +1821,13 @@ func (c *DAX) UpdateParameterGroupRequest(input *UpdateParameterGroupInput) (req
 //   * ErrCodeParameterGroupNotFoundFault "ParameterGroupNotFoundFault"
 //   The specified parameter group does not exist.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
 //   * ErrCodeInvalidParameterValueException "InvalidParameterValueException"
 //   The value for a parameter is invalid.
 //
 //   * ErrCodeInvalidParameterCombinationException "InvalidParameterCombinationException"
 //   Two or more incompatible parameters were specified.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateParameterGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateParameterGroup
 func (c *DAX) UpdateParameterGroup(input *UpdateParameterGroupInput) (*UpdateParameterGroupOutput, error) {
 	req, out := c.UpdateParameterGroupRequest(input)
 	return out, req.Send()
@@ -1893,7 +1853,7 @@ const opUpdateSubnetGroup = "UpdateSubnetGroup"
 
 // UpdateSubnetGroupRequest generates a "aws/request.Request" representing the
 // client's request for the UpdateSubnetGroup operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -1914,7 +1874,7 @@ const opUpdateSubnetGroup = "UpdateSubnetGroup"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateSubnetGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateSubnetGroup
 func (c *DAX) UpdateSubnetGroupRequest(input *UpdateSubnetGroupInput) (req *request.Request, output *UpdateSubnetGroupOutput) {
 	op := &request.Operation{
 		Name:       opUpdateSubnetGroup,
@@ -1956,9 +1916,7 @@ func (c *DAX) UpdateSubnetGroupRequest(input *UpdateSubnetGroupInput) (req *requ
 //   * ErrCodeInvalidSubnet "InvalidSubnet"
 //   An invalid subnet identifier was specified.
 //
-//   * ErrCodeServiceLinkedRoleNotFoundFault "ServiceLinkedRoleNotFoundFault"
-//
-// See also, https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateSubnetGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateSubnetGroup
 func (c *DAX) UpdateSubnetGroup(input *UpdateSubnetGroupInput) (*UpdateSubnetGroupOutput, error) {
 	req, out := c.UpdateSubnetGroupRequest(input)
 	return out, req.Send()
@@ -1981,6 +1939,7 @@ func (c *DAX) UpdateSubnetGroupWithContext(ctx aws.Context, input *UpdateSubnetG
 }
 
 // Contains all of the attributes of a specific DAX cluster.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/Cluster
 type Cluster struct {
 	_ struct{} `type:"structure"`
 
@@ -2030,10 +1989,6 @@ type Cluster struct {
 	// For example: sun:01:00-sun:09:00. Cluster maintenance normally takes less
 	// than 30 minutes, and is performed automatically within the maintenance window.
 	PreferredMaintenanceWindow *string `type:"string"`
-
-	// The description of the server-side encryption status on the specified DAX
-	// cluster.
-	SSEDescription *SSEDescription `type:"structure"`
 
 	// A list of security groups, and the status of each, for the nodes in the cluster.
 	SecurityGroups []*SecurityGroupMembership `type:"list"`
@@ -2130,12 +2085,6 @@ func (s *Cluster) SetPreferredMaintenanceWindow(v string) *Cluster {
 	return s
 }
 
-// SetSSEDescription sets the SSEDescription field's value.
-func (s *Cluster) SetSSEDescription(v *SSEDescription) *Cluster {
-	s.SSEDescription = v
-	return s
-}
-
 // SetSecurityGroups sets the SecurityGroups field's value.
 func (s *Cluster) SetSecurityGroups(v []*SecurityGroupMembership) *Cluster {
 	s.SecurityGroups = v
@@ -2160,6 +2109,7 @@ func (s *Cluster) SetTotalNodes(v int64) *Cluster {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateClusterRequest
 type CreateClusterInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2241,9 +2191,6 @@ type CreateClusterInput struct {
 	// ReplicationFactor is a required field
 	ReplicationFactor *int64 `type:"integer" required:"true"`
 
-	// Represents the settings used to enable server-side encryption on the cluster.
-	SSESpecification *SSESpecification `type:"structure"`
-
 	// A list of security group IDs to be assigned to each node in the DAX cluster.
 	// (Each of the security group ID is system-generated.)
 	//
@@ -2285,11 +2232,6 @@ func (s *CreateClusterInput) Validate() error {
 	}
 	if s.ReplicationFactor == nil {
 		invalidParams.Add(request.NewErrParamRequired("ReplicationFactor"))
-	}
-	if s.SSESpecification != nil {
-		if err := s.SSESpecification.Validate(); err != nil {
-			invalidParams.AddNested("SSESpecification", err.(request.ErrInvalidParams))
-		}
 	}
 
 	if invalidParams.Len() > 0 {
@@ -2352,12 +2294,6 @@ func (s *CreateClusterInput) SetReplicationFactor(v int64) *CreateClusterInput {
 	return s
 }
 
-// SetSSESpecification sets the SSESpecification field's value.
-func (s *CreateClusterInput) SetSSESpecification(v *SSESpecification) *CreateClusterInput {
-	s.SSESpecification = v
-	return s
-}
-
 // SetSecurityGroupIds sets the SecurityGroupIds field's value.
 func (s *CreateClusterInput) SetSecurityGroupIds(v []*string) *CreateClusterInput {
 	s.SecurityGroupIds = v
@@ -2376,6 +2312,7 @@ func (s *CreateClusterInput) SetTags(v []*Tag) *CreateClusterInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateClusterResponse
 type CreateClusterOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2399,6 +2336,7 @@ func (s *CreateClusterOutput) SetCluster(v *Cluster) *CreateClusterOutput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateParameterGroupRequest
 type CreateParameterGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2447,6 +2385,7 @@ func (s *CreateParameterGroupInput) SetParameterGroupName(v string) *CreateParam
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateParameterGroupResponse
 type CreateParameterGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2470,6 +2409,7 @@ func (s *CreateParameterGroupOutput) SetParameterGroup(v *ParameterGroup) *Creat
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateSubnetGroupRequest
 type CreateSubnetGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2531,6 +2471,7 @@ func (s *CreateSubnetGroupInput) SetSubnetIds(v []*string) *CreateSubnetGroupInp
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/CreateSubnetGroupResponse
 type CreateSubnetGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2554,6 +2495,7 @@ func (s *CreateSubnetGroupOutput) SetSubnetGroup(v *SubnetGroup) *CreateSubnetGr
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DecreaseReplicationFactorRequest
 type DecreaseReplicationFactorInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2624,6 +2566,7 @@ func (s *DecreaseReplicationFactorInput) SetNodeIdsToRemove(v []*string) *Decrea
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DecreaseReplicationFactorResponse
 type DecreaseReplicationFactorOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2648,6 +2591,7 @@ func (s *DecreaseReplicationFactorOutput) SetCluster(v *Cluster) *DecreaseReplic
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteClusterRequest
 type DeleteClusterInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2686,6 +2630,7 @@ func (s *DeleteClusterInput) SetClusterName(v string) *DeleteClusterInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteClusterResponse
 type DeleteClusterOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2709,6 +2654,7 @@ func (s *DeleteClusterOutput) SetCluster(v *Cluster) *DeleteClusterOutput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteParameterGroupRequest
 type DeleteParameterGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2747,6 +2693,7 @@ func (s *DeleteParameterGroupInput) SetParameterGroupName(v string) *DeleteParam
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteParameterGroupResponse
 type DeleteParameterGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2771,6 +2718,7 @@ func (s *DeleteParameterGroupOutput) SetDeletionMessage(v string) *DeleteParamet
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteSubnetGroupRequest
 type DeleteSubnetGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2809,6 +2757,7 @@ func (s *DeleteSubnetGroupInput) SetSubnetGroupName(v string) *DeleteSubnetGroup
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DeleteSubnetGroupResponse
 type DeleteSubnetGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2833,6 +2782,7 @@ func (s *DeleteSubnetGroupOutput) SetDeletionMessage(v string) *DeleteSubnetGrou
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeClustersRequest
 type DescribeClustersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2880,6 +2830,7 @@ func (s *DescribeClustersInput) SetNextToken(v string) *DescribeClustersInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeClustersResponse
 type DescribeClustersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2913,6 +2864,7 @@ func (s *DescribeClustersOutput) SetNextToken(v string) *DescribeClustersOutput 
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeDefaultParametersRequest
 type DescribeDefaultParametersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2951,6 +2903,7 @@ func (s *DescribeDefaultParametersInput) SetNextToken(v string) *DescribeDefault
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeDefaultParametersResponse
 type DescribeDefaultParametersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -2983,6 +2936,7 @@ func (s *DescribeDefaultParametersOutput) SetParameters(v []*Parameter) *Describ
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeEventsRequest
 type DescribeEventsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -2991,7 +2945,7 @@ type DescribeEventsInput struct {
 
 	// The end of the time interval for which to retrieve events, specified in ISO
 	// 8601 format.
-	EndTime *time.Time `type:"timestamp"`
+	EndTime *time.Time `type:"timestamp" timestampFormat:"unix"`
 
 	// The maximum number of results to include in the response. If more results
 	// exist than the specified MaxResults value, a token is included in the response
@@ -3015,7 +2969,7 @@ type DescribeEventsInput struct {
 
 	// The beginning of the time interval to retrieve events for, specified in ISO
 	// 8601 format.
-	StartTime *time.Time `type:"timestamp"`
+	StartTime *time.Time `type:"timestamp" timestampFormat:"unix"`
 }
 
 // String returns the string representation
@@ -3070,6 +3024,7 @@ func (s *DescribeEventsInput) SetStartTime(v time.Time) *DescribeEventsInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeEventsResponse
 type DescribeEventsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3102,6 +3057,7 @@ func (s *DescribeEventsOutput) SetNextToken(v string) *DescribeEventsOutput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParameterGroupsRequest
 type DescribeParameterGroupsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3149,6 +3105,7 @@ func (s *DescribeParameterGroupsInput) SetParameterGroupNames(v []*string) *Desc
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParameterGroupsResponse
 type DescribeParameterGroupsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3182,6 +3139,7 @@ func (s *DescribeParameterGroupsOutput) SetParameterGroups(v []*ParameterGroup) 
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParametersRequest
 type DescribeParametersInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3254,6 +3212,7 @@ func (s *DescribeParametersInput) SetSource(v string) *DescribeParametersInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeParametersResponse
 type DescribeParametersOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3287,6 +3246,7 @@ func (s *DescribeParametersOutput) SetParameters(v []*Parameter) *DescribeParame
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeSubnetGroupsRequest
 type DescribeSubnetGroupsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3334,6 +3294,7 @@ func (s *DescribeSubnetGroupsInput) SetSubnetGroupNames(v []*string) *DescribeSu
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/DescribeSubnetGroupsResponse
 type DescribeSubnetGroupsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3370,6 +3331,7 @@ func (s *DescribeSubnetGroupsOutput) SetSubnetGroups(v []*SubnetGroup) *Describe
 // Represents the information required for client programs to connect to the
 // configuration endpoint for a DAX cluster, or to an individual node within
 // the cluster.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/Endpoint
 type Endpoint struct {
 	_ struct{} `type:"structure"`
 
@@ -3405,11 +3367,12 @@ func (s *Endpoint) SetPort(v int64) *Endpoint {
 // Represents a single occurrence of something interesting within the system.
 // Some examples of events are creating a DAX cluster, adding or removing a
 // node, or rebooting a node.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/Event
 type Event struct {
 	_ struct{} `type:"structure"`
 
 	// The date and time when the event occurred.
-	Date *time.Time `type:"timestamp"`
+	Date *time.Time `type:"timestamp" timestampFormat:"unix"`
 
 	// A user-defined message associated with the event.
 	Message *string `type:"string"`
@@ -3457,6 +3420,7 @@ func (s *Event) SetSourceType(v string) *Event {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/IncreaseReplicationFactorRequest
 type IncreaseReplicationFactorInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3520,6 +3484,7 @@ func (s *IncreaseReplicationFactorInput) SetNewReplicationFactor(v int64) *Incre
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/IncreaseReplicationFactorResponse
 type IncreaseReplicationFactorOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3543,6 +3508,7 @@ func (s *IncreaseReplicationFactorOutput) SetCluster(v *Cluster) *IncreaseReplic
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/ListTagsRequest
 type ListTagsInput struct {
 	_ struct{} `type:"structure"`
 
@@ -3592,6 +3558,7 @@ func (s *ListTagsInput) SetResourceName(v string) *ListTagsInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/ListTagsResponse
 type ListTagsOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -3626,6 +3593,7 @@ func (s *ListTagsOutput) SetTags(v []*Tag) *ListTagsOutput {
 }
 
 // Represents an individual node within a DAX cluster.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/Node
 type Node struct {
 	_ struct{} `type:"structure"`
 
@@ -3639,7 +3607,7 @@ type Node struct {
 	Endpoint *Endpoint `type:"structure"`
 
 	// The date and time (in UNIX epoch format) when the node was launched.
-	NodeCreateTime *time.Time `type:"timestamp"`
+	NodeCreateTime *time.Time `type:"timestamp" timestampFormat:"unix"`
 
 	// A system-generated identifier for the node.
 	NodeId *string `type:"string"`
@@ -3699,6 +3667,7 @@ func (s *Node) SetParameterGroupStatus(v string) *Node {
 }
 
 // Represents a parameter value that is applicable to a particular node type.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/NodeTypeSpecificValue
 type NodeTypeSpecificValue struct {
 	_ struct{} `type:"structure"`
 
@@ -3734,6 +3703,7 @@ func (s *NodeTypeSpecificValue) SetValue(v string) *NodeTypeSpecificValue {
 // Describes a notification topic and its status. Notification topics are used
 // for publishing DAX events to subscribers using Amazon Simple Notification
 // Service (SNS).
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/NotificationConfiguration
 type NotificationConfiguration struct {
 	_ struct{} `type:"structure"`
 
@@ -3767,6 +3737,7 @@ func (s *NotificationConfiguration) SetTopicStatus(v string) *NotificationConfig
 }
 
 // Describes an individual setting that controls some aspect of DAX behavior.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/Parameter
 type Parameter struct {
 	_ struct{} `type:"structure"`
 
@@ -3876,6 +3847,7 @@ func (s *Parameter) SetSource(v string) *Parameter {
 }
 
 // A named set of parameters that are applied to all of the nodes in a DAX cluster.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/ParameterGroup
 type ParameterGroup struct {
 	_ struct{} `type:"structure"`
 
@@ -3909,6 +3881,7 @@ func (s *ParameterGroup) SetParameterGroupName(v string) *ParameterGroup {
 }
 
 // The status of a parameter group.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/ParameterGroupStatus
 type ParameterGroupStatus struct {
 	_ struct{} `type:"structure"`
 
@@ -3951,6 +3924,7 @@ func (s *ParameterGroupStatus) SetParameterGroupName(v string) *ParameterGroupSt
 }
 
 // An individual DAX parameter.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/ParameterNameValue
 type ParameterNameValue struct {
 	_ struct{} `type:"structure"`
 
@@ -3983,6 +3957,7 @@ func (s *ParameterNameValue) SetParameterValue(v string) *ParameterNameValue {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/RebootNodeRequest
 type RebootNodeInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4035,6 +4010,7 @@ func (s *RebootNodeInput) SetNodeId(v string) *RebootNodeInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/RebootNodeResponse
 type RebootNodeOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4058,80 +4034,8 @@ func (s *RebootNodeOutput) SetCluster(v *Cluster) *RebootNodeOutput {
 	return s
 }
 
-// The description of the server-side encryption status on the specified DAX
-// cluster.
-type SSEDescription struct {
-	_ struct{} `type:"structure"`
-
-	// The current state of server-side encryption:
-	//
-	//    * ENABLING - Server-side encryption is being enabled.
-	//
-	//    * ENABLED - Server-side encryption is enabled.
-	//
-	//    * DISABLING - Server-side encryption is being disabled.
-	//
-	//    * DISABLED - Server-side encryption is disabled.
-	Status *string `type:"string" enum:"SSEStatus"`
-}
-
-// String returns the string representation
-func (s SSEDescription) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s SSEDescription) GoString() string {
-	return s.String()
-}
-
-// SetStatus sets the Status field's value.
-func (s *SSEDescription) SetStatus(v string) *SSEDescription {
-	s.Status = &v
-	return s
-}
-
-// Represents the settings used to enable server-side encryption.
-type SSESpecification struct {
-	_ struct{} `type:"structure"`
-
-	// Indicates whether server-side encryption is enabled (true) or disabled (false)
-	// on the cluster.
-	//
-	// Enabled is a required field
-	Enabled *bool `type:"boolean" required:"true"`
-}
-
-// String returns the string representation
-func (s SSESpecification) String() string {
-	return awsutil.Prettify(s)
-}
-
-// GoString returns the string representation
-func (s SSESpecification) GoString() string {
-	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *SSESpecification) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "SSESpecification"}
-	if s.Enabled == nil {
-		invalidParams.Add(request.NewErrParamRequired("Enabled"))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
-}
-
-// SetEnabled sets the Enabled field's value.
-func (s *SSESpecification) SetEnabled(v bool) *SSESpecification {
-	s.Enabled = &v
-	return s
-}
-
 // An individual VPC security group and its status.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/SecurityGroupMembership
 type SecurityGroupMembership struct {
 	_ struct{} `type:"structure"`
 
@@ -4167,6 +4071,7 @@ func (s *SecurityGroupMembership) SetStatus(v string) *SecurityGroupMembership {
 // Represents the subnet associated with a DAX cluster. This parameter refers
 // to subnets defined in Amazon Virtual Private Cloud (Amazon VPC) and used
 // with DAX.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/Subnet
 type Subnet struct {
 	_ struct{} `type:"structure"`
 
@@ -4204,6 +4109,7 @@ func (s *Subnet) SetSubnetIdentifier(v string) *Subnet {
 //    * CreateSubnetGroup
 //
 //    * ModifySubnetGroup
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/SubnetGroup
 type SubnetGroup struct {
 	_ struct{} `type:"structure"`
 
@@ -4262,6 +4168,7 @@ func (s *SubnetGroup) SetVpcId(v string) *SubnetGroup {
 // the tag limit of 50. User-assigned tag names have the prefix user:.
 //
 // You cannot backdate the application of a tag.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/Tag
 type Tag struct {
 	_ struct{} `type:"structure"`
 
@@ -4296,6 +4203,7 @@ func (s *Tag) SetValue(v string) *Tag {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/TagResourceRequest
 type TagResourceInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4348,6 +4256,7 @@ func (s *TagResourceInput) SetTags(v []*Tag) *TagResourceInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/TagResourceResponse
 type TagResourceOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4371,6 +4280,7 @@ func (s *TagResourceOutput) SetTags(v []*Tag) *TagResourceOutput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UntagResourceRequest
 type UntagResourceInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4424,6 +4334,7 @@ func (s *UntagResourceInput) SetTagKeys(v []*string) *UntagResourceInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UntagResourceResponse
 type UntagResourceOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4447,6 +4358,7 @@ func (s *UntagResourceOutput) SetTags(v []*Tag) *UntagResourceOutput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateClusterRequest
 type UpdateClusterInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4543,6 +4455,7 @@ func (s *UpdateClusterInput) SetSecurityGroupIds(v []*string) *UpdateClusterInpu
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateClusterResponse
 type UpdateClusterOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4566,6 +4479,7 @@ func (s *UpdateClusterOutput) SetCluster(v *Cluster) *UpdateClusterOutput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateParameterGroupRequest
 type UpdateParameterGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4619,6 +4533,7 @@ func (s *UpdateParameterGroupInput) SetParameterNameValues(v []*ParameterNameVal
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateParameterGroupResponse
 type UpdateParameterGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4642,6 +4557,7 @@ func (s *UpdateParameterGroupOutput) SetParameterGroup(v *ParameterGroup) *Updat
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateSubnetGroupRequest
 type UpdateSubnetGroupInput struct {
 	_ struct{} `type:"structure"`
 
@@ -4698,6 +4614,7 @@ func (s *UpdateSubnetGroupInput) SetSubnetIds(v []*string) *UpdateSubnetGroupInp
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/dax-2017-04-19/UpdateSubnetGroupResponse
 type UpdateSubnetGroupOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -4746,20 +4663,6 @@ const (
 
 	// ParameterTypeNodeTypeSpecific is a ParameterType enum value
 	ParameterTypeNodeTypeSpecific = "NODE_TYPE_SPECIFIC"
-)
-
-const (
-	// SSEStatusEnabling is a SSEStatus enum value
-	SSEStatusEnabling = "ENABLING"
-
-	// SSEStatusEnabled is a SSEStatus enum value
-	SSEStatusEnabled = "ENABLED"
-
-	// SSEStatusDisabling is a SSEStatus enum value
-	SSEStatusDisabling = "DISABLING"
-
-	// SSEStatusDisabled is a SSEStatus enum value
-	SSEStatusDisabled = "DISABLED"
 )
 
 const (

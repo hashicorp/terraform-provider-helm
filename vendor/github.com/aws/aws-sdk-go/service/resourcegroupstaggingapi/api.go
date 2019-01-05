@@ -14,7 +14,7 @@ const opGetResources = "GetResources"
 
 // GetResourcesRequest generates a "aws/request.Request" representing the
 // client's request for the GetResources operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -35,7 +35,7 @@ const opGetResources = "GetResources"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetResources
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetResources
 func (c *ResourceGroupsTaggingAPI) GetResourcesRequest(input *GetResourcesInput) (req *request.Request, output *GetResourcesOutput) {
 	op := &request.Operation{
 		Name:       opGetResources,
@@ -90,7 +90,7 @@ func (c *ResourceGroupsTaggingAPI) GetResourcesRequest(input *GetResourcesInput)
 //   A PaginationToken is valid for a maximum of 15 minutes. Your request was
 //   denied because the specified PaginationToken has expired.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetResources
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetResources
 func (c *ResourceGroupsTaggingAPI) GetResources(input *GetResourcesInput) (*GetResourcesOutput, error) {
 	req, out := c.GetResourcesRequest(input)
 	return out, req.Send()
@@ -166,7 +166,7 @@ const opGetTagKeys = "GetTagKeys"
 
 // GetTagKeysRequest generates a "aws/request.Request" representing the
 // client's request for the GetTagKeys operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -187,7 +187,7 @@ const opGetTagKeys = "GetTagKeys"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagKeys
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagKeys
 func (c *ResourceGroupsTaggingAPI) GetTagKeysRequest(input *GetTagKeysInput) (req *request.Request, output *GetTagKeysOutput) {
 	op := &request.Operation{
 		Name:       opGetTagKeys,
@@ -237,7 +237,7 @@ func (c *ResourceGroupsTaggingAPI) GetTagKeysRequest(input *GetTagKeysInput) (re
 //   A PaginationToken is valid for a maximum of 15 minutes. Your request was
 //   denied because the specified PaginationToken has expired.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagKeys
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagKeys
 func (c *ResourceGroupsTaggingAPI) GetTagKeys(input *GetTagKeysInput) (*GetTagKeysOutput, error) {
 	req, out := c.GetTagKeysRequest(input)
 	return out, req.Send()
@@ -313,7 +313,7 @@ const opGetTagValues = "GetTagValues"
 
 // GetTagValuesRequest generates a "aws/request.Request" representing the
 // client's request for the GetTagValues operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -334,7 +334,7 @@ const opGetTagValues = "GetTagValues"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagValues
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagValues
 func (c *ResourceGroupsTaggingAPI) GetTagValuesRequest(input *GetTagValuesInput) (req *request.Request, output *GetTagValuesOutput) {
 	op := &request.Operation{
 		Name:       opGetTagValues,
@@ -385,7 +385,7 @@ func (c *ResourceGroupsTaggingAPI) GetTagValuesRequest(input *GetTagValuesInput)
 //   A PaginationToken is valid for a maximum of 15 minutes. Your request was
 //   denied because the specified PaginationToken has expired.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagValues
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagValues
 func (c *ResourceGroupsTaggingAPI) GetTagValues(input *GetTagValuesInput) (*GetTagValuesOutput, error) {
 	req, out := c.GetTagValuesRequest(input)
 	return out, req.Send()
@@ -461,7 +461,7 @@ const opTagResources = "TagResources"
 
 // TagResourcesRequest generates a "aws/request.Request" representing the
 // client's request for the TagResources operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -482,7 +482,7 @@ const opTagResources = "TagResources"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/TagResources
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/TagResources
 func (c *ResourceGroupsTaggingAPI) TagResourcesRequest(input *TagResourcesInput) (req *request.Request, output *TagResourcesOutput) {
 	op := &request.Operation{
 		Name:       opTagResources,
@@ -538,7 +538,7 @@ func (c *ResourceGroupsTaggingAPI) TagResourcesRequest(input *TagResourcesInput)
 //   The request processing failed because of an unknown error, exception, or
 //   failure. You can retry the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/TagResources
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/TagResources
 func (c *ResourceGroupsTaggingAPI) TagResources(input *TagResourcesInput) (*TagResourcesOutput, error) {
 	req, out := c.TagResourcesRequest(input)
 	return out, req.Send()
@@ -564,7 +564,7 @@ const opUntagResources = "UntagResources"
 
 // UntagResourcesRequest generates a "aws/request.Request" representing the
 // client's request for the UntagResources operation. The "output" return
-// value will be populated with the request's response once the request completes
+// value will be populated with the request's response once the request complets
 // successfuly.
 //
 // Use "Send" method on the returned Request to send the API call to the service.
@@ -585,7 +585,7 @@ const opUntagResources = "UntagResources"
 //        fmt.Println(resp)
 //    }
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/UntagResources
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/UntagResources
 func (c *ResourceGroupsTaggingAPI) UntagResourcesRequest(input *UntagResourcesInput) (req *request.Request, output *UntagResourcesOutput) {
 	op := &request.Operation{
 		Name:       opUntagResources,
@@ -636,7 +636,7 @@ func (c *ResourceGroupsTaggingAPI) UntagResourcesRequest(input *UntagResourcesIn
 //   The request processing failed because of an unknown error, exception, or
 //   failure. You can retry the request.
 //
-// See also, https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/UntagResources
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/UntagResources
 func (c *ResourceGroupsTaggingAPI) UntagResources(input *UntagResourcesInput) (*UntagResourcesOutput, error) {
 	req, out := c.UntagResourcesRequest(input)
 	return out, req.Send()
@@ -659,6 +659,7 @@ func (c *ResourceGroupsTaggingAPI) UntagResourcesWithContext(ctx aws.Context, in
 }
 
 // Details of the common errors that all actions return.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/FailureInfo
 type FailureInfo struct {
 	_ struct{} `type:"structure"`
 
@@ -702,6 +703,7 @@ func (s *FailureInfo) SetStatusCode(v int64) *FailureInfo {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetResourcesInput
 type GetResourcesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -824,6 +826,7 @@ func (s *GetResourcesInput) SetTagsPerPage(v int64) *GetResourcesInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetResourcesOutput
 type GetResourcesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -858,6 +861,7 @@ func (s *GetResourcesOutput) SetResourceTagMappingList(v []*ResourceTagMapping) 
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagKeysInput
 type GetTagKeysInput struct {
 	_ struct{} `type:"structure"`
 
@@ -883,6 +887,7 @@ func (s *GetTagKeysInput) SetPaginationToken(v string) *GetTagKeysInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagKeysOutput
 type GetTagKeysOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -917,6 +922,7 @@ func (s *GetTagKeysOutput) SetTagKeys(v []*string) *GetTagKeysOutput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagValuesInput
 type GetTagValuesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -970,6 +976,7 @@ func (s *GetTagValuesInput) SetPaginationToken(v string) *GetTagValuesInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/GetTagValuesOutput
 type GetTagValuesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -1006,6 +1013,7 @@ func (s *GetTagValuesOutput) SetTagValues(v []*string) *GetTagValuesOutput {
 
 // A list of resource ARNs and the tags (keys and values) that are associated
 // with each.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/ResourceTagMapping
 type ResourceTagMapping struct {
 	_ struct{} `type:"structure"`
 
@@ -1042,6 +1050,7 @@ func (s *ResourceTagMapping) SetTags(v []*Tag) *ResourceTagMapping {
 // them. Each tag consists of a key and an optional value, both of which you
 // define. For more information, see Tag Basics (http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html#tag-basics)
 // in the Amazon EC2 User Guide for Linux Instances.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/Tag
 type Tag struct {
 	_ struct{} `type:"structure"`
 
@@ -1082,6 +1091,7 @@ func (s *Tag) SetValue(v string) *Tag {
 
 // A list of tags (keys and values) that are used to specify the associated
 // resources.
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/TagFilter
 type TagFilter struct {
 	_ struct{} `type:"structure"`
 
@@ -1129,6 +1139,7 @@ func (s *TagFilter) SetValues(v []*string) *TagFilter {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/TagResourcesInput
 type TagResourcesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1192,6 +1203,7 @@ func (s *TagResourcesInput) SetTags(v map[string]*string) *TagResourcesInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/TagResourcesOutput
 type TagResourcesOutput struct {
 	_ struct{} `type:"structure"`
 
@@ -1216,6 +1228,7 @@ func (s *TagResourcesOutput) SetFailedResourcesMap(v map[string]*FailureInfo) *T
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/UntagResourcesInput
 type UntagResourcesInput struct {
 	_ struct{} `type:"structure"`
 
@@ -1278,6 +1291,7 @@ func (s *UntagResourcesInput) SetTagKeys(v []*string) *UntagResourcesInput {
 	return s
 }
 
+// Please also see https://docs.aws.amazon.com/goto/WebAPI/resourcegroupstaggingapi-2017-01-26/UntagResourcesOutput
 type UntagResourcesOutput struct {
 	_ struct{} `type:"structure"`
 

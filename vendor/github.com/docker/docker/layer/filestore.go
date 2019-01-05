@@ -13,10 +13,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/distribution"
-	"github.com/docker/distribution/digest"
 	"github.com/docker/docker/pkg/ioutils"
+	"github.com/opencontainers/go-digest"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -165,7 +165,7 @@ func (fms *fileMetadataStore) GetParent(layer ChainID) (ChainID, error) {
 		return "", err
 	}
 
-	dgst, err := digest.ParseDigest(strings.TrimSpace(string(content)))
+	dgst, err := digest.Parse(strings.TrimSpace(string(content)))
 	if err != nil {
 		return "", err
 	}
@@ -179,7 +179,7 @@ func (fms *fileMetadataStore) GetDiffID(layer ChainID) (DiffID, error) {
 		return "", err
 	}
 
-	dgst, err := digest.ParseDigest(strings.TrimSpace(string(content)))
+	dgst, err := digest.Parse(strings.TrimSpace(string(content)))
 	if err != nil {
 		return "", err
 	}
@@ -226,6 +226,7 @@ func (fms *fileMetadataStore) TarSplitReader(layer ChainID) (io.ReadCloser, erro
 	}
 	f, err := gzip.NewReader(fz)
 	if err != nil {
+		fz.Close()
 		return nil, err
 	}
 
@@ -296,7 +297,7 @@ func (fms *fileMetadataStore) GetMountParent(mount string) (ChainID, error) {
 		return "", err
 	}
 
-	dgst, err := digest.ParseDigest(strings.TrimSpace(string(content)))
+	dgst, err := digest.Parse(strings.TrimSpace(string(content)))
 	if err != nil {
 		return "", err
 	}

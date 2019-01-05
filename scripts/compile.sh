@@ -11,7 +11,7 @@ PROVIDER_NAME="helm"
 TARGET_DIR="$(pwd)/results"
 XC_ARCH=${XC_ARCH:-"386 amd64 arm"}
 XC_OS=${XC_OS:=linux darwin windows freebsd openbsd solaris}
-XC_EXCLUDE_OSARCH="!darwin/arm !darwin/386 !solaris/amd64"
+XC_EXCLUDE_OSARCH="!darwin/arm !darwin/386 !solaris/amd64 !openbsd/386 !openbsd/amd64"
 LD_FLAGS="-s -w"
 export CGO_ENABLED=0
 

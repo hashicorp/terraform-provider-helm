@@ -3,14 +3,17 @@ package daemon
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/Microsoft/hcsshim"
-	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/container"
+	"github.com/docker/docker/daemon/config"
 	"github.com/docker/docker/image"
+	"github.com/docker/docker/pkg/fileutils"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/parsers"
 	"github.com/docker/docker/pkg/platform"
@@ -24,6 +27,7 @@ import (
 	"github.com/docker/libnetwork/netlabel"
 	"github.com/docker/libnetwork/options"
 	blkiodev "github.com/opencontainers/runc/libcontainer/configs"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/windows"
 )
 
@@ -35,10 +39,21 @@ const (
 	windowsMinCPUPercent = 1
 	windowsMaxCPUPercent = 100
 	windowsMinCPUCount   = 1
+
+	errInvalidState = syscall.Errno(0x139F)
 )
+
+// Windows has no concept of an execution state directory. So use config.Root here.
+func getPluginExecRoot(root string) string {
+	return filepath.Join(root, "plugins")
+}
 
 func getBlkioWeightDevices(config *containertypes.HostConfig) ([]blkiodev.WeightDevice, error) {
 	return nil, nil
+}
+
+func (daemon *Daemon) parseSecurityOpt(container *container.Container, hostConfig *containertypes.HostConfig) error {
+	return parseSecurityOpt(container, hostConfig)
 }
 
 func parseSecurityOpt(container *container.Container, config *containertypes.HostConfig) error {
@@ -85,7 +100,7 @@ func (daemon *Daemon) adaptContainerSettings(hostConfig *containertypes.HostConf
 
 func verifyContainerResources(resources *containertypes.Resources, isHyperv bool) ([]string, error) {
 	warnings := []string{}
-
+	fixMemorySwappiness(resources)
 	if !isHyperv {
 		// The processor resource controls are mutually exclusive on
 		// Windows Server Containers, the order of precedence is
@@ -132,6 +147,17 @@ func verifyContainerResources(resources *containertypes.Resources, isHyperv bool
 		return warnings, fmt.Errorf("range of CPUs is from 0.01 to %d.00, as there are only %d CPUs available", sysinfo.NumCPU(), sysinfo.NumCPU())
 	}
 
+	osv := system.GetOSVersion()
+	if resources.NanoCPUs > 0 && isHyperv && osv.Build < 16175 {
+		leftoverNanoCPUs := resources.NanoCPUs % 1e9
+		if leftoverNanoCPUs != 0 && resources.NanoCPUs > 1e9 {
+			resources.NanoCPUs = ((resources.NanoCPUs + 1e9/2) / 1e9) * 1e9
+			warningString := fmt.Sprintf("Your current OS version does not support Hyper-V containers with NanoCPUs greater than 1000000000 but not divisible by 1000000000. NanoCPUs rounded to %d", resources.NanoCPUs)
+			warnings = append(warnings, warningString)
+			logrus.Warn(warningString)
+		}
+	}
+
 	if len(resources.BlkioDeviceReadBps) > 0 {
 		return warnings, fmt.Errorf("invalid option: Windows does not support BlkioDeviceReadBps")
 	}
@@ -171,7 +197,7 @@ func verifyContainerResources(resources *containertypes.Resources, isHyperv bool
 	if resources.MemorySwap != 0 {
 		return warnings, fmt.Errorf("invalid option: Windows does not support MemorySwap")
 	}
-	if resources.MemorySwappiness != nil && *resources.MemorySwappiness != -1 {
+	if resources.MemorySwappiness != nil {
 		return warnings, fmt.Errorf("invalid option: Windows does not support MemorySwappiness")
 	}
 	if resources.OomKillDisable != nil && *resources.OomKillDisable {
@@ -192,7 +218,7 @@ func verifyPlatformContainerSettings(daemon *Daemon, hostConfig *containertypes.
 	warnings := []string{}
 
 	hyperv := daemon.runAsHyperVContainer(hostConfig)
-	if !hyperv && system.IsWindowsClient() {
+	if !hyperv && system.IsWindowsClient() && !system.IsIoTCore() {
 		// @engine maintainers. This block should not be removed. It partially enforces licensing
 		// restrictions on Windows. Ping @jhowardmsft if there are concerns or PRs to change this.
 		return warnings, fmt.Errorf("Windows client operating systems only support Hyper-V containers")
@@ -200,19 +226,16 @@ func verifyPlatformContainerSettings(daemon *Daemon, hostConfig *containertypes.
 
 	w, err := verifyContainerResources(&hostConfig.Resources, hyperv)
 	warnings = append(warnings, w...)
-	if err != nil {
-		return warnings, err
-	}
-	return warnings, nil
+	return warnings, err
 }
 
-// platformReload update configuration with platform specific options
-func (daemon *Daemon) platformReload(config *Config) map[string]string {
-	return map[string]string{}
+// reloadPlatform updates configuration with platform specific options
+// and updates the passed attributes
+func (daemon *Daemon) reloadPlatform(config *config.Config, attributes map[string]string) {
 }
 
 // verifyDaemonSettings performs validation of daemon config struct
-func verifyDaemonSettings(config *Config) error {
+func verifyDaemonSettings(config *config.Config) error {
 	return nil
 }
 
@@ -232,20 +255,21 @@ func checkSystem() error {
 	if vmcompute.Load() != nil {
 		return fmt.Errorf("Failed to load vmcompute.dll. Ensure that the Containers role is installed.")
 	}
+
 	return nil
 }
 
 // configureKernelSecuritySupport configures and validate security support for the kernel
-func configureKernelSecuritySupport(config *Config, driverName string) error {
+func configureKernelSecuritySupport(config *config.Config, driverNames []string) error {
 	return nil
 }
 
 // configureMaxThreads sets the Go runtime max threads threshold
-func configureMaxThreads(config *Config) error {
+func configureMaxThreads(config *config.Config) error {
 	return nil
 }
 
-func (daemon *Daemon) initNetworkController(config *Config, activeSandboxes map[string]interface{}) (libnetwork.NetworkController, error) {
+func (daemon *Daemon) initNetworkController(config *config.Config, activeSandboxes map[string]interface{}) (libnetwork.NetworkController, error) {
 	netOptions, err := daemon.networkOptions(config, nil, nil)
 	if err != nil {
 		return nil, err
@@ -304,6 +328,9 @@ func (daemon *Daemon) initNetworkController(config *Config, activeSandboxes map[
 	// discover and add HNS networks to windows
 	// network that exist are removed and added again
 	for _, v := range hnsresponse {
+		if strings.ToLower(v.Type) == "private" {
+			continue // workaround for HNS reporting unsupported networks
+		}
 		var n libnetwork.Network
 		s := func(current libnetwork.Network) bool {
 			options := current.Info().DriverOptions()
@@ -342,8 +369,10 @@ func (daemon *Daemon) initNetworkController(config *Config, activeSandboxes map[
 		name := v.Name
 
 		// If there is no nat network create one from the first NAT network
-		// encountered
-		if !defaultNetworkExists && runconfig.DefaultDaemonNetworkMode() == containertypes.NetworkMode(strings.ToLower(v.Type)) {
+		// encountered if it doesn't already exist
+		if !defaultNetworkExists &&
+			runconfig.DefaultDaemonNetworkMode() == containertypes.NetworkMode(strings.ToLower(v.Type)) &&
+			n == nil {
 			name = runconfig.DefaultDaemonNetworkMode().NetworkName()
 			defaultNetworkExists = true
 		}
@@ -371,7 +400,7 @@ func (daemon *Daemon) initNetworkController(config *Config, activeSandboxes map[
 	return controller, nil
 }
 
-func initBridgeDriver(controller libnetwork.NetworkController, config *Config) error {
+func initBridgeDriver(controller libnetwork.NetworkController, config *config.Config) error {
 	if _, err := controller.NetworkByName(runconfig.DefaultDaemonNetworkMode().NetworkName()); err == nil {
 		return nil
 	}
@@ -383,8 +412,8 @@ func initBridgeDriver(controller libnetwork.NetworkController, config *Config) e
 	var ipamOption libnetwork.NetworkOption
 	var subnetPrefix string
 
-	if config.bridgeConfig.FixedCIDR != "" {
-		subnetPrefix = config.bridgeConfig.FixedCIDR
+	if config.BridgeConfig.FixedCIDR != "" {
+		subnetPrefix = config.BridgeConfig.FixedCIDR
 	} else {
 		// TP5 doesn't support properly detecting subnet
 		osv := system.GetOSVersion()
@@ -429,14 +458,14 @@ func (daemon *Daemon) cleanupMounts() error {
 	return nil
 }
 
-func setupRemappedRoot(config *Config) ([]idtools.IDMap, []idtools.IDMap, error) {
-	return nil, nil, nil
+func setupRemappedRoot(config *config.Config) (*idtools.IDMappings, error) {
+	return &idtools.IDMappings{}, nil
 }
 
-func setupDaemonRoot(config *Config, rootDir string, rootUID, rootGID int) error {
+func setupDaemonRoot(config *config.Config, rootDir string, rootIDs idtools.IDPair) error {
 	config.Root = rootDir
 	// Create the root directory if it doesn't exists
-	if err := system.MkdirAllWithACL(config.Root, 0); err != nil && !os.IsExist(err) {
+	if err := system.MkdirAllWithACL(config.Root, 0, system.SddlAdministratorsLocalSystem); err != nil && !os.IsExist(err) {
 		return err
 	}
 	return nil
@@ -457,6 +486,11 @@ func (daemon *Daemon) runAsHyperVContainer(hostConfig *containertypes.HostConfig
 // conditionalMountOnStart is a platform specific helper function during the
 // container start to call mount.
 func (daemon *Daemon) conditionalMountOnStart(container *container.Container) error {
+	// Bail out now for Linux containers
+	if system.LCOWSupported() && container.Platform != "windows" {
+		return nil
+	}
+
 	// We do not mount if a Hyper-V container
 	if !daemon.runAsHyperVContainer(container.HostConfig) {
 		return daemon.Mount(container)
@@ -467,6 +501,11 @@ func (daemon *Daemon) conditionalMountOnStart(container *container.Container) er
 // conditionalUnmountOnCleanup is a platform specific helper function called
 // during the cleanup of a container to unmount.
 func (daemon *Daemon) conditionalUnmountOnCleanup(container *container.Container) error {
+	// Bail out now for Linux containers
+	if system.LCOWSupported() && container.Platform != "windows" {
+		return nil
+	}
+
 	// We do not unmount if a Hyper-V container
 	if !daemon.runAsHyperVContainer(container.HostConfig) {
 		return daemon.Unmount(container)
@@ -474,7 +513,7 @@ func (daemon *Daemon) conditionalUnmountOnCleanup(container *container.Container
 	return nil
 }
 
-func driverOptions(config *Config) []nwconfig.Option {
+func driverOptions(config *config.Config) []nwconfig.Option {
 	return []nwconfig.Option{}
 }
 
@@ -486,6 +525,9 @@ func (daemon *Daemon) stats(c *container.Container) (*types.StatsJSON, error) {
 	// Obtain the stats from HCS via libcontainerd
 	stats, err := daemon.containerd.Stats(c.ID)
 	if err != nil {
+		if strings.Contains(err.Error(), "container not found") {
+			return nil, errNotFound{c.ID}
+		}
 		return nil, err
 	}
 
@@ -541,8 +583,9 @@ func (daemon *Daemon) stats(c *container.Container) (*types.StatsJSON, error) {
 // daemon to run in. This is only applicable on Windows
 func (daemon *Daemon) setDefaultIsolation() error {
 	daemon.defaultIsolation = containertypes.Isolation("process")
-	// On client SKUs, default to Hyper-V
-	if system.IsWindowsClient() {
+	// On client SKUs, default to Hyper-V. Note that IoT reports as a client SKU
+	// but it should not be treated as such.
+	if system.IsWindowsClient() && !system.IsIoTCore() {
 		daemon.defaultIsolation = containertypes.Isolation("hyperv")
 	}
 	for _, option := range daemon.configStore.ExecOptions {
@@ -561,7 +604,7 @@ func (daemon *Daemon) setDefaultIsolation() error {
 				daemon.defaultIsolation = containertypes.Isolation("hyperv")
 			}
 			if containertypes.Isolation(val).IsProcess() {
-				if system.IsWindowsClient() {
+				if system.IsWindowsClient() && !system.IsIoTCore() {
 					// @engine maintainers. This block should not be removed. It partially enforces licensing
 					// restrictions on Windows. Ping @jhowardmsft if there are concerns or PRs to change this.
 					return fmt.Errorf("Windows client operating systems only support Hyper-V containers")
@@ -588,7 +631,7 @@ func rootFSToAPIType(rootfs *image.RootFS) types.RootFS {
 	}
 }
 
-func setupDaemonProcess(config *Config) error {
+func setupDaemonProcess(config *config.Config) error {
 	return nil
 }
 
@@ -601,4 +644,14 @@ func (daemon *Daemon) verifyVolumesInfo(container *container.Container) error {
 
 func (daemon *Daemon) setupSeccompProfile() error {
 	return nil
+}
+
+func getRealPath(path string) (string, error) {
+	if system.IsIoTCore() {
+		// Due to https://github.com/golang/go/issues/20506, path expansion
+		// does not work correctly on the default IoT Core configuration.
+		// TODO @darrenstahlmsft remove this once golang/go/20506 is fixed
+		return path, nil
+	}
+	return fileutils.ReadSymlinkedDirectory(path)
 }

@@ -38,7 +38,7 @@ type GlogWriter struct{}
 
 // Write implements the io.Writer interface.
 func (writer GlogWriter) Write(data []byte) (n int, err error) {
-	glog.Info(string(data))
+	glog.InfoDepth(1, string(data))
 	return len(data), nil
 }
 
@@ -46,7 +46,7 @@ func (writer GlogWriter) Write(data []byte) (n int, err error) {
 func InitLogs() {
 	log.SetOutput(GlogWriter{})
 	log.SetFlags(0)
-	// The default glog flush interval is 30 seconds, which is frighteningly long.
+	// The default glog flush interval is 5 seconds.
 	go wait.Until(glog.Flush, *logFlushFreq, wait.NeverStop)
 }
 

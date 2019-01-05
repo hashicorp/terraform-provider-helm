@@ -101,11 +101,9 @@ type pipe struct {
 	buf  []byte
 	w, r int
 
-	wwait sync.Cond
-	rwait sync.Cond
-
-	closed      bool
-	writeClosed bool
+	wwait  sync.Cond
+	rwait  sync.Cond
+	closed bool
 }
 
 func newPipe(sz int) *pipe {
@@ -133,9 +131,6 @@ func (p *pipe) Read(b []byte) (n int, err error) {
 		}
 		if !p.empty() {
 			break
-		}
-		if p.writeClosed {
-			return 0, io.EOF
 		}
 		p.rwait.Wait()
 	}
@@ -165,7 +160,7 @@ func (p *pipe) Write(b []byte) (n int, err error) {
 	for len(b) > 0 {
 		// Block until p is not full.
 		for {
-			if p.closed || p.writeClosed {
+			if p.closed {
 				return 0, io.ErrClosedPipe
 			}
 			if !p.full() {
@@ -208,24 +203,14 @@ func (p *pipe) Close() error {
 	return nil
 }
 
-func (p *pipe) closeWrite() error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.writeClosed = true
-	// Signal all blocked readers and writers to return an error.
-	p.rwait.Broadcast()
-	p.wwait.Broadcast()
-	return nil
-}
-
 type conn struct {
-	io.Reader
-	io.Writer
+	io.ReadCloser
+	io.WriteCloser
 }
 
 func (c *conn) Close() error {
-	err1 := c.Reader.(*pipe).Close()
-	err2 := c.Writer.(*pipe).closeWrite()
+	err1 := c.ReadCloser.Close()
+	err2 := c.WriteCloser.Close()
 	if err1 != nil {
 		return err1
 	}

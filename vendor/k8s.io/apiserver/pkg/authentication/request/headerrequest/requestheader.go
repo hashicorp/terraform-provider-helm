@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -161,14 +160,6 @@ func allHeaderValues(h http.Header, headerNames []string) []string {
 	return ret
 }
 
-func unescapeExtraKey(encodedKey string) string {
-	key, err := url.PathUnescape(encodedKey) // Decode %-encoded bytes.
-	if err != nil {
-		return encodedKey // Always record extra strings, even if malformed/unencoded.
-	}
-	return key
-}
-
 func newExtra(h http.Header, headerPrefixes []string) map[string][]string {
 	ret := map[string][]string{}
 
@@ -179,7 +170,7 @@ func newExtra(h http.Header, headerPrefixes []string) map[string][]string {
 				continue
 			}
 
-			extraKey := unescapeExtraKey(strings.ToLower(headerName[len(prefix):]))
+			extraKey := strings.ToLower(headerName[len(prefix):])
 			ret[extraKey] = append(ret[extraKey], vv...)
 		}
 	}

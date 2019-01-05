@@ -14,9 +14,9 @@ First, run the generator to create `openapi_generated.go` file which specifies
 the `OpenAPIDefinition` for each type.
 
 ```bash
-$ go run ../../cmd/openapi-gen/openapi-gen.go -i "./testdata/listtype" -o pkg -p generated -O openapi_generated
+$ go run ../../cmd/openapi-gen/openapi-gen.go "./testdata/listtype"
 ```
-The generated file `pkg/generated/openapi_generated.go` should have been created.
+The generated file `pkg/generaged/openapi_generated.go` should have been created.
 
 Next, run the OpenAPI builder to create the Swagger file which includes
 the definitions. The output file named `golden.json` will be output in

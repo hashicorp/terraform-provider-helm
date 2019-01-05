@@ -7,7 +7,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/internal/sdkio"
 )
 
 func copyMultipartStatusOKUnmarhsalError(r *request.Request) {
@@ -18,7 +17,7 @@ func copyMultipartStatusOKUnmarhsalError(r *request.Request) {
 	}
 	body := bytes.NewReader(b)
 	r.HTTPResponse.Body = ioutil.NopCloser(body)
-	defer body.Seek(0, sdkio.SeekStart)
+	defer body.Seek(0, 0)
 
 	if body.Len() == 0 {
 		// If there is no body don't attempt to parse the body.

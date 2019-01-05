@@ -18,8 +18,8 @@ The Helm provider is used to deploy software packages in Kubernetes. The provide
 ## Example Usage
 
 ```hcl
-resource "helm_release" "my_database" {
-    name      = "my_datasase"
+resource "helm_release" "mydatabase" {
+    name      = "mydatabase"
     chart     = "stable/mariadb"
 
     set {
@@ -78,13 +78,14 @@ The following arguments are supported:
 * `install_tiller` - (Optional) Install Tiller if it is not already installed.
 * `tiller_image` - (Optional) Tiller image to install.
 * `service_account` - (Optional) Service account to install Tiller with.
+* `automount_service_account_token` - (Optional) Auto-mount the given service account to tiller.
 * `debug` - (Optional)
 * `plugins_disable` - (Optional) Disable plugins. Set HELM_NO_PLUGINS=1 to disable plugins.
 * `enable_tls` - (Optional) Enables TLS communications with the Tiller.
 * `insecure` - (Optional) Whether server should be accessed without verifying the TLS certificate. Can be sourced from `HELM_HOME`.
 * `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `$HELM_HOME/key.pem`.
 * `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `$HELM_HOME/cert.pem`.
-* `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. CBy default read from `$HELM_HOME/ca.pem`.
+* `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. By default read from `$HELM_HOME/ca.pem`.
 * `kubernetes` - Kubernetes configuration.
 
 The `kubernetes` block supports:

@@ -1,4 +1,4 @@
-// Copyright 2014 Google LLC
+// Copyright 2014 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package container contains a deprecated Google Container Engine client.
+// Package container contains a Google Container Engine client.
 //
-// Deprecated: Use cloud.google.com/go/container/apiv1 instead.
+// For more information about the API,
+// see https://cloud.google.com/container-engine/docs
 package container // import "cloud.google.com/go/container"
 
 import (
@@ -25,7 +26,7 @@ import (
 	"golang.org/x/net/context"
 	raw "google.golang.org/api/container/v1"
 	"google.golang.org/api/option"
-	htransport "google.golang.org/api/transport/http"
+	"google.golang.org/api/transport"
 )
 
 type Type string
@@ -64,7 +65,7 @@ func NewClient(ctx context.Context, projectID string, opts ...option.ClientOptio
 		option.WithUserAgent(userAgent),
 	}
 	o = append(o, opts...)
-	httpClient, endpoint, err := htransport.NewClient(ctx, o...)
+	httpClient, endpoint, err := transport.NewHTTPClient(ctx, o...)
 	if err != nil {
 		return nil, fmt.Errorf("dialing: %v", err)
 	}
@@ -147,7 +148,7 @@ func resourceFromRaw(c *raw.Cluster) *Resource {
 		Description:       c.Description,
 		Zone:              c.Zone,
 		Status:            Status(c.Status),
-		Num:               c.CurrentNodeCount,
+		Num:               c.InitialNodeCount,
 		APIVersion:        c.InitialClusterVersion,
 		Endpoint:          c.Endpoint,
 		Username:          c.MasterAuth.Username,
@@ -227,6 +228,12 @@ func (c *Client) Cluster(ctx context.Context, zone, name string) (*Resource, err
 		return nil, err
 	}
 	return resourceFromRaw(resp), nil
+}
+
+// CreateCluster creates a new cluster with the provided metadata
+// in the specified zone.
+func (c *Client) CreateCluster(ctx context.Context, zone string, resource *Resource) (*Resource, error) {
+	panic("not implemented")
 }
 
 // DeleteCluster deletes a cluster.

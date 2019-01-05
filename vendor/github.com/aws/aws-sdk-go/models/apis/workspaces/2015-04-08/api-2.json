@@ -6,61 +6,11 @@
     "jsonVersion":"1.1",
     "protocol":"json",
     "serviceFullName":"Amazon WorkSpaces",
-    "serviceId":"WorkSpaces",
     "signatureVersion":"v4",
     "targetPrefix":"WorkspacesService",
     "uid":"workspaces-2015-04-08"
   },
   "operations":{
-    "AssociateIpGroups":{
-      "name":"AssociateIpGroups",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"AssociateIpGroupsRequest"},
-      "output":{"shape":"AssociateIpGroupsResult"},
-      "errors":[
-        {"shape":"InvalidParameterValuesException"},
-        {"shape":"ResourceNotFoundException"},
-        {"shape":"ResourceLimitExceededException"},
-        {"shape":"InvalidResourceStateException"},
-        {"shape":"AccessDeniedException"},
-        {"shape":"OperationNotSupportedException"}
-      ]
-    },
-    "AuthorizeIpRules":{
-      "name":"AuthorizeIpRules",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"AuthorizeIpRulesRequest"},
-      "output":{"shape":"AuthorizeIpRulesResult"},
-      "errors":[
-        {"shape":"InvalidParameterValuesException"},
-        {"shape":"ResourceNotFoundException"},
-        {"shape":"ResourceLimitExceededException"},
-        {"shape":"InvalidResourceStateException"},
-        {"shape":"AccessDeniedException"}
-      ]
-    },
-    "CreateIpGroup":{
-      "name":"CreateIpGroup",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"CreateIpGroupRequest"},
-      "output":{"shape":"CreateIpGroupResult"},
-      "errors":[
-        {"shape":"InvalidParameterValuesException"},
-        {"shape":"ResourceLimitExceededException"},
-        {"shape":"ResourceAlreadyExistsException"},
-        {"shape":"ResourceCreationFailedException"},
-        {"shape":"AccessDeniedException"}
-      ]
-    },
     "CreateTags":{
       "name":"CreateTags",
       "http":{
@@ -88,21 +38,6 @@
         {"shape":"InvalidParameterValuesException"}
       ]
     },
-    "DeleteIpGroup":{
-      "name":"DeleteIpGroup",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"DeleteIpGroupRequest"},
-      "output":{"shape":"DeleteIpGroupResult"},
-      "errors":[
-        {"shape":"InvalidParameterValuesException"},
-        {"shape":"ResourceNotFoundException"},
-        {"shape":"ResourceAssociatedException"},
-        {"shape":"AccessDeniedException"}
-      ]
-    },
     "DeleteTags":{
       "name":"DeleteTags",
       "http":{
@@ -114,19 +49,6 @@
       "errors":[
         {"shape":"ResourceNotFoundException"},
         {"shape":"InvalidParameterValuesException"}
-      ]
-    },
-    "DescribeIpGroups":{
-      "name":"DescribeIpGroups",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"DescribeIpGroupsRequest"},
-      "output":{"shape":"DescribeIpGroupsResult"},
-      "errors":[
-        {"shape":"InvalidParameterValuesException"},
-        {"shape":"AccessDeniedException"}
       ]
     },
     "DescribeTags":{
@@ -190,21 +112,6 @@
         {"shape":"InvalidParameterValuesException"}
       ]
     },
-    "DisassociateIpGroups":{
-      "name":"DisassociateIpGroups",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"DisassociateIpGroupsRequest"},
-      "output":{"shape":"DisassociateIpGroupsResult"},
-      "errors":[
-        {"shape":"InvalidParameterValuesException"},
-        {"shape":"ResourceNotFoundException"},
-        {"shape":"InvalidResourceStateException"},
-        {"shape":"AccessDeniedException"}
-      ]
-    },
     "ModifyWorkspaceProperties":{
       "name":"ModifyWorkspaceProperties",
       "http":{
@@ -221,20 +128,6 @@
         {"shape":"ResourceNotFoundException"},
         {"shape":"AccessDeniedException"},
         {"shape":"ResourceUnavailableException"}
-      ]
-    },
-    "ModifyWorkspaceState":{
-      "name":"ModifyWorkspaceState",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"ModifyWorkspaceStateRequest"},
-      "output":{"shape":"ModifyWorkspaceStateResult"},
-      "errors":[
-        {"shape":"InvalidParameterValuesException"},
-        {"shape":"InvalidResourceStateException"},
-        {"shape":"ResourceNotFoundException"}
       ]
     },
     "RebootWorkspaces":{
@@ -254,21 +147,6 @@
       },
       "input":{"shape":"RebuildWorkspacesRequest"},
       "output":{"shape":"RebuildWorkspacesResult"}
-    },
-    "RevokeIpRules":{
-      "name":"RevokeIpRules",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"RevokeIpRulesRequest"},
-      "output":{"shape":"RevokeIpRulesResult"},
-      "errors":[
-        {"shape":"InvalidParameterValuesException"},
-        {"shape":"ResourceNotFoundException"},
-        {"shape":"InvalidResourceStateException"},
-        {"shape":"AccessDeniedException"}
-      ]
     },
     "StartWorkspaces":{
       "name":"StartWorkspaces",
@@ -296,22 +174,6 @@
       },
       "input":{"shape":"TerminateWorkspacesRequest"},
       "output":{"shape":"TerminateWorkspacesResult"}
-    },
-    "UpdateRulesOfIpGroup":{
-      "name":"UpdateRulesOfIpGroup",
-      "http":{
-        "method":"POST",
-        "requestUri":"/"
-      },
-      "input":{"shape":"UpdateRulesOfIpGroupRequest"},
-      "output":{"shape":"UpdateRulesOfIpGroupResult"},
-      "errors":[
-        {"shape":"InvalidParameterValuesException"},
-        {"shape":"ResourceNotFoundException"},
-        {"shape":"ResourceLimitExceededException"},
-        {"shape":"InvalidResourceStateException"},
-        {"shape":"AccessDeniedException"}
-      ]
     }
   },
   "shapes":{
@@ -327,38 +189,6 @@
       "exception":true
     },
     "Alias":{"type":"string"},
-    "AssociateIpGroupsRequest":{
-      "type":"structure",
-      "required":[
-        "DirectoryId",
-        "GroupIds"
-      ],
-      "members":{
-        "DirectoryId":{"shape":"DirectoryId"},
-        "GroupIds":{"shape":"IpGroupIdList"}
-      }
-    },
-    "AssociateIpGroupsResult":{
-      "type":"structure",
-      "members":{
-      }
-    },
-    "AuthorizeIpRulesRequest":{
-      "type":"structure",
-      "required":[
-        "GroupId",
-        "UserRules"
-      ],
-      "members":{
-        "GroupId":{"shape":"IpGroupId"},
-        "UserRules":{"shape":"IpRuleList"}
-      }
-    },
-    "AuthorizeIpRulesResult":{
-      "type":"structure",
-      "members":{
-      }
-    },
     "BooleanObject":{"type":"boolean"},
     "BundleId":{
       "type":"string",
@@ -380,9 +210,7 @@
       "enum":[
         "VALUE",
         "STANDARD",
-        "PERFORMANCE",
-        "POWER",
-        "GRAPHICS"
+        "PERFORMANCE"
       ]
     },
     "ComputeType":{
@@ -399,21 +227,6 @@
         "DISCONNECTED",
         "UNKNOWN"
       ]
-    },
-    "CreateIpGroupRequest":{
-      "type":"structure",
-      "required":["GroupName"],
-      "members":{
-        "GroupName":{"shape":"IpGroupName"},
-        "GroupDesc":{"shape":"IpGroupDesc"},
-        "UserRules":{"shape":"IpRuleList"}
-      }
-    },
-    "CreateIpGroupResult":{
-      "type":"structure",
-      "members":{
-        "GroupId":{"shape":"IpGroupId"}
-      }
     },
     "CreateTagsRequest":{
       "type":"structure",
@@ -456,18 +269,6 @@
         "UserEnabledAsLocalAdministrator":{"shape":"BooleanObject"}
       }
     },
-    "DeleteIpGroupRequest":{
-      "type":"structure",
-      "required":["GroupId"],
-      "members":{
-        "GroupId":{"shape":"IpGroupId"}
-      }
-    },
-    "DeleteIpGroupResult":{
-      "type":"structure",
-      "members":{
-      }
-    },
     "DeleteTagsRequest":{
       "type":"structure",
       "required":[
@@ -482,21 +283,6 @@
     "DeleteTagsResult":{
       "type":"structure",
       "members":{
-      }
-    },
-    "DescribeIpGroupsRequest":{
-      "type":"structure",
-      "members":{
-        "GroupIds":{"shape":"IpGroupIdList"},
-        "NextToken":{"shape":"PaginationToken"},
-        "MaxResults":{"shape":"Limit"}
-      }
-    },
-    "DescribeIpGroupsResult":{
-      "type":"structure",
-      "members":{
-        "Result":{"shape":"WorkspacesIpGroupsList"},
-        "NextToken":{"shape":"PaginationToken"}
       }
     },
     "DescribeTagsRequest":{
@@ -589,22 +375,6 @@
       "member":{"shape":"WorkspaceDirectory"}
     },
     "DirectoryName":{"type":"string"},
-    "DisassociateIpGroupsRequest":{
-      "type":"structure",
-      "required":[
-        "DirectoryId",
-        "GroupIds"
-      ],
-      "members":{
-        "DirectoryId":{"shape":"DirectoryId"},
-        "GroupIds":{"shape":"IpGroupIdList"}
-      }
-    },
-    "DisassociateIpGroupsResult":{
-      "type":"structure",
-      "members":{
-      }
-    },
     "DnsIpAddresses":{
       "type":"list",
       "member":{"shape":"IpAddress"}
@@ -666,63 +436,10 @@
       "exception":true
     },
     "IpAddress":{"type":"string"},
-    "IpGroupDesc":{"type":"string"},
-    "IpGroupId":{
-      "type":"string",
-      "pattern":"wsipg-[0-9a-z]{8,63}$"
-    },
-    "IpGroupIdList":{
-      "type":"list",
-      "member":{"shape":"IpGroupId"}
-    },
-    "IpGroupName":{"type":"string"},
-    "IpRevokedRuleList":{
-      "type":"list",
-      "member":{"shape":"IpRule"}
-    },
-    "IpRule":{"type":"string"},
-    "IpRuleDesc":{"type":"string"},
-    "IpRuleItem":{
-      "type":"structure",
-      "members":{
-        "ipRule":{"shape":"IpRule"},
-        "ruleDesc":{"shape":"IpRuleDesc"}
-      }
-    },
-    "IpRuleList":{
-      "type":"list",
-      "member":{"shape":"IpRuleItem"}
-    },
     "Limit":{
       "type":"integer",
       "max":25,
       "min":1
-    },
-    "ModificationResourceEnum":{
-      "type":"string",
-      "enum":[
-        "ROOT_VOLUME",
-        "USER_VOLUME",
-        "COMPUTE_TYPE"
-      ]
-    },
-    "ModificationState":{
-      "type":"structure",
-      "members":{
-        "Resource":{"shape":"ModificationResourceEnum"},
-        "State":{"shape":"ModificationStateEnum"}
-      }
-    },
-    "ModificationStateEnum":{
-      "type":"string",
-      "enum":[
-        "UPDATE_INITIATED",
-        "UPDATE_IN_PROGRESS"
-      ]
-    },
-    "ModificationStateList":{
-      "type":"list",
-      "member":{"shape":"ModificationState"}
     },
     "ModifyWorkspacePropertiesRequest":{
       "type":"structure",
@@ -740,34 +457,11 @@
       "members":{
       }
     },
-    "ModifyWorkspaceStateRequest":{
-      "type":"structure",
-      "required":[
-        "WorkspaceId",
-        "WorkspaceState"
-      ],
-      "members":{
-        "WorkspaceId":{"shape":"WorkspaceId"},
-        "WorkspaceState":{"shape":"TargetWorkspaceState"}
-      }
-    },
-    "ModifyWorkspaceStateResult":{
-      "type":"structure",
-      "members":{
-      }
-    },
     "NonEmptyString":{
       "type":"string",
       "min":1
     },
     "OperationInProgressException":{
-      "type":"structure",
-      "members":{
-        "message":{"shape":"ExceptionMessage"}
-      },
-      "exception":true
-    },
-    "OperationNotSupportedException":{
       "type":"structure",
       "members":{
         "message":{"shape":"ExceptionMessage"}
@@ -836,27 +530,6 @@
       "max":20,
       "min":1
     },
-    "ResourceAlreadyExistsException":{
-      "type":"structure",
-      "members":{
-        "message":{"shape":"ExceptionMessage"}
-      },
-      "exception":true
-    },
-    "ResourceAssociatedException":{
-      "type":"structure",
-      "members":{
-        "message":{"shape":"ExceptionMessage"}
-      },
-      "exception":true
-    },
-    "ResourceCreationFailedException":{
-      "type":"structure",
-      "members":{
-        "message":{"shape":"ExceptionMessage"}
-      },
-      "exception":true
-    },
     "ResourceLimitExceededException":{
       "type":"structure",
       "members":{
@@ -880,29 +553,6 @@
       },
       "exception":true
     },
-    "RevokeIpRulesRequest":{
-      "type":"structure",
-      "required":[
-        "GroupId",
-        "UserRules"
-      ],
-      "members":{
-        "GroupId":{"shape":"IpGroupId"},
-        "UserRules":{"shape":"IpRevokedRuleList"}
-      }
-    },
-    "RevokeIpRulesResult":{
-      "type":"structure",
-      "members":{
-      }
-    },
-    "RootStorage":{
-      "type":"structure",
-      "members":{
-        "Capacity":{"shape":"NonEmptyString"}
-      }
-    },
-    "RootVolumeSizeGib":{"type":"integer"},
     "RunningMode":{
       "type":"string",
       "enum":[
@@ -998,13 +648,6 @@
       "type":"string",
       "max":255
     },
-    "TargetWorkspaceState":{
-      "type":"string",
-      "enum":[
-        "AVAILABLE",
-        "ADMIN_MAINTENANCE"
-      ]
-    },
     "TerminateRequest":{
       "type":"structure",
       "required":["WorkspaceId"],
@@ -1039,22 +682,6 @@
       },
       "exception":true
     },
-    "UpdateRulesOfIpGroupRequest":{
-      "type":"structure",
-      "required":[
-        "GroupId",
-        "UserRules"
-      ],
-      "members":{
-        "GroupId":{"shape":"IpGroupId"},
-        "UserRules":{"shape":"IpRuleList"}
-      }
-    },
-    "UpdateRulesOfIpGroupResult":{
-      "type":"structure",
-      "members":{
-      }
-    },
     "UserName":{
       "type":"string",
       "max":63,
@@ -1066,7 +693,6 @@
         "Capacity":{"shape":"NonEmptyString"}
       }
     },
-    "UserVolumeSizeGib":{"type":"integer"},
     "VolumeEncryptionKey":{"type":"string"},
     "Workspace":{
       "type":"structure",
@@ -1084,8 +710,7 @@
         "VolumeEncryptionKey":{"shape":"VolumeEncryptionKey"},
         "UserVolumeEncryptionEnabled":{"shape":"BooleanObject"},
         "RootVolumeEncryptionEnabled":{"shape":"BooleanObject"},
-        "WorkspaceProperties":{"shape":"WorkspaceProperties"},
-        "ModificationStates":{"shape":"ModificationStateList"}
+        "WorkspaceProperties":{"shape":"WorkspaceProperties"}
       }
     },
     "WorkspaceBundle":{
@@ -1095,7 +720,6 @@
         "Name":{"shape":"NonEmptyString"},
         "Owner":{"shape":"BundleOwner"},
         "Description":{"shape":"Description"},
-        "RootStorage":{"shape":"RootStorage"},
         "UserStorage":{"shape":"UserStorage"},
         "ComputeType":{"shape":"ComputeType"}
       }
@@ -1127,8 +751,7 @@
         "DirectoryType":{"shape":"WorkspaceDirectoryType"},
         "WorkspaceSecurityGroupId":{"shape":"SecurityGroupId"},
         "State":{"shape":"WorkspaceDirectoryState"},
-        "WorkspaceCreationProperties":{"shape":"DefaultWorkspaceCreationProperties"},
-        "ipGroupIds":{"shape":"IpGroupIdList"}
+        "WorkspaceCreationProperties":{"shape":"DefaultWorkspaceCreationProperties"}
       }
     },
     "WorkspaceDirectoryState":{
@@ -1167,10 +790,7 @@
       "type":"structure",
       "members":{
         "RunningMode":{"shape":"RunningMode"},
-        "RunningModeAutoStopTimeoutInMinutes":{"shape":"RunningModeAutoStopTimeoutInMinutes"},
-        "RootVolumeSizeGib":{"shape":"RootVolumeSizeGib"},
-        "UserVolumeSizeGib":{"shape":"UserVolumeSizeGib"},
-        "ComputeTypeName":{"shape":"Compute"}
+        "RunningModeAutoStopTimeoutInMinutes":{"shape":"RunningModeAutoStopTimeoutInMinutes"}
       }
     },
     "WorkspaceRequest":{
@@ -1208,28 +828,13 @@
         "STARTING",
         "REBUILDING",
         "MAINTENANCE",
-        "ADMIN_MAINTENANCE",
         "TERMINATING",
         "TERMINATED",
         "SUSPENDED",
-        "UPDATING",
         "STOPPING",
         "STOPPED",
         "ERROR"
       ]
-    },
-    "WorkspacesIpGroup":{
-      "type":"structure",
-      "members":{
-        "groupId":{"shape":"IpGroupId"},
-        "groupName":{"shape":"IpGroupName"},
-        "groupDesc":{"shape":"IpGroupDesc"},
-        "userRules":{"shape":"IpRuleList"}
-      }
-    },
-    "WorkspacesIpGroupsList":{
-      "type":"list",
-      "member":{"shape":"WorkspacesIpGroup"}
     }
   }
 }

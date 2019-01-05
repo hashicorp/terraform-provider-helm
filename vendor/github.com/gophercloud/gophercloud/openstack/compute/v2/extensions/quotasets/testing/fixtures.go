@@ -121,7 +121,7 @@ var FirstQuotaSet = quotasets.QuotaSet{
 
 // FirstQuotaDetailsSet is the first result in ListOutput.
 var FirstQuotaDetailsSet = quotasets.QuotaDetailSet{
-	ID:                       FirstTenantID,
+	ID: FirstTenantID,
 	InjectedFileContentBytes: quotasets.QuotaDetail{InUse: 0, Reserved: 0, Limit: 10240},
 	InjectedFilePathBytes:    quotasets.QuotaDetail{InUse: 0, Reserved: 0, Limit: 255},
 	InjectedFiles:            quotasets.QuotaDetail{InUse: 0, Reserved: 0, Limit: 5},

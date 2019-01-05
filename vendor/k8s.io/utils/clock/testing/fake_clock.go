@@ -34,7 +34,7 @@ type FakeClock struct {
 	time time.Time
 
 	// waiters are waiting for the fake time to pass their specified time
-	waiters []*fakeClockWaiter
+	waiters []fakeClockWaiter
 }
 
 type fakeClockWaiter struct {
@@ -45,7 +45,6 @@ type fakeClockWaiter struct {
 	fired         bool
 }
 
-// NewFakeClock constructs a fake clock set to the provided time.
 func NewFakeClock(t time.Time) *FakeClock {
 	return &FakeClock{
 		time: t,
@@ -66,20 +65,20 @@ func (f *FakeClock) Since(ts time.Time) time.Duration {
 	return f.time.Sub(ts)
 }
 
-// After is the fake version of time.After(d).
+// Fake version of time.After(d).
 func (f *FakeClock) After(d time.Duration) <-chan time.Time {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	stopTime := f.time.Add(d)
 	ch := make(chan time.Time, 1) // Don't block!
-	f.waiters = append(f.waiters, &fakeClockWaiter{
+	f.waiters = append(f.waiters, fakeClockWaiter{
 		targetTime: stopTime,
 		destChan:   ch,
 	})
 	return ch
 }
 
-// NewTimer constructs a fake timer, akin to time.NewTimer(d).
+// Fake version of time.NewTimer(d).
 func (f *FakeClock) NewTimer(d time.Duration) clock.Timer {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -92,20 +91,16 @@ func (f *FakeClock) NewTimer(d time.Duration) clock.Timer {
 			destChan:   ch,
 		},
 	}
-	f.waiters = append(f.waiters, &timer.waiter)
+	f.waiters = append(f.waiters, timer.waiter)
 	return timer
 }
 
-// Tick constructs a fake ticker, akin to time.Tick
 func (f *FakeClock) Tick(d time.Duration) <-chan time.Time {
-	if d <= 0 {
-		return nil
-	}
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	tickTime := f.time.Add(d)
 	ch := make(chan time.Time, 1) // hold one tick
-	f.waiters = append(f.waiters, &fakeClockWaiter{
+	f.waiters = append(f.waiters, fakeClockWaiter{
 		targetTime:    tickTime,
 		stepInterval:  d,
 		skipIfBlocked: true,
@@ -115,15 +110,14 @@ func (f *FakeClock) Tick(d time.Duration) <-chan time.Time {
 	return ch
 }
 
-// Step moves the clock by Duration and notifies anyone that's called After,
-// Tick, or NewTimer.
+// Move clock by Duration, notify anyone that's called After, Tick, or NewTimer
 func (f *FakeClock) Step(d time.Duration) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	f.setTimeLocked(f.time.Add(d))
 }
 
-// SetTime sets the time.
+// Sets the time.
 func (f *FakeClock) SetTime(t time.Time) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -133,9 +127,9 @@ func (f *FakeClock) SetTime(t time.Time) {
 // Actually changes the time and checks any waiters. f must be write-locked.
 func (f *FakeClock) setTimeLocked(t time.Time) {
 	f.time = t
-	newWaiters := make([]*fakeClockWaiter, 0, len(f.waiters))
+	newWaiters := make([]fakeClockWaiter, 0, len(f.waiters))
 	for i := range f.waiters {
-		w := f.waiters[i]
+		w := &f.waiters[i]
 		if !w.targetTime.After(t) {
 
 			if w.skipIfBlocked {
@@ -153,7 +147,7 @@ func (f *FakeClock) setTimeLocked(t time.Time) {
 				for !w.targetTime.After(t) {
 					w.targetTime = w.targetTime.Add(w.stepInterval)
 				}
-				newWaiters = append(newWaiters, w)
+				newWaiters = append(newWaiters, *w)
 			}
 
 		} else {
@@ -163,7 +157,7 @@ func (f *FakeClock) setTimeLocked(t time.Time) {
 	f.waiters = newWaiters
 }
 
-// HasWaiters returns true if After has been called on f but not yet satisfied (so you can
+// Returns true if After has been called on f but not yet satisfied (so you can
 // write race-free tests).
 func (f *FakeClock) HasWaiters() bool {
 	f.lock.RLock()
@@ -171,7 +165,6 @@ func (f *FakeClock) HasWaiters() bool {
 	return len(f.waiters) > 0
 }
 
-// Sleep is akin to time.Sleep
 func (f *FakeClock) Sleep(d time.Duration) {
 	f.Step(d)
 }
@@ -193,25 +186,24 @@ func (i *IntervalClock) Since(ts time.Time) time.Duration {
 	return i.Time.Sub(ts)
 }
 
-// After is unimplemented, will panic.
+// Unimplemented, will panic.
 // TODO: make interval clock use FakeClock so this can be implemented.
 func (*IntervalClock) After(d time.Duration) <-chan time.Time {
 	panic("IntervalClock doesn't implement After")
 }
 
-// NewTimer is unimplemented, will panic.
+// Unimplemented, will panic.
 // TODO: make interval clock use FakeClock so this can be implemented.
 func (*IntervalClock) NewTimer(d time.Duration) clock.Timer {
 	panic("IntervalClock doesn't implement NewTimer")
 }
 
-// Tick is unimplemented, will panic.
+// Unimplemented, will panic.
 // TODO: make interval clock use FakeClock so this can be implemented.
 func (*IntervalClock) Tick(d time.Duration) <-chan time.Time {
 	panic("IntervalClock doesn't implement Tick")
 }
 
-// Sleep is unimplemented, will panic.
 func (*IntervalClock) Sleep(d time.Duration) {
 	panic("IntervalClock doesn't implement Sleep")
 }
@@ -234,11 +226,11 @@ func (f *fakeTimer) Stop() bool {
 	f.fakeClock.lock.Lock()
 	defer f.fakeClock.lock.Unlock()
 
-	newWaiters := make([]*fakeClockWaiter, 0, len(f.fakeClock.waiters))
+	newWaiters := make([]fakeClockWaiter, 0, len(f.fakeClock.waiters))
 	for i := range f.fakeClock.waiters {
-		w := f.fakeClock.waiters[i]
+		w := &f.fakeClock.waiters[i]
 		if w != &f.waiter {
-			newWaiters = append(newWaiters, w)
+			newWaiters = append(newWaiters, *w)
 		}
 	}
 
@@ -257,18 +249,6 @@ func (f *fakeTimer) Reset(d time.Duration) bool {
 
 	f.waiter.fired = false
 	f.waiter.targetTime = f.fakeClock.time.Add(d)
-
-	var isWaiting bool
-	for i := range f.fakeClock.waiters {
-		w := f.fakeClock.waiters[i]
-		if w == &f.waiter {
-			isWaiting = true
-			break
-		}
-	}
-	if !isWaiting {
-		f.fakeClock.waiters = append(f.fakeClock.waiters, &f.waiter)
-	}
 
 	return active
 }

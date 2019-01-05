@@ -102,22 +102,18 @@ const LoadbalancerStatuesesTree = `
 			"listeners": [{
 				"id": "db902c0c-d5ff-4753-b465-668ad9656918",
 				"name": "db",
-				"provisioning_status": "PENDING_UPDATE",
 				"pools": [{
 					"id": "fad389a3-9a4a-4762-a365-8c7038508b5d",
 					"name": "db",
-					"provisioning_status": "PENDING_UPDATE",
 					"healthmonitor": {
 						"id": "67306cda-815d-4354-9fe4-59e09da9c3c5",
-						"type":"PING",
-						"provisioning_status": "PENDING_UPDATE"
+						"type":"PING"
 					},
 					"members":[{
 						"id": "2a280670-c202-4b0b-a562-34077415aabf",
 						"name": "db",
 						"address": "10.0.2.11",
-						"protocol_port": 80,
-						"provisioning_status": "PENDING_UPDATE"
+						"protocol_port": 80
 					}]
 				}]
 			}]
@@ -175,24 +171,20 @@ var (
 		ProvisioningStatus: "PENDING_UPDATE",
 		OperatingStatus:    "ACTIVE",
 		Listeners: []listeners.Listener{{
-			ID:                 "db902c0c-d5ff-4753-b465-668ad9656918",
-			Name:               "db",
-			ProvisioningStatus: "PENDING_UPDATE",
+			ID:   "db902c0c-d5ff-4753-b465-668ad9656918",
+			Name: "db",
 			Pools: []pools.Pool{{
-				ID:                 "fad389a3-9a4a-4762-a365-8c7038508b5d",
-				Name:               "db",
-				ProvisioningStatus: "PENDING_UPDATE",
+				ID:   "fad389a3-9a4a-4762-a365-8c7038508b5d",
+				Name: "db",
 				Monitor: monitors.Monitor{
-					ID:                 "67306cda-815d-4354-9fe4-59e09da9c3c5",
-					Type:               "PING",
-					ProvisioningStatus: "PENDING_UPDATE",
+					ID:   "67306cda-815d-4354-9fe4-59e09da9c3c5",
+					Type: "PING",
 				},
 				Members: []pools.Member{{
-					ID:                 "2a280670-c202-4b0b-a562-34077415aabf",
-					Name:               "db",
-					Address:            "10.0.2.11",
-					ProtocolPort:       80,
-					ProvisioningStatus: "PENDING_UPDATE",
+					ID:           "2a280670-c202-4b0b-a562-34077415aabf",
+					Name:         "db",
+					Address:      "10.0.2.11",
+					ProtocolPort: 80,
 				}},
 			}},
 		}},

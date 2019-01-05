@@ -1,11 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -e
 rm -rf "$DEST"
-
-(
-	source "${MAKEDIR}/install-binary-client"
-)
 
 (
 	source "${MAKEDIR}/install-binary-daemon"

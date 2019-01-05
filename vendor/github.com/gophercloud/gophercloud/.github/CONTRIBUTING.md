@@ -1,15 +1,9 @@
 # Contributing to Gophercloud
 
-- [New Contributor Tutorial](#new-contributor-tutorial)
 - [3 ways to get involved](#3-ways-to-get-involved)
 - [Getting started](#getting-started)
 - [Tests](#tests)
 - [Style guide](#basic-style-guide)
-
-## New Contributor Tutorial
-
-For new contributors, we've put together a detailed tutorial
-[here](https://github.com/gophercloud/gophercloud/tree/master/docs/contributor-tutorial)!
 
 ## 3 ways to get involved
 
@@ -107,7 +101,7 @@ need to checkout a new feature branch:
    git commit
    ```
 
-7. Submit your branch as a [Pull Request](https://help.github.com/articles/creating-a-pull-request/). When submitting a Pull Request, please follow our [Style Guide](https://github.com/gophercloud/gophercloud/blob/master/docs/STYLEGUIDE.md).
+7. Submit your branch as a [Pull Request](https://help.github.com/articles/creating-a-pull-request/). When submitting a Pull Request, please follow our [Style Guide](https://github.com/gophercloud/gophercloud/blob/master/STYLEGUIDE.md).
 
 > Further information about using Git can be found [here](https://git-scm.com/book/en/v2).
 
@@ -253,4 +247,4 @@ To run tests for a particular sub-package:
 
 ## Style guide
 
-See [here](/docs/STYLEGUIDE.md)
+See [here](/STYLEGUIDE.md)

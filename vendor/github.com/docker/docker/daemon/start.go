@@ -10,12 +10,11 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/Sirupsen/logrus"
 	apierrors "github.com/docker/docker/api/errors"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/container"
-	"github.com/docker/docker/runconfig"
+	"github.com/sirupsen/logrus"
 )
 
 // ContainerStart starts a container.
@@ -59,7 +58,7 @@ func (daemon *Daemon) ContainerStart(name string, hostConfig *containertypes.Hos
 				// if user has change the network mode on starting, clean up the
 				// old networks. It is a deprecated feature and has been removed in Docker 1.12
 				container.NetworkSettings.Networks = nil
-				if err := container.ToDisk(); err != nil {
+				if err := container.CheckpointTo(daemon.containersReplica); err != nil {
 					return err
 				}
 			}
@@ -85,11 +84,6 @@ func (daemon *Daemon) ContainerStart(name string, hostConfig *containertypes.Hos
 	}
 
 	return daemon.containerStart(container, checkpoint, checkpointDir, true)
-}
-
-// Start starts a container
-func (daemon *Daemon) Start(container *container.Container) error {
-	return daemon.containerStart(container, "", "", true)
 }
 
 // containerStart prepares the container to run by setting up everything the
@@ -118,8 +112,9 @@ func (daemon *Daemon) containerStart(container *container.Container, checkpoint 
 			if container.ExitCode() == 0 {
 				container.SetExitCode(128)
 			}
-			container.ToDisk()
-
+			if err := container.CheckpointTo(daemon.containersReplica); err != nil {
+				logrus.Errorf("%s: failed saving state on start failure: %v", container.ID, err)
+			}
 			container.Reset(false)
 
 			daemon.Cleanup(container)
@@ -137,10 +132,6 @@ func (daemon *Daemon) containerStart(container *container.Container, checkpoint 
 	if err := daemon.conditionalMountOnStart(container); err != nil {
 		return err
 	}
-
-	// Make sure NetworkMode has an acceptable value. We do this to ensure
-	// backwards API compatibility.
-	container.HostConfig = runconfig.SetDefaultNetModeIfBlank(container.HostConfig)
 
 	if err := daemon.initializeNetworking(container); err != nil {
 		return err
@@ -162,6 +153,10 @@ func (daemon *Daemon) containerStart(container *container.Container, checkpoint 
 
 	if checkpointDir == "" {
 		checkpointDir = container.CheckpointDir()
+	}
+
+	if daemon.saveApparmorConfig(container); err != nil {
+		return err
 	}
 
 	if err := daemon.containerd.Create(container.ID, checkpoint, checkpointDir, *spec, container.InitializeStdio, createOptions...); err != nil {
@@ -208,7 +203,7 @@ func (daemon *Daemon) Cleanup(container *container.Container) {
 	if err := daemon.conditionalUnmountOnCleanup(container); err != nil {
 		// FIXME: remove once reference counting for graphdrivers has been refactored
 		// Ensure that all the mounts are gone
-		if mountid, err := daemon.layerStore.GetMountID(container.ID); err == nil {
+		if mountid, err := daemon.stores[container.Platform].layerStore.GetMountID(container.ID); err == nil {
 			daemon.cleanupMountsByID(mountid)
 		}
 	}

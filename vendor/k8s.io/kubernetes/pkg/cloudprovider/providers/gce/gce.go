@@ -80,13 +80,13 @@ const (
 	maxTargetPoolCreateInstances = 200
 
 	// HTTP Load Balancer parameters
-	// Configure 2 second period for external health checks.
-	gceHcCheckIntervalSeconds = int64(2)
+	// Configure 8 second period for external health checks.
+	gceHcCheckIntervalSeconds = int64(8)
 	gceHcTimeoutSeconds       = int64(1)
 	// Start sending requests as soon as a pod is found on the node.
 	gceHcHealthyThreshold = int64(1)
-	// Defaults to 5 * 2 = 10 seconds before the LB will steer traffic away
-	gceHcUnhealthyThreshold = int64(5)
+	// Defaults to 3 * 8 = 24 seconds before the LB will steer traffic away.
+	gceHcUnhealthyThreshold = int64(3)
 
 	gceComputeAPIEndpoint     = "https://www.googleapis.com/compute/v1/"
 	gceComputeAPIEndpointBeta = "https://www.googleapis.com/compute/beta/"
@@ -152,6 +152,9 @@ type GCECloud struct {
 
 	// New code generated interface to the GCE compute library.
 	c cloud.Cloud
+
+	// Keep a reference of this around so we can inject a new cloud.RateLimiter implementation.
+	s *cloud.Service
 }
 
 // TODO: replace gcfg with json
@@ -269,9 +272,7 @@ func generateCloudConfig(configFile *ConfigFile) (cloudConfig *CloudConfig, err 
 	// By default, fetch token from GCE metadata server
 	cloudConfig.TokenSource = google.ComputeTokenSource("")
 	cloudConfig.UseMetadataServer = true
-
-	featureMap := make(map[string]bool)
-	cloudConfig.AlphaFeatureGate = &AlphaFeatureGate{featureMap}
+	cloudConfig.AlphaFeatureGate = NewAlphaFeatureGate([]string{})
 	if configFile != nil {
 		if configFile.Global.ApiEndpoint != "" {
 			cloudConfig.ApiEndpoint = configFile.Global.ApiEndpoint
@@ -289,19 +290,7 @@ func generateCloudConfig(configFile *ConfigFile) (cloudConfig *CloudConfig, err 
 
 		cloudConfig.NodeTags = configFile.Global.NodeTags
 		cloudConfig.NodeInstancePrefix = configFile.Global.NodeInstancePrefix
-
-		alphaFeatureGate, err := NewAlphaFeatureGate(configFile.Global.AlphaFeatures)
-		if err != nil {
-			glog.Errorf("Encountered error for creating alpha feature gate: %v", err)
-		}
-		cloudConfig.AlphaFeatureGate = alphaFeatureGate
-	} else {
-		// initialize AlphaFeatureGate when no AlphaFeatures are configured.
-		alphaFeatureGate, err := NewAlphaFeatureGate([]string{})
-		if err != nil {
-			glog.Errorf("Encountered error for initializing alpha feature gate: %v", err)
-		}
-		cloudConfig.AlphaFeatureGate = alphaFeatureGate
+		cloudConfig.AlphaFeatureGate = NewAlphaFeatureGate(configFile.Global.AlphaFeatures)
 	}
 
 	// retrieve projectID and zone
@@ -522,15 +511,25 @@ func CreateGCECloud(config *CloudConfig) (*GCECloud, error) {
 	}
 
 	gce.manager = &gceServiceManager{gce}
-	gce.c = cloud.NewGCE(&cloud.Service{
+	gce.s = &cloud.Service{
 		GA:            service,
 		Alpha:         serviceAlpha,
 		Beta:          serviceBeta,
 		ProjectRouter: &gceProjectRouter{gce},
 		RateLimiter:   &gceRateLimiter{gce},
-	})
+	}
+	gce.c = cloud.NewGCE(gce.s)
 
 	return gce, nil
+}
+
+// SetRateLimiter adds a custom cloud.RateLimiter implementation.
+// WARNING: Calling this could have unexpected behavior if you have in-flight
+// requests. It is best to use this immediately after creating a GCECloud.
+func (g *GCECloud) SetRateLimiter(rl cloud.RateLimiter) {
+	if rl != nil {
+		g.s.RateLimiter = rl
+	}
 }
 
 // determineSubnetURL queries for all subnetworks in a region for a given network and returns
@@ -592,7 +591,7 @@ func (gce *GCECloud) Initialize(clientBuilder controller.ControllerClientBuilder
 
 	if gce.OnXPN() {
 		gce.eventBroadcaster = record.NewBroadcaster()
-		gce.eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: v1core.New(gce.client.CoreV1().RESTClient()).Events("")})
+		gce.eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: gce.client.CoreV1().Events("")})
 		gce.eventRecorder = gce.eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "gce-cloudprovider"})
 	}
 

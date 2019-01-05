@@ -4,7 +4,7 @@ import "github.com/gophercloud/gophercloud"
 
 const resourcePath = "os-simple-tenant-usage"
 
-func allTenantsURL(client *gophercloud.ServiceClient) string {
+func getURL(client *gophercloud.ServiceClient) string {
 	return client.ServiceURL(resourcePath)
 }
 

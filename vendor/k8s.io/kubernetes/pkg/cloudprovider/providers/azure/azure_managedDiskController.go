@@ -21,10 +21,13 @@ import (
 	"path"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/arm/disk"
-	storage "github.com/Azure/azure-sdk-for-go/arm/storage"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
 	"github.com/golang/glog"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 	kwait "k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/kubernetes/pkg/volume/util"
 )
 
 //ManagedDiskController : managed disk controller struct
@@ -56,21 +59,24 @@ func (c *ManagedDiskController) CreateManagedDisk(diskName string, storageAccoun
 	}
 
 	diskSizeGB := int32(sizeGB)
-	model := disk.Model{
+	model := compute.Disk{
 		Location: &c.common.location,
-		Tags:     &newTags,
-		Properties: &disk.Properties{
-			AccountType:  disk.StorageAccountTypes(storageAccountType),
+		Tags:     newTags,
+		Sku: &compute.DiskSku{
+			Name: compute.StorageAccountTypes(storageAccountType),
+		},
+		DiskProperties: &compute.DiskProperties{
 			DiskSizeGB:   &diskSizeGB,
-			CreationData: &disk.CreationData{CreateOption: disk.Empty},
+			CreationData: &compute.CreationData{CreateOption: compute.Empty},
 		}}
+
 	if resourceGroup == "" {
 		resourceGroup = c.common.resourceGroup
 	}
-	cancel := make(chan struct{})
-	respChan, errChan := c.common.cloud.DisksClient.CreateOrUpdate(resourceGroup, diskName, model, cancel)
-	<-respChan
-	err := <-errChan
+
+	ctx, cancel := getContextWithCancel()
+	defer cancel()
+	_, err := c.common.cloud.DisksClient.CreateOrUpdate(ctx, resourceGroup, diskName, model)
 	if err != nil {
 		return "", err
 	}
@@ -108,10 +114,11 @@ func (c *ManagedDiskController) DeleteManagedDisk(diskURI string) error {
 	if err != nil {
 		return err
 	}
-	cancel := make(chan struct{})
-	respChan, errChan := c.common.cloud.DisksClient.Delete(resourceGroup, diskName, cancel)
-	<-respChan
-	err = <-errChan
+
+	ctx, cancel := getContextWithCancel()
+	defer cancel()
+
+	_, err = c.common.cloud.DisksClient.Delete(ctx, resourceGroup, diskName)
 	if err != nil {
 		return err
 	}
@@ -125,16 +132,63 @@ func (c *ManagedDiskController) DeleteManagedDisk(diskURI string) error {
 
 // return: disk provisionState, diskID, error
 func (c *ManagedDiskController) getDisk(resourceGroup, diskName string) (string, string, error) {
-	result, err := c.common.cloud.DisksClient.Get(resourceGroup, diskName)
+	ctx, cancel := getContextWithCancel()
+	defer cancel()
+
+	result, err := c.common.cloud.DisksClient.Get(ctx, resourceGroup, diskName)
 	if err != nil {
 		return "", "", err
 	}
 
-	if result.Properties != nil && (*result.Properties).ProvisioningState != nil {
-		return *(*result.Properties).ProvisioningState, *result.ID, nil
+	if result.DiskProperties != nil && (*result.DiskProperties).ProvisioningState != nil {
+		return *(*result.DiskProperties).ProvisioningState, *result.ID, nil
 	}
 
 	return "", "", err
+}
+
+// ResizeDisk Expand the disk to new size
+func (c *ManagedDiskController) ResizeDisk(diskURI string, oldSize resource.Quantity, newSize resource.Quantity) (resource.Quantity, error) {
+	ctx, cancel := getContextWithCancel()
+	defer cancel()
+
+	diskName := path.Base(diskURI)
+	resourceGroup, err := getResourceGroupFromDiskURI(diskURI)
+	if err != nil {
+		return oldSize, err
+	}
+
+	result, err := c.common.cloud.DisksClient.Get(ctx, resourceGroup, diskName)
+	if err != nil {
+		return oldSize, err
+	}
+
+	if result.DiskProperties == nil || result.DiskProperties.DiskSizeGB == nil {
+		return oldSize, fmt.Errorf("DiskProperties of disk(%s) is nil", diskName)
+	}
+
+	requestBytes := newSize.Value()
+	// Azure resizes in chunks of GiB (not GB)
+	requestGiB := int32(util.RoundUpSize(requestBytes, 1024*1024*1024))
+	newSizeQuant := resource.MustParse(fmt.Sprintf("%dGi", requestGiB))
+
+	glog.V(2).Infof("azureDisk - begin to resize disk(%s) with new size(%d), old size(%v)", diskName, requestGiB, oldSize)
+	// If disk already of greater or equal size than requested we return
+	if *result.DiskProperties.DiskSizeGB >= requestGiB {
+		return newSizeQuant, nil
+	}
+
+	result.DiskProperties.DiskSizeGB = &requestGiB
+
+	ctx, cancel = getContextWithCancel()
+	defer cancel()
+	if _, err := c.common.cloud.DisksClient.CreateOrUpdate(ctx, resourceGroup, diskName, result); err != nil {
+		return oldSize, err
+	}
+
+	glog.V(2).Infof("azureDisk - resize disk(%s) with new size(%d) completed", diskName, requestGiB)
+
+	return newSizeQuant, nil
 }
 
 // get resource group name from a managed disk URI, e.g. return {group-name} according to

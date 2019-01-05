@@ -24,7 +24,7 @@
 //
 // Using the Client
 //
-// To contact AWS Directory Service with the SDK use the New function to create
+// To AWS Directory Service with the SDK use the New function to create
 // a new service client. With that client you can make API requests to the service.
 // These clients are safe to use concurrently.
 //
