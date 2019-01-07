@@ -444,7 +444,7 @@ func (m *Meta) waitForTiller(o *installer.Options) error {
 		Pending: []string{"Pending"},
 		Timeout: 5 * time.Minute,
 		Refresh: func() (interface{}, string, error) {
-			debug("Waiting for tiller-deploy become available.")
+			debug("Waiting for tiller-deploy to become available.")
 			obj, err := m.K8sClient.Extensions().Deployments(o.Namespace).Get(deployment, metav1.GetOptions{})
 			if err != nil {
 				return obj, "Error", err
