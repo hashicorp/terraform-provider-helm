@@ -1,4 +1,7 @@
-Terraform Provider for Helm [![Build Status](https://travis-ci.org/mcuadros/terraform-provider-helm.svg?branch=v0.4.0)](https://travis-ci.org/mcuadros/terraform-provider-helm) [![GitHub release](https://img.shields.io/github/release/terraform-providers/terraform-provider-helm.svg)](https://github.com/terraform-providers/terraform-provider-helm/releases) [![license](https://img.shields.io/github/license/terraform-providers/terraform-provider-helm.svg)]()
+Terraform Provider for Helm
+[![Build Status](https://travis-ci.org/terraform-providers/terraform-provider-helm.svg?branch=master)](https://travis-ci.org/terraform-providers/terraform-provider-helm)
+[![GitHub release](https://img.shields.io/github/release/terraform-providers/terraform-provider-helm.svg)](https://github.com/terraform-providers/terraform-provider-helm/releases)
+[![license](https://img.shields.io/github/license/terraform-providers/terraform-provider-helm.svg)]()
 ===========================
 
 This is a [Helm](https://github.com/kubernetes/helm) provider for [Terraform](https://www.terraform.io/).
@@ -34,7 +37,7 @@ distributions from the [Releases](https://github.com/terraform-providers/terrafo
 Download and uncompress the latest release for your OS. This example uses the linux binary.
 
 ```sh
-> wget https://github.com/terraform-providers/terraform-provider-helm/releases/download/v0.6.0/terraform-provider-helm_v0.6.0_linux_amd64.tar.gz
+> wget https://github.com/terraform-providers/terraform-provider-helm/releases/download/v0.7.0/terraform-provider-helm_v0.7.0_linux_amd64.tar.gz
 > tar -xvf terraform-provider-helm*.tar.gz
 ```
 
@@ -106,4 +109,3 @@ License
 -------
 
 Mozilla Public License 2.0, see [LICENSE](LICENSE)
-
