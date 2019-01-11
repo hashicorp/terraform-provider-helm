@@ -3,6 +3,7 @@ package helm
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -583,7 +584,18 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 		}
 	}
 
-	return yaml.Marshal(base)
+	yaml, err := yaml.Marshal(base)
+	if err == nil {
+		yamlString := string(yaml)
+		for _, raw := range d.Get("set_sensitive").(*schema.Set).List() {
+			set := raw.(map[string]interface{})
+			yamlString = strings.Replace(yamlString, set["value"].(string), "<SENSITIVE>", -1)
+		}
+
+		log.Printf("---[ values.yaml ]-----------------------------------\n%s\n", yamlString)
+	}
+
+	return yaml, err
 }
 
 var all = []release.Status_Code{
