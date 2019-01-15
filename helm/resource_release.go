@@ -72,7 +72,7 @@ func resourceRelease() *schema.Resource {
 			"values": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "List of values in raw yaml format to pass to helm.",
+				Description: "List of values in raw yaml file to pass to helm.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"set": {
@@ -295,7 +295,6 @@ func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name s
 }
 
 func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
-
 	// Always set desired state to DEPLOYED
 	err := d.SetNew("status", release.Status_DEPLOYED.String())
 	if err != nil {
