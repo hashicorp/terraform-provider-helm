@@ -63,7 +63,11 @@ func resourceRelease() *schema.Resource {
 			"devel": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored",
+				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored",
+				// Suppress changes of this attribute if `version` is set
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("version").(string) != ""
+				},
 			},
 			"values": {
 				Type:        schema.TypeList,
