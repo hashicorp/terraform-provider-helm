@@ -144,7 +144,11 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     os.ExpandEnv("$HOME/.gnupg/pubring.gpg"),
-				Description: "Location of public keys used for verification.",
+				Description: "Location of public keys used for verification. Used only if `verify` is true",
+				// Suppress changes of this attribute as it is just a local path
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
 			},
 			"timeout": {
 				Type:        schema.TypeInt,
