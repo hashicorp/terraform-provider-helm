@@ -135,7 +135,7 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "{}\n"),
+				resource.TestCheckResourceAttr("helm_release.test", "overrides", "{}\n"),
 			),
 		}},
 	})
@@ -158,7 +158,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: bar\n"),
+				resource.TestCheckResourceAttr("helm_release.test", "overrides", "foo: bar\n"),
 			),
 		}, {
 			Config: testAccHelmReleaseConfigValues(
@@ -167,7 +167,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: baz\n"),
+				resource.TestCheckResourceAttr("helm_release.test", "overrides", "foo: baz\n"),
 			),
 		}},
 	})
@@ -191,7 +191,7 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: bar\n"),
+				resource.TestCheckResourceAttr("helm_release.test", "overrides", "foo: bar\n"),
 			),
 		}, {
 			Config: testAccHelmReleaseConfigValues(
@@ -201,7 +201,7 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: baz\n"),
+				resource.TestCheckResourceAttr("helm_release.test", "overrides", "foo: baz\n"),
 			),
 		}},
 	})
