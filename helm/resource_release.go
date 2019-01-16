@@ -262,7 +262,7 @@ func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name s
 
 		switch r.Info.Status.GetCode() {
 		case release.Status_DEPLOYED:
-			return setIDAndMetadataFromRelease(d, r)
+			return setAttributesFromRelease(d, r)
 		case release.Status_FAILED:
 			// delete and recreate it
 			debug("release %s status is FAILED deleting it", name)
@@ -360,7 +360,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return setIDAndMetadataFromRelease(d, res.Release)
+	return setAttributesFromRelease(d, res.Release)
 }
 
 func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
@@ -379,10 +379,10 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 
 	//  d.Set("values_source_detected_md5", d.Get("values_sources_md5"))
 
-	return setIDAndMetadataFromRelease(d, r)
+	return setAttributesFromRelease(d, r)
 }
 
-func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
+func setAttributesFromRelease(d *schema.ResourceData, r *release.Release) error {
 	d.SetId(r.Name)
 	d.Set("version", r.Chart.Metadata.Version)
 	d.Set("namespace", r.Namespace)
@@ -445,7 +445,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	return setIDAndMetadataFromRelease(d, res.Release)
+	return setAttributesFromRelease(d, res.Release)
 }
 
 func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
