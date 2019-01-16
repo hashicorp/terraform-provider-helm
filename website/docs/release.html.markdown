@@ -83,17 +83,17 @@ The `set`, `set_sensitive` and `set_strings` blocks support:
 In addition to the arguments listed above, the following computed attributes are
 exported:
 
+* `status` - Status of the release.
 * `metadata` - Block status of the deployed release.
+* `overrides` - YAML document representing the overriden values passed to the chart. It contains combined values from `values`, `set`, `set_secret` and `set_string` attributes.
 
-The `metadata` block supports:
+The `metadata` block contains the following keys:
 
 * `chart` - The name of the chart.
 * `name` - Name is the name of the release.
 * `namespace` - Namespace is the kubernetes namespace of the release.
 * `revision` - Version is an int32 which represents the version of the release.
-* `status` - Status of the release.
 * `version` - A SemVer 2 conformant version string of the chart.
-* `values` - The compounded values from `values` and `set*` attributes.
 
 ## Import
 
