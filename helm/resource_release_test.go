@@ -625,6 +625,11 @@ func unTar(dst string, r io.Reader) error {
 }
 
 func deleteNamespace(t *testing.T, namespace string) {
+	// Nothing to cleanup with unit test
+	if os.Getenv("TF_ACC") == "" {
+		return
+	}
+
 	m := testAccProvider.Meta()
 	if m == nil {
 		t.Fatal("provider not properly initialized")
