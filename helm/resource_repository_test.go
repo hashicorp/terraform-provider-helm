@@ -16,6 +16,7 @@ import (
 func TestAccResourceRepository_basic(t *testing.T) {
 	name := fmt.Sprintf("%s-%s", testRepositoryName, acctest.RandString(10))
 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Note: this helm resource does not automatically create namespaces so no cleanup needed here
 
 	resource.Test(t, resource.TestCase{
 		Providers:    testAccProviders,
