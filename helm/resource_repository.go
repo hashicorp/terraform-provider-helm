@@ -18,6 +18,7 @@ func resourceRepository() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceRepositoryCreate,
 		Read:   resourceRepositoryRead,
+		Exists: resourceRepositoryExists,
 		Delete: resourceRepositoryDelete,
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -119,6 +120,17 @@ func resourceRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	return setIDAndMetadataFromRepository(d, r)
+}
+
+func resourceRepositoryExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	m := meta.(*Meta)
+
+	_, err := getRepository(d, m)
+	if err == ErrRepositoryNotFound {
+		return false, nil
+	} else {
+		return true, err
+	}
 }
 
 func resourceRepositoryDelete(d *schema.ResourceData, meta interface{}) error {
