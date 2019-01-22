@@ -3,6 +3,7 @@ package helm
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -116,6 +117,11 @@ func resourceRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 
 	r, err := getRepository(d, m)
 	if err != nil {
+		if err == ErrRepositoryNotFound {
+			log.Printf("[WARN] Repository not found, removing from state: %#v", d.Get("name").(string))
+			d.SetId("")
+			return nil
+		}
 		return err
 	}
 
