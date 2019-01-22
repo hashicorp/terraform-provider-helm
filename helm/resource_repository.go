@@ -133,7 +133,7 @@ func resourceRepositoryExists(d *schema.ResourceData, meta interface{}) (bool, e
 
 	_, err := getRepository(d, m)
 	if err == ErrRepositoryNotFound {
-		log.Printf("[WARN] Repository not found, removing from state: %#v", d.Get("name").(string))
+		log.Printf("[DEBUG] Repository not found: %#v", d.Get("name").(string))
 		return false, nil
 	}
 
