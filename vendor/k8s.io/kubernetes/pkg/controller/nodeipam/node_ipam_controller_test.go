@@ -20,7 +20,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 
 	"k8s.io/api/core/v1"
@@ -59,9 +58,6 @@ func newTestNodeIpamController(clusterCIDR, serviceCIDR *net.IPNet, nodeCIDRMask
 // TestNewNodeIpamControllerWithCIDRMasks tests if the controller can be
 // created with combinations of network CIDRs and masks.
 func TestNewNodeIpamControllerWithCIDRMasks(t *testing.T) {
-	if strings.Contains(os.Args[0], "bazel-out") {
-		t.Skip("This test is not supported by bazel test.")
-	}
 	for _, tc := range []struct {
 		desc          string
 		clusterCIDR   string

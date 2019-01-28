@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 
-	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-04-01/compute"
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2017-09-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/storage/mgmt/2017-10-01/storage"
 	"github.com/Azure/go-autorest/autorest"
@@ -324,6 +324,13 @@ func (fVMC *fakeAzureVirtualMachinesClient) List(ctx context.Context, resourceGr
 	}
 
 	return result, nil
+}
+
+func (fVMC *fakeAzureVirtualMachinesClient) setFakeStore(store map[string]map[string]compute.VirtualMachine) {
+	fVMC.mutex.Lock()
+	defer fVMC.mutex.Unlock()
+
+	fVMC.FakeStore = store
 }
 
 type fakeAzureSubnetsClient struct {
@@ -891,11 +898,11 @@ func (f *fakeVMSet) GetVMSetNames(service *v1.Service, nodes []*v1.Node) (availa
 	return nil, fmt.Errorf("unimplemented")
 }
 
-func (f *fakeVMSet) EnsureHostsInPool(serviceName string, nodes []*v1.Node, backendPoolID string, vmSetName string, isInternal bool) error {
+func (f *fakeVMSet) EnsureHostsInPool(service *v1.Service, nodes []*v1.Node, backendPoolID string, vmSetName string, isInternal bool) error {
 	return fmt.Errorf("unimplemented")
 }
 
-func (f *fakeVMSet) EnsureBackendPoolDeleted(poolID, vmSetName string, backendAddressPools *[]network.BackendAddressPool) error {
+func (f *fakeVMSet) EnsureBackendPoolDeleted(service *v1.Service, poolID, vmSetName string, backendAddressPools *[]network.BackendAddressPool) error {
 	return fmt.Errorf("unimplemented")
 }
 
@@ -909,4 +916,8 @@ func (f *fakeVMSet) DetachDiskByName(diskName, diskURI string, nodeName types.No
 
 func (f *fakeVMSet) GetDataDisks(nodeName types.NodeName) ([]compute.DataDisk, error) {
 	return nil, fmt.Errorf("unimplemented")
+}
+
+func (f *fakeVMSet) GetPowerStatusByNodeName(name string) (string, error) {
+	return "", fmt.Errorf("unimplemented")
 }

@@ -26,6 +26,7 @@ spec:
       priorityClassName: system-node-critical
       serviceAccountName: fluentd-gcp
       dnsPolicy: Default
+      hostNetwork: true
       containers:
       - name: fluentd-gcp
         image: gcr.io/stackdriver-agents/stackdriver-logging-agent:{{ fluentd_gcp_version }}
@@ -100,11 +101,18 @@ spec:
       nodeSelector:
         beta.kubernetes.io/fluentd-ds-ready: "true"
       tolerations:
+      - key: "node.alpha.kubernetes.io/ismaster"
+        effect: "NoSchedule"
       - operator: "Exists"
         effect: "NoExecute"
       - operator: "Exists"
         effect: "NoSchedule"
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: 60
+      tolerations:
+      - operator: "Exists"
+        effect: "NoExecute"
+      - operator: "Exists"
+        effect: "NoSchedule"
       volumes:
       - name: varlog
         hostPath:

@@ -1,9 +1,8 @@
 // +build linux,cgo
 
-package devicemapper
+package devicemapper // import "github.com/docker/docker/pkg/devicemapper"
 
 /*
-#cgo LDFLAGS: -L. -ldevmapper
 #define _GNU_SOURCE
 #include <libdevmapper.h>
 #include <linux/fs.h>   // FIXME: present only for BLKGETSIZE64, maybe we can remove it?
@@ -217,7 +216,7 @@ func dmGetNextTargetFct(task *cdmTask, next unsafe.Pointer, start, length *uint6
 }
 
 func dmUdevSetSyncSupportFct(syncWithUdev int) {
-	(C.dm_udev_set_sync_support(C.int(syncWithUdev)))
+	C.dm_udev_set_sync_support(C.int(syncWithUdev))
 }
 
 func dmUdevGetSyncSupportFct() int {

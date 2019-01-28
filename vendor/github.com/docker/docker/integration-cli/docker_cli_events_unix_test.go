@@ -49,7 +49,7 @@ func (s *DockerSuite) TestEventsRedirectStdout(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsOOMDisableFalse(c *check.C) {
-	testRequires(c, DaemonIsLinux, oomControl, memoryLimitSupport, swapMemorySupport)
+	testRequires(c, DaemonIsLinux, oomControl, memoryLimitSupport, swapMemorySupport, NotPpc64le)
 
 	errChan := make(chan error)
 	go func() {
@@ -79,7 +79,7 @@ func (s *DockerSuite) TestEventsOOMDisableFalse(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsOOMDisableTrue(c *check.C) {
-	testRequires(c, DaemonIsLinux, oomControl, memoryLimitSupport, NotArm, swapMemorySupport)
+	testRequires(c, DaemonIsLinux, oomControl, memoryLimitSupport, NotArm, swapMemorySupport, NotPpc64le)
 
 	errChan := make(chan error)
 	observer, err := newEventObserver(c)
@@ -97,7 +97,7 @@ func (s *DockerSuite) TestEventsOOMDisableTrue(c *check.C) {
 	}()
 
 	c.Assert(waitRun("oomTrue"), checker.IsNil)
-	defer dockerCmd(c, "kill", "oomTrue")
+	defer dockerCmdWithResult("kill", "oomTrue")
 	containerID := inspectField(c, "oomTrue", "Id")
 
 	testActions := map[string]chan bool{
@@ -185,11 +185,12 @@ func (s *DockerSuite) TestVolumeEvents(c *check.C) {
 	c.Assert(len(events), checker.GreaterThan, 4)
 
 	volumeEvents := eventActionsByIDAndType(c, events, "test-event-volume-local", "volume")
-	c.Assert(volumeEvents, checker.HasLen, 4)
+	c.Assert(volumeEvents, checker.HasLen, 5)
 	c.Assert(volumeEvents[0], checker.Equals, "create")
-	c.Assert(volumeEvents[1], checker.Equals, "mount")
-	c.Assert(volumeEvents[2], checker.Equals, "unmount")
-	c.Assert(volumeEvents[3], checker.Equals, "destroy")
+	c.Assert(volumeEvents[1], checker.Equals, "create")
+	c.Assert(volumeEvents[2], checker.Equals, "mount")
+	c.Assert(volumeEvents[3], checker.Equals, "unmount")
+	c.Assert(volumeEvents[4], checker.Equals, "destroy")
 }
 
 func (s *DockerSuite) TestNetworkEvents(c *check.C) {
@@ -428,7 +429,32 @@ func (s *DockerDaemonSuite) TestDaemonEvents(c *check.C) {
 	out, err = s.d.Cmd("events", "--since=0", "--until", daemonUnixTime(c))
 	c.Assert(err, checker.IsNil)
 
-	c.Assert(out, checker.Contains, fmt.Sprintf("daemon reload %s (allow-nondistributable-artifacts=[], cluster-advertise=, cluster-store=, cluster-store-opts={}, debug=true, default-runtime=runc, default-shm-size=67108864, insecure-registries=[], labels=[\"bar=foo\"], live-restore=false, max-concurrent-downloads=1, max-concurrent-uploads=5, name=%s, registry-mirrors=[], runtimes=runc:{docker-runc []}, shutdown-timeout=10)", daemonID, daemonName))
+	// only check for values known (daemon ID/name) or explicitly set above,
+	// otherwise just check for names being present.
+	expectedSubstrings := []string{
+		" daemon reload " + daemonID + " ",
+		"(allow-nondistributable-artifacts=[",
+		" cluster-advertise=, ",
+		" cluster-store=, ",
+		" cluster-store-opts=",
+		" debug=true, ",
+		" default-ipc-mode=",
+		" default-runtime=",
+		" default-shm-size=",
+		" insecure-registries=[",
+		" labels=[\"bar=foo\"], ",
+		" live-restore=",
+		" max-concurrent-downloads=1, ",
+		" max-concurrent-uploads=5, ",
+		" name=" + daemonName,
+		" registry-mirrors=[",
+		" runtimes=",
+		" shutdown-timeout=10)",
+	}
+
+	for _, s := range expectedSubstrings {
+		c.Assert(out, checker.Contains, s)
+	}
 }
 
 func (s *DockerDaemonSuite) TestDaemonEventsWithFilters(c *check.C) {

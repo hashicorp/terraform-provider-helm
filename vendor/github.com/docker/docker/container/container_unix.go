@@ -1,40 +1,34 @@
-// +build linux freebsd solaris
+// +build !windows
 
-package container
+package container // import "github.com/docker/docker/container"
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/containerd/continuity/fs"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
 	mounttypes "github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/pkg/chrootarchive"
+	swarmtypes "github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/pkg/mount"
 	"github.com/docker/docker/pkg/stringid"
-	"github.com/docker/docker/pkg/symlink"
-	"github.com/docker/docker/pkg/system"
 	"github.com/docker/docker/volume"
+	volumemounts "github.com/docker/docker/volume/mounts"
 	"github.com/opencontainers/selinux/go-selinux/label"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 )
 
 const (
+	// DefaultStopTimeout sets the default time, in seconds, to wait
+	// for the graceful container stop before forcefully terminating it.
+	DefaultStopTimeout = 10
+
 	containerSecretMountPath = "/run/secrets"
 )
-
-// ExitStatus provides exit reasons for a container.
-type ExitStatus struct {
-	// The exit code with which the container exited.
-	ExitCode int
-
-	// Whether the container encountered an OOM.
-	OOMKilled bool
-}
 
 // TrySetNetworkMount attempts to set the network mounts given a provided destination and
 // the path to use for it; return true if the given destination was a network mount file
@@ -69,22 +63,22 @@ func (container *Container) BuildHostnameFile() error {
 func (container *Container) NetworkMounts() []Mount {
 	var mounts []Mount
 	shared := container.HostConfig.NetworkMode.IsContainer()
+	parser := volumemounts.NewParser(container.OS)
 	if container.ResolvConfPath != "" {
 		if _, err := os.Stat(container.ResolvConfPath); err != nil {
 			logrus.Warnf("ResolvConfPath set to %q, but can't stat this filename (err = %v); skipping", container.ResolvConfPath, err)
 		} else {
-			if !container.HasMountFor("/etc/resolv.conf") {
-				label.Relabel(container.ResolvConfPath, container.MountLabel, shared)
-			}
 			writable := !container.HostConfig.ReadonlyRootfs
 			if m, exists := container.MountPoints["/etc/resolv.conf"]; exists {
 				writable = m.RW
+			} else {
+				label.Relabel(container.ResolvConfPath, container.MountLabel, shared)
 			}
 			mounts = append(mounts, Mount{
 				Source:      container.ResolvConfPath,
 				Destination: "/etc/resolv.conf",
 				Writable:    writable,
-				Propagation: string(volume.DefaultPropagationMode),
+				Propagation: string(parser.DefaultPropagationMode()),
 			})
 		}
 	}
@@ -92,18 +86,17 @@ func (container *Container) NetworkMounts() []Mount {
 		if _, err := os.Stat(container.HostnamePath); err != nil {
 			logrus.Warnf("HostnamePath set to %q, but can't stat this filename (err = %v); skipping", container.HostnamePath, err)
 		} else {
-			if !container.HasMountFor("/etc/hostname") {
-				label.Relabel(container.HostnamePath, container.MountLabel, shared)
-			}
 			writable := !container.HostConfig.ReadonlyRootfs
 			if m, exists := container.MountPoints["/etc/hostname"]; exists {
 				writable = m.RW
+			} else {
+				label.Relabel(container.HostnamePath, container.MountLabel, shared)
 			}
 			mounts = append(mounts, Mount{
 				Source:      container.HostnamePath,
 				Destination: "/etc/hostname",
 				Writable:    writable,
-				Propagation: string(volume.DefaultPropagationMode),
+				Propagation: string(parser.DefaultPropagationMode()),
 			})
 		}
 	}
@@ -111,18 +104,17 @@ func (container *Container) NetworkMounts() []Mount {
 		if _, err := os.Stat(container.HostsPath); err != nil {
 			logrus.Warnf("HostsPath set to %q, but can't stat this filename (err = %v); skipping", container.HostsPath, err)
 		} else {
-			if !container.HasMountFor("/etc/hosts") {
-				label.Relabel(container.HostsPath, container.MountLabel, shared)
-			}
 			writable := !container.HostConfig.ReadonlyRootfs
 			if m, exists := container.MountPoints["/etc/hosts"]; exists {
 				writable = m.RW
+			} else {
+				label.Relabel(container.HostsPath, container.MountLabel, shared)
 			}
 			mounts = append(mounts, Mount{
 				Source:      container.HostsPath,
 				Destination: "/etc/hosts",
 				Writable:    writable,
-				Propagation: string(volume.DefaultPropagationMode),
+				Propagation: string(parser.DefaultPropagationMode()),
 			})
 		}
 	}
@@ -131,12 +123,12 @@ func (container *Container) NetworkMounts() []Mount {
 
 // CopyImagePathContent copies files in destination to the volume.
 func (container *Container) CopyImagePathContent(v volume.Volume, destination string) error {
-	rootfs, err := symlink.FollowSymlinkInScope(filepath.Join(container.BaseFS, destination), container.BaseFS)
+	rootfs, err := container.GetResourcePath(destination)
 	if err != nil {
 		return err
 	}
 
-	if _, err = ioutil.ReadDir(rootfs); err != nil {
+	if _, err := os.Stat(rootfs); err != nil {
 		if os.IsNotExist(err) {
 			return nil
 		}
@@ -162,105 +154,127 @@ func (container *Container) CopyImagePathContent(v volume.Volume, destination st
 
 // ShmResourcePath returns path to shm
 func (container *Container) ShmResourcePath() (string, error) {
-	return container.GetRootResourcePath("shm")
+	return container.MountsResourcePath("shm")
 }
 
 // HasMountFor checks if path is a mountpoint
 func (container *Container) HasMountFor(path string) bool {
 	_, exists := container.MountPoints[path]
-	return exists
-}
-
-// UnmountIpcMounts uses the provided unmount function to unmount shm and mqueue if they were mounted
-func (container *Container) UnmountIpcMounts(unmount func(pth string) error) {
-	if container.HostConfig.IpcMode.IsContainer() || container.HostConfig.IpcMode.IsHost() {
-		return
+	if exists {
+		return true
 	}
 
-	var warnings []string
-
-	if !container.HasMountFor("/dev/shm") {
-		shmPath, err := container.ShmResourcePath()
-		if err != nil {
-			logrus.Error(err)
-			warnings = append(warnings, err.Error())
-		} else if shmPath != "" {
-			if err := unmount(shmPath); err != nil && !os.IsNotExist(err) {
-				if mounted, mErr := mount.Mounted(shmPath); mounted || mErr != nil {
-					warnings = append(warnings, fmt.Sprintf("failed to umount %s: %v", shmPath, err))
-				}
-			}
-
+	// Also search among the tmpfs mounts
+	for dest := range container.HostConfig.Tmpfs {
+		if dest == path {
+			return true
 		}
 	}
 
-	if len(warnings) > 0 {
-		logrus.Warnf("failed to cleanup ipc mounts:\n%v", strings.Join(warnings, "\n"))
+	return false
+}
+
+// UnmountIpcMount uses the provided unmount function to unmount shm if it was mounted
+func (container *Container) UnmountIpcMount(unmount func(pth string) error) error {
+	if container.HasMountFor("/dev/shm") {
+		return nil
 	}
+
+	// container.ShmPath should not be used here as it may point
+	// to the host's or other container's /dev/shm
+	shmPath, err := container.ShmResourcePath()
+	if err != nil {
+		return err
+	}
+	if shmPath == "" {
+		return nil
+	}
+	if err = unmount(shmPath); err != nil && !os.IsNotExist(err) {
+		if mounted, mErr := mount.Mounted(shmPath); mounted || mErr != nil {
+			return errors.Wrapf(err, "umount %s", shmPath)
+		}
+	}
+	return nil
 }
 
 // IpcMounts returns the list of IPC mounts
 func (container *Container) IpcMounts() []Mount {
 	var mounts []Mount
+	parser := volumemounts.NewParser(container.OS)
 
-	if !container.HasMountFor("/dev/shm") {
-		label.SetFileLabel(container.ShmPath, container.MountLabel)
-		mounts = append(mounts, Mount{
-			Source:      container.ShmPath,
-			Destination: "/dev/shm",
-			Writable:    true,
-			Propagation: string(volume.DefaultPropagationMode),
-		})
+	if container.HasMountFor("/dev/shm") {
+		return mounts
 	}
+	if container.ShmPath == "" {
+		return mounts
+	}
+
+	label.SetFileLabel(container.ShmPath, container.MountLabel)
+	mounts = append(mounts, Mount{
+		Source:      container.ShmPath,
+		Destination: "/dev/shm",
+		Writable:    true,
+		Propagation: string(parser.DefaultPropagationMode()),
+	})
 
 	return mounts
 }
 
 // SecretMounts returns the mounts for the secret path.
-func (container *Container) SecretMounts() []Mount {
+func (container *Container) SecretMounts() ([]Mount, error) {
 	var mounts []Mount
 	for _, r := range container.SecretReferences {
 		if r.File == nil {
 			continue
 		}
+		src, err := container.SecretFilePath(*r)
+		if err != nil {
+			return nil, err
+		}
 		mounts = append(mounts, Mount{
-			Source:      container.SecretFilePath(*r),
+			Source:      src,
 			Destination: getSecretTargetPath(r),
 			Writable:    false,
 		})
 	}
+	for _, r := range container.ConfigReferences {
+		fPath, err := container.ConfigFilePath(*r)
+		if err != nil {
+			return nil, err
+		}
+		mounts = append(mounts, Mount{
+			Source:      fPath,
+			Destination: r.File.Name,
+			Writable:    false,
+		})
+	}
 
-	return mounts
+	return mounts, nil
 }
 
 // UnmountSecrets unmounts the local tmpfs for secrets
 func (container *Container) UnmountSecrets() error {
-	if _, err := os.Stat(container.SecretMountPath()); err != nil {
+	p, err := container.SecretMountPath()
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(p); err != nil {
 		if os.IsNotExist(err) {
 			return nil
 		}
 		return err
 	}
 
-	return detachMounted(container.SecretMountPath())
+	return mount.RecursiveUnmount(p)
 }
 
-// ConfigMounts returns the mounts for configs.
-func (container *Container) ConfigMounts() []Mount {
-	var mounts []Mount
-	for _, configRef := range container.ConfigReferences {
-		if configRef.File == nil {
-			continue
-		}
-		mounts = append(mounts, Mount{
-			Source:      container.ConfigFilePath(*configRef),
-			Destination: configRef.File.Name,
-			Writable:    false,
-		})
-	}
+type conflictingUpdateOptions string
 
-	return mounts
+func (e conflictingUpdateOptions) Error() string {
+	return string(e)
 }
+
+func (e conflictingUpdateOptions) Conflict() {}
 
 // UpdateContainer updates configuration of a container. Callers must hold a Lock on the Container.
 func (container *Container) UpdateContainer(hostConfig *containertypes.HostConfig) error {
@@ -273,16 +287,16 @@ func (container *Container) UpdateContainer(hostConfig *containertypes.HostConfi
 	// once NanoCPU is already set, updating CPUPeriod/CPUQuota will be blocked, and vice versa.
 	// In the following we make sure the intended update (resources) does not conflict with the existing (cResource).
 	if resources.NanoCPUs > 0 && cResources.CPUPeriod > 0 {
-		return fmt.Errorf("Conflicting options: Nano CPUs cannot be updated as CPU Period has already been set")
+		return conflictingUpdateOptions("Conflicting options: Nano CPUs cannot be updated as CPU Period has already been set")
 	}
 	if resources.NanoCPUs > 0 && cResources.CPUQuota > 0 {
-		return fmt.Errorf("Conflicting options: Nano CPUs cannot be updated as CPU Quota has already been set")
+		return conflictingUpdateOptions("Conflicting options: Nano CPUs cannot be updated as CPU Quota has already been set")
 	}
 	if resources.CPUPeriod > 0 && cResources.NanoCPUs > 0 {
-		return fmt.Errorf("Conflicting options: CPU Period cannot be updated as NanoCPUs has already been set")
+		return conflictingUpdateOptions("Conflicting options: CPU Period cannot be updated as NanoCPUs has already been set")
 	}
 	if resources.CPUQuota > 0 && cResources.NanoCPUs > 0 {
-		return fmt.Errorf("Conflicting options: CPU Quota cannot be updated as NanoCPUs has already been set")
+		return conflictingUpdateOptions("Conflicting options: CPU Quota cannot be updated as NanoCPUs has already been set")
 	}
 
 	if resources.BlkioWeight != 0 {
@@ -310,7 +324,7 @@ func (container *Container) UpdateContainer(hostConfig *containertypes.HostConfi
 		// if memory limit smaller than already set memoryswap limit and doesn't
 		// update the memoryswap limit, then error out.
 		if resources.Memory > cResources.MemorySwap && resources.MemorySwap == 0 {
-			return fmt.Errorf("Memory limit should be smaller than already set memoryswap limit, update the memoryswap at the same time")
+			return conflictingUpdateOptions("Memory limit should be smaller than already set memoryswap limit, update the memoryswap at the same time")
 		}
 		cResources.Memory = resources.Memory
 	}
@@ -323,11 +337,17 @@ func (container *Container) UpdateContainer(hostConfig *containertypes.HostConfi
 	if resources.KernelMemory != 0 {
 		cResources.KernelMemory = resources.KernelMemory
 	}
+	if resources.CPURealtimePeriod != 0 {
+		cResources.CPURealtimePeriod = resources.CPURealtimePeriod
+	}
+	if resources.CPURealtimeRuntime != 0 {
+		cResources.CPURealtimeRuntime = resources.CPURealtimeRuntime
+	}
 
 	// update HostConfig of container
 	if hostConfig.RestartPolicy.Name != "" {
 		if container.HostConfig.AutoRemove && !hostConfig.RestartPolicy.IsNone() {
-			return fmt.Errorf("Restart policy cannot be updated because AutoRemove is enabled for the container")
+			return conflictingUpdateOptions("Restart policy cannot be updated because AutoRemove is enabled for the container")
 		}
 		container.HostConfig.RestartPolicy = hostConfig.RestartPolicy
 	}
@@ -361,7 +381,7 @@ func (container *Container) DetachAndUnmount(volumeEventLog func(name, action st
 	}
 
 	for _, mountPath := range mountPaths {
-		if err := detachMounted(mountPath); err != nil {
+		if err := mount.Unmount(mountPath); err != nil {
 			logrus.Warnf("%s unmountVolumes: Failed to do lazy umount fo volume '%s': %v", container.ID, mountPath, err)
 		}
 	}
@@ -371,57 +391,20 @@ func (container *Container) DetachAndUnmount(volumeEventLog func(name, action st
 // copyExistingContents copies from the source to the destination and
 // ensures the ownership is appropriately set.
 func copyExistingContents(source, destination string) error {
-	volList, err := ioutil.ReadDir(source)
+	dstList, err := ioutil.ReadDir(destination)
 	if err != nil {
 		return err
 	}
-	if len(volList) > 0 {
-		srcList, err := ioutil.ReadDir(destination)
-		if err != nil {
-			return err
-		}
-		if len(srcList) == 0 {
-			// If the source volume is empty, copies files from the root into the volume
-			if err := chrootarchive.NewArchiver(nil).CopyWithTar(source, destination); err != nil {
-				return err
-			}
-		}
+	if len(dstList) != 0 {
+		// destination is not empty, do not copy
+		return nil
 	}
-	return copyOwnership(source, destination)
-}
-
-// copyOwnership copies the permissions and uid:gid of the source file
-// to the destination file
-func copyOwnership(source, destination string) error {
-	stat, err := system.Stat(source)
-	if err != nil {
-		return err
-	}
-
-	destStat, err := system.Stat(destination)
-	if err != nil {
-		return err
-	}
-
-	// In some cases, even though UID/GID match and it would effectively be a no-op,
-	// this can return a permission denied error... for example if this is an NFS
-	// mount.
-	// Since it's not really an error that we can't chown to the same UID/GID, don't
-	// even bother trying in such cases.
-	if stat.UID() != destStat.UID() || stat.GID() != destStat.GID() {
-		if err := os.Chown(destination, int(stat.UID()), int(stat.GID())); err != nil {
-			return err
-		}
-	}
-
-	if stat.Mode() != destStat.Mode() {
-		return os.Chmod(destination, os.FileMode(stat.Mode()))
-	}
-	return nil
+	return fs.CopyDir(destination, source)
 }
 
 // TmpfsMounts returns the list of tmpfs mounts
 func (container *Container) TmpfsMounts() ([]Mount, error) {
+	parser := volumemounts.NewParser(container.OS)
 	var mounts []Mount
 	for dest, data := range container.HostConfig.Tmpfs {
 		mounts = append(mounts, Mount{
@@ -432,7 +415,7 @@ func (container *Container) TmpfsMounts() ([]Mount, error) {
 	}
 	for dest, mnt := range container.MountPoints {
 		if mnt.Type == mounttypes.TypeTmpfs {
-			data, err := volume.ConvertTmpfsOptions(mnt.Spec.TmpfsOptions, mnt.Spec.ReadOnly)
+			data, err := parser.ConvertTmpfsOptions(mnt.Spec.TmpfsOptions, mnt.Spec.ReadOnly)
 			if err != nil {
 				return nil, err
 			}
@@ -444,11 +427,6 @@ func (container *Container) TmpfsMounts() ([]Mount, error) {
 		}
 	}
 	return mounts, nil
-}
-
-// cleanResourcePath cleans a resource path and prepares to combine with mnt path
-func cleanResourcePath(path string) string {
-	return filepath.Join(string(os.PathSeparator), path)
 }
 
 // EnableServiceDiscoveryOnDefaultNetwork Enable service discovery on default network
@@ -472,4 +450,14 @@ func (container *Container) GetMountPoints() []types.MountPoint {
 		})
 	}
 	return mountPoints
+}
+
+// ConfigFilePath returns the path to the on-disk location of a config.
+// On unix, configs are always considered secret
+func (container *Container) ConfigFilePath(configRef swarmtypes.ConfigReference) (string, error) {
+	mounts, err := container.SecretMountPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(mounts, configRef.ConfigID), nil
 }

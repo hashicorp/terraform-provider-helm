@@ -1,18 +1,17 @@
-// +build linux
-
-package plugin
+package plugin // import "github.com/docker/docker/plugin"
 
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/docker/distribution/manifest/schema2"
@@ -23,6 +22,7 @@ import (
 	progressutils "github.com/docker/docker/distribution/utils"
 	"github.com/docker/docker/distribution/xfer"
 	"github.com/docker/docker/dockerversion"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/layer"
 	"github.com/docker/docker/pkg/authorization"
@@ -34,9 +34,9 @@ import (
 	"github.com/docker/docker/plugin/v2"
 	refstore "github.com/docker/docker/reference"
 	"github.com/opencontainers/go-digest"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 )
 
 var acceptedPluginFilterTags = map[string]bool{
@@ -55,7 +55,7 @@ func (pm *Manager) Disable(refOrID string, config *types.PluginDisableConfig) er
 	pm.mu.RUnlock()
 
 	if !config.ForceDisable && p.GetRefCount() > 0 {
-		return fmt.Errorf("plugin %s is in use", p.Name())
+		return errors.WithStack(inUseError(p.Name()))
 	}
 
 	for _, typ := range p.GetTypes() {
@@ -142,16 +142,21 @@ func (s *tempConfigStore) Put(c []byte) (digest.Digest, error) {
 
 func (s *tempConfigStore) Get(d digest.Digest) ([]byte, error) {
 	if d != s.configDigest {
-		return nil, fmt.Errorf("digest not found")
+		return nil, errNotFound("digest not found")
 	}
 	return s.config, nil
 }
 
-func (s *tempConfigStore) RootFSAndPlatformFromConfig(c []byte) (*image.RootFS, layer.Platform, error) {
+func (s *tempConfigStore) RootFSFromConfig(c []byte) (*image.RootFS, error) {
 	return configToRootFS(c)
 }
 
-func computePrivileges(c types.PluginConfig) (types.PluginPrivileges, error) {
+func (s *tempConfigStore) PlatformFromConfig(c []byte) (*specs.Platform, error) {
+	// TODO: LCOW/Plugins. This will need revisiting. For now use the runtime OS
+	return &specs.Platform{OS: runtime.GOOS}, nil
+}
+
+func computePrivileges(c types.PluginConfig) types.PluginPrivileges {
 	var privileges types.PluginPrivileges
 	if c.Network.Type != "null" && c.Network.Type != "bridge" && c.Network.Type != "" {
 		privileges = append(privileges, types.PluginPrivilege{
@@ -207,7 +212,7 @@ func computePrivileges(c types.PluginConfig) (types.PluginPrivileges, error) {
 		})
 	}
 
-	return privileges, nil
+	return privileges
 }
 
 // Privileges pulls a plugin config and computes the privileges required to install it.
@@ -236,21 +241,21 @@ func (pm *Manager) Privileges(ctx context.Context, ref reference.Named, metaHead
 	}
 	var config types.PluginConfig
 	if err := json.Unmarshal(cs.config, &config); err != nil {
-		return nil, err
+		return nil, errdefs.System(err)
 	}
 
-	return computePrivileges(config)
+	return computePrivileges(config), nil
 }
 
 // Upgrade upgrades a plugin
 func (pm *Manager) Upgrade(ctx context.Context, ref reference.Named, name string, metaHeader http.Header, authConfig *types.AuthConfig, privileges types.PluginPrivileges, outStream io.Writer) (err error) {
 	p, err := pm.config.Store.GetV2Plugin(name)
 	if err != nil {
-		return errors.Wrap(err, "plugin must be installed before upgrading")
+		return err
 	}
 
 	if p.IsEnabled() {
-		return fmt.Errorf("plugin must be disabled before upgrading")
+		return errors.Wrap(enabledError(p.Name()), "plugin must be disabled before upgrading")
 	}
 
 	pm.muGC.RLock()
@@ -258,12 +263,12 @@ func (pm *Manager) Upgrade(ctx context.Context, ref reference.Named, name string
 
 	// revalidate because Pull is public
 	if _, err := reference.ParseNormalizedNamed(name); err != nil {
-		return errors.Wrapf(err, "failed to parse %q", name)
+		return errors.Wrapf(errdefs.InvalidParameter(err), "failed to parse %q", name)
 	}
 
 	tmpRootFSDir, err := ioutil.TempDir(pm.tmpDir(), ".rootfs")
 	if err != nil {
-		return err
+		return errors.Wrap(errdefs.System(err), "error preparing upgrade")
 	}
 	defer os.RemoveAll(tmpRootFSDir)
 
@@ -305,17 +310,17 @@ func (pm *Manager) Pull(ctx context.Context, ref reference.Named, name string, m
 	// revalidate because Pull is public
 	nameref, err := reference.ParseNormalizedNamed(name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse %q", name)
+		return errors.Wrapf(errdefs.InvalidParameter(err), "failed to parse %q", name)
 	}
 	name = reference.FamiliarString(reference.TagNameOnly(nameref))
 
 	if err := pm.config.Store.validateName(name); err != nil {
-		return err
+		return errdefs.InvalidParameter(err)
 	}
 
 	tmpRootFSDir, err := ioutil.TempDir(pm.tmpDir(), ".rootfs")
 	if err != nil {
-		return err
+		return errors.Wrap(errdefs.System(err), "error preparing pull")
 	}
 	defer os.RemoveAll(tmpRootFSDir)
 
@@ -366,13 +371,13 @@ func (pm *Manager) List(pluginFilters filters.Args) ([]types.Plugin, error) {
 
 	enabledOnly := false
 	disabledOnly := false
-	if pluginFilters.Include("enabled") {
+	if pluginFilters.Contains("enabled") {
 		if pluginFilters.ExactMatch("enabled", "true") {
 			enabledOnly = true
 		} else if pluginFilters.ExactMatch("enabled", "false") {
 			disabledOnly = true
 		} else {
-			return nil, fmt.Errorf("Invalid filter 'enabled=%s'", pluginFilters.Get("enabled"))
+			return nil, invalidFilter{"enabled", pluginFilters.Get("enabled")}
 		}
 	}
 
@@ -387,7 +392,7 @@ next:
 		if disabledOnly && p.PluginObj.Enabled {
 			continue
 		}
-		if pluginFilters.Include("capability") {
+		if pluginFilters.Contains("capability") {
 			for _, f := range p.GetTypes() {
 				if !pluginFilters.Match("capability", f.Capability) {
 					continue next
@@ -442,7 +447,8 @@ func (pm *Manager) Push(ctx context.Context, name string, metaHeader http.Header
 		pm:     pm,
 		plugin: p,
 	}
-	ls := &pluginLayerProvider{
+	lss := make(map[string]distribution.PushLayerProvider)
+	lss[runtime.GOOS] = &pluginLayerProvider{
 		pm:     pm,
 		plugin: p,
 	}
@@ -465,7 +471,7 @@ func (pm *Manager) Push(ctx context.Context, name string, metaHeader http.Header
 			RequireSchema2:   true,
 		},
 		ConfigMediaType: schema2.MediaTypePluginConfig,
-		LayerStore:      ls,
+		LayerStores:     lss,
 		UploadManager:   uploadManager,
 	}
 
@@ -534,8 +540,13 @@ func (s *pluginConfigStore) Get(d digest.Digest) ([]byte, error) {
 	return ioutil.ReadAll(rwc)
 }
 
-func (s *pluginConfigStore) RootFSAndPlatformFromConfig(c []byte) (*image.RootFS, layer.Platform, error) {
+func (s *pluginConfigStore) RootFSFromConfig(c []byte) (*image.RootFS, error) {
 	return configToRootFS(c)
+}
+
+func (s *pluginConfigStore) PlatformFromConfig(c []byte) (*specs.Platform, error) {
+	// TODO: LCOW/Plugins. This will need revisiting. For now use the runtime OS
+	return &specs.Platform{OS: runtime.GOOS}, nil
 }
 
 type pluginLayerProvider struct {
@@ -615,10 +626,10 @@ func (pm *Manager) Remove(name string, config *types.PluginRmConfig) error {
 
 	if !config.ForceRemove {
 		if p.GetRefCount() > 0 {
-			return fmt.Errorf("plugin %s is in use", p.Name())
+			return inUseError(p.Name())
 		}
 		if p.IsEnabled() {
-			return fmt.Errorf("plugin %s is enabled", p.Name())
+			return enabledError(p.Name())
 		}
 	}
 
@@ -639,34 +650,14 @@ func (pm *Manager) Remove(name string, config *types.PluginRmConfig) error {
 		return errors.Wrap(err, "error unmounting plugin data")
 	}
 
-	removeDir := pluginDir + "-removing"
-	if err := os.Rename(pluginDir, removeDir); err != nil {
-		return errors.Wrap(err, "error performing atomic remove of plugin dir")
+	if err := atomicRemoveAll(pluginDir); err != nil {
+		return err
 	}
 
-	if err := system.EnsureRemoveAll(removeDir); err != nil {
-		return errors.Wrap(err, "error removing plugin dir")
-	}
 	pm.config.Store.Remove(p)
 	pm.config.LogPluginEvent(id, name, "remove")
 	pm.publisher.Publish(EventRemove{Plugin: p.PluginObj})
 	return nil
-}
-
-func getMounts(root string) ([]string, error) {
-	infos, err := mount.GetMounts()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read mount table")
-	}
-
-	var mounts []string
-	for _, m := range infos {
-		if strings.HasPrefix(m.Mountpoint, root) {
-			mounts = append(mounts, m.Mountpoint)
-		}
-	}
-
-	return mounts, nil
 }
 
 // Set sets plugin args
@@ -850,4 +841,36 @@ func splitConfigRootFSFromTar(in io.ReadCloser, config *[]byte) io.ReadCloser {
 		}
 	}()
 	return pr
+}
+
+func atomicRemoveAll(dir string) error {
+	renamed := dir + "-removing"
+
+	err := os.Rename(dir, renamed)
+	switch {
+	case os.IsNotExist(err), err == nil:
+		// even if `dir` doesn't exist, we can still try and remove `renamed`
+	case os.IsExist(err):
+		// Some previous remove failed, check if the origin dir exists
+		if e := system.EnsureRemoveAll(renamed); e != nil {
+			return errors.Wrap(err, "rename target already exists and could not be removed")
+		}
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			// origin doesn't exist, nothing left to do
+			return nil
+		}
+
+		// attempt to rename again
+		if err := os.Rename(dir, renamed); err != nil {
+			return errors.Wrap(err, "failed to rename dir for atomic removal")
+		}
+	default:
+		return errors.Wrap(err, "failed to rename dir for atomic removal")
+	}
+
+	if err := system.EnsureRemoveAll(renamed); err != nil {
+		os.Rename(renamed, dir)
+		return err
+	}
+	return nil
 }

@@ -1,4 +1,4 @@
-package cluster
+package cluster // import "github.com/docker/docker/daemon/cluster"
 
 //
 // ## Swarmkit integration
@@ -39,6 +39,7 @@ package cluster
 //
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -56,7 +57,6 @@ import (
 	swarmnode "github.com/docker/swarmkit/node"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 )
 
 const swarmDirName = "swarm"
@@ -72,21 +72,6 @@ const (
 	contextPrefix         = "com.docker.swarm"
 )
 
-// errNoSwarm is returned on leaving a cluster that was never initialized
-var errNoSwarm = errors.New("This node is not part of a swarm")
-
-// errSwarmExists is returned on initialize or join request for a cluster that has already been activated
-var errSwarmExists = errors.New("This node is already part of a swarm. Use \"docker swarm leave\" to leave this swarm and join another one.")
-
-// errSwarmJoinTimeoutReached is returned when cluster join could not complete before timeout was reached.
-var errSwarmJoinTimeoutReached = errors.New("Timeout was reached before node was joined. The attempt to join the swarm will continue in the background. Use the \"docker info\" command to see the current swarm status of your node.")
-
-// errSwarmLocked is returned if the swarm is encrypted and needs a key to unlock it.
-var errSwarmLocked = errors.New("Swarm is encrypted and needs to be unlocked before it can be used. Please use \"docker swarm unlock\" to unlock it.")
-
-// errSwarmCertificatesExpired is returned if docker was not started for the whole validity period and they had no chance to renew automatically.
-var errSwarmCertificatesExpired = errors.New("Swarm certificates have expired. To replace them, leave the swarm and join again.")
-
 // NetworkSubnetsProvider exposes functions for retrieving the subnets
 // of networks managed by Docker, so they can be filtered.
 type NetworkSubnetsProvider interface {
@@ -98,7 +83,9 @@ type Config struct {
 	Root                   string
 	Name                   string
 	Backend                executorpkg.Backend
+	ImageBackend           executorpkg.ImageBackend
 	PluginBackend          plugin.Backend
+	VolumeBackend          executorpkg.VolumeBackend
 	NetworkSubnetsProvider NetworkSubnetsProvider
 
 	// DefaultAdvertiseAddr is the default host/IP or network interface to use
@@ -110,6 +97,13 @@ type Config struct {
 
 	// WatchStream is a channel to pass watch API notifications to daemon
 	WatchStream chan *swarmapi.WatchMessage
+
+	// RaftHeartbeatTick is the number of ticks for heartbeat of quorum members
+	RaftHeartbeatTick uint32
+
+	// RaftElectionTick is the number of ticks to elapse before followers propose a new round of leader election
+	// This value should be 10x that of RaftHeartbeatTick
+	RaftElectionTick uint32
 }
 
 // Cluster provides capabilities to participate in a cluster as a worker or a
@@ -148,6 +142,14 @@ func New(config Config) (*Cluster, error) {
 	if config.RuntimeRoot == "" {
 		config.RuntimeRoot = root
 	}
+	if config.RaftHeartbeatTick == 0 {
+		config.RaftHeartbeatTick = 1
+	}
+	if config.RaftElectionTick == 0 {
+		// 10X heartbeat tick is the recommended ratio according to etcd docs.
+		config.RaftElectionTick = 10 * config.RaftHeartbeatTick
+	}
+
 	if err := os.MkdirAll(config.RuntimeRoot, 0700); err != nil {
 		return nil, err
 	}
@@ -304,6 +306,13 @@ func (c *Cluster) GetRemoteAddressList() []string {
 	return c.getRemoteAddressList()
 }
 
+// GetWatchStream returns the channel to pass changes from store watch API
+func (c *Cluster) GetWatchStream() chan *swarmapi.WatchMessage {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.watchStream
+}
+
 func (c *Cluster) getRemoteAddressList() []string {
 	state := c.currentNodeState()
 	if state.swarmNode == nil {
@@ -343,12 +352,12 @@ func (c *Cluster) errNoManager(st nodeState) error {
 		if st.err == errSwarmCertificatesExpired {
 			return errSwarmCertificatesExpired
 		}
-		return errors.New("This node is not a swarm manager. Use \"docker swarm init\" or \"docker swarm join\" to connect this node to swarm and try again.")
+		return errors.WithStack(notAvailableError("This node is not a swarm manager. Use \"docker swarm init\" or \"docker swarm join\" to connect this node to swarm and try again."))
 	}
 	if st.swarmNode.Manager() != nil {
-		return errors.New("This node is not a swarm manager. Manager is being prepared or has trouble connecting to the cluster.")
+		return errors.WithStack(notAvailableError("This node is not a swarm manager. Manager is being prepared or has trouble connecting to the cluster."))
 	}
-	return errors.New("This node is not a swarm manager. Worker nodes can't be used to view or modify cluster state. Please run this command on a manager node or promote the current node to a manager.")
+	return errors.WithStack(notAvailableError("This node is not a swarm manager. Worker nodes can't be used to view or modify cluster state. Please run this command on a manager node or promote the current node to a manager."))
 }
 
 // Cleanup stops active swarm node. This is run before daemon shutdown.

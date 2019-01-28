@@ -18,12 +18,11 @@ package tiller
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
 
-	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	"k8s.io/client-go/kubernetes"
 
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/kube"
@@ -46,7 +45,7 @@ type ReleaseModule interface {
 
 // LocalReleaseModule is a local implementation of ReleaseModule
 type LocalReleaseModule struct {
-	clientset internalclientset.Interface
+	clientset kubernetes.Interface
 }
 
 // Create creates a release via kubeclient from provided environment
@@ -174,7 +173,11 @@ func DeleteRelease(rel *release.Release, vs chartutil.VersionSet, kubeClient env
 			log.Printf("uninstall: Failed deletion of %q: %s", rel.Name, err)
 			if err == kube.ErrNoObjectsVisited {
 				// Rewrite the message from "no objects visited"
-				err = errors.New("object not found, skipping delete")
+				obj := ""
+				if file.Head != nil && file.Head.Metadata != nil {
+					obj = "[" + file.Head.Kind + "] " + file.Head.Metadata.Name
+				}
+				err = fmt.Errorf("release %q: object %q not found, skipping delete", rel.Name, obj)
 			}
 			errs = append(errs, err)
 		}

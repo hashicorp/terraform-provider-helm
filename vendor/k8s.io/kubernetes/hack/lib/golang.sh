@@ -30,7 +30,6 @@ kube::golang::server_targets() {
     cmd/kubeadm
     cmd/hyperkube
     cmd/kube-scheduler
-    vendor/k8s.io/kube-aggregator
     vendor/k8s.io/apiextensions-apiserver
     cluster/gce/gci/mounter
   )
@@ -40,6 +39,23 @@ kube::golang::server_targets() {
 IFS=" " read -ra KUBE_SERVER_TARGETS <<< "$(kube::golang::server_targets)"
 readonly KUBE_SERVER_TARGETS
 readonly KUBE_SERVER_BINARIES=("${KUBE_SERVER_TARGETS[@]##*/}")
+
+# The set of server targets we build docker images for
+kube::golang::server_image_targets() {
+  # NOTE: this contains cmd targets for kube::build::get_docker_wrapped_binaries
+  local targets=(
+    cmd/cloud-controller-manager
+    cmd/kube-apiserver
+    cmd/kube-controller-manager
+    cmd/kube-scheduler
+    cmd/kube-proxy
+  )
+  echo "${targets[@]}"
+}
+
+IFS=" " read -ra KUBE_SERVER_IMAGE_TARGETS <<< "$(kube::golang::server_image_targets)"
+readonly KUBE_SERVER_IMAGE_TARGETS
+readonly KUBE_SERVER_IMAGE_BINARIES=("${KUBE_SERVER_IMAGE_TARGETS[@]##*/}")
 
 # The set of server targets that we are only building for Kubernetes nodes
 # If you update this list, please also update build/BUILD.
@@ -208,7 +224,6 @@ readonly KUBE_STATIC_LIBRARIES=(
   kube-controller-manager
   kube-scheduler
   kube-proxy
-  kube-aggregator
   kubeadm
   kubectl
 )

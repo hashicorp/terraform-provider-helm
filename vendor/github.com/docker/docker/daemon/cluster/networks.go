@@ -1,18 +1,18 @@
-package cluster
+package cluster // import "github.com/docker/docker/daemon/cluster"
 
 import (
+	"context"
 	"fmt"
 
-	apierrors "github.com/docker/docker/api/errors"
 	apitypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/network"
 	types "github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/daemon/cluster/convert"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/runconfig"
 	swarmapi "github.com/docker/swarmkit/api"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 )
 
 // GetNetworks returns all current cluster managed networks.
@@ -250,8 +250,8 @@ func (c *Cluster) DetachNetwork(target string, containerID string) error {
 // CreateNetwork creates a new cluster managed network.
 func (c *Cluster) CreateNetwork(s apitypes.NetworkCreateRequest) (string, error) {
 	if runconfig.IsPreDefinedNetwork(s.Name) {
-		err := fmt.Errorf("%s is a pre-defined network and cannot be created", s.Name)
-		return "", apierrors.NewRequestForbiddenError(err)
+		err := notAllowedError(fmt.Sprintf("%s is a pre-defined network and cannot be created", s.Name))
+		return "", errors.WithStack(err)
 	}
 
 	var resp *swarmapi.CreateNetworkResponse
@@ -299,14 +299,13 @@ func (c *Cluster) populateNetworkID(ctx context.Context, client swarmapi.Control
 				// and use its id for the request.
 				apiNetwork, err = getNetwork(ctx, client, ln.Name())
 				if err != nil {
-					err = fmt.Errorf("could not find the corresponding predefined swarm network: %v", err)
-					return apierrors.NewRequestNotFoundError(err)
+					return errors.Wrap(errdefs.NotFound(err), "could not find the corresponding predefined swarm network")
 				}
 				goto setid
 			}
 			if ln != nil && !ln.Info().Dynamic() {
-				err = fmt.Errorf("The network %s cannot be used with services. Only networks scoped to the swarm can be used, such as those created with the overlay driver.", ln.Name())
-				return apierrors.NewRequestForbiddenError(err)
+				errMsg := fmt.Sprintf("The network %s cannot be used with services. Only networks scoped to the swarm can be used, such as those created with the overlay driver.", ln.Name())
+				return errors.WithStack(notAllowedError(errMsg))
 			}
 			return err
 		}

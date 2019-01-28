@@ -1,17 +1,9 @@
-package container
+package container // import "github.com/docker/docker/api/server/router/container"
 
 import (
 	"github.com/docker/docker/api/server/httputils"
 	"github.com/docker/docker/api/server/router"
 )
-
-type validationError struct {
-	error
-}
-
-func (validationError) IsValidationError() bool {
-	return true
-}
 
 // containerRouter is a router to talk with the container controller
 type containerRouter struct {
@@ -69,6 +61,7 @@ func (r *containerRouter) initRoutes() {
 		router.NewPostRoute("/containers/{name:.*}/rename", r.postContainerRename),
 		router.NewPostRoute("/containers/{name:.*}/update", r.postContainerUpdate),
 		router.NewPostRoute("/containers/prune", r.postContainersPrune, router.WithCancel),
+		router.NewPostRoute("/commit", r.postCommit),
 		// PUT
 		router.NewPutRoute("/containers/{name:.*}/archive", r.putContainersArchive),
 		// DELETE

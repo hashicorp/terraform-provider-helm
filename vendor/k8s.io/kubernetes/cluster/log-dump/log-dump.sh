@@ -41,7 +41,7 @@ readonly master_ssh_supported_providers="gce aws kubernetes-anywhere"
 readonly node_ssh_supported_providers="gce gke aws kubernetes-anywhere"
 readonly gcloud_supported_providers="gce gke kubernetes-anywhere"
 
-readonly master_logfiles="kube-apiserver.log kube-apiserver-audit.log kube-scheduler.log rescheduler.log kube-controller-manager.log etcd.log etcd-events.log glbc.log cluster-autoscaler.log kube-addon-manager.log fluentd.log kubelet.cov"
+readonly master_logfiles="kube-apiserver.log kube-apiserver-audit.log kube-scheduler.log kube-controller-manager.log etcd.log etcd-events.log glbc.log cluster-autoscaler.log kube-addon-manager.log fluentd.log kubelet.cov"
 readonly node_logfiles="kube-proxy.log fluentd.log node-problem-detector.log kubelet.cov"
 readonly node_systemd_services="node-problem-detector"
 readonly hollow_node_logfiles="kubelet-hollow-node-*.log kubeproxy-hollow-node-*.log npd-hollow-node-*.log"
@@ -54,7 +54,7 @@ readonly systemd_services="kubelet kubelet-monitor kube-container-runtime-monito
 
 # Limit the number of concurrent node connections so that we don't run out of
 # file descriptors for large clusters.
-readonly max_scp_processes=25
+readonly max_dump_processes=25
 
 # TODO: Get rid of all the sourcing of bash dependencies eventually.
 function setup() {
@@ -221,23 +221,23 @@ function dump_masters() {
     return
   fi
 
-  proc=${max_scp_processes}
+  proc=${max_dump_processes}
   for master_name in "${master_names[@]}"; do
     master_dir="${report_dir}/${master_name}"
     mkdir -p "${master_dir}"
     save-logs "${master_name}" "${master_dir}" "${master_logfiles}" "" "true" &
 
-    # We don't want to run more than ${max_scp_processes} at a time, so
+    # We don't want to run more than ${max_dump_processes} at a time, so
     # wait once we hit that many nodes. This isn't ideal, since one might
     # take much longer than the others, but it should help.
     proc=$((proc - 1))
     if [[ proc -eq 0 ]]; then
-      proc=${max_scp_processes}
+      proc=${max_dump_processes}
       wait
     fi
   done
   # Wait for any remaining processes.
-  if [[ proc -gt 0 && proc -lt ${max_scp_processes} ]]; then
+  if [[ proc -gt 0 && proc -lt ${max_dump_processes} ]]; then
     wait
   fi
 }
@@ -282,7 +282,7 @@ function dump_nodes() {
     nodes_selected_for_logs=( "${node_names[@]}" )
   fi
 
-  proc=${max_scp_processes}
+  proc=${max_dump_processes}
   for node_name in "${nodes_selected_for_logs[@]}"; do
     node_dir="${report_dir}/${node_name}"
     mkdir -p "${node_dir}"
@@ -290,19 +290,37 @@ function dump_nodes() {
     # many nodes.
     save-logs "${node_name}" "${node_dir}" "${node_logfiles_all}" "${node_systemd_services}" &
 
-    # We don't want to run more than ${max_scp_processes} at a time, so
+    # We don't want to run more than ${max_dump_processes} at a time, so
     # wait once we hit that many nodes. This isn't ideal, since one might
     # take much longer than the others, but it should help.
     proc=$((proc - 1))
     if [[ proc -eq 0 ]]; then
-      proc=${max_scp_processes}
+      proc=${max_dump_processes}
       wait
     fi
   done
   # Wait for any remaining processes.
-  if [[ proc -gt 0 && proc -lt ${max_scp_processes} ]]; then
+  if [[ proc -gt 0 && proc -lt ${max_dump_processes} ]]; then
     wait
   fi
+}
+
+# Collect names of nodes which didn't run logexporter successfully.
+# Note: This step is O(#nodes^2) as we check if each node is present in the list of succeeded nodes.
+# Making it linear would add code complexity without much benefit (as it just takes ~1s for 5k nodes).
+# Assumes:
+#   NODE_NAMES
+# Sets:
+#   NON_LOGEXPORTED_NODES
+function find_non_logexported_nodes() {
+  succeeded_nodes=$(gsutil ls ${gcs_artifacts_dir}/logexported-nodes-registry) || return 1
+  echo "Successfully listed marker files for successful nodes"
+  NON_LOGEXPORTED_NODES=()
+  for node in "${NODE_NAMES[@]}"; do
+    if [[ ! "${succeeded_nodes}" =~ "${node}" ]]; then
+      NON_LOGEXPORTED_NODES+=("${node}")
+    fi
+  done
 }
 
 function dump_nodes_with_logexporter() {
@@ -336,14 +354,49 @@ function dump_nodes_with_logexporter() {
     return
   fi
 
-  # Give some time for the pods to finish uploading logs.
-  sleep "${logexport_sleep_seconds}"
+  # Periodically fetch list of already logexported nodes to verify
+  # if we aren't already done.
+  start="$(date +%s)"
+  while true; do
+    now="$(date +%s)"
+    if [[ $((now - start)) -gt ${logexport_sleep_seconds} ]]; then
+      echo "Waiting for all nodes to be logexported timed out."
+      break
+    fi
+    if find_non_logexported_nodes; then
+      if [[ -z "${NON_LOGEXPORTED_NODES:-}" ]]; then
+        break
+      fi
+    fi
+    sleep 15
+  done
+
+  # Store logs from logexporter pods to allow debugging log exporting process
+  # itself.
+  proc=${max_dump_processes}
+  "${KUBECTL}" get pods -n "${logexporter_namespace}" -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.nodeName}{"\n"}{end}' | while read pod node; do
+    echo "Fetching logs from ${pod} running on ${node}"
+    mkdir -p ${report_dir}/${node}
+    "${KUBECTL}" logs -n "${logexporter_namespace}" ${pod} > ${report_dir}/${node}/${pod}.log &
+
+    # We don't want to run more than ${max_dump_processes} at a time, so
+    # wait once we hit that many nodes. This isn't ideal, since one might
+    # take much longer than the others, but it should help.
+    proc=$((proc - 1))
+    if [[ proc -eq 0 ]]; then
+      proc=${max_dump_processes}
+      wait
+    fi
+  done
+  # Wait for any remaining processes.
+  if [[ proc -gt 0 && proc -lt ${max_dump_processes} ]]; then
+    wait
+  fi
 
   # List registry of marker files (of nodes whose logexporter succeeded) from GCS.
   local nodes_succeeded
   for retry in {1..10}; do
-    if nodes_succeeded=$(gsutil ls ${gcs_artifacts_dir}/logexported-nodes-registry); then
-      echo "Successfully listed marker files for successful nodes"
+    if find_non_logexported_nodes; then
       break
     else
       echo "Attempt ${retry} failed to list marker files for succeessful nodes"
@@ -357,16 +410,15 @@ function dump_nodes_with_logexporter() {
     fi
   done
 
-  # Collect names of nodes which didn't run logexporter successfully.
-  # Note: This step is O(#nodes^2) as we check if each node is present in the list of succeeded nodes.
-  # Making it linear would add code complexity without much benefit (as it just takes ~1s for 5k nodes).
   failed_nodes=()
-  for node in "${NODE_NAMES[@]}"; do
-    if [[ ! "${nodes_succeeded}" =~ "${node}" ]]; then
+  # The following if is needed, because defaulting for empty arrays
+  # seems to treat them as non-empty with single empty string.
+  if [[ -n "${NON_LOGEXPORTED_NODES:-}" ]]; then
+    for node in "${NON_LOGEXPORTED_NODES[@]:-}"; do
       echo "Logexporter didn't succeed on node ${node}. Queuing it for logdump through SSH."
       failed_nodes+=("${node}")
-    fi
-  done
+    done
+  fi
 
   # Delete the logexporter resources and dump logs for the failed nodes (if any) through SSH.
   "${KUBECTL}" get pods --namespace "${logexporter_namespace}" || true

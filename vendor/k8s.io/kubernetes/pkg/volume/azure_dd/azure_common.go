@@ -39,8 +39,8 @@ import (
 
 const (
 	defaultStorageAccountType       = storage.StandardLRS
-	defaultAzureDiskKind            = v1.AzureSharedBlobDisk
-	defaultAzureDataDiskCachingMode = v1.AzureDataDiskCachingNone
+	defaultAzureDiskKind            = v1.AzureManagedDisk
+	defaultAzureDataDiskCachingMode = v1.AzureDataDiskCachingReadOnly
 )
 
 type dataDisk struct {
@@ -62,8 +62,7 @@ var (
 		string(api.AzureDedicatedBlobDisk),
 		string(api.AzureManagedDisk))
 
-	supportedStorageAccountTypes = sets.NewString("Premium_LRS", "Standard_LRS", "Standard_GRS", "Standard_RAGRS")
-	lunPathRE                    = regexp.MustCompile(`/dev/disk/azure/scsi(?:.*)/lun(.+)`)
+	lunPathRE = regexp.MustCompile(`/dev/disk/azure/scsi(?:.*)/lun(.+)`)
 )
 
 func getPath(uid types.UID, volName string, host volume.VolumeHost) string {
@@ -130,11 +129,15 @@ func normalizeStorageAccountType(storageAccountType string) (storage.SkuName, er
 		return defaultStorageAccountType, nil
 	}
 
-	if !supportedStorageAccountTypes.Has(storageAccountType) {
-		return "", fmt.Errorf("azureDisk - %s is not supported sku/storageaccounttype. Supported values are %s", storageAccountType, supportedStorageAccountTypes.List())
+	sku := storage.SkuName(storageAccountType)
+	supportedSkuNames := storage.PossibleSkuNameValues()
+	for _, s := range supportedSkuNames {
+		if sku == s {
+			return sku, nil
+		}
 	}
 
-	return storage.SkuName(storageAccountType), nil
+	return "", fmt.Errorf("azureDisk - %s is not supported sku/storageaccounttype. Supported values are %s", storageAccountType, supportedSkuNames)
 }
 
 func normalizeCachingMode(cachingMode v1.AzureDataDiskCachingMode) (v1.AzureDataDiskCachingMode, error) {

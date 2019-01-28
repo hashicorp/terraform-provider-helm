@@ -33,7 +33,7 @@ import (
 
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	"k8s.io/apiextensions-apiserver/test/integration/testserver"
+	"k8s.io/apiextensions-apiserver/test/integration/fixtures"
 )
 
 var labelSelectorPath = ".status.labelSelector"
@@ -85,14 +85,14 @@ func NewNoxuSubresourceInstance(namespace, name string) *unstructured.Unstructur
 }
 
 func TestStatusSubresource(t *testing.T) {
-	stopCh, apiExtensionClient, dynamicClient, err := testserver.StartDefaultServerWithClients()
+	tearDown, apiExtensionClient, dynamicClient, err := fixtures.StartDefaultServerWithClients(t)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer close(stopCh)
+	defer tearDown()
 
 	noxuDefinition := NewNoxuSubresourcesCRD(apiextensionsv1beta1.NamespaceScoped)
-	noxuDefinition, err = testserver.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+	noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +128,7 @@ func TestStatusSubresource(t *testing.T) {
 
 	// UpdateStatus should not update spec.
 	// Check that .spec.num = 10 and .status.num = 20
-	updatedStatusInstance, err := noxuResourceClient.UpdateStatus(gottenNoxuInstance)
+	updatedStatusInstance, err := noxuResourceClient.UpdateStatus(gottenNoxuInstance, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("unable to update status: %v", err)
 	}
@@ -168,7 +168,7 @@ func TestStatusSubresource(t *testing.T) {
 
 	// Update should not update status.
 	// Check that .spec.num = 40 and .status.num = 20
-	updatedInstance, err := noxuResourceClient.Update(gottenNoxuInstance)
+	updatedInstance, err := noxuResourceClient.Update(gottenNoxuInstance, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("unable to update instance: %v", err)
 	}
@@ -196,11 +196,11 @@ func TestScaleSubresource(t *testing.T) {
 		Resource: "noxus",
 	}
 
-	stopCh, config, err := testserver.StartDefaultServer()
+	tearDown, config, _, err := fixtures.StartDefaultServer(t)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer close(stopCh)
+	defer tearDown()
 
 	apiExtensionClient, err := clientset.NewForConfig(config)
 	if err != nil {
@@ -215,13 +215,13 @@ func TestScaleSubresource(t *testing.T) {
 
 	// set invalid json path for specReplicasPath
 	noxuDefinition.Spec.Subresources.Scale.SpecReplicasPath = "foo,bar"
-	_, err = testserver.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+	_, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
 	if err == nil {
 		t.Fatalf("unexpected non-error: specReplicasPath should be a valid json path under .spec")
 	}
 
 	noxuDefinition.Spec.Subresources.Scale.SpecReplicasPath = ".spec.replicas"
-	noxuDefinition, err = testserver.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+	noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,7 +233,7 @@ func TestScaleSubresource(t *testing.T) {
 		t.Fatalf("unable to create noxu instance: %v", err)
 	}
 
-	scaleClient, err := testserver.CreateNewScaleClient(noxuDefinition, config)
+	scaleClient, err := fixtures.CreateNewScaleClient(noxuDefinition, config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +247,7 @@ func TestScaleSubresource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	_, err = noxuResourceClient.UpdateStatus(gottenNoxuInstance)
+	_, err = noxuResourceClient.UpdateStatus(gottenNoxuInstance, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("unable to update status: %v", err)
 	}
@@ -315,18 +315,18 @@ func TestScaleSubresource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	_, err = noxuResourceClient.Update(gottenNoxuInstance)
+	_, err = noxuResourceClient.Update(gottenNoxuInstance, metav1.UpdateOptions{})
 	if err == nil {
 		t.Fatalf("unexpected non-error: .spec.replicas should be less than 2147483647")
 	}
 }
 
-func TestValidationSchema(t *testing.T) {
-	stopCh, config, err := testserver.StartDefaultServer()
+func TestValidationSchemaWithStatus(t *testing.T) {
+	tearDown, config, _, err := fixtures.StartDefaultServer(t)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer close(stopCh)
+	defer tearDown()
 
 	apiExtensionClient, err := clientset.NewForConfig(config)
 	if err != nil {
@@ -342,9 +342,9 @@ func TestValidationSchema(t *testing.T) {
 	noxuDefinition.Spec.Subresources = &apiextensionsv1beta1.CustomResourceSubresources{
 		Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
 	}
-	_, err = testserver.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+	_, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
 	if err == nil {
-		t.Fatalf(`unexpected non-error, expected: must only have "properties" or "required" at the root if the status subresource is enabled`)
+		t.Fatalf(`unexpected non-error, expected: must not have "additionalProperties" at the root of the schema if the status subresource is enabled`)
 	}
 
 	// make sure we are not restricting fields to properties even in subschemas
@@ -362,18 +362,18 @@ func TestValidationSchema(t *testing.T) {
 		Required:    []string{"spec"},
 		Description: "This is a description at the root of the schema",
 	}
-	_, err = testserver.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+	_, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
 	if err != nil {
 		t.Fatalf("unable to created crd %v: %v", noxuDefinition.Name, err)
 	}
 }
 
 func TestValidateOnlyStatus(t *testing.T) {
-	stopCh, apiExtensionClient, dynamicClient, err := testserver.StartDefaultServerWithClients()
+	tearDown, apiExtensionClient, dynamicClient, err := fixtures.StartDefaultServerWithClients(t)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer close(stopCh)
+	defer tearDown()
 
 	// UpdateStatus should validate only status
 	// 1. create a crd with max value of .spec.num = 10 and .status.num = 10
@@ -408,7 +408,7 @@ func TestValidateOnlyStatus(t *testing.T) {
 		OpenAPIV3Schema: schema,
 	}
 
-	noxuDefinition, err = testserver.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+	noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -432,7 +432,7 @@ func TestValidateOnlyStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error setting .spec.num: %v", err)
 	}
-	createdNoxuInstance, err = noxuResourceClient.UpdateStatus(createdNoxuInstance)
+	createdNoxuInstance, err = noxuResourceClient.UpdateStatus(createdNoxuInstance, metav1.UpdateOptions{})
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -442,7 +442,7 @@ func TestValidateOnlyStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error setting .status.num: %v", err)
 	}
-	createdNoxuInstance, err = noxuResourceClient.UpdateStatus(createdNoxuInstance)
+	createdNoxuInstance, err = noxuResourceClient.UpdateStatus(createdNoxuInstance, metav1.UpdateOptions{})
 	if err == nil {
 		t.Fatal("expected error, but got none")
 	}
@@ -456,11 +456,11 @@ func TestValidateOnlyStatus(t *testing.T) {
 }
 
 func TestSubresourcesDiscovery(t *testing.T) {
-	stopCh, config, err := testserver.StartDefaultServer()
+	tearDown, config, _, err := fixtures.StartDefaultServer(t)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer close(stopCh)
+	defer tearDown()
 
 	apiExtensionClient, err := clientset.NewForConfig(config)
 	if err != nil {
@@ -472,7 +472,7 @@ func TestSubresourcesDiscovery(t *testing.T) {
 	}
 
 	noxuDefinition := NewNoxuSubresourcesCRD(apiextensionsv1beta1.NamespaceScoped)
-	noxuDefinition, err = testserver.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+	noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -540,14 +540,14 @@ func TestSubresourcesDiscovery(t *testing.T) {
 }
 
 func TestGeneration(t *testing.T) {
-	stopCh, apiExtensionClient, dynamicClient, err := testserver.StartDefaultServerWithClients()
+	tearDown, apiExtensionClient, dynamicClient, err := fixtures.StartDefaultServerWithClients(t)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer close(stopCh)
+	defer tearDown()
 
 	noxuDefinition := NewNoxuSubresourcesCRD(apiextensionsv1beta1.NamespaceScoped)
-	noxuDefinition, err = testserver.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+	noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -575,7 +575,7 @@ func TestGeneration(t *testing.T) {
 	}
 
 	// UpdateStatus does not increment generation
-	updatedStatusInstance, err := noxuResourceClient.UpdateStatus(gottenNoxuInstance)
+	updatedStatusInstance, err := noxuResourceClient.UpdateStatus(gottenNoxuInstance, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("unable to update status: %v", err)
 	}
@@ -595,7 +595,7 @@ func TestGeneration(t *testing.T) {
 	}
 
 	// Update increments generation
-	updatedInstance, err := noxuResourceClient.Update(gottenNoxuInstance)
+	updatedInstance, err := noxuResourceClient.Update(gottenNoxuInstance, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("unable to update instance: %v", err)
 	}
@@ -610,11 +610,11 @@ func TestSubresourcePatch(t *testing.T) {
 		Resource: "noxus",
 	}
 
-	stopCh, config, err := testserver.StartDefaultServer()
+	tearDown, config, _, err := fixtures.StartDefaultServer(t)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer close(stopCh)
+	defer tearDown()
 
 	apiExtensionClient, err := clientset.NewForConfig(config)
 	if err != nil {
@@ -626,7 +626,7 @@ func TestSubresourcePatch(t *testing.T) {
 	}
 
 	noxuDefinition := NewNoxuSubresourcesCRD(apiextensionsv1beta1.NamespaceScoped)
-	noxuDefinition, err = testserver.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+	noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -640,14 +640,14 @@ func TestSubresourcePatch(t *testing.T) {
 		t.Fatalf("unable to create noxu instance: %v", err)
 	}
 
-	scaleClient, err := testserver.CreateNewScaleClient(noxuDefinition, config)
+	scaleClient, err := fixtures.CreateNewScaleClient(noxuDefinition, config)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Logf("Patching .status.num to 999")
 	patch := []byte(`{"spec": {"num":999}, "status": {"num":999}}`)
-	patchedNoxuInstance, err := noxuResourceClient.Patch("foo", types.MergePatchType, patch, "status")
+	patchedNoxuInstance, err := noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "status")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -675,7 +675,7 @@ func TestSubresourcePatch(t *testing.T) {
 
 	// no-op patch
 	t.Logf("Patching .status.num again to 999")
-	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, "status")
+	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "status")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -686,7 +686,7 @@ func TestSubresourcePatch(t *testing.T) {
 
 	// empty patch
 	t.Logf("Applying empty patch")
-	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, []byte(`{}`), "status")
+	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, []byte(`{}`), metav1.UpdateOptions{}, "status")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -697,7 +697,7 @@ func TestSubresourcePatch(t *testing.T) {
 
 	t.Logf("Patching .spec.replicas to 7")
 	patch = []byte(`{"spec": {"replicas":7}, "status": {"replicas":7}}`)
-	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, "scale")
+	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "scale")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -737,7 +737,7 @@ func TestSubresourcePatch(t *testing.T) {
 
 	// no-op patch
 	t.Logf("Patching .spec.replicas again to 7")
-	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, "scale")
+	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "scale")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -748,7 +748,7 @@ func TestSubresourcePatch(t *testing.T) {
 
 	// empty patch
 	t.Logf("Applying empty patch")
-	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, []byte(`{}`), "scale")
+	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, []byte(`{}`), metav1.UpdateOptions{}, "scale")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -758,12 +758,12 @@ func TestSubresourcePatch(t *testing.T) {
 	expectString(t, patchedNoxuInstance.UnstructuredContent(), rv, "metadata", "resourceVersion")
 
 	// make sure strategic merge patch is not supported for both status and scale
-	_, err = noxuResourceClient.Patch("foo", types.StrategicMergePatchType, patch, "status")
+	_, err = noxuResourceClient.Patch("foo", types.StrategicMergePatchType, patch, metav1.UpdateOptions{}, "status")
 	if err == nil {
 		t.Fatalf("unexpected non-error: strategic merge patch is not supported for custom resources")
 	}
 
-	_, err = noxuResourceClient.Patch("foo", types.StrategicMergePatchType, patch, "scale")
+	_, err = noxuResourceClient.Patch("foo", types.StrategicMergePatchType, patch, metav1.UpdateOptions{}, "scale")
 	if err == nil {
 		t.Fatalf("unexpected non-error: strategic merge patch is not supported for custom resources")
 	}

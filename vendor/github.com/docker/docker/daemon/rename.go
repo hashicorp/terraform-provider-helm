@@ -1,12 +1,12 @@
-package daemon
+package daemon // import "github.com/docker/docker/daemon"
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 
 	dockercontainer "github.com/docker/docker/container"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/libnetwork"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,7 +20,7 @@ func (daemon *Daemon) ContainerRename(oldName, newName string) error {
 	)
 
 	if oldName == "" || newName == "" {
-		return errors.New("Neither old nor new names may be empty")
+		return errdefs.InvalidParameter(errors.New("Neither old nor new names may be empty"))
 	}
 
 	if newName[0] != '/' {
@@ -39,19 +39,19 @@ func (daemon *Daemon) ContainerRename(oldName, newName string) error {
 	oldIsAnonymousEndpoint := container.NetworkSettings.IsAnonymousEndpoint
 
 	if oldName == newName {
-		return errors.New("Renaming a container with the same name as its current name")
+		return errdefs.InvalidParameter(errors.New("Renaming a container with the same name as its current name"))
 	}
 
 	links := map[string]*dockercontainer.Container{}
 	for k, v := range daemon.linkIndex.children(container) {
 		if !strings.HasPrefix(k, oldName) {
-			return fmt.Errorf("Linked container %s does not match parent %s", k, oldName)
+			return errdefs.InvalidParameter(errors.Errorf("Linked container %s does not match parent %s", k, oldName))
 		}
 		links[strings.TrimPrefix(k, oldName)] = v
 	}
 
 	if newName, err = daemon.reserveName(container.ID, newName); err != nil {
-		return fmt.Errorf("Error when allocating new name: %v", err)
+		return errors.Wrap(err, "Error when allocating new name")
 	}
 
 	for k, v := range links {

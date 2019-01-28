@@ -1,18 +1,21 @@
-package httputils
+package httputils // import "github.com/docker/docker/api/server/httputils"
 
 import (
-	"fmt"
+	"context"
 	"io"
 	"mime"
 	"net/http"
 	"strings"
 
+	"github.com/docker/docker/errdefs"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 )
 
+type contextKey string
+
 // APIVersionKey is the client's requested API version.
-const APIVersionKey = "api-version"
+const APIVersionKey contextKey = "api-version"
 
 // APIFunc is an adapter to allow the use of ordinary functions as Docker API endpoints.
 // Any function that has the appropriate signature can be registered as an API endpoint (e.g. getVersion).
@@ -58,7 +61,7 @@ func CheckForJSON(r *http.Request) error {
 	if matchesContentType(ct, "application/json") {
 		return nil
 	}
-	return fmt.Errorf("Content-Type specified (%s) must be 'application/json'", ct)
+	return errdefs.InvalidParameter(errors.Errorf("Content-Type specified (%s) must be 'application/json'", ct))
 }
 
 // ParseForm ensures the request form is parsed even with invalid content types.
@@ -68,7 +71,7 @@ func ParseForm(r *http.Request) error {
 		return nil
 	}
 	if err := r.ParseForm(); err != nil && !strings.HasPrefix(err.Error(), "mime:") {
-		return err
+		return errdefs.InvalidParameter(err)
 	}
 	return nil
 }

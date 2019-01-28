@@ -1,16 +1,16 @@
-package session
+package session // import "github.com/docker/docker/api/server/router/session"
 
 import (
+	"context"
 	"net/http"
 
-	apierrors "github.com/docker/docker/api/errors"
-	"golang.org/x/net/context"
+	"github.com/docker/docker/errdefs"
 )
 
 func (sr *sessionRouter) startSession(ctx context.Context, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	err := sr.backend.HandleHTTPRequest(ctx, w, r)
 	if err != nil {
-		return apierrors.NewBadRequestError(err)
+		return errdefs.InvalidParameter(err)
 	}
 	return nil
 }

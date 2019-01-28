@@ -110,10 +110,14 @@ func TestGetMountRefs(t *testing.T) {
 				"/var/lib/kubelet/plugins/kubernetes.io/gce-pd/mounts/gce-pd2",
 			},
 		},
+		{
+			"/var/fake/directory/that/doesnt/exist",
+			[]string{},
+		},
 	}
 
 	for i, test := range tests {
-		if refs, err := GetMountRefs(fm, test.mountPath); err != nil || !setEquivalent(test.expectedRefs, refs) {
+		if refs, err := fm.GetMountRefs(test.mountPath); err != nil || !setEquivalent(test.expectedRefs, refs) {
 			t.Errorf("%d. getMountRefs(%q) = %v, %v; expected %v, nil", i, test.mountPath, refs, err, test.expectedRefs)
 		}
 	}
@@ -413,7 +417,7 @@ func TestPathWithinBase(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		if pathWithinBase(test.fullPath, test.basePath) != test.expected {
+		if PathWithinBase(test.fullPath, test.basePath) != test.expected {
 			t.Errorf("test %q failed: expected %v", test.name, test.expected)
 		}
 
@@ -660,44 +664,6 @@ func TestSafeMakeDir(t *testing.T) {
 
 		os.RemoveAll(base)
 	}
-}
-
-func validateDirEmpty(dir string) error {
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-
-	if len(files) != 0 {
-		return fmt.Errorf("Directory %q is not empty", dir)
-	}
-	return nil
-}
-
-func validateDirExists(dir string) error {
-	_, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func validateDirNotExists(dir string) error {
-	_, err := ioutil.ReadDir(dir)
-	if os.IsNotExist(err) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	return fmt.Errorf("dir %q still exists", dir)
-}
-
-func validateFileExists(file string) error {
-	if _, err := os.Stat(file); err != nil {
-		return err
-	}
-	return nil
 }
 
 func TestRemoveEmptyDirs(t *testing.T) {

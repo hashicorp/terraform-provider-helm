@@ -1,6 +1,6 @@
 // +build linux,seccomp
 
-package seccomp
+package seccomp // import "github.com/docker/docker/profiles/seccomp"
 
 import (
 	"github.com/docker/docker/api/types"
@@ -49,7 +49,6 @@ func DefaultProfile() *types.Seccomp {
 				"accept4",
 				"access",
 				"adjtimex",
-				"alarm",
 				"alarm",
 				"bind",
 				"brk",
@@ -316,6 +315,7 @@ func DefaultProfile() *types.Seccomp {
 				"stat64",
 				"statfs",
 				"statfs64",
+				"statx",
 				"symlink",
 				"symlinkat",
 				"sync",
@@ -488,6 +488,7 @@ func DefaultProfile() *types.Seccomp {
 				"mount",
 				"name_to_handle_at",
 				"perf_event_open",
+				"quotactl",
 				"setdomainname",
 				"sethostname",
 				"setns",

@@ -21,6 +21,11 @@ set -o pipefail
 KUBE_ROOT=$(dirname "${BASH_SOURCE}")/../..
 source "${KUBE_ROOT}/hack/lib/util.sh"
 
+# If KUBE_JUNIT_REPORT_DIR is unset, and ARTIFACTS is set, then have them match.
+if [[ -z "${KUBE_JUNIT_REPORT_DIR:-}" && -n "${ARTIFACTS:-}" ]]; then
+    export KUBE_JUNIT_REPORT_DIR="${ARTIFACTS}"
+fi
+
 # include shell2junit library
 source "${KUBE_ROOT}/third_party/forked/shell2junit/sh2ju.sh"
 
@@ -47,6 +52,7 @@ QUICK_PATTERNS+=(
   "verify-readonly-packages.sh"
   "verify-spelling.sh"
   "verify-staging-client-go.sh"
+  "verify-staging-meta-files.sh"
   "verify-test-images.sh"
   "verify-test-owners.sh"
 )

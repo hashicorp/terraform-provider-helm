@@ -174,6 +174,11 @@ func TestNormalizeStorageAccountType(t *testing.T) {
 			expectedAccountType: storage.StandardRAGRS,
 			expectError:         false,
 		},
+		{
+			storageAccountType:  "Standard_ZRS",
+			expectedAccountType: storage.StandardZRS,
+			expectError:         false,
+		},
 	}
 
 	for _, test := range tests {

@@ -1,6 +1,6 @@
 # Helm
 
-[![CircleCI](https://circleci.com/gh/helm/helm.svg?style=svg)](https://circleci.com/gh/helm/helm)
+[![CircleCI](https://circleci.com/gh/helm/helm.svg?style=shield)](https://circleci.com/gh/helm/helm)
 [![Go Report Card](https://goreportcard.com/badge/github.com/helm/helm)](https://goreportcard.com/report/github.com/helm/helm)
 [![GoDoc](https://godoc.org/k8s.io/helm?status.svg)](https://godoc.org/k8s.io/helm)
 
@@ -59,7 +59,7 @@ The [Helm roadmap uses Github milestones](https://github.com/helm/helm/milestone
 
 You can reach the Helm community and developers via the following channels:
 
-- [Kubernetes Slack](http://slack.k8s.io):
+- [Kubernetes Slack](https://kubernetes.slack.com):
   - [#helm-users](https://kubernetes.slack.com/messages/helm-users)
   - [#helm-dev](https://kubernetes.slack.com/messages/helm-dev)
   - [#charts](https://kubernetes.slack.com/messages/charts)

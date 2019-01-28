@@ -5,7 +5,7 @@ The Kubernetes Helm project accepts contributions via GitHub pull requests. This
 ## Reporting a Security Issue
 
 Most of the time, when you find a bug in Helm, it should be reported
-using [GitHub issues](https://github.com/kubernetes/helm/issues). However, if
+using [GitHub issues](https://github.com/helm/helm/issues). However, if
 you are reporting a _security vulnerability_, please email a report to
 [cncf-kubernetes-helm-security@lists.cncf.io](mailto:cncf-kubernetes-helm-security@lists.cncf.io). This will give
 us a chance to try to fix the issue before it is exploited in the wild.
@@ -84,7 +84,7 @@ your PR will be rejected by the automated DCO check.
 
 Whether you are a user or contributor, official support channels include:
 
-- GitHub [issues](https://github.com/kubernetes/helm/issues/new)
+- GitHub [issues](https://github.com/helm/helm/issues/new)
 - Slack [Kubernetes Slack](http://slack.kubernetes.io/):
   - User: #helm-users
   - Contributor: #helm-dev
@@ -172,12 +172,13 @@ contributing to Helm. All issue types follow the same general lifecycle. Differe
 
 ## How to Contribute a Patch
 
-1. If you haven't already done so, sign a Contributor License Agreement (see details above).
-2. Fork the desired repo, develop and test your code changes.
-3. Submit a pull request.
+1. Fork the repo, develop and test your code changes.
+1. Use sign-off when making each of your commits (see [above](#sign-your-work)).
+   If you forgot to sign some commits that are part of the contribution, you can ask [git to rewrite your commit history](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History).
+1. Submit a pull request.
 
 Coding conventions and standards are explained in the official developer docs:
-https://github.com/kubernetes/helm/blob/master/docs/developers.md
+[Developers Guide](docs/developers.md)
 
 The next section contains more information on the workflow followed for PRs
 

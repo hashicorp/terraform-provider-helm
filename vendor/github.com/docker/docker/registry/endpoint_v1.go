@@ -1,4 +1,4 @@
-package registry
+package registry // import "github.com/docker/docker/registry"
 
 import (
 	"crypto/tls"
@@ -67,9 +67,9 @@ func validateEndpoint(endpoint *V1Endpoint) error {
 	return nil
 }
 
-func newV1Endpoint(address url.URL, tlsConfig *tls.Config, userAgent string, metaHeaders http.Header) (*V1Endpoint, error) {
+func newV1Endpoint(address url.URL, tlsConfig *tls.Config, userAgent string, metaHeaders http.Header) *V1Endpoint {
 	endpoint := &V1Endpoint{
-		IsSecure: (tlsConfig == nil || !tlsConfig.InsecureSkipVerify),
+		IsSecure: tlsConfig == nil || !tlsConfig.InsecureSkipVerify,
 		URL:      new(url.URL),
 	}
 
@@ -77,8 +77,8 @@ func newV1Endpoint(address url.URL, tlsConfig *tls.Config, userAgent string, met
 
 	// TODO(tiborvass): make sure a ConnectTimeout transport is used
 	tr := NewTransport(tlsConfig)
-	endpoint.client = HTTPClient(transport.NewTransport(tr, DockerHeaders(userAgent, metaHeaders)...))
-	return endpoint, nil
+	endpoint.client = HTTPClient(transport.NewTransport(tr, Headers(userAgent, metaHeaders)...))
+	return endpoint
 }
 
 // trimV1Address trims the version off the address and returns the
@@ -123,7 +123,7 @@ func newV1EndpointFromStr(address string, tlsConfig *tls.Config, userAgent strin
 		return nil, err
 	}
 
-	endpoint, err := newV1Endpoint(*uri, tlsConfig, userAgent, metaHeaders)
+	endpoint := newV1Endpoint(*uri, tlsConfig, userAgent, metaHeaders)
 	if err != nil {
 		return nil, err
 	}

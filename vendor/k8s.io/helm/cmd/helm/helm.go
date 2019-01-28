@@ -28,10 +28,10 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 
 	// Import to initialize client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
 	"k8s.io/helm/pkg/helm"
 	helm_env "k8s.io/helm/pkg/helm/environment"
 	"k8s.io/helm/pkg/helm/portforwarder"
@@ -61,16 +61,19 @@ Common actions from this point include:
 - helm list:      list releases of charts
 
 Environment:
-  $HELM_HOME          set an alternative location for Helm files. By default, these are stored in ~/.helm
-  $HELM_HOST          set an alternative Tiller host. The format is host:port
-  $HELM_NO_PLUGINS    disable plugins. Set HELM_NO_PLUGINS=1 to disable plugins.
-  $TILLER_NAMESPACE   set an alternative Tiller namespace (default "kube-system")
-  $KUBECONFIG         set an alternative Kubernetes configuration file (default "~/.kube/config")
-  $HELM_TLS_CA_CERT   path to TLS CA certificate used to verify the Helm client and Tiller server certificates (default "$HELM_HOME/ca.pem")
-  $HELM_TLS_CERT      path to TLS client certificate file for authenticating to Tiller (default "$HELM_HOME/cert.pem")
-  $HELM_TLS_KEY       path to TLS client key file for authenticating to Tiller (default "$HELM_HOME/key.pem")
-  $HELM_TLS_VERIFY    enable TLS connection between Helm and Tiller and verify Tiller server certificate (default "false")
-  $HELM_TLS_ENABLE    enable TLS connection between Helm and Tiller (default "false")
+  $HELM_HOME           set an alternative location for Helm files. By default, these are stored in ~/.helm
+  $HELM_HOST           set an alternative Tiller host. The format is host:port
+  $HELM_NO_PLUGINS     disable plugins. Set HELM_NO_PLUGINS=1 to disable plugins.
+  $TILLER_NAMESPACE    set an alternative Tiller namespace (default "kube-system")
+  $KUBECONFIG          set an alternative Kubernetes configuration file (default "~/.kube/config")
+  $HELM_TLS_CA_CERT    path to TLS CA certificate used to verify the Helm client and Tiller server certificates (default "$HELM_HOME/ca.pem")
+  $HELM_TLS_CERT       path to TLS client certificate file for authenticating to Tiller (default "$HELM_HOME/cert.pem")
+  $HELM_TLS_KEY        path to TLS client key file for authenticating to Tiller (default "$HELM_HOME/key.pem")
+  $HELM_TLS_VERIFY     enable TLS connection between Helm and Tiller and verify Tiller server certificate (default "false")
+  $HELM_TLS_ENABLE     enable TLS connection between Helm and Tiller (default "false")
+  $HELM_KEY_PASSPHRASE set HELM_KEY_PASSPHRASE to the passphrase of your PGP private key. If set, you will not be prompted for
+                       the passphrase while signing helm charts
+
 `
 
 func newRootCmd(args []string) *cobra.Command {
@@ -186,13 +189,13 @@ func setupConnection() error {
 			return err
 		}
 
-		tunnel, err := portforwarder.New(settings.TillerNamespace, client, config)
+		tillerTunnel, err = portforwarder.New(settings.TillerNamespace, client, config)
 		if err != nil {
 			return err
 		}
 
-		settings.TillerHost = fmt.Sprintf("127.0.0.1:%d", tunnel.Local)
-		debug("Created tunnel using local port: '%d'\n", tunnel.Local)
+		settings.TillerHost = fmt.Sprintf("127.0.0.1:%d", tillerTunnel.Local)
+		debug("Created tunnel using local port: '%d'\n", tillerTunnel.Local)
 	}
 
 	// Set up the gRPC config.
@@ -254,21 +257,6 @@ func getKubeClient(context string, kubeconfig string) (*rest.Config, kubernetes.
 		return nil, nil, fmt.Errorf("could not get Kubernetes client: %s", err)
 	}
 	return config, client, nil
-}
-
-// getInternalKubeClient creates a Kubernetes config and an "internal" client for a given kubeconfig context.
-//
-// Prefer the similar getKubeClient if you don't need to use such an internal client.
-func getInternalKubeClient(context string, kubeconfig string) (internalclientset.Interface, error) {
-	config, err := configForContext(context, kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-	client, err := internalclientset.NewForConfig(config)
-	if err != nil {
-		return nil, fmt.Errorf("could not get Kubernetes client: %s", err)
-	}
-	return client, nil
 }
 
 // ensureHelmClient returns a new helm client impl. if h is not nil.

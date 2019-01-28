@@ -18,8 +18,6 @@ package projected
 
 import (
 	"fmt"
-	"sort"
-	"strings"
 
 	authenticationv1 "k8s.io/api/authentication/v1"
 	"k8s.io/api/core/v1"
@@ -326,11 +324,14 @@ func (s *projectedVolumeMounter) collectData() (map[string]volumeutil.FileProjec
 				continue
 			}
 			tp := source.ServiceAccountToken
+
+			var auds []string
+			if len(tp.Audience) != 0 {
+				auds = []string{tp.Audience}
+			}
 			tr, err := s.plugin.getServiceAccountToken(s.pod.Namespace, s.pod.Spec.ServiceAccountName, &authenticationv1.TokenRequest{
 				Spec: authenticationv1.TokenRequestSpec{
-					Audiences: []string{
-						tp.Audience,
-					},
+					Audiences:         auds,
 					ExpirationSeconds: tp.ExpirationSeconds,
 					BoundObjectRef: &authenticationv1.BoundObjectReference{
 						APIVersion: "v1",
@@ -351,12 +352,6 @@ func (s *projectedVolumeMounter) collectData() (map[string]volumeutil.FileProjec
 		}
 	}
 	return payload, utilerrors.NewAggregate(errlist)
-}
-
-func sortLines(values string) string {
-	splitted := strings.Split(values, "\n")
-	sort.Strings(splitted)
-	return strings.Join(splitted, "\n")
 }
 
 type projectedVolumeUnmounter struct {
@@ -380,13 +375,9 @@ func (c *projectedVolumeUnmounter) TearDownAt(dir string) error {
 }
 
 func getVolumeSource(spec *volume.Spec) (*v1.ProjectedVolumeSource, bool, error) {
-	var readOnly bool
-	var volumeSource *v1.ProjectedVolumeSource
-
 	if spec.Volume != nil && spec.Volume.Projected != nil {
-		volumeSource = spec.Volume.Projected
-		readOnly = spec.ReadOnly
+		return spec.Volume.Projected, spec.ReadOnly, nil
 	}
 
-	return volumeSource, readOnly, fmt.Errorf("Spec does not reference a projected volume type")
+	return nil, false, fmt.Errorf("Spec does not reference a projected volume type")
 }

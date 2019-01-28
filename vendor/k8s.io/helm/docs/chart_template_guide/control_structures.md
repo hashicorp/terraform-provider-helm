@@ -40,7 +40,7 @@ A pipeline is evaluated as _false_ if the value is:
 - a `nil` (empty or null)
 - an empty collection (`map`, `slice`, `tuple`, `dict`, `array`)
 
-Under all other conditions, the condition is true.
+In any other case, the condition is evaluated to _true_ and the pipeline is executed.
 
 Let's add a simple conditional to our ConfigMap. We'll add another setting if the drink is set to coffee:
 
@@ -53,7 +53,7 @@ data:
   myvalue: "Hello World"
   drink: {{ .Values.favorite.drink | default "tea" | quote }}
   food: {{ .Values.favorite.food | upper | quote }}
-  {{ if (.Values.favorite.drink) and eq .Values.favorite.drink "coffee" }}mug: true{{ end }}
+  {{ if and (.Values.favorite.drink) (eq .Values.favorite.drink "coffee") }}mug: true{{ end }}
 ```
 
 Note that `.Values.favorite.drink` must be defined or else it will throw an error when comparing it to "coffee". Since we commented out `drink: coffee` in our last example, the output should not include a `mug: true` flag. But if we add that line back into our `values.yaml` file, the output should look like this:
@@ -269,7 +269,7 @@ It will produce an error because `Release.Name` is not inside of the restricted 
   release: {{ .Release.Name }}
 ```
 
-After looking a `range`, we will take a look at template variables, which offer one solution to the scoping issue above.
+After looking at `range`, we will take a look at template variables, which offers one solution to the scoping issue above.
 
 ## Looping with the `range` action
 
