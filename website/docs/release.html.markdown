@@ -45,7 +45,7 @@ The following arguments are supported:
 * `recreate_pods` - (Optional) On update performs pods restart for the resource if applicable.
 * `reuse_values` - (Optional) Reuse values from previous revision when upgrading a release. Same as `--reuse-values` flag in Helm CLI. Default is false.
 * `reuse` - (Optional) Instructs Tiller to re-use an existing name. Default is true.
-* `wait` - (Optional) Will wait until all Pods, PVCs, Services, and minimum number of Pods of a Deployment are in a ready state before marking the release as successful. It will wait for as long as `timeout`
+* `wait` - (Optional) Will wait until all Pods, PVCs, Services, and minimum number of Pods of a Deployment are in a ready state before marking the release as successful. It will wait for as long as `timeout`. Default is true.
 
 The `set` block supports:
 
