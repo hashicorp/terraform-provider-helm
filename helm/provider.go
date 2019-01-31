@@ -12,11 +12,12 @@ import (
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/mitchellh/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
 	// Import to initialize client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
@@ -97,7 +98,7 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc(helm_env.PluginDisableEnvVar, "true"),
-				Description: "Disable plugins. Set HELM_NO_PLUGINS=1 to disable plugins.",
+				Description: "Disable plugins. Set HELM_NO_PLUGINS=0 to enable plugins.",
 			},
 			"insecure": {
 				Type:        schema.TypeBool,
