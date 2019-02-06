@@ -33,7 +33,7 @@ func resourceTiller() *schema.Resource {
 			"tiller_image": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "gcr.io/kubernetes-helm/tiller:v2.9.0",
+				Default:     "gcr.io/kubernetes-helm/tiller:v2.11.0",
 				Description: "Tiller image to install.",
 			},
 			"service_account": {
