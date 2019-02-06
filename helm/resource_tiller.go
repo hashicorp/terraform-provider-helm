@@ -60,7 +60,7 @@ func resourceTiller() *schema.Resource {
 				Description: "Override values for the Tiller Deployment manifest.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
-			"insecure": {
+			"verify_tls": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Description: "Whether server should be accessed without verifying the TLS certificate.",
@@ -230,7 +230,7 @@ func buildInstallerOptions(d *schema.ResourceData) *installer.Options {
 	if o.EnableTLS {
 		o.TLSCertFile = d.Get("client_certificate").(string)
 		o.TLSKeyFile = d.Get("client_key").(string)
-		o.VerifyTLS = !d.Get("insecure").(bool)
+		o.VerifyTLS = d.Get("verify_tls").(bool)
 		if o.VerifyTLS {
 			o.TLSCaCertFile = d.Get("ca_certificate").(string)
 		}
