@@ -137,6 +137,7 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"helm_release":    resourceRelease(),
 			"helm_repository": resourceRepository(),
+			"helm_tiller":     resourceTiller(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
