@@ -14,6 +14,7 @@ The Helm provider is used to deploy software packages in Kubernetes. The provide
 
 * [Resource: helm_release](release.html)
 * [Resource: helm_repository](repository.html)
+* [Resource: helm_tiller](tiller.html)
 
 ## Example Usage
 

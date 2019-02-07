@@ -16,6 +16,7 @@ Contents
 * [Documentation](https://www.terraform.io/docs/providers/helm/index.html)
   * [Resource: helm_release](https://www.terraform.io/docs/providers/helm/release.html)
   * [Resource: helm_repository](https://www.terraform.io/docs/providers/helm/repository.html)
+  * [Resource: helm_tiller](https://www.terraform.io/docs/providers/helm/tiller.html)
 
 
 Installation
