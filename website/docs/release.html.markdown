@@ -17,11 +17,29 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 
 ```
 resource "helm_release" "example" {
-  name = "my_redis"
-  chart = "redis"
+  name       = "my-redis-release"
+  repository = "stable"
+  chart      = "redis"
+  version    = "6.0.1"
+
   values = [
     "${file("values.yaml")}"
   ]
+
+  set {
+    name  = "cluster.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "metrics.enabled"
+    value = "true"
+  }
+
+  set_string {
+    name  = "service.annotations.prometheus\\.io/port"
+    value = "9127"
+  }
 }
 ```
 
