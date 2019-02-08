@@ -36,8 +36,8 @@ The following arguments are supported:
 * `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
 * `values` - (Optional) List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options.
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
-* `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml.
-* `set_string` - (Optional) Value block with custom sstring values to be merged with the values yaml.
+* `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff.
+* `set_string` - (Optional) Value block with custom STRING values to be merged with the values yaml.
 * `namespace` - (Optional) Namespace to install the release into.
 * `verify` - (Optional) Verify the package before installing it.
 * `keyring` - (Optional) Location of public keys used for verification.
