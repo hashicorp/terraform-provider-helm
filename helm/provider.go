@@ -549,7 +549,7 @@ func getContent(d *schema.ResourceData, key, def string) ([]byte, error) {
 		return nil, err
 	}
 
-	if content == filename {
+	if content == def {
 		return nil, nil
 	}
 
