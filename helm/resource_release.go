@@ -63,7 +63,11 @@ func resourceRelease() *schema.Resource {
 			"devel": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored",
+				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored",
+				// Suppress changes of this attribute if `version` is set
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("version").(string) != ""
+				},
 			},
 			"values": {
 				Type:        schema.TypeList,
@@ -140,7 +144,11 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     os.ExpandEnv("$HOME/.gnupg/pubring.gpg"),
-				Description: "Location of public keys used for verification.",
+				Description: "Location of public keys used for verification. Used only if `verify` is true",
+				// Suppress changes of this attribute if `verify` is false
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return !d.Get("verify").(bool)
+				},
 			},
 			"timeout": {
 				Type:        schema.TypeInt,
