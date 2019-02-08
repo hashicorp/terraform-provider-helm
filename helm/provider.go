@@ -474,7 +474,7 @@ func (m *Meta) buildTunnel(d *schema.ResourceData) error {
 		return fmt.Errorf("error creating tunnel: %q", err)
 	}
 
-	m.Settings.TillerHost = fmt.Sprintf("localhost:%d", m.Tunnel.Local)
+	m.Settings.TillerHost = fmt.Sprintf("127.0.0.1:%d", m.Tunnel.Local)
 	debug("Created tunnel using local port: '%d'\n", m.Tunnel.Local)
 	return nil
 }
