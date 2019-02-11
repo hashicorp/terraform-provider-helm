@@ -1,4 +1,4 @@
-## 0.8.0 (Unreleased)
+## 0.8.0 (February 11, 2019)
 
 FEATURES:
 
