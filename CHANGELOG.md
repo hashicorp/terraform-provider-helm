@@ -1,4 +1,22 @@
-## 0.7.1 (Unreleased)
+## 0.8.0 (Unreleased)
+
+FEATURES:
+
+* Added the possibility to set sensitive values (#153)
+
+IMPROVEMENTS:
+
+* Multiple README, logs and docs improvements
+* Go 1.11 and modules (#179, #200 and #201)
+* Default tiller version v2.11.0 (#194)
+* Suppress diff of "keyring" and "devel" attributes (#193)
+* Add entries to .gitignore to roughly match the Google provider (#206)
+
+FIXES:
+
+* Fix when Helm provider ignores FAILED release state (#161)
+* Use `127.0.0.1` as default `localhost` (#207)
+
 ## 0.7.0 (December 17, 2018)
 
 - Based on Helm 2.11
