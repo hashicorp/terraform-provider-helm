@@ -50,7 +50,7 @@ The provider always first tries to load **a config file** (usually `$HOME/.kube/
 ```hcl
 provider "helm" {
     kubernetes {
-        config_path = "${file("/path/to/kube_cluster.yaml")}"
+        config_path = "/path/to/kube_cluster.yaml"
     }
 }
 ```
