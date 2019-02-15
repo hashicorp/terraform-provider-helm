@@ -69,7 +69,6 @@ resource "helm_release" "my_database" {
 }
 ```
 
-
 ## Contributing
 
 The Terraform Kubernetes Provider is the work of many contributors. We appreciate your help!
