@@ -105,6 +105,8 @@ resource "helm_release" "my_database" {
 }
 ```
 
+`A note on NOTES.txt: helm charts often contain NOTES.txt output that provide helpful next steps and occasionally provide debug information on missing environment variables etc. At present, this provider will not output or log the result of NOTES.txt on any installed charts. Temporarily install the chart via helm directly to see the output of NOTES.txt`
+
 License
 -------
 
