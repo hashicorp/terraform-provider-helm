@@ -12,6 +12,7 @@ import (
 
 func dataRepository() *schema.Resource {
 	return &schema.Resource{
+		Read: dataRepositoryRead,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
