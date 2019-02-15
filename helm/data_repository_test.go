@@ -11,19 +11,19 @@ func TestAccDataRepository_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
-			Config: testAccHelmRepositoryConfigBasic(testRepositoryName, testRepositoryURL),
+			Config: testAccHelmDataRepositoryConfigBasic(testRepositoryName, testRepositoryURL),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("data.helm_repository.test", "metadata.0.name", testRepositoryName),
 				resource.TestCheckResourceAttr("data.helm_repository.test", "metadata.0.url", testRepositoryURL),
 			),
 		}, {
-			Config: testAccHelmRepositoryConfigBasic(testRepositoryName, testRepositoryURL),
+			Config: testAccHelmDataRepositoryConfigBasic(testRepositoryName, testRepositoryURL),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("data.helm_repository.test", "metadata.0.name", testRepositoryName),
 				resource.TestCheckResourceAttr("data.helm_repository.test", "metadata.0.url", testRepositoryURL),
 			),
 		}, {
-			Config: testAccHelmRepositoryConfigBasic(testRepositoryName, testRepositoryURLAlt),
+			Config: testAccHelmDataRepositoryConfigBasic(testRepositoryName, testRepositoryURLAlt),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("data.helm_repository.test", "metadata.0.name", testRepositoryName),
 				resource.TestCheckResourceAttr("data.helm_repository.test", "metadata.0.url", testRepositoryURLAlt),
@@ -32,7 +32,7 @@ func TestAccDataRepository_basic(t *testing.T) {
 	})
 }
 
-func testAccHelmRepositoryConfigBasic(name, url string) string {
+func testAccHelmDataRepositoryConfigBasic(name, url string) string {
 	return fmt.Sprintf(`
 		data "helm_repository" "test" {
  			name = %q
