@@ -88,6 +88,13 @@ func resourceTiller() *schema.Resource {
 				Default:     "$HELM_HOME/ca.pem",
 				Description: "PEM-encoded root certificates bundle for TLS authentication.",
 			},
+			"listen_localhost": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				ForceNew:    true,
+				Description: "Let Tiller only listen on localhost.",
+			},
 			"metadata": {
 				Type:        schema.TypeSet,
 				Computed:    true,
@@ -233,6 +240,11 @@ func buildInstallerOptions(d *schema.ResourceData) *installer.Options {
 		o.VerifyTLS = d.Get("verify_tls").(bool)
 		if o.VerifyTLS {
 			o.TLSCaCertFile = d.Get("ca_certificate").(string)
+		}
+	}
+	if d.Get("listen_localhost").(bool) {
+		o.Values = []string{
+			"spec.template.spec.containers[0].command={/tiller,--listen=localhost:44134}",
 		}
 	}
 	return o

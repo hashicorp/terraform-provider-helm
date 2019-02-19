@@ -37,6 +37,7 @@ The following arguments are supported:
 * `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `$HELM_HOME/key.pem`.
 * `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `$HELM_HOME/cert.pem`.
 * `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. By default read from `$HELM_HOME/ca.pem`.
+* `listen_localhost` - (Optional) Let Tiller only listen on localhost. Defaults to `true`.
 
 ## Attributes Reference
 
