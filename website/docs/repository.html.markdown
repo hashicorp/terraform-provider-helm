@@ -6,21 +6,21 @@ description: |-
 
 ---
 
-# Resource: helm_repository
+# Data Source: helm_repository
 
 A chart repository is a location where packaged charts can be stored and shared.
 
-`helm_repository` describes the desired status of a helm repository.
+`helm_repository` describes a helm repository.
 
 ## Example Usage
 
 ```hcl
-resource "helm_repository" "incubator" {
+data "helm_repository" "incubator" {
     name = "incubator"
     url  = "https://kubernetes-charts-incubator.storage.googleapis.com"
 }
 
-resource "helm_release" "my_cache" {
+data "helm_release" "my_cache" {
     name       = "my_cache"
     repository = "${helm_repository.incubator.metadata.0.name}"
     chart      = "redis-cache"
@@ -54,3 +54,7 @@ The `metadata` block supports:
 ## Import
 
 `helm_repository` does not support import
+
+## Old resource helm_repository
+
+Before 0.9.0 `helm_repository` was a resource and not a data source. The old resource is now a shim to the data source to preserve backwards compatibiliy. As the use of the resource is deprecated it is strongly suggested to move to the new data source.
