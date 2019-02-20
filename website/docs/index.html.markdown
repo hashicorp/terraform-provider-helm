@@ -93,9 +93,9 @@ The following arguments are supported:
 * `plugins_disable` - (Optional) Disable plugins. Can be sourced from `HELM_NO_PLUGINS` environment variable, set `HELM_NO_PLUGINS=0` to enable plugins. Defaults to `true`.
 * `insecure` - (Optional) Whether server should be accessed without verifying the TLS certificate. Defaults to `false`.
 * `enable_tls` - (Optional) Enables TLS communications with the Tiller. Defaults to `false`.
-* `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `$HELM_HOME/key.pem`.
-* `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `$HELM_HOME/cert.pem`.
-* `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. By default read from `$HELM_HOME/ca.pem`.
+* `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `key.pem` in the location set by `home`.
+* `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `cert.pem` in the location set by `home`.
+* `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. By default read from `ca.pem` in the location set by `home`.
 * `kubernetes` - Kubernetes configuration block.
 
 The `kubernetes` block supports:
