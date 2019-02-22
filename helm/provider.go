@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"log"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -113,19 +114,16 @@ func Provider() terraform.ResourceProvider {
 			"client_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "$HELM_HOME/key.pem",
 				Description: "PEM-encoded client certificate key for TLS authentication.",
 			},
 			"client_certificate": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "$HELM_HOME/cert.pem",
 				Description: "PEM-encoded client certificate for TLS authentication.",
 			},
 			"ca_certificate": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "$HELM_HOME/ca.pem",
 				Description: "PEM-encoded root certificates bundle for TLS authentication.",
 			},
 			"kubernetes": {
@@ -488,6 +486,7 @@ func (m *Meta) buildHelmClient() helm.Interface {
 	}
 
 	if m.TLSConfig != nil {
+		debug("Found TLS settings: configuring helm client with TLS")
 		options = append(options, helm.WithTLS(m.TLSConfig))
 	}
 
@@ -495,11 +494,17 @@ func (m *Meta) buildHelmClient() helm.Interface {
 }
 
 func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {
-	keyPEMBlock, err := getContent(d, "client_key", "$HELM_HOME/key.pem")
+	// The default uses the files in the provider configured helm home
+	helmHome := d.Get("home").(string)
+	clientKeyDefault := filepath.Join(helmHome, "key.pem")
+	clientCertDefault := filepath.Join(helmHome, "cert.pem")
+	caCertDefault := filepath.Join(helmHome, "ca.pem")
+
+	keyPEMBlock, err := getContent(d, "client_key", clientKeyDefault)
 	if err != nil {
 		return err
 	}
-	certPEMBlock, err := getContent(d, "client_certificate", "$HELM_HOME/cert.pem")
+	certPEMBlock, err := getContent(d, "client_certificate", clientCertDefault)
 	if err != nil {
 		return err
 	}
@@ -518,7 +523,7 @@ func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {
 
 	cfg.Certificates = []tls.Certificate{cert}
 
-	caPEMBlock, err := getContent(d, "ca_certificate", "$HELM_HOME/ca.pem")
+	caPEMBlock, err := getContent(d, "ca_certificate", caCertDefault)
 	if err != nil {
 		return err
 	}
@@ -535,7 +540,12 @@ func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {
 }
 
 func getContent(d *schema.ResourceData, key, def string) ([]byte, error) {
+	// Check if the key is defined. If not, use the default.
 	filename := d.Get(key).(string)
+	if filename == "" {
+		filename = def
+	}
+	debug("TLS settings: Attempting to read contents of %s from %s", key, filename)
 
 	content, _, err := pathorcontents.Read(filename)
 	if err != nil {
