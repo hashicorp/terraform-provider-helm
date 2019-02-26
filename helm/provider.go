@@ -560,6 +560,10 @@ func debug(format string, a ...interface{}) {
 	log.Printf("[DEBUG] %s", fmt.Sprintf(format, a...))
 }
 
+func info(format string, a ...interface{}) {
+	log.Printf("[INFO] %s", fmt.Sprintf(format, a...))
+}
+
 var (
 	tlsCaCertFile string // path to TLS CA certificate file
 	tlsCertFile   string // path to TLS certificate file

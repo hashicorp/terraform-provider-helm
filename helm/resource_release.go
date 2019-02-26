@@ -349,6 +349,8 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	info(res.GetRelease().GetInfo().GetStatus().GetNotes())
+
 	return setIDAndMetadataFromRelease(d, res.Release)
 }
 
@@ -420,6 +422,8 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	info(res.GetRelease().GetInfo().GetStatus().GetNotes())
 
 	return setIDAndMetadataFromRelease(d, res.Release)
 }
