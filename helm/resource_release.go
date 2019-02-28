@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -26,6 +27,9 @@ import (
 
 // ErrReleaseNotFound is the error when a Helm release is not found
 var ErrReleaseNotFound = errors.New("release not found")
+
+// This is used to escape commas which are not escaped in set_string
+var nonEscapedCommaRegexp = regexp.MustCompile(`([^\\]),`)
 
 func resourceRelease() *schema.Resource {
 	return &schema.Resource{
@@ -596,8 +600,9 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 
 		name := set["name"].(string)
 		value := set["value"].(string)
+		value = nonEscapedCommaRegexp.ReplaceAllString(value, "$1\\,") // escape any non-escaped commas
 
-		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value, base)); err != nil {
 			return nil, fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
 		}
 	}
