@@ -111,6 +111,21 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_setStringValues(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy,
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigSetString(testResourceName, testNamespace, testResourceName, "0.6.3"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values.test", "10.0.0.0/32,10.0.0.1/32,10.0.0.2/32"),
+			),
+		}},
+	})
+}
+
 func TestAccResourceRelease_updateValues(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Providers:    testAccProviders,
@@ -354,6 +369,23 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 				name = "qux.bar"
 				value = 1
 			}
+		}
+	`, resource, name, ns, version)
+}
+
+func testAccHelmReleaseConfigSetString(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name      = %q
+			namespace = %q
+  			chart     = "stable/mariadb"
+			version   = %q
+
+			set_string {
+				name  = "test"
+				value =  "10.0.0.0/32,10.0.0.1/32,10.0.0.2/32"
+			}
+
 		}
 	`, resource, name, ns, version)
 }
