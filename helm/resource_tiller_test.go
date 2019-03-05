@@ -6,10 +6,21 @@ import (
 
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestAccResourceTiller_basic(t *testing.T) {
+	m := testAccProvider.Meta()
+	if m == nil {
+		t.Error("provider not properly initialized")
+	}
+	_, err := m.(*Meta).K8sClient.CoreV1().Namespaces().Get(testNamespace, metav1.GetOptions{})
+	ns := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: testNamespace}}
+	if err != nil {
+		// create test namespace if it does not exist
+		m.(*Meta).K8sClient.CoreV1().Namespaces().Create(ns)
+	}
 	resource.Test(t, resource.TestCase{
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmTillerDestroy,
