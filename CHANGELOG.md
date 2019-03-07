@@ -1,4 +1,15 @@
-## 0.8.1 (Unreleased)
+## O.9.0 (Unreleased)
+
+FEATURES:
+
+* `helm_repository` is now a data source. We retain backwards compatibility through `DataSourceResourceShim` (#221)
+* Use configured helm home when reading default TLS settings (#210)
+* Added `load_config_file` option to enable or disable the load of kubernetes config file (#231)
+
+IMPROVEMENTS:
+
+* CI and doc improvements
+
 ## 0.8.0 (February 11, 2019)
 
 FEATURES:
