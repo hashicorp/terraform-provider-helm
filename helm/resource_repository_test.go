@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
+// These tests are kept to test backwards compatibility for the helm_repository resource
+
 func TestAccResourceRepository_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		Providers:    testAccProviders,
