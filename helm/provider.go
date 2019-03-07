@@ -359,7 +359,7 @@ func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
 	overrides := &clientcmd.ConfigOverrides{}
 
-	if !k8sGet(d, "in_cluster").(bool) && k8sGet(d, "load_config_file").(bool) { {
+	if !k8sGet(d, "in_cluster").(bool) && k8sGet(d, "load_config_file").(bool) {
 		explicitPath, err := homedir.Expand(k8sGet(d, "config_path").(string))
 		if err != nil {
 			return nil, err
