@@ -578,6 +578,7 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 
 		name := set["name"].(string)
 		value := set["value"].(string)
+		value = nonEscapedCommaRegexp.ReplaceAllString(value, "$1\\,") // escape any non-escaped commas
 
 		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
 			return nil, fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
@@ -589,6 +590,7 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 
 		name := set["name"].(string)
 		value := set["value"].(string)
+		value = nonEscapedCommaRegexp.ReplaceAllString(value, "$1\\,") // escape any non-escaped commas
 
 		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
 			return nil, fmt.Errorf("failed parsing key %q with sensitive value, %s", name, err)
