@@ -116,11 +116,11 @@ func TestAccResourceRelease_setStringValues(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy,
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigSetString(testResourceName, testNamespace, testResourceName, "0.6.3"),
+			Config: testAccHelmReleaseConfigSetString(testResourceName, testNamespace, testResourceName, "0.6.3", "10.0.0.0/32,10.0.0.1/32,10.0.0.2/32"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values.test", "10.0.0.0/32,10.0.0.1/32,10.0.0.2/32"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "test: \"10.0.0.0/32,10.0.0.1/32,10.0.0.2/32\""),
 			),
 		}},
 	})
@@ -373,7 +373,7 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	`, resource, name, ns, version)
 }
 
-func testAccHelmReleaseConfigSetString(resource, ns, name, version string) string {
+func testAccHelmReleaseConfigSetString(resource, ns, name, version, value string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
  			name      = %q
@@ -383,11 +383,11 @@ func testAccHelmReleaseConfigSetString(resource, ns, name, version string) strin
 
 			set_string {
 				name  = "test"
-				value =  "10.0.0.0/32,10.0.0.1/32,10.0.0.2/32"
+				value =  "%s"
 			}
 
 		}
-	`, resource, name, ns, version)
+	`, resource, name, ns, version, value)
 }
 
 func testAccHelmReleaseConfigValues(resource, ns, name, chart string, values []string) string {
