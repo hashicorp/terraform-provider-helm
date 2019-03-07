@@ -118,7 +118,12 @@ func TestAccResourceRelease_setStringValues(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigSetString(testResourceName, testNamespace, testResourceName, "0.6.3", "10.0.0.0/32,10.0.0.1/32,10.0.0.2/32"),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "test: 10.0.0.0/32,10.0.0.1/32,10.0.0.2/32\n"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigSetString(testResourceName, testNamespace, testResourceName, "0.6.3", "10.0.0.0\\/32,10.0.0.1\\/32,10.0.0.2\\/32"),
+			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "test: 10.0.0.0/32,10.0.0.1/32,10.0.0.2/32\n"),
 			),
