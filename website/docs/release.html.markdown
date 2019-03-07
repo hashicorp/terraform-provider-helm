@@ -72,6 +72,7 @@ The `set`, `set_sensitive` and `set_strings` blocks support:
 * `name` - (Required) full name of the variable to be set.
 * `value` - (Required) value of the variable to be set.
 
+Note: Unlike `--set` in Helm commas in `value` blocks are supported and will not be seen as a new key value set. 
 
 ## Attributes Reference
 
