@@ -218,6 +218,12 @@ func kubernetesResource() *schema.Resource {
 				Optional:    true,
 				Description: "Retrieve config from Kubernetes cluster.",
 			},
+			"load_config_file": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_LOAD_CONFIG_FILE", true),
+				Description: "By default the local config (~/.kube/config) is loaded when you use this provider. This option at false disable this behaviour.",
+			},
 		},
 	}
 }
@@ -356,7 +362,7 @@ func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
 	overrides := &clientcmd.ConfigOverrides{}
 
-	if !k8sGet(d, "in_cluster").(bool) {
+	if !k8sGet(d, "in_cluster").(bool) && k8sGet(d, "load_config_file").(bool) {
 		explicitPath, err := homedir.Expand(k8sGet(d, "config_path").(string))
 		if err != nil {
 			return nil, err
