@@ -20,7 +20,7 @@ data "helm_repository" "incubator" {
     url  = "https://kubernetes-charts-incubator.storage.googleapis.com"
 }
 
-data "helm_release" "my_cache" {
+resource "helm_release" "my_cache" {
     name       = "my_cache"
     repository = "${helm_repository.incubator.metadata.0.name}"
     chart      = "redis-cache"
