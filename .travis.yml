@@ -7,6 +7,9 @@ language: go
 go:
   - "1.11.x"
 
+env:
+  - GOFLAGS=-mod=vendor GO111MODULE=on
+
 stages:
   - Unit test
   - Acceptance test
