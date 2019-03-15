@@ -6,6 +6,7 @@ import (
 
 	"k8s.io/helm/pkg/repo"
 
+	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -13,25 +14,29 @@ import (
 // These tests are kept to test backwards compatibility for the helm_repository resource
 
 func TestAccResourceRepository_basic(t *testing.T) {
+	name := fmt.Sprintf("%s-%s", testRepositoryName, acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Note: this helm resource does not automatically create namespaces so no cleanup needed here
+
 	resource.Test(t, resource.TestCase{
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckHelmReleaseDestroy,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
-			Config: testAccHelmRepositoryConfigBasic(testRepositoryName, testRepositoryURL),
+			Config: testAccHelmRepositoryConfigBasic(name, testRepositoryURL),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("helm_repository.test", "metadata.0.name", testRepositoryName),
+				resource.TestCheckResourceAttr("helm_repository.test", "metadata.0.name", name),
 				resource.TestCheckResourceAttr("helm_repository.test", "metadata.0.url", testRepositoryURL),
 			),
 		}, {
-			Config: testAccHelmRepositoryConfigBasic(testRepositoryName, testRepositoryURL),
+			Config: testAccHelmRepositoryConfigBasic(name, testRepositoryURL),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("helm_repository.test", "metadata.0.name", testRepositoryName),
+				resource.TestCheckResourceAttr("helm_repository.test", "metadata.0.name", name),
 				resource.TestCheckResourceAttr("helm_repository.test", "metadata.0.url", testRepositoryURL),
 			),
 		}, {
-			Config: testAccHelmRepositoryConfigBasic(testRepositoryName, testRepositoryURLAlt),
+			Config: testAccHelmRepositoryConfigBasic(name, testRepositoryURLAlt),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("helm_repository.test", "metadata.0.name", testRepositoryName),
+				resource.TestCheckResourceAttr("helm_repository.test", "metadata.0.name", name),
 				resource.TestCheckResourceAttr("helm_repository.test", "metadata.0.url", testRepositoryURLAlt),
 			),
 		}},
