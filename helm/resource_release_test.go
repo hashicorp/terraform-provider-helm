@@ -137,17 +137,22 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 }
 
 func TestAccResourceRelease_setStringValues(t *testing.T) {
+	name := fmt.Sprintf("test-set-string-values-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
 	resource.Test(t, resource.TestCase{
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckHelmReleaseDestroy,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigSetString(testResourceName, testNamespace, testResourceName, "0.6.3", "10.0.0.0/32,10.0.0.1/32,10.0.0.2/32"),
+			Config: testAccHelmReleaseConfigSetString(testResourceName, namespace, name, "0.6.3", "10.0.0.0/32,10.0.0.1/32,10.0.0.2/32"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "test: 10.0.0.0/32,10.0.0.1/32,10.0.0.2/32\n"),
 			),
 		}, {
-			Config: testAccHelmReleaseConfigSetString(testResourceName, testNamespace, testResourceName, "0.6.3", "10.0.0.0\\\\/32,10.0.0.1\\\\/32,10.0.0.2\\\\/32"),
+			Config: testAccHelmReleaseConfigSetString(testResourceName, namespace, name, "0.6.3", "10.0.0.0\\\\/32,10.0.0.1\\\\/32,10.0.0.2\\\\/32"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "test: 10.0.0.0/32,10.0.0.1/32,10.0.0.2/32\n"),
