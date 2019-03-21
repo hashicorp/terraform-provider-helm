@@ -23,7 +23,7 @@ data "helm_repository" "stable" {
 
 resource "helm_release" "example" {
   name       = "my-redis-release"
-  repository = "{data.helm_repository.stable.metadata.0.name}"
+  repository = "${data.helm_repository.stable.metadata.0.name}"
   chart      = "redis"
   version    = "6.0.1"
 
