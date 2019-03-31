@@ -45,7 +45,7 @@ There are generally two ways to configure the Helm provider.
 
 ### File config
 
-The provider always first tries to load **a config file** (usually `$HOME/.kube/config`), for access kubenetes and reads all the Helm files from home (usually `$HOME/.helm`). You can also define that file with the following setting:
+The provider always first tries to load **a config file** (usually `$HOME/.kube/config`), for access kubernetes and reads all the Helm files from home (usually `$HOME/.helm`). You can also define that file with the following setting:
 
 ```hcl
 provider "helm" {
