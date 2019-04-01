@@ -532,6 +532,11 @@ func (m *Meta) buildHelmClient() helm.Interface {
 }
 
 func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {
+	// Don't initialize TLSConfig if TLS is disabled
+	if !d.Get("enable_tls").(bool) {
+		return nil
+	}
+
 	// The default uses the files in the provider configured helm home
 	helmHome := d.Get("home").(string)
 	clientKeyDefault := filepath.Join(helmHome, "key.pem")
