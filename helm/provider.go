@@ -133,6 +133,21 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Description: "PEM-encoded root certificates bundle for TLS authentication.",
 			},
+			"client_key_path": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Path to PEM-encoded client certificate key for TLS authentication.",
+			},
+			"client_certificate_path": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Path to PEM-encoded client certificate for TLS authentication.",
+			},
+			"ca_certificate_path": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Path to PEM-encoded root certificates bundle for TLS authentication.",
+			},
 			"kubernetes": {
 				Type:        schema.TypeList,
 				MaxItems:    1,
@@ -446,11 +461,11 @@ func (m *Meta) installTillerIfNeeded(d *schema.ResourceData) error {
 
 	o.EnableTLS = d.Get("enable_tls").(bool)
 	if o.EnableTLS {
-		o.TLSCertFile = d.Get("client_certificate").(string)
-		o.TLSKeyFile = d.Get("client_key").(string)
+		o.TLSCertFile = d.Get("client_certificate_path").(string)
+		o.TLSKeyFile = d.Get("client_key_path").(string)
 		o.VerifyTLS = !d.Get("insecure").(bool)
 		if o.VerifyTLS {
-			o.TLSCaCertFile = d.Get("ca_certificate").(string)
+			o.TLSCaCertFile = d.Get("ca_certificate_path").(string)
 		}
 	}
 
@@ -538,13 +553,28 @@ func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {
 	clientCertDefault := filepath.Join(helmHome, "cert.pem")
 	caCertDefault := filepath.Join(helmHome, "ca.pem")
 
-	keyPEMBlock, err := getContent(d, "client_key", clientKeyDefault)
-	if err != nil {
-		return err
+	var keyPEMBlock []byte
+	clientKey := d.Get("client_key")
+	if clientKey != nil {
+		keyPEMBlock = []byte(clientKey.(string))
+	} else {
+		var err error
+		keyPEMBlock, err = getContent(d, "client_key_path", clientKeyDefault)
+		if err != nil {
+			return err
+		}
 	}
-	certPEMBlock, err := getContent(d, "client_certificate", clientCertDefault)
-	if err != nil {
-		return err
+
+	var certPEMBlock []byte
+	clientCert := d.Get("client_certificate")
+	if clientCert != nil {
+		certPEMBlock = []byte(clientCert.(string))
+	} else {
+		var err error
+		certPEMBlock, err = getContent(d, "client_certificate_path", clientCertDefault)
+		if err != nil {
+			return err
+		}
 	}
 	if len(keyPEMBlock) == 0 && len(certPEMBlock) == 0 {
 		return nil
@@ -561,9 +591,16 @@ func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {
 
 	cfg.Certificates = []tls.Certificate{cert}
 
-	caPEMBlock, err := getContent(d, "ca_certificate", caCertDefault)
-	if err != nil {
-		return err
+	var caPEMBlock []byte
+	caCert := d.Get("ca_certificate")
+	if caCert != nil {
+		caPEMBlock = []byte(caCert.(string))
+	} else {
+		var err error
+		caPEMBlock, err = getContent(d, "ca_certificate_path", caCertDefault)
+		if err != nil {
+			return err
+		}
 	}
 
 	if !cfg.InsecureSkipVerify && len(caPEMBlock) != 0 {
