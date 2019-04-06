@@ -118,6 +118,11 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Description: "Enables TLS communications with the Tiller.",
 			},
+			"tls_hostname": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The hostname or IP address used to verify the Tiller server certificate.",
+			},
 			"client_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -582,6 +587,7 @@ func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {
 
 	cfg := &tls.Config{
 		InsecureSkipVerify: d.Get("insecure").(bool),
+		ServerName:         d.Get("tls_hostname").(string),
 	}
 
 	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
