@@ -3,6 +3,7 @@ terraform-provider-helm
 build
 assets
 .terraform
+*/test-infra/*/config
 _output/
 .vscode
 /results

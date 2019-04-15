@@ -207,6 +207,11 @@ func kubernetesResource() *schema.Resource {
 					"~/.kube/config"),
 				Description: "Path to the kube config file, defaults to ~/.kube/config. Can be sourced from `KUBE_CONFIG`.",
 			},
+			"config_content": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Content of the kube config file as a string. Mutually exclusive with config_path.",
+			},
 			"config_context": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -361,22 +366,35 @@ func k8sGet(d *schema.ResourceData, key string) interface{} {
 func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
 	overrides := &clientcmd.ConfigOverrides{}
+	var cc clientcmd.ClientConfig
 
-	if !k8sGet(d, "in_cluster").(bool) && k8sGet(d, "load_config_file").(bool) {
+	context := k8sGet(d, "config_context").(string)
+	if context != "" {
+		overrides.CurrentContext = context
+	}
+
+	inCluster := k8sGet(d, "in_cluster").(bool)
+	loadConfig := k8sGet(d, "load_config_file").(bool)
+	configContent := k8sGet(d, "config_content").(string)
+
+	if configContent != "" {
+		debug("Loading kubernetes from config_content rather than from path")
+		configBytes := []byte(configContent)
+		apiConfigFromConfigContent, err := clientcmd.Load(configBytes)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load kubernetes config_content: %s", err)
+		}
+		cc = clientcmd.NewDefaultClientConfig(*apiConfigFromConfigContent, overrides)
+	} else if !inCluster && loadConfig {
 		explicitPath, err := homedir.Expand(k8sGet(d, "config_path").(string))
 		if err != nil {
 			return nil, err
 		}
-
 		rules.ExplicitPath = explicitPath
-		rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-
-		context := k8sGet(d, "config_context").(string)
-		if context != "" {
-			overrides.CurrentContext = context
-		}
+		cc = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
 	}
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides), nil
+
+	return cc, nil
 }
 
 // GetHelmClient will return a new Helm client

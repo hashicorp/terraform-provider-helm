@@ -10,7 +10,7 @@ See [Google Cloud Provider docs](https://www.terraform.io/docs/providers/google/
 
 ```
 terraform init
-terraform apply -var=kubernetes_version=1.7.12-gke.1
+terraform apply -var=kubernetes_version=1.11.8
 ```
 
 ## Versions
