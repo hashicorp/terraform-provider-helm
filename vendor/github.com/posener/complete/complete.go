@@ -64,10 +64,12 @@ func (c *Complete) Complete() bool {
 		return c.CLI.Run()
 	}
 
-	completePhrase := line[:point]
+	if point >= 0 && point < len(line) {
+		line = line[:point]
+	}
 
-	Log("Completing phrase: %s", completePhrase)
-	a := newArgs(completePhrase)
+	Log("Completing phrase: %s", line)
+	a := newArgs(line)
 	Log("Completing last field: %s", a.Last)
 	options := c.Command.Predict(a)
 	Log("Options: %s", options)
