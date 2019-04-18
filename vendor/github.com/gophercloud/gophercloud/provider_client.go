@@ -79,6 +79,8 @@ type ProviderClient struct {
 	mut *sync.RWMutex
 
 	reauthmut *reauthlock
+
+	authResult AuthResult
 }
 
 type reauthlock struct {
@@ -115,6 +117,20 @@ func (client *ProviderClient) UseTokenLock() {
 	client.reauthmut = new(reauthlock)
 }
 
+// GetAuthResult returns the result from the request that was used to obtain a
+// provider client's Keystone token.
+//
+// The result is nil when authentication has not yet taken place, when the token
+// was set manually with SetToken(), or when a ReauthFunc was used that does not
+// record the AuthResult.
+func (client *ProviderClient) GetAuthResult() AuthResult {
+	if client.mut != nil {
+		client.mut.RLock()
+		defer client.mut.RUnlock()
+	}
+	return client.authResult
+}
+
 // Token safely reads the value of the auth token from the ProviderClient. Applications should
 // call this method to access the token instead of the TokenID field
 func (client *ProviderClient) Token() string {
@@ -126,13 +142,53 @@ func (client *ProviderClient) Token() string {
 }
 
 // SetToken safely sets the value of the auth token in the ProviderClient. Applications may
-// use this method in a custom ReauthFunc
+// use this method in a custom ReauthFunc.
+//
+// WARNING: This function is deprecated. Use SetTokenAndAuthResult() instead.
 func (client *ProviderClient) SetToken(t string) {
 	if client.mut != nil {
 		client.mut.Lock()
 		defer client.mut.Unlock()
 	}
 	client.TokenID = t
+	client.authResult = nil
+}
+
+// SetTokenAndAuthResult safely sets the value of the auth token in the
+// ProviderClient and also records the AuthResult that was returned from the
+// token creation request. Applications may call this in a custom ReauthFunc.
+func (client *ProviderClient) SetTokenAndAuthResult(r AuthResult) error {
+	tokenID := ""
+	var err error
+	if r != nil {
+		tokenID, err = r.ExtractTokenID()
+		if err != nil {
+			return err
+		}
+	}
+
+	if client.mut != nil {
+		client.mut.Lock()
+		defer client.mut.Unlock()
+	}
+	client.TokenID = tokenID
+	client.authResult = r
+	return nil
+}
+
+// CopyTokenFrom safely copies the token from another ProviderClient into the
+// this one.
+func (client *ProviderClient) CopyTokenFrom(other *ProviderClient) {
+	if client.mut != nil {
+		client.mut.Lock()
+		defer client.mut.Unlock()
+	}
+	if other.mut != nil && other.mut != client.mut {
+		other.mut.RLock()
+		defer other.mut.RUnlock()
+	}
+	client.TokenID = other.TokenID
+	client.authResult = other.authResult
 }
 
 // IsThrowaway safely reads the value of the client Throwaway field.
