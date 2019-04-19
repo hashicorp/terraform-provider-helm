@@ -640,7 +640,7 @@ func deleteNamespace(t *testing.T, namespace string) {
 		t.Fatal("provider not properly initialized")
 	}
 
-	t.Logf("[DEBUG] Deleting namespace %q", namespace)
+	debug("[DEBUG] Deleting namespace %q", namespace)
 	gracePeriodSeconds := int64(0)
 	deleteOptions := meta_v1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriodSeconds,
