@@ -355,7 +355,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 }
 
 func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
-	name := fmt.Sprintf("test-update-existing-failed-%s", acctest.RandString(10))
+	name := fmt.Sprintf("test-update-version-from-release-%s", acctest.RandString(10))
 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
 	// Delete namespace automatically created by helm after checks
 	defer deleteNamespace(t, namespace)
