@@ -9,10 +9,12 @@ require (
 	github.com/Masterminds/goutils v1.1.0 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Masterminds/sprig v2.18.0+incompatible // indirect
+	github.com/Masterminds/vcs v1.13.0 // indirect
 	github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46 // indirect
 	github.com/chai2010/gettext-go v0.0.0-20170215093142-bf70f2a70fb1 // indirect
 	github.com/coreos/bbolt v1.3.1-coreos.6 // indirect
 	github.com/coreos/go-oidc v0.0.0-20180117170138-065b426bd416 // indirect
+	github.com/cpuguy83/go-md2man v1.0.10 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.2 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0 // indirect
@@ -36,6 +38,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf // indirect
 	github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d // indirect
+	github.com/gosuri/uitable v0.0.0-20160404203958-36ee7e946282 // indirect
 	github.com/hashicorp/terraform v0.12.0-alpha4.0.20190417210818-177a7afb781f
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
@@ -57,6 +60,7 @@ require (
 	github.com/prometheus/client_golang v0.9.2 // indirect
 	github.com/sirupsen/logrus v1.2.0 // indirect
 	github.com/spf13/cobra v0.0.0-20180319062004-c439c4fa0937 // indirect
+	github.com/technosophos/moniker v0.0.0-20180509230615-a5dbd03a2245 // indirect
 	github.com/tinylib/msgp v1.1.0 // indirect
 	github.com/xlab/handysort v0.0.0-20150421192137-fb3537ed64a1 // indirect
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a // indirect
@@ -76,7 +80,7 @@ require (
 	k8s.io/cloud-provider v0.0.0-20190409023720-1bc0c81fa51d // indirect
 	k8s.io/code-generator v0.0.0-20190419212335-ff26e7842f9d // indirect
 	k8s.io/component-base v0.0.0-20190409021516-bd2732e5c3f7 // indirect
-	k8s.io/helm v2.13.1+incompatible
+	k8s.io/helm v2.10.0-rc.2.0.20190424144640-f70cba9b5190+incompatible
 	k8s.io/kube-openapi v0.0.0-20190228160746-b3a7cee44a30 // indirect
 	k8s.io/kubernetes v1.14.1 // indirect
 	k8s.io/utils v0.0.0-20190308190857-21c4ce38f2a7 // indirect
