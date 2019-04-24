@@ -1,6 +1,18 @@
 ## 0.9.1 (Unreleased)
-## 0.9.0 (March 07, 2019)
 
+FEATURES:
+
+IMPROVEMENTS:
+
+* Migrate to Terraform 0.12 SDK
+* Move to Go modules for dep-management
+
+FIXES:
+
+* Properly handle commas in attribute values
+* Documentation fixes
+
+## 0.9.0 (March 07, 2019)
 FEATURES:
 
 * `helm_repository` is now a data source. We retain backwards compatibility through `DataSourceResourceShim` (#221)
