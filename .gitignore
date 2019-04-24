@@ -1,6 +1,6 @@
 terraform-provider-helm
 *.tfstate*
-build
+/build
 assets
 .terraform
 _output/

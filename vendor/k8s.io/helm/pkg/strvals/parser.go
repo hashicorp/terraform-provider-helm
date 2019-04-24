@@ -288,7 +288,13 @@ func (t *parser) listItem(list []interface{}, i int) ([]interface{}, error) {
 		// We have a nested object. Send to t.key
 		inner := map[string]interface{}{}
 		if len(list) > i {
-			inner = list[i].(map[string]interface{})
+			var ok bool
+			inner, ok = list[i].(map[string]interface{})
+			if !ok {
+				// We have indices out of order. Initialize empty value.
+				list[i] = map[string]interface{}{}
+				inner = list[i].(map[string]interface{})
+			}
 		}
 
 		// Recurse
@@ -385,6 +391,10 @@ func typedVal(v []rune, st bool) interface{} {
 
 	if strings.EqualFold(val, "null") {
 		return nil
+	}
+
+	if strings.EqualFold(val, "0") {
+		return int64(0)
 	}
 
 	// If this value does not start with zero, try parsing it to an int
