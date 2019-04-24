@@ -202,7 +202,7 @@ func resourceRelease() *schema.Resource {
 				Description: "Status of the release.",
 			},
 			"metadata": {
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Computed:    true,
 				Description: "Status of the deployed release.",
 				Elem: &schema.Resource{
