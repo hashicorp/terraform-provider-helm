@@ -51,7 +51,7 @@ func dataRepository() *schema.Resource {
 				Description: "Password for HTTP basic authentication",
 			},
 			"metadata": {
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Computed:    true,
 				Description: "Status of the deployed release",
 				Elem: &schema.Resource{

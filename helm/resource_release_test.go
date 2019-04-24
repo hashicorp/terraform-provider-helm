@@ -355,7 +355,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 }
 
 func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
-	name := fmt.Sprintf("test-update-existing-failed-%s", acctest.RandString(10))
+	name := fmt.Sprintf("test-update-version-from-release-%s", acctest.RandString(10))
 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
 	// Delete namespace automatically created by helm after checks
 	defer deleteNamespace(t, namespace)
@@ -640,7 +640,7 @@ func deleteNamespace(t *testing.T, namespace string) {
 		t.Fatal("provider not properly initialized")
 	}
 
-	t.Logf("[DEBUG] Deleting namespace %q", namespace)
+	debug("[DEBUG] Deleting namespace %q", namespace)
 	gracePeriodSeconds := int64(0)
 	deleteOptions := meta_v1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriodSeconds,
