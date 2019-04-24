@@ -645,7 +645,7 @@ func deleteNamespace(t *testing.T, namespace string) {
 	deleteOptions := meta_v1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriodSeconds,
 	}
-	err := m.(*Meta).K8sClient.Core().Namespaces().Delete(namespace, &deleteOptions)
+       err := m.(*Meta).K8sClient.CoreV1().Namespaces().Delete(namespace, &deleteOptions)
 	if err != nil {
 		t.Fatalf("An error occurred while deleting namespace %q: %q", namespace, err)
 	}
