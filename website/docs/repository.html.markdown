@@ -22,7 +22,7 @@ data "helm_repository" "incubator" {
 
 resource "helm_release" "my_cache" {
     name       = "my_cache"
-    repository = "${helm_repository.incubator.metadata.0.name}"
+    repository = "${data.helm_repository.incubator.metadata.0.name}"
     chart      = "redis-cache"
 }
 ```
