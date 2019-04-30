@@ -84,7 +84,7 @@ The following arguments are supported:
 * `home` - (Required) Set an alternative location for Helm files. By default, these are stored in `$HOME/.helm`. Can be sourced from `HELM_HOME` environment variable.
 * `namespace` - (Optional) Set an alternative Tiller namespace. Defaults to `kube-system`.
 * `install_tiller` - (Optional) Install Tiller if it is not already installed. Defaults to `true`.
-* `tiller_image` - (Optional) Tiller image to install. Defaults to `gcr.io/kubernetes-helm/tiller:v2.11.0`.
+* `tiller_image` - (Optional) Tiller image to install. Defaults to `gcr.io/kubernetes-helm/tiller:v2.13.1`.
 * `service_account` - (Optional) Service account to install Tiller with. Defaults to `default`.
 * `automount_service_account_token` - (Optional) Auto-mount the given service account to tiller. Defaults to `true`.
 * `override` - (Optional) Override values for the Tiller Deployment manifest. Defaults to `true`.
