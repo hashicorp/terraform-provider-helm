@@ -10,10 +10,13 @@ description: |-
 
 The Helm provider is used to deploy software packages in Kubernetes. The provider needs to be configured with the proper credentials before it can be used.
 
+## Data Sources
+
+* [Data Sources: helm_repository](repository.html)
+
 ## Resources
 
 * [Resource: helm_release](release.html)
-* [Resource: helm_repository](repository.html)
 
 ## Example Usage
 
