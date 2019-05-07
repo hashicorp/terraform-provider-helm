@@ -251,6 +251,59 @@ func TestAccResourceRelease_repository(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_repositoryDatasource(t *testing.T) {
+	name := fmt.Sprintf("test-repository-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigRepositoryDatasource(testResourceName, namespace, name),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigRepositoryDatasource(testResourceName, namespace, name),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
+			),
+		}},
+	})
+}
+
+func TestAccResourceRelease_repositoryMultipleDatasources(t *testing.T) {
+	name := fmt.Sprintf("test-repository-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	repo1 := "test-acc-repo-1"
+	repo2 := "test-acc-repo-2"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckHelmRepositoryDestroy(t, repo1)
+			testAccPreCheckHelmRepositoryDestroy(t, repo2)
+		},
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigRepositoryMultipleDatasource(repo1, repo2, testResourceName, namespace, name),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
+			),
+		}},
+	})
+}
+
 func TestAccResourceRelease_repository_url(t *testing.T) {
 	name := fmt.Sprintf("test-repository-url-%s", acctest.RandString(10))
 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
@@ -526,6 +579,50 @@ func testAccHelmReleaseConfigRepository(resource, ns, name string) string {
 			chart      = "coredns"
 		}
 	`, resource, name, ns)
+}
+
+func testAccHelmReleaseConfigRepositoryDatasource(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		data "helm_repository" "stable_repo" {
+			name = "stable-repo"
+			url  = "https://kubernetes-charts.storage.googleapis.com"
+		}
+
+		resource "helm_release" %q {
+			name       = %q
+			namespace  = %q
+			repository = "${data.helm_repository.stable_repo.metadata.0.name}"
+			chart      = "coredns"
+		}
+	`, resource, name, ns)
+}
+
+func testAccHelmReleaseConfigRepositoryMultipleDatasource(repo1, repo2, resource, ns, name string) string {
+	return fmt.Sprintf(`
+		data "helm_repository" "stable_repo" {
+			name = %q
+			url  = "https://kubernetes-charts.storage.googleapis.com"
+		}
+
+		data "helm_repository" "stable_repo_2" {
+			name = %q
+			url  = "https://kubernetes-charts.storage.googleapis.com"
+		}
+
+		resource "helm_release" %q {
+			name       = %q
+			namespace  = %q
+			repository = "${data.helm_repository.stable_repo.metadata.0.name}"
+			chart      = "coredns"
+		}
+
+		resource "helm_release" %q {
+			name       = %q
+			namespace  = %q
+			repository = "${data.helm_repository.stable_repo_2.metadata.0.name}"
+			chart      = "coredns"
+		}
+	`, repo1, repo2, resource, name, ns, resource+"_2", name+"-2", ns)
 }
 
 func testAccHelmReleaseConfigRepositoryURL(resource, ns, name string) string {

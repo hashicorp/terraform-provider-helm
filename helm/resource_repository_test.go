@@ -2,13 +2,13 @@ package helm
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"k8s.io/helm/pkg/repo"
 
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 )
 
 // These tests are kept to test backwards compatibility for the helm_repository resource
@@ -52,19 +52,28 @@ func testAccHelmRepositoryConfigBasic(name, url string) string {
 	`, name, url)
 }
 
-func testAccCheckHelmRepositoryDestroy(s *terraform.State) error {
+func testAccPreCheckHelmRepositoryDestroy(t *testing.T, name string) {
 	settings := testAccProvider.Meta().(*Meta).Settings
 
-	f, err := repo.LoadRepositoriesFile(settings.Home.RepositoryFile())
+	repoFile := settings.Home.RepositoryFile()
+	r, err := repo.LoadRepositoriesFile(repoFile)
 	if err != nil {
-		return err
+		t.Fatal(err)
+	}
+	if !r.Remove(name) {
+		t.Log(fmt.Sprintf("no repo named %q found, nothing to do", name))
+		return
+	}
+	if err := r.WriteFile(repoFile, 0644); err != nil {
+		t.Fatalf("Failed to write repositories file: %s", err)
 	}
 
-	for _, r := range f.Repositories {
-		if r.Name == testRepositoryName {
-			return fmt.Errorf("found %q repository", testResourceName)
+	if _, err := os.Stat(settings.Home.CacheIndex(name)); err == nil {
+		err = os.Remove(settings.Home.CacheIndex(name))
+		if err != nil {
+			t.Fatalf("Failed to remove repository cache: %s", err)
 		}
 	}
 
-	return nil
+	t.Log(fmt.Sprintf("%q has been removed from your repositories\n", name))
 }
