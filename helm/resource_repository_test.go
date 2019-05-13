@@ -2,10 +2,7 @@ package helm
 
 import (
 	"fmt"
-	"os"
 	"testing"
-
-	"k8s.io/helm/pkg/repo"
 
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
@@ -50,30 +47,4 @@ func testAccHelmRepositoryConfigBasic(name, url string) string {
 			url  = %q
 		}
 	`, name, url)
-}
-
-func testAccPreCheckHelmRepositoryDestroy(t *testing.T, name string) {
-	settings := testAccProvider.Meta().(*Meta).Settings
-
-	repoFile := settings.Home.RepositoryFile()
-	r, err := repo.LoadRepositoriesFile(repoFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !r.Remove(name) {
-		t.Log(fmt.Sprintf("no repo named %q found, nothing to do", name))
-		return
-	}
-	if err := r.WriteFile(repoFile, 0644); err != nil {
-		t.Fatalf("Failed to write repositories file: %s", err)
-	}
-
-	if _, err := os.Stat(settings.Home.CacheIndex(name)); err == nil {
-		err = os.Remove(settings.Home.CacheIndex(name))
-		if err != nil {
-			t.Fatalf("Failed to remove repository cache: %s", err)
-		}
-	}
-
-	t.Log(fmt.Sprintf("%q has been removed from your repositories\n", name))
 }

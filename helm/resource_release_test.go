@@ -22,6 +22,7 @@ import (
 	yaml "gopkg.in/yaml.v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/helm/pkg/helm"
+	"k8s.io/helm/pkg/repo"
 )
 
 func TestAccResourceRelease_basic(t *testing.T) {
@@ -634,6 +635,32 @@ func testAccHelmReleaseConfigRepositoryURL(resource, ns, name string) string {
 			chart      = "coredns"
 		}
 	`, resource, name, ns)
+}
+
+func testAccPreCheckHelmRepositoryDestroy(t *testing.T, name string) {
+	settings := testAccProvider.Meta().(*Meta).Settings
+
+	repoFile := settings.Home.RepositoryFile()
+	r, err := repo.LoadRepositoriesFile(repoFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !r.Remove(name) {
+		t.Log(fmt.Sprintf("no repo named %q found, nothing to do", name))
+		return
+	}
+	if err := r.WriteFile(repoFile, 0644); err != nil {
+		t.Fatalf("Failed to write repositories file: %s", err)
+	}
+
+	if _, err := os.Stat(settings.Home.CacheIndex(name)); err == nil {
+		err = os.Remove(settings.Home.CacheIndex(name))
+		if err != nil {
+			t.Fatalf("Failed to remove repository cache: %s", err)
+		}
+	}
+
+	t.Log(fmt.Sprintf("%q has been removed from your repositories\n", name))
 }
 
 func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
