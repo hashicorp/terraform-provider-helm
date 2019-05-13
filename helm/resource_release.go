@@ -312,8 +312,13 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 		return nil
 	}
 
-	// Set desired version from the Chart metadata
-	return d.SetNew("version", c.Metadata.Version)
+	// Set desired version from the Chart metadata if available
+	if len(c.Metadata.Version) > 0 {
+		return d.SetNew("version", c.Metadata.Version)
+	} else {
+		return d.SetNewComputed("version")
+	}
+
 }
 
 func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
