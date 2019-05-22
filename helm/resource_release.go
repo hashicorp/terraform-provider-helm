@@ -306,10 +306,10 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 		return err
 	}
 
-	// Get Chart metadata, if we fail - we're done
+	// Get Chart metadata, if we fail - Terraform should fail
 	c, _, err := getChart(d, meta.(*Meta))
 	if err != nil {
-		return nil
+		return fmt.Errorf("failed to get chart metadata (malformed chart?): %v", err)
 	}
 
 	// Set desired version from the Chart metadata

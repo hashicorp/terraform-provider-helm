@@ -421,6 +421,138 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_updateVersionFromReleaseInvalidChartYaml(t *testing.T) {
+	name := fmt.Sprintf("test-update-version-from-release-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	dir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	chartPath := filepath.Join(dir, "mariadb")
+	defer os.RemoveAll(dir)
+	resource.ParallelTest(t, resource.TestCase{
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			PreConfig: func() {
+				err := downloadTar("https://kubernetes-charts.storage.googleapis.com/mariadb-0.6.2.tgz", dir)
+				if err != nil {
+					t.Fatal(err)
+				}
+			},
+			Config: fmt.Sprintf(`
+			resource "helm_release" %q {
+				name      = %q
+				namespace = %q
+				chart     = %q
+				set {
+					name = "persistence.enabled"
+					value = "false" # persistent volumes are giving non-related issues when testing
+				}
+			}
+		`, testResourceName, name, namespace, chartPath),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "version", "0.6.2"),
+			),
+		}, {
+			PreConfig: func() {
+				err := downloadTar("https://kubernetes-charts.storage.googleapis.com/mariadb-0.6.3.tgz", dir)
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = ioutil.WriteFile(filepath.Join(chartPath, "Chart.yaml"), []byte("INVALID:"), 0644)
+				if err != nil {
+					t.Fatal(err)
+				}
+			},
+			Config: fmt.Sprintf(`
+			resource "helm_release" %q {
+				name      = %q
+				namespace = %q
+				chart     = %q
+				set {
+					name = "persistence.enabled"
+					value = "false" # persistent volumes are giving non-related issues when testing
+				}
+			}
+		`, testResourceName, name, namespace, chartPath),
+			ExpectError: regexp.MustCompile("failed to get chart metadata"),
+		}},
+	})
+}
+
+func TestAccResourceRelease_updateVersionFromReleaseInvalidRequirementsYaml(t *testing.T) {
+	name := fmt.Sprintf("test-update-version-from-release-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	dir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	chartPath := filepath.Join(dir, "mariadb")
+	defer os.RemoveAll(dir)
+	resource.ParallelTest(t, resource.TestCase{
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			PreConfig: func() {
+				err := downloadTar("https://kubernetes-charts.storage.googleapis.com/mariadb-0.6.2.tgz", dir)
+				if err != nil {
+					t.Fatal(err)
+				}
+			},
+			Config: fmt.Sprintf(`
+			resource "helm_release" %q {
+				name      = %q
+				namespace = %q
+				chart     = %q
+				set {
+					name = "persistence.enabled"
+					value = "false" # persistent volumes are giving non-related issues when testing
+				}
+			}
+		`, testResourceName, name, namespace, chartPath),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "version", "0.6.2"),
+			),
+		}, {
+			PreConfig: func() {
+				err := downloadTar("https://kubernetes-charts.storage.googleapis.com/mariadb-0.6.3.tgz", dir)
+				if err != nil {
+					t.Fatal(err)
+				}
+				err = ioutil.WriteFile(filepath.Join(chartPath, "requirements.yaml"), []byte("dependencies: [{name: 'thisdoesnotexist-afoafhnaifuhancio', version: '1.0.0', repository: 'file:///tmp/this-also-does-not-exist'}]"), 0644)
+				if err != nil {
+					t.Fatal(err)
+				}
+			},
+			Config: fmt.Sprintf(`
+			resource "helm_release" %q {
+				name      = %q
+				namespace = %q
+				chart     = %q
+				set {
+					name = "persistence.enabled"
+					value = "false" # persistent volumes are giving non-related issues when testing
+				}
+			}
+		`, testResourceName, name, namespace, chartPath),
+			ExpectError: regexp.MustCompile("failed to get chart metadata"),
+		}},
+	})
+}
+
 func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
