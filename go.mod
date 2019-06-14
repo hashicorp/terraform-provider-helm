@@ -30,7 +30,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf // indirect
 	github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d // indirect
-	github.com/hashicorp/terraform v0.12.0-alpha4.0.20190417210818-177a7afb781f
+	github.com/hashicorp/terraform v0.12.1
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/jmoiron/sqlx v1.2.0 // indirect
@@ -47,8 +47,6 @@ require (
 	github.com/xlab/handysort v0.0.0-20150421192137-fb3537ed64a1 // indirect
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a // indirect
-	golang.org/x/sys v0.0.0-20190312061237-fead79001313 // indirect
-	golang.org/x/text v0.3.1-0.20181227161524-e6919f6577db // indirect
 	google.golang.org/appengine v1.5.0 // indirect
 	google.golang.org/grpc v1.18.0
 	gopkg.in/gorp.v1 v1.7.2 // indirect
