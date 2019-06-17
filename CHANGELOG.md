@@ -1,4 +1,16 @@
-## 0.9.2 (Unreleased)
+## 0.10.0 (Unreleased)
+
+IMPROVEMENTS:
+
+* Update helm and tiller to 2.14.0 (#277)
+* Update terraform to 0.12.1 (#289 #290)
+
+FIXES:
+
+* Fix concurrency issues reading multiple repos (#272)
+* Documentation fixes (#262 #270 #276)
+* helm/resource_release: typo fixes (#282)
+
 ## 0.9.1 (April 24, 2019)
 
 FEATURES:
