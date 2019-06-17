@@ -74,13 +74,13 @@ func resourceRelease() *schema.Resource {
 			"values": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "List of values in raw yaml file to pass to helm.",
+				Description: "List of values in raw yaml format to pass to helm.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"set": {
 				Type:        schema.TypeSet,
 				Optional:    true,
-				Description: "Custom values to be merge with the values.",
+				Description: "Custom values to be merged with the values.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -97,7 +97,7 @@ func resourceRelease() *schema.Resource {
 			"set_sensitive": {
 				Type:        schema.TypeSet,
 				Optional:    true,
-				Description: "Custom sensitive values to be merge with the values.",
+				Description: "Custom sensitive values to be merged with the values.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -115,7 +115,7 @@ func resourceRelease() *schema.Resource {
 			"set_string": {
 				Type:        schema.TypeSet,
 				Optional:    true,
-				Description: "Custom string values to be merge with the values.",
+				Description: "Custom string values to be merged with the values.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -298,7 +298,7 @@ func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name s
 
 func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 
-	// Always set desired state to be DEPLOYED
+	// Always set desired state to DEPLOYED
 	err := d.SetNew("status", release.Status_DEPLOYED.String())
 	if err != nil {
 		return err
