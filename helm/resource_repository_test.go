@@ -4,11 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/helm/pkg/repo"
-
 	"github.com/hashicorp/terraform/helper/acctest"
 	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
 )
 
 // These tests are kept to test backwards compatibility for the helm_repository resource
@@ -50,21 +47,4 @@ func testAccHelmRepositoryConfigBasic(name, url string) string {
 			url  = %q
 		}
 	`, name, url)
-}
-
-func testAccCheckHelmRepositoryDestroy(s *terraform.State) error {
-	settings := testAccProvider.Meta().(*Meta).Settings
-
-	f, err := repo.LoadRepositoriesFile(settings.Home.RepositoryFile())
-	if err != nil {
-		return err
-	}
-
-	for _, r := range f.Repositories {
-		if r.Name == testRepositoryName {
-			return fmt.Errorf("found %q repository", testResourceName)
-		}
-	}
-
-	return nil
 }
