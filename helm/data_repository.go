@@ -120,6 +120,8 @@ func getRepository(d *schema.ResourceData, m *Meta) (*repo.Entry, error) {
 }
 
 func addRepository(m *Meta, name, url string, home helmpath.Home, certFile, keyFile, caFile string, username string, password string) error {
+	m.Lock()
+	defer m.Unlock()
 
 	repoFile, err := repo.LoadRepositoriesFile(home.RepositoryFile())
 	if err != nil {
