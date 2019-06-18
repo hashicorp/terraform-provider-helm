@@ -1,5 +1,9 @@
 ## 0.10.0 (Unreleased)
 
+FEATURES:
+
+* Automatically initialize the configured helm home directory (#185)
+
 IMPROVEMENTS:
 
 * Update helm and tiller to 2.14.0 (#277)
