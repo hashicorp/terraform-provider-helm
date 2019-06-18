@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -53,6 +54,12 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Default:     tiller_env.DefaultTillerNamespace,
 				Description: "Set an alternative Tiller namespace.",
+			},
+			"init_helm_home": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+				Description: "Initialize Helm home directory if it is not already initialized, defaults to true.",
 			},
 			"install_tiller": {
 				Type:        schema.TypeBool,
@@ -260,6 +267,10 @@ func NewMeta(d *schema.ResourceData) (*Meta, error) {
 		return nil, err
 	}
 
+	if err := m.initHelmHomeIfNeeded(m.data); err != nil {
+		return nil, err
+	}
+
 	return m, nil
 }
 
@@ -400,6 +411,20 @@ func (m *Meta) initialize() error {
 		return err
 	}
 
+	return nil
+}
+
+func (m *Meta) initHelmHomeIfNeeded(d *schema.ResourceData) error {
+	if !d.Get("init_helm_home").(bool) {
+		return nil
+	}
+
+	stableRepositoryURL := "https://kubernetes-charts.storage.googleapis.com"
+	localRepositoryURL := "http://127.0.0.1:8879/charts"
+
+	if err := installer.Initialize(m.Settings.Home, os.Stdout, false, *m.Settings, stableRepositoryURL, localRepositoryURL); err != nil {
+		return fmt.Errorf("error initializing local helm home: %s", err)
+	}
 	return nil
 }
 

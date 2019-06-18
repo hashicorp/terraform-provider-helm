@@ -32,6 +32,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
@@ -71,6 +72,7 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 		go func(name string) {
 			defer wg.Done()
 			resource.Test(t, resource.TestCase{
+				PreCheck:     func() { testAccPreCheck(t) },
 				Providers:    testAccProviders,
 				CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 				Steps: []resource.TestStep{{
@@ -95,6 +97,7 @@ func TestAccResourceRelease_update(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
@@ -122,6 +125,7 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
@@ -144,6 +148,7 @@ func TestAccResourceRelease_setStringValues(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
@@ -169,6 +174,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
@@ -200,6 +206,7 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
@@ -233,6 +240,7 @@ func TestAccResourceRelease_repository(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
@@ -312,6 +320,7 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
@@ -351,6 +360,7 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	`
 
 	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
@@ -375,6 +385,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
@@ -421,6 +432,7 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 	chartPath := filepath.Join(dir, "mariadb")
 	defer os.RemoveAll(dir)
 	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
