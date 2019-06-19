@@ -715,7 +715,7 @@ k8s.io/client-go/tools/remotecommand
 k8s.io/client-go/util/exec
 # k8s.io/cloud-provider v0.0.0-20190409023720-1bc0c81fa51d
 k8s.io/cloud-provider/features
-# k8s.io/helm v2.14.0+incompatible
+# k8s.io/helm v2.14.1+incompatible
 k8s.io/helm/cmd/helm/installer
 k8s.io/helm/pkg/chartutil
 k8s.io/helm/pkg/downloader

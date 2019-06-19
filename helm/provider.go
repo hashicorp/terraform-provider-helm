@@ -70,7 +70,7 @@ func Provider() terraform.ResourceProvider {
 			"tiller_image": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "gcr.io/kubernetes-helm/tiller:v2.14.0",
+				Default:     "gcr.io/kubernetes-helm/tiller:v2.14.1",
 				Description: "Tiller image to install.",
 			},
 			"service_account": {
