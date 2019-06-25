@@ -502,7 +502,7 @@ func (m *Meta) buildTunnel(d *schema.ResourceData) error {
 
 	// Wait a reasonable time for tiller, even if we didn't deploy it this run
 	o := &installer.Options{}
-	o.Namespace = d.Get("namespace").(string)
+	o.Namespace = m.Settings.TillerNamespace
 	if err := m.waitForTiller(o); err != nil {
 		return err
 	}
