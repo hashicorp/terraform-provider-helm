@@ -500,6 +500,13 @@ func (m *Meta) buildTunnel(d *schema.ResourceData) error {
 		return nil
 	}
 
+	// Wait a reasonable time for tiller, even if we didn't deploy it this run
+	o := &installer.Options{}
+	o.Namespace = m.Settings.TillerNamespace
+	if err := m.waitForTiller(o); err != nil {
+		return err
+	}
+
 	var err error
 	m.Tunnel, err = portforwarder.New(m.Settings.TillerNamespace, m.K8sClient, m.K8sConfig)
 	if err != nil {
