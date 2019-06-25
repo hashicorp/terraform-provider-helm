@@ -24,6 +24,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/helm/cmd/helm/installer"
 	"k8s.io/helm/pkg/helm"
 	helm_env "k8s.io/helm/pkg/helm/environment"
@@ -371,7 +372,7 @@ func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 				exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: kk, Value: vv.(string)})
 			}
 		} else {
-			return nil, fmt.Errorf("Failed to parse exec")
+			return fmt.Errorf("Failed to parse exec")
 		}
 		cfg.ExecProvider = exec
 	}
@@ -637,6 +638,19 @@ func getContent(d *schema.ResourceData, key, def string) ([]byte, error) {
 	}
 
 	return []byte(content), nil
+}
+
+func expandStringSlice(s []interface{}) []string {
+	result := make([]string, len(s), len(s))
+	for k, v := range s {
+		// Handle the Terraform parser bug which turns empty strings in lists to nil.
+		if v == nil {
+			result[k] = ""
+		} else {
+			result[k] = v.(string)
+		}
+	}
+	return result
 }
 
 func debug(format string, a ...interface{}) {
