@@ -131,6 +131,24 @@ func resourceRelease() *schema.Resource {
 					},
 				},
 			},
+			"set_list": {
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Custom list values to be merged with the values.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeList,
+							Required: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
 			"namespace": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -611,6 +629,23 @@ func getValues(d *schema.ResourceData) ([]byte, error) {
 
 		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
 			return nil, fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
+		}
+	}
+
+	for _, raw := range d.Get("set_list").(*schema.Set).List() {
+		set := raw.(map[string]interface{})
+
+		name := set["name"].(string)
+		rawValueList := set["value"].([]interface{})
+		value := ""
+		for _, val := range rawValueList {
+			if len(value) > 0 {
+				value = value + ","
+			}
+			value = value + fmt.Sprintf("%s", val)
+		}
+		if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, value), base); err != nil {
+			return nil, fmt.Errorf("failed parsing key %q with value %s, %s", name, rawValueList, err)
 		}
 	}
 
