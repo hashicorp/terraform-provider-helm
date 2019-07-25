@@ -315,17 +315,9 @@ func (m *Meta) buildSettings(d *schema.ResourceData) {
 func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	_, hasStatic := d.GetOk("kubernetes")
 
-	c, err := getK8sConfig(d)
+	cfg, err := getK8sConfig(d)
 	if err != nil {
 		debug("could not get Kubernetes config: %s", err)
-		if !hasStatic {
-			return err
-		}
-	}
-
-	cfg, err := c.ClientConfig()
-	if err != nil {
-		debug("could not get Kubernetes client config: %s", err)
 		if !hasStatic {
 			return err
 		}
@@ -412,12 +404,13 @@ func k8sGet(d *schema.ResourceData, key string) interface{} {
 	return value
 }
 
-func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
+func getK8sConfig(d *schema.ResourceData) (*rest.Config, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
 	overrides := &clientcmd.ConfigOverrides{}
+	path := k8sGet(d, "config_path").(string)
 
 	if !k8sGet(d, "in_cluster").(bool) && k8sGet(d, "load_config_file").(bool) {
-		explicitPath, err := homedir.Expand(k8sGet(d, "config_path").(string))
+		explicitPath, err := homedir.Expand(path)
 		if err != nil {
 			return nil, err
 		}
@@ -429,8 +422,21 @@ func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 		if context != "" {
 			overrides.CurrentContext = context
 		}
+
+		cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
+		cfg, err := cc.ClientConfig()
+		if err != nil {
+			if pathErr, ok := err.(*os.PathError); ok && os.IsNotExist(pathErr.Err) {
+				log.Printf("[INFO] Unable to load config file as it doesn't exist at %q", path)
+				return nil, nil
+			}
+			return nil, fmt.Errorf("Failed to load config (%s): %s", path, err)
+		}
+
+		return cfg, nil
 	}
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides), nil
+
+	return nil, nil
 }
 
 // GetHelmClient will return a new Helm client
