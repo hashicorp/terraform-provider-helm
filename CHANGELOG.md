@@ -1,4 +1,10 @@
-## 0.11.0 (Unreleased)
+## 0.10.1 (Unreleased)
+
+IMPROVEMENTS:
+
+* Update helm and tiller to 2.14.1 (#294)
+* Wait for tiller if it's not ready (#295)
+
 ## 0.10.0 (June 18, 2019)
 
 FEATURES:
