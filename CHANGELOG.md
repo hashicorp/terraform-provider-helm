@@ -1,4 +1,9 @@
-## 0.10.2 (Unreleased)
+## 0.11.0 (Unreleased)
+
+FIXES:
+
+* Revert "Escape commas in set_string" (#310)
+
 ## 0.10.1 (July 30, 2019)
 
 IMPROVEMENTS:
