@@ -77,7 +77,6 @@ The `set`, `set_sensitive` and `set_strings` blocks support:
 * `name` - (Required) full name of the variable to be set.
 * `value` - (Required) value of the variable to be set.
 
-Note: Unlike `--set` in `helm` command, commas in `value` blocks are supported and will not be seen as a new key value set and don't need to be escaped as the provider will do it. This departure from the behaviour of the `helm` command is motivated by the fact that we cannot use a single `set` block for multiple keys in the provider
 
 ## Attributes Reference
 

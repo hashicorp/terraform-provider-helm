@@ -70,7 +70,7 @@ func Provider() terraform.ResourceProvider {
 			"tiller_image": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "gcr.io/kubernetes-helm/tiller:v2.14.0",
+				Default:     "gcr.io/kubernetes-helm/tiller:v2.14.1",
 				Description: "Tiller image to install.",
 			},
 			"service_account": {
@@ -498,6 +498,13 @@ func (m *Meta) waitForTiller(o *installer.Options) error {
 func (m *Meta) buildTunnel(d *schema.ResourceData) error {
 	if m.Settings.TillerHost != "" {
 		return nil
+	}
+
+	// Wait a reasonable time for tiller, even if we didn't deploy it this run
+	o := &installer.Options{}
+	o.Namespace = m.Settings.TillerNamespace
+	if err := m.waitForTiller(o); err != nil {
+		return err
 	}
 
 	var err error

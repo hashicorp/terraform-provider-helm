@@ -1,4 +1,17 @@
-## 0.11.0 (Unreleased)
+## 0.10.3 (Unreleased)
+## 0.10.2 (August 07, 2019)
+
+FIXES:
+
+* Revert "Escape commas in set_string" (#310)
+
+## 0.10.1 (July 30, 2019)
+
+IMPROVEMENTS:
+
+* Update helm and tiller to 2.14.1 (#294)
+* Wait for tiller if it's not ready (#295)
+
 ## 0.10.0 (June 18, 2019)
 
 FEATURES:
