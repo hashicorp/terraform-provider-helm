@@ -329,12 +329,23 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	values, err := getValues(d)
+	if err != nil {
+		return err
+	}
+
+	config := &chart.Config{Raw: string(values)}
+
 	chart, _, err := getChart(d, m)
 	if err != nil {
 		return err
 	}
 
-	values, err := getValues(d)
+	err = chartutil.ProcessRequirementsEnabled(chart, config)
+	if err != nil {
+		return err
+	}
+	err = chartutil.ProcessRequirementsImportValues(chart)
 	if err != nil {
 		return err
 	}
