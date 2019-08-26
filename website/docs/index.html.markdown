@@ -22,18 +22,18 @@ The Helm provider is used to deploy software packages in Kubernetes. The provide
 
 ```hcl
 resource "helm_release" "mydatabase" {
-    name      = "mydatabase"
-    chart     = "stable/mariadb"
+  name  = "mydatabase"
+  chart = "stable/mariadb"
 
-    set {
-        name  = "mariadbUser"
-        value = "foo"
-    }
+  set {
+    name  = "mariadbUser"
+    value = "foo"
+  }
 
-    set {
-        name = "mariadbPassword"
-        value = "qux"
-    }
+  set {
+    name = "mariadbPassword"
+    value = "qux"
+  }
 }
 ```
 
@@ -52,9 +52,9 @@ The provider always first tries to load **a config file** (usually `$HOME/.kube/
 
 ```hcl
 provider "helm" {
-    kubernetes {
-        config_path = "/path/to/kube_cluster.yaml"
-    }
+  kubernetes {
+    config_path = "/path/to/kube_cluster.yaml"
+  }
 }
 ```
 
@@ -64,15 +64,15 @@ The other way is **statically** define all the credentials:
 
 ```hcl
 provider "helm" {
-    kubernetes {
-        host     = "https://104.196.242.174"
-        username = "ClusterMaster"
-        password = "MindTheGap"
+  kubernetes {
+    host     = "https://104.196.242.174"
+    username = "ClusterMaster"
+    password = "MindTheGap"
 
-        client_certificate     = "${file("~/.kube/client-cert.pem")}"
-        client_key             = "${file("~/.kube/client-key.pem")}"
-        cluster_ca_certificate = "${file("~/.kube/cluster-ca-cert.pem")}"
-    }
+    client_certificate     = "${file("~/.kube/client-cert.pem")}"
+    client_key             = "${file("~/.kube/client-key.pem")}"
+    cluster_ca_certificate = "${file("~/.kube/cluster-ca-cert.pem")}"
+  }
 }
 ```
 
