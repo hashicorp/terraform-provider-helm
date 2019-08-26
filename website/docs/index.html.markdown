@@ -31,7 +31,7 @@ resource "helm_release" "mydatabase" {
   }
 
   set {
-    name = "mariadbPassword"
+    name  = "mariadbPassword"
     value = "qux"
   }
 }
