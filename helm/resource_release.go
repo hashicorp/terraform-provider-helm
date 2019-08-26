@@ -45,13 +45,11 @@ func resourceRelease() *schema.Resource {
 			"repository": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				ForceNew:    true,
 				Description: "Repository where to locate the requested chart. If is an URL the chart is installed without installing the repository.",
 			},
 			"chart": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    true,
 				Description: "Chart name to be installed.",
 			},
 			"version": {
