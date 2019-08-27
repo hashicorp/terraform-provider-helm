@@ -17,13 +17,13 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 
 ```
 data "helm_repository" "stable" {
-    name = "stable"
-    url  = "https://kubernetes-charts.storage.googleapis.com"
+  name = "stable"
+  url  = "https://kubernetes-charts.storage.googleapis.com"
 }
 
 resource "helm_release" "example" {
   name       = "my-redis-release"
-  repository = "${data.helm_repository.stable.metadata.0.name}"
+  repository = data.helm_repository.stable.metadata[0].name
   chart      = "redis"
   version    = "6.0.1"
 
