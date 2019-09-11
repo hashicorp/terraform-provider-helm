@@ -5,8 +5,10 @@ import (
 	"crypto/x509"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,6 +17,10 @@ import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	homedir "github.com/mitchellh/go-homedir"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/keepalive"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +36,13 @@ import (
 	"k8s.io/helm/pkg/helm/helmpath"
 	"k8s.io/helm/pkg/helm/portforwarder"
 	"k8s.io/helm/pkg/kube"
+	"k8s.io/helm/pkg/proto/hapi/services"
+	"k8s.io/helm/pkg/storage"
+	"k8s.io/helm/pkg/storage/driver"
+	"k8s.io/helm/pkg/tiller"
 	tiller_env "k8s.io/helm/pkg/tiller/environment"
+	"k8s.io/helm/pkg/tlsutil"
+	"k8s.io/helm/pkg/version"
 )
 
 // Provider returns the provider schema to Terraform.
@@ -66,6 +78,12 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Default:     true,
 				Description: "Install Tiller if it is not already installed.",
+			},
+			"tillerless": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Enable tillerless mode and run Tiller locally.",
 			},
 			"tiller_image": {
 				Type:        schema.TypeString,
@@ -129,6 +147,27 @@ func Provider() terraform.ResourceProvider {
 				Description: "PEM-encoded client certificate for TLS authentication.",
 			},
 			"ca_certificate": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "PEM-encoded root certificates bundle for TLS authentication.",
+			},
+			"tillerless_storage": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "secret",
+				Description: "storage driver to use. One of 'configmap' or 'secret'. Default to \"secret\".",
+			},
+			"tillerless_tls_key": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "PEM-encoded client certificate key for TLS authentication.",
+			},
+			"tillerless_tls_certificate": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "PEM-encoded client certificate for TLS authentication.",
+			},
+			"tillerless_tls_ca_certificate": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "PEM-encoded root certificates bundle for TLS authentication.",
@@ -246,6 +285,8 @@ type Meta struct {
 	K8sClient        kubernetes.Interface
 	K8sConfig        *rest.Config
 	Tunnel           *kube.Tunnel
+	RootServer       *grpc.Server
+	TillerEnv        *tiller_env.Environment
 	DefaultNamespace string
 
 	data *schema.ResourceData
@@ -270,6 +311,8 @@ func NewMeta(d *schema.ResourceData) (*Meta, error) {
 	if err := m.initHelmHomeIfNeeded(m.data); err != nil {
 		return nil, err
 	}
+
+	m.TillerEnv = tiller_env.New()
 
 	return m, nil
 }
@@ -403,6 +446,10 @@ func (m *Meta) initialize() error {
 	m.Lock()
 	defer m.Unlock()
 
+	if err := m.runLocalTillerIfNeeded(m.data); err != nil {
+		return err
+	}
+
 	if err := m.installTillerIfNeeded(m.data); err != nil {
 		return err
 	}
@@ -429,7 +476,7 @@ func (m *Meta) initHelmHomeIfNeeded(d *schema.ResourceData) error {
 }
 
 func (m *Meta) installTillerIfNeeded(d *schema.ResourceData) error {
-	if !d.Get("install_tiller").(bool) {
+	if !d.Get("install_tiller").(bool) || d.Get("tillerless").(bool) {
 		return nil
 	}
 
@@ -604,6 +651,112 @@ func getContent(d *schema.ResourceData, key, def string) ([]byte, error) {
 
 func debug(format string, a ...interface{}) {
 	log.Printf("[DEBUG] %s", fmt.Sprintf(format, a...))
+}
+
+func newLogger(prefix string) *log.Logger {
+	if len(prefix) > 0 {
+		prefix = fmt.Sprintf("[DEBUG][%s] ", prefix)
+	}
+	return log.New(os.Stderr, prefix, log.Flags())
+}
+
+func (m *Meta) runLocalTillerIfNeeded(d *schema.ResourceData) error {
+	if !d.Get("tillerless").(bool) {
+		return nil
+	}
+
+	var (
+		store                   = d.Get("tillerless_storage").(string)
+		tillerlessTlsKeyFile    = d.Get("tillerless_tls_key").(string)
+		tillerlessTlsCertFile   = d.Get("tillerless_tls_certificate").(string)
+		tillerlessTlsCaCertFile = d.Get("tillerless_tls_ca_certificate").(string)
+		maxHistory              = d.Get("max_history").(int)
+	)
+
+	switch store {
+	case "configmap":
+		cfgmaps := driver.NewConfigMaps(m.K8sClient.CoreV1().ConfigMaps(m.Settings.TillerNamespace))
+		m.TillerEnv.Releases = storage.Init(cfgmaps)
+		m.TillerEnv.Releases.Log = newLogger("storage").Printf
+	case "secret":
+		secrets := driver.NewSecrets(m.K8sClient.CoreV1().Secrets(m.Settings.TillerNamespace))
+		m.TillerEnv.Releases = storage.Init(secrets)
+		m.TillerEnv.Releases.Log = newLogger("storage").Printf
+	}
+
+	if maxHistory > 0 {
+		m.TillerEnv.Releases.MaxHistory = maxHistory
+	}
+
+	kubeClient := kube.New(nil)
+	kubeClient.Log = newLogger("kube").Printf
+	m.TillerEnv.KubeClient = kubeClient
+
+	if tlsEnable || tlsVerify {
+		opts := tlsutil.Options{CertFile: tillerlessTlsCertFile, KeyFile: tillerlessTlsKeyFile}
+		if tlsVerify {
+			opts.CaCertFile = tillerlessTlsCaCertFile
+		}
+	}
+
+	var opts []grpc.ServerOption
+	if tlsEnable || tlsVerify {
+		tlsOptions := tlsutil.Options{CertFile: tillerlessTlsCertFile, KeyFile: tillerlessTlsKeyFile}
+		if tlsVerify {
+			tlsOptions.CaCertFile = tillerlessTlsCaCertFile
+
+			// We want to force the client to not only provide a cert, but to
+			// provide a cert that we can validate.
+			// http://www.bite-code.com/2015/06/25/tls-mutual-auth-in-golang/
+			tlsOptions.ClientAuth = tls.RequireAndVerifyClientCert
+		}
+		cfg, err := tlsutil.ServerConfig(tlsOptions)
+		if err != nil {
+			return fmt.Errorf("Could not create server TLS configuration: %v", err)
+		}
+		opts = append(opts, grpc.Creds(credentials.NewTLS(cfg)))
+	}
+
+	opts = append(opts, grpc.KeepaliveParams(keepalive.ServerParameters{
+		MaxConnectionIdle: 10 * time.Minute,
+		// If needed, we can configure the max connection age
+	}))
+
+	opts = append(opts, grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+		MinTime: time.Duration(20) * time.Second, // For compatibility with the client keepalive.ClientParameters
+	}))
+
+	m.RootServer = tiller.NewServer(opts...)
+
+	lstn, err := net.Listen("tcp", m.Settings.TillerHost)
+	if err != nil {
+		if strings.Contains(err.Error(), "address already in use") {
+			debug("Tiller host %s is already used", m.Settings.TillerHost)
+			return nil
+		}
+		return fmt.Errorf("Server died: %s", err)
+	}
+
+	debug("Starting local Tiller %s (tls=%t)", version.GetVersion(), tlsEnable || tlsVerify)
+	debug("GRPC listening on %s", m.Settings.TillerHost)
+	debug("Storage driver is %s", m.TillerEnv.Releases.Name())
+	debug("Max history per release is %d", maxHistory)
+
+	srvErrCh := make(chan error)
+	go func() {
+		defer close(srvErrCh)
+
+		svc := tiller.NewReleaseServer(m.TillerEnv, m.K8sClient, false)
+		svc.Log = newLogger("tiller").Printf
+		services.RegisterReleaseServiceServer(m.RootServer, svc)
+		if err := m.RootServer.Serve(lstn); err != nil {
+			srvErrCh <- err
+			return
+		}
+	}()
+
+	debug("Tiller has been started locally.")
+	return nil
 }
 
 var (

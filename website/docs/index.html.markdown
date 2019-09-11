@@ -88,6 +88,7 @@ The following arguments are supported:
 * `namespace` - (Optional) Set an alternative Tiller namespace. Defaults to `kube-system`.
 * `init_helm_home` - (Optional) Initialize Helm home directory configured by the `home` attribute if it is not already initialized, defaults to true.
 * `install_tiller` - (Optional) Install Tiller if it is not already installed. Defaults to `true`.
+* `tillerless`- (Optional) Enable tillerless mode and run Tiller locally. Defaults to `false`.
 * `tiller_image` - (Optional) Tiller image to install. Defaults to `gcr.io/kubernetes-helm/tiller:v2.14.3`.
 * `service_account` - (Optional) Service account to install Tiller with. Defaults to `default`.
 * `automount_service_account_token` - (Optional) Auto-mount the given service account to tiller. Defaults to `true`.
@@ -100,6 +101,10 @@ The following arguments are supported:
 * `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `key.pem` in the location set by `home`.
 * `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `cert.pem` in the location set by `home`.
 * `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. By default read from `ca.pem` in the location set by `home`.
+* `tillerless_storage` - (Optional) Storage driver to use. One of `configmap` or `secret`. Default to `secret`.
+* `tillerless_tls_key`- (Optional) PEM-encoded client certificate key for TLS authentication for local Tiller.
+* `tillerless_tls_certificate` - (Optional) PEM-encoded client certificate for TLS authentication for local Tiller.
+* `tillerless_tls_ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication for local Tiller.
 * `kubernetes` - Kubernetes configuration block.
 
 The `kubernetes` block supports:
