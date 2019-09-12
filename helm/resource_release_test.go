@@ -263,26 +263,22 @@ func TestAccResourceRelease_repository(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
 			),
-		},
-			resource.TestStep{
-				ResourceName:      "helm_release.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-					resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-					resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
-				),
-			},
-			resource.TestStep{
-				ResourceName:      "helm_release.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
+		}, {
+			ResourceName:      "helm_release.test",
+			ImportState:       true,
+			ImportStateVerify: true,
+		}, {
+			Config: testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
+			),
+		}, {
+			ResourceName:      "helm_release.test",
+			ImportState:       true,
+			ImportStateVerify: true,
+		}},
 	})
 }
 
@@ -356,27 +352,23 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
 				resource.TestCheckResourceAttrSet("helm_release.test", "version"),
 			),
-		},
-			resource.TestStep{
-				ResourceName:      "helm_release.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-					resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-					resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
-					resource.TestCheckResourceAttrSet("helm_release.test", "version"),
-				),
-			},
-			resource.TestStep{
-				ResourceName:      "helm_release.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
+		}, {
+			ResourceName:      "helm_release.test",
+			ImportState:       true,
+			ImportStateVerify: true,
+		}, {
+			Config: testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
+				resource.TestCheckResourceAttrSet("helm_release.test", "version"),
+			),
+		}, {
+			ResourceName:      "helm_release.test",
+			ImportState:       true,
+			ImportStateVerify: true,
+		}},
 	})
 }
 
@@ -405,26 +397,22 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 			Config:             malformed,
 			ExpectError:        regexp.MustCompile("failed"),
 			ExpectNonEmptyPlan: true,
-		},
-			resource.TestStep{
-				ResourceName:      "helm_release.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.3"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
-					resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-				),
-			},
-			resource.TestStep{
-				ResourceName:      "helm_release.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
+		}, {
+			ResourceName:      "helm_release.test",
+			ImportState:       true,
+			ImportStateVerify: true,
+		}, {
+			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.3"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+			),
+		}, {
+			ResourceName:      "helm_release.test",
+			ImportState:       true,
+			ImportStateVerify: true,
+		}},
 	})
 }
 
@@ -509,20 +497,18 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
 				resource.TestCheckResourceAttr("helm_release.test", "version", "0.6.2"),
 			),
-		},
-			resource.TestStep{
-				ResourceName:      "helm_release.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+		}, {
+			ResourceName:      "helm_release.test",
+			ImportState:       true,
+			ImportStateVerify: true,
+		}, {
+			PreConfig: func() {
+				err := downloadTar("https://kubernetes-charts.storage.googleapis.com/mariadb-0.6.3.tgz", dir)
+				if err != nil {
+					t.Fatal(err)
+				}
 			},
-			{
-				PreConfig: func() {
-					err := downloadTar("https://kubernetes-charts.storage.googleapis.com/mariadb-0.6.3.tgz", dir)
-					if err != nil {
-						t.Fatal(err)
-					}
-				},
-				Config: fmt.Sprintf(`
+			Config: fmt.Sprintf(`
 				resource "helm_release" "test" {
 					name      = %q
 					namespace = %q
@@ -533,19 +519,17 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 					}
 				}
 			`, testNamespace, testResourceName, chartPath),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
-					resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-					resource.TestCheckResourceAttr("helm_release.test", "version", "0.6.3"),
-				),
-			},
-			resource.TestStep{
-				ResourceName:      "helm_release.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "version", "0.6.3"),
+			),
+		}, {
+			ResourceName:      "helm_release.test",
+			ImportState:       true,
+			ImportStateVerify: true,
+		}},
 	})
 }
 
