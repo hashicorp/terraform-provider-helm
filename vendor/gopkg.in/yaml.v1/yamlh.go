@@ -1,7 +1,6 @@
 package yaml
 
 import (
-	"fmt"
 	"io"
 )
 
@@ -240,27 +239,6 @@ const (
 	yaml_MAPPING_END_EVENT    // A MAPPING-END event.
 )
 
-var eventStrings = []string{
-	yaml_NO_EVENT:             "none",
-	yaml_STREAM_START_EVENT:   "stream start",
-	yaml_STREAM_END_EVENT:     "stream end",
-	yaml_DOCUMENT_START_EVENT: "document start",
-	yaml_DOCUMENT_END_EVENT:   "document end",
-	yaml_ALIAS_EVENT:          "alias",
-	yaml_SCALAR_EVENT:         "scalar",
-	yaml_SEQUENCE_START_EVENT: "sequence start",
-	yaml_SEQUENCE_END_EVENT:   "sequence end",
-	yaml_MAPPING_START_EVENT:  "mapping start",
-	yaml_MAPPING_END_EVENT:    "mapping end",
-}
-
-func (e yaml_event_type_t) String() string {
-	if e < 0 || int(e) >= len(eventStrings) {
-		return fmt.Sprintf("unknown event %d", e)
-	}
-	return eventStrings[e]
-}
-
 // The event structure.
 type yaml_event_t struct {
 
@@ -318,7 +296,7 @@ const (
 
 	// Not in original libyaml.
 	yaml_BINARY_TAG = "tag:yaml.org,2002:binary"
-	yaml_MERGE_TAG  = "tag:yaml.org,2002:merge"
+	yaml_MERGE_TAG = "tag:yaml.org,2002:merge"
 
 	yaml_DEFAULT_SCALAR_TAG   = yaml_STR_TAG // The default scalar tag is !!str.
 	yaml_DEFAULT_SEQUENCE_TAG = yaml_SEQ_TAG // The default sequence tag is !!seq.
@@ -530,7 +508,7 @@ type yaml_parser_t struct {
 
 	problem string // Error description.
 
-	// The byte about which the problem occurred.
+	// The byte about which the problem occured.
 	problem_offset int
 	problem_value  int
 	problem_mark   yaml_mark_t
@@ -543,9 +521,9 @@ type yaml_parser_t struct {
 
 	read_handler yaml_read_handler_t // Read handler.
 
-	input_reader io.Reader // File input data.
-	input        []byte    // String input data.
-	input_pos    int
+	input_file io.Reader // File input data.
+	input      []byte    // String input data.
+	input_pos  int
 
 	eof bool // EOF flag
 
@@ -654,7 +632,7 @@ type yaml_emitter_t struct {
 	write_handler yaml_write_handler_t // Write handler.
 
 	output_buffer *[]byte   // String output data.
-	output_writer io.Writer // File output data.
+	output_file   io.Writer // File output data.
 
 	buffer     []byte // The working buffer.
 	buffer_pos int    // The current position of the buffer.

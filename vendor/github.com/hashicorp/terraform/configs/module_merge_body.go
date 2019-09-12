@@ -4,7 +4,15 @@ import (
 	"github.com/hashicorp/hcl2/hcl"
 )
 
-func mergeBodies(base, override hcl.Body) hcl.Body {
+// MergeBodies creates a new HCL body that contains a combination of the
+// given base and override bodies. Attributes and blocks defined in the
+// override body take precedence over those of the same name defined in
+// the base body.
+//
+// If any block of a particular type appears in "override" then it will
+// replace _all_ of the blocks of the same type in "base" in the new
+// body.
+func MergeBodies(base, override hcl.Body) hcl.Body {
 	return mergeBody{
 		Base:     base,
 		Override: override,
@@ -32,11 +40,12 @@ var _ hcl.Body = mergeBody{}
 
 func (b mergeBody) Content(schema *hcl.BodySchema) (*hcl.BodyContent, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-	oSchema := schemaForOverrides(schema)
+	baseSchema := schemaWithDynamic(schema)
+	overrideSchema := schemaWithDynamic(schemaForOverrides(schema))
 
-	baseContent, cDiags := b.Base.Content(schema)
+	baseContent, _, cDiags := b.Base.PartialContent(baseSchema)
 	diags = append(diags, cDiags...)
-	overrideContent, cDiags := b.Override.Content(oSchema)
+	overrideContent, _, cDiags := b.Override.PartialContent(overrideSchema)
 	diags = append(diags, cDiags...)
 
 	content := b.prepareContent(baseContent, overrideContent)
@@ -46,16 +55,17 @@ func (b mergeBody) Content(schema *hcl.BodySchema) (*hcl.BodyContent, hcl.Diagno
 
 func (b mergeBody) PartialContent(schema *hcl.BodySchema) (*hcl.BodyContent, hcl.Body, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
-	oSchema := schemaForOverrides(schema)
+	baseSchema := schemaWithDynamic(schema)
+	overrideSchema := schemaWithDynamic(schemaForOverrides(schema))
 
-	baseContent, baseRemain, cDiags := b.Base.PartialContent(schema)
+	baseContent, baseRemain, cDiags := b.Base.PartialContent(baseSchema)
 	diags = append(diags, cDiags...)
-	overrideContent, overrideRemain, cDiags := b.Override.PartialContent(oSchema)
+	overrideContent, overrideRemain, cDiags := b.Override.PartialContent(overrideSchema)
 	diags = append(diags, cDiags...)
 
 	content := b.prepareContent(baseContent, overrideContent)
 
-	remain := mergeBodies(baseRemain, overrideRemain)
+	remain := MergeBodies(baseRemain, overrideRemain)
 
 	return content, remain, diags
 }
@@ -82,9 +92,21 @@ func (b mergeBody) prepareContent(base *hcl.BodyContent, override *hcl.BodyConte
 
 	overriddenBlockTypes := make(map[string]bool)
 	for _, block := range override.Blocks {
+		if block.Type == "dynamic" {
+			overriddenBlockTypes[block.Labels[0]] = true
+			continue
+		}
 		overriddenBlockTypes[block.Type] = true
 	}
 	for _, block := range base.Blocks {
+		// We skip over dynamic blocks whose type label is an overridden type
+		// but note that below we do still leave them as dynamic blocks in
+		// the result because expanding the dynamic blocks that are left is
+		// done much later during the core graph walks, where we can safely
+		// evaluate the expressions.
+		if block.Type == "dynamic" && overriddenBlockTypes[block.Labels[0]] {
+			continue
+		}
 		if overriddenBlockTypes[block.Type] {
 			continue
 		}

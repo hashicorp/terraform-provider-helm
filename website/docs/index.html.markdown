@@ -10,27 +10,30 @@ description: |-
 
 The Helm provider is used to deploy software packages in Kubernetes. The provider needs to be configured with the proper credentials before it can be used.
 
+## Data Sources
+
+* [Data Sources: helm_repository](repository.html)
+
 ## Resources
 
 * [Resource: helm_release](release.html)
-* [Resource: helm_repository](repository.html)
 
 ## Example Usage
 
 ```hcl
 resource "helm_release" "mydatabase" {
-    name      = "mydatabase"
-    chart     = "stable/mariadb"
+  name  = "mydatabase"
+  chart = "stable/mariadb"
 
-    set {
-        name  = "mariadbUser"
-        value = "foo"
-    }
+  set {
+    name  = "mariadbUser"
+    value = "foo"
+  }
 
-    set {
-        name = "mariadbPassword"
-        value = "qux"
-    }
+  set {
+    name  = "mariadbPassword"
+    value = "qux"
+  }
 }
 ```
 
@@ -45,13 +48,13 @@ There are generally two ways to configure the Helm provider.
 
 ### File config
 
-The provider always first tries to load **a config file** (usually `$HOME/.kube/config`), for access kubenetes and reads all the Helm files from home (usually `$HOME/.helm`). You can also define that file with the following setting:
+The provider always first tries to load **a config file** (usually `$HOME/.kube/config`), for access kubernetes and reads all the Helm files from home (usually `$HOME/.helm`). You can also define that file with the following setting:
 
 ```hcl
 provider "helm" {
-    kubernetes {
-        config_path = "${file("/path/to/kube_cluster.yaml")}"
-    }
+  kubernetes {
+    config_path = "/path/to/kube_cluster.yaml"
+  }
 }
 ```
 
@@ -61,15 +64,15 @@ The other way is **statically** define all the credentials:
 
 ```hcl
 provider "helm" {
-    kubernetes {
-        host     = "https://104.196.242.174"
-        username = "ClusterMaster"
-        password = "MindTheGap"
+  kubernetes {
+    host     = "https://104.196.242.174"
+    username = "ClusterMaster"
+    password = "MindTheGap"
 
-        client_certificate     = "${file("~/.kube/client-cert.pem")}"
-        client_key             = "${file("~/.kube/client-key.pem")}"
-        cluster_ca_certificate = "${file("~/.kube/cluster-ca-cert.pem")}"
-    }
+    client_certificate     = file("~/.kube/client-cert.pem")
+    client_key             = file("~/.kube/client-key.pem")
+    cluster_ca_certificate = file("~/.kube/cluster-ca-cert.pem")
+  }
 }
 ```
 
@@ -80,25 +83,28 @@ i.e. any static field will override its counterpart loaded from the config.
 
 The following arguments are supported:
 
-* `host` - (Required) Set an alternative Tiller host. The format is host:port. Can be sourced from `HELM_HOST`.
-* `home` - (Required) Set an alternative location for Helm files. By default, these are stored in '$HOME/.helm'. Can be sourced from `HELM_HOME`.
-* `namespace` - (Optional) Set an alternative Tiller namespace.
-* `install_tiller` - (Optional) Install Tiller if it is not already installed.
-* `tiller_image` - (Optional) Tiller image to install.
-* `service_account` - (Optional) Service account to install Tiller with.
-* `automount_service_account_token` - (Optional) Auto-mount the given service account to tiller.
-* `debug` - (Optional)
-* `plugins_disable` - (Optional) Disable plugins. Set HELM_NO_PLUGINS=1 to disable plugins.
-* `enable_tls` - (Optional) Enables TLS communications with the Tiller.
-* `insecure` - (Optional) Whether server should be accessed without verifying the TLS certificate. Can be sourced from `HELM_HOME`.
-* `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `$HELM_HOME/key.pem`.
-* `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `$HELM_HOME/cert.pem`.
-* `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. By default read from `$HELM_HOME/ca.pem`.
-* `kubernetes` - Kubernetes configuration.
+* `host` - (Required) Set an alternative Tiller host. The format is host:port. Can be sourced from `HELM_HOST` environment variable.
+* `home` - (Required) Set an alternative location for Helm files. By default, these are stored in `$HOME/.helm`. Can be sourced from `HELM_HOME` environment variable.
+* `namespace` - (Optional) Set an alternative Tiller namespace. Defaults to `kube-system`.
+* `init_helm_home` - (Optional) Initialize Helm home directory configured by the `home` attribute if it is not already initialized, defaults to true.
+* `install_tiller` - (Optional) Install Tiller if it is not already installed. Defaults to `true`.
+* `tiller_image` - (Optional) Tiller image to install. Defaults to `gcr.io/kubernetes-helm/tiller:v2.14.3`.
+* `service_account` - (Optional) Service account to install Tiller with. Defaults to `default`.
+* `automount_service_account_token` - (Optional) Auto-mount the given service account to tiller. Defaults to `true`.
+* `override` - (Optional) Override values for the Tiller Deployment manifest. Defaults to `true`.
+* `max_history` - (Optional) Maximum number of release versions stored per release. Defaults to `0` (no limit).
+* `debug` - (Optional) - Debug indicates whether or not Helm is running in Debug mode. Defaults to `false`.
+* `plugins_disable` - (Optional) Disable plugins. Can be sourced from `HELM_NO_PLUGINS` environment variable, set `HELM_NO_PLUGINS=0` to enable plugins. Defaults to `true`.
+* `insecure` - (Optional) Whether server should be accessed without verifying the TLS certificate. Defaults to `false`.
+* `enable_tls` - (Optional) Enables TLS communications with the Tiller. Defaults to `false`.
+* `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `key.pem` in the location set by `home`.
+* `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `cert.pem` in the location set by `home`.
+* `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. By default read from `ca.pem` in the location set by `home`.
+* `kubernetes` - Kubernetes configuration block.
 
 The `kubernetes` block supports:
 
-* `config_path` - (Optional) Path to the kube config file, defaults to `~/.kube/config`. Can be sourced from `KUBE_CONFIG`.
+* `config_path` - (Optional) Path to the kube config file, defaults to `~/.kube/config`. Can be sourced from `KUBE_CONFIG` or `KUBECONFIG`..
 * `host` - (Optional) The hostname (in form of URI) of Kubernetes master. Can be sourced from `KUBE_HOST`.
 * `username` - (Optional) The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_USER`.
 * `password` - (Optional) The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_PASSWORD`.
@@ -108,3 +114,4 @@ The `kubernetes` block supports:
 * `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. Can be sourced from `KUBE_CLIENT_KEY_DATA`.
 * `cluster_ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. Can be sourced from `KUBE_CLUSTER_CA_CERT_DATA`.
 * `config_context` - (Optional) Context to choose from the config file. Can be sourced from `KUBE_CTX`.
+* `load_config_file` - (Optional) By default the local config (~/.kube/config) is loaded when you use this provider. This option at false disable this behaviour. Can be sourced from `KUBE_LOAD_CONFIG_FILE`.

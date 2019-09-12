@@ -3,6 +3,7 @@ package helm
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -48,13 +49,11 @@ func resourceRelease() *schema.Resource {
 			"repository": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				ForceNew:    true,
 				Description: "Repository where to locate the requested chart. If is an URL the chart is installed without installing the repository.",
 			},
 			"chart": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    true,
 				Description: "Chart name to be installed.",
 			},
 			"version": {
@@ -73,11 +72,11 @@ func resourceRelease() *schema.Resource {
 				},
 			},
 			"values": {
-				Type:        schema.TypeList,
-				Optional:    true,
-				Description: "List of values in raw yaml file to pass to helm.",
+				Type:     schema.TypeList,
+				Optional: true,
 				// Suppress changes of this attribute, it's merged to `overrides`
 				DiffSuppressFunc: suppressAnyDiff,
+				Description:      "List of values in raw yaml format to pass to helm.",
 				Elem:             &schema.Schema{Type: schema.TypeString},
 			},
 			"set": {
@@ -102,7 +101,7 @@ func resourceRelease() *schema.Resource {
 			"set_sensitive": {
 				Type:        schema.TypeSet,
 				Optional:    true,
-				Description: "Custom sensitive values to be merge with the values.",
+				Description: "Custom sensitive values to be merged with the values.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -205,14 +204,14 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "The result YAML file got by merging all passed `set`, `set_string` and `values`",
-      },
+			},
 			"status": {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "Status of the release.",
 			},
 			"metadata": {
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Computed:    true,
 				Description: "Status of the deployed release.",
 				Elem: &schema.Resource{
@@ -314,12 +313,13 @@ func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name s
 }
 
 func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
-  // Always set desired state to be DEPLOYED
+
+	// Always set desired state to DEPLOYED
 	err := d.SetNew("status", release.Status_DEPLOYED.String())
 	if err != nil {
 		return err
 	}
-  
+
 	// Get version from the release metadata
 	c, _, err := getChart(d, meta.(*Meta))
 	if err != nil {
@@ -327,6 +327,13 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 	}
 	if err := d.SetNew("version", c.Metadata.Version); err != nil {
 		return err
+	}
+
+	// Set desired version from the Chart metadata if available
+	if len(c.Metadata.Version) > 0 {
+		return d.SetNew("version", c.Metadata.Version)
+	} else {
+		return d.SetNewComputed("version")
 	}
 
 	// Merge all "values", "set", "set_string" and assign the result to "overrides"
@@ -673,7 +680,18 @@ func getValues(d resourceGetter) ([]byte, error) {
 		}
 	}
 
-	return yaml.Marshal(base)
+	yaml, err := yaml.Marshal(base)
+	if err == nil {
+		yamlString := string(yaml)
+		for _, raw := range d.Get("set_sensitive").(*schema.Set).List() {
+			set := raw.(map[string]interface{})
+			yamlString = strings.Replace(yamlString, set["value"].(string), "<SENSITIVE>", -1)
+		}
+
+		log.Printf("---[ values.yaml ]-----------------------------------\n%s\n", yamlString)
+	}
+
+	return yaml, err
 }
 
 var all = []release.Status_Code{
