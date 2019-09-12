@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -324,8 +323,16 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 	if err != nil {
 		return nil
 	}
-	if err := d.SetNew("version", c.Metadata.Version); err != nil {
-		return err
+
+	// Set desired version from the Chart metadata if available
+	if len(c.Metadata.Version) > 0 {
+		if err := d.SetNew("version", c.Metadata.Version); err != nil {
+			return err
+		}
+	} else {
+		if err := d.SetNewComputed("version"); err != nil {
+			return err
+		}
 	}
 
 	// Merge all "values", "set", "set_string" and assign the result to "overrides"
@@ -499,20 +506,15 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 }
 
 func resourceReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	re, err := regexp.Compile("(?P<repository>.+)\\.(?P<name>.+)")
-
-	if err != nil {
-		return nil, fmt.Errorf("import is not supported: invalid regex formats")
+	var parts = strings.SplitN(d.Id(), ".", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid id format: %s", d.Id())
 	}
 
-	if fieldValues := re.FindStringSubmatch(d.Id()); fieldValues != nil {
-		for i := 1; i < len(fieldValues); i++ {
-			fieldName := re.SubexpNames()[i]
-			d.Set(fieldName, fieldValues[i])
-		}
-	}
-
-	name := d.Get("name").(string)
+	var repository = parts[0]
+	var name = parts[1]
+	d.Set("repository", repository)
+	d.Set("name", name)
 
 	m := meta.(*Meta)
 	c, err := m.GetHelmClient()
@@ -525,7 +527,7 @@ func resourceReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*sc
 		return nil, err
 	}
 
-	d.Set("chart", r.Chart.Metadata.Name)
+	d.Set("chart", fmt.Sprintf("%s/%s", repository, r.Chart.Metadata.Name))
 	setIDAndMetadataFromRelease(d, r)
 
 	return []*schema.ResourceData{d}, nil
