@@ -36,7 +36,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigBasic(name, namespace, "test-basic", "0.6.2"),
+			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", "test-basic"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
@@ -46,11 +46,11 @@ func TestAccResourceRelease_basic(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
 			),
 		}, {
+			Config:            testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
 			ResourceName:      "helm_release.test",
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
-			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, "test-basic", "0.6.2"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
@@ -84,7 +84,7 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 				Providers:    testAccProviders,
 				CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 				Steps: []resource.TestStep{{
-					Config: testAccHelmReleaseConfigBasic(name, testNamespace, name, "0.6.2"),
+					Config: testAccHelmReleaseConfigBasic(name, namespace, name, "0.6.2"),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr(
 							fmt.Sprintf("helm_release.%s", name), "metadata.0.name", name,
@@ -120,11 +120,11 @@ func TestAccResourceRelease_update(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
 			),
 		}, {
+			Config:            testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.3"),
 			ResourceName:      "helm_release.test",
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
-			Config: testAccHelmReleaseConfigBasic(testResourceName, testNamespace, "test-update", "0.6.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
@@ -190,7 +190,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			ImportStateVerify: true,
 		}, {
 			Config: testAccHelmReleaseConfigValues(
-				testResourceName, testNamespace, "test-update-values", "stable/kibana", []string{"foo: baz"},
+				namespace, name, "test-update-values", "stable/kibana", []string{"foo: baz"},
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
@@ -231,8 +231,8 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 			ImportStateVerify: true,
 		}, {
 			Config: testAccHelmReleaseConfigValues(
-				testResourceName, testNamespace, "test-update-multiple-values", "stable/kibana",
-				[]string{"foo: bar", "foo: baz"},
+				testResourceName, namespace, name,
+				"stable/kibana", []string{"foo: bar", "foo: baz"},
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
@@ -509,15 +509,15 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 				}
 			},
 			Config: fmt.Sprintf(`
-				resource "helm_release" "test" {
-					name      = %q
-					namespace = %q
-					chart     = %q
-					set {
-						name = "persistence.enabled"
-						value = "false" # persistent volumes are giving non-related issues when testing
-					}
+			resource "helm_release" "test" {
+				name      = %q
+				namespace = %q
+				chart     = %q
+				set {
+					name = "persistence.enabled"
+					value = "false" # persistent volumes are giving non-related issues when testing
 				}
+			}
 			`, testNamespace, testResourceName, chartPath),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
