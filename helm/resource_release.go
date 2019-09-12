@@ -72,11 +72,11 @@ func resourceRelease() *schema.Resource {
 				},
 			},
 			"values": {
-				Type:     schema.TypeList,
-				Optional: true,
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "List of values in raw yaml file to pass to helm.",
 				// Suppress changes of this attribute, it's merged to `overrides`
 				DiffSuppressFunc: suppressAnyDiff,
-				Description:      "List of values in raw yaml format to pass to helm.",
 				Elem:             &schema.Schema{Type: schema.TypeString},
 			},
 			"set": {
@@ -313,7 +313,6 @@ func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name s
 }
 
 func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
-
 	// Always set desired state to DEPLOYED
 	err := d.SetNew("status", release.Status_DEPLOYED.String())
 	if err != nil {
@@ -327,13 +326,6 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 	}
 	if err := d.SetNew("version", c.Metadata.Version); err != nil {
 		return err
-	}
-
-	// Set desired version from the Chart metadata if available
-	if len(c.Metadata.Version) > 0 {
-		return d.SetNew("version", c.Metadata.Version)
-	} else {
-		return d.SetNewComputed("version")
 	}
 
 	// Merge all "values", "set", "set_string" and assign the result to "overrides"
@@ -510,7 +502,7 @@ func resourceReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*sc
 	re, err := regexp.Compile("(?P<repository>.+)\\.(?P<name>.+)")
 
 	if err != nil {
-		return nil, fmt.Errorf("Import is not supported. Invalid regex formats.")
+		return nil, fmt.Errorf("import is not supported: invalid regex formats")
 	}
 
 	if fieldValues := re.FindStringSubmatch(d.Id()); fieldValues != nil {
@@ -540,7 +532,6 @@ func resourceReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*sc
 }
 
 func deleteRelease(c helm.Interface, name string, disableWebhooks bool, timeout int64) error {
-
 	opts := []helm.DeleteOption{
 		helm.DeleteDisableHooks(disableWebhooks),
 		helm.DeletePurge(true),
