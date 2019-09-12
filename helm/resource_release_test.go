@@ -38,7 +38,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", "test-basic"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
@@ -190,7 +190,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			ImportStateVerify: true,
 		}, {
 			Config: testAccHelmReleaseConfigValues(
-				namespace, name, "test-update-values", "stable/kibana", []string{"foo: baz"},
+				testResourceName, namespace, name, "stable/kibana", []string{"foo: baz"},
 			),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
@@ -509,7 +509,7 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 				}
 			},
 			Config: fmt.Sprintf(`
-			resource "helm_release" "test" {
+			resource "helm_release" %q {
 				name      = %q
 				namespace = %q
 				chart     = %q
@@ -518,7 +518,7 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 					value = "false" # persistent volumes are giving non-related issues when testing
 				}
 			}
-			`, testNamespace, testResourceName, chartPath),
+			`, testResourceName, name, namespace, chartPath),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
