@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	// Import to initialize client auth plugins.
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -287,6 +289,8 @@ type Meta struct {
 	Tunnel           *kube.Tunnel
 	RootServer       *grpc.Server
 	TillerEnv        *tiller_env.Environment
+	TillerK8sClient  *kube.Client
+	TillerK8sConfig  *genericclioptions.ConfigFlags
 	DefaultNamespace string
 
 	data *schema.ResourceData
@@ -305,6 +309,10 @@ func NewMeta(d *schema.ResourceData) (*Meta, error) {
 	}
 
 	if err := m.buildK8sClient(m.data); err != nil {
+		return nil, err
+	}
+
+	if err := m.buildTillerK8sClient(m.data); err != nil {
 		return nil, err
 	}
 
@@ -382,6 +390,52 @@ func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	if err != nil {
 		return fmt.Errorf("failed to configure kubernetes config: %s", err)
 	}
+
+	return nil
+}
+
+func (m *Meta) buildTillerK8sClient(d *schema.ResourceData) error {
+	tillerK8sConfig := genericclioptions.NewConfigFlags(true)
+
+	if !k8sGet(d, "in_cluster").(bool) && k8sGet(d, "load_config_file").(bool) {
+		explicitPath, err := homedir.Expand(k8sGet(d, "config_path").(string))
+		if err != nil {
+			return err
+		}
+
+		context := k8sGet(d, "config_context").(string)
+		if context != "" {
+			*tillerK8sConfig.Context = context
+		}
+
+		*tillerK8sConfig.KubeConfig = explicitPath
+	}
+
+	if v, ok := k8sGetOk(d, "host"); ok {
+		*tillerK8sConfig.APIServer = v.(string)
+	}
+	if v, ok := k8sGetOk(d, "username"); ok {
+		*tillerK8sConfig.Username = v.(string)
+	}
+	if v, ok := k8sGetOk(d, "password"); ok {
+		*tillerK8sConfig.Password = v.(string)
+	}
+	if v, ok := k8sGetOk(d, "token"); ok {
+		*tillerK8sConfig.BearerToken = v.(string)
+	}
+	if v, ok := k8sGetOk(d, "insecure"); ok {
+		*tillerK8sConfig.Insecure = v.(bool)
+	}
+	if v, ok := k8sGetOk(d, "cluster_ca_certificate"); ok {
+		caFile, err := writeTempFile([]byte(v.(string)))
+		if err != nil {
+			return err
+		}
+		*tillerK8sConfig.CAFile = caFile
+	}
+
+	m.TillerK8sConfig = tillerK8sConfig
+	m.TillerK8sClient = kube.New(tillerK8sConfig)
 
 	return nil
 }
@@ -653,17 +707,12 @@ func debug(format string, a ...interface{}) {
 	log.Printf("[DEBUG] %s", fmt.Sprintf(format, a...))
 }
 
-func newLogger(prefix string) *log.Logger {
-	if len(prefix) > 0 {
-		prefix = fmt.Sprintf("[DEBUG][%s] ", prefix)
-	}
-	return log.New(os.Stderr, prefix, log.Flags())
-}
-
 func (m *Meta) runLocalTillerIfNeeded(d *schema.ResourceData) error {
 	if !d.Get("tillerless").(bool) {
 		return nil
 	}
+
+	defer m.cleanTempFiles()
 
 	var (
 		store                   = d.Get("tillerless_storage").(string)
@@ -677,20 +726,16 @@ func (m *Meta) runLocalTillerIfNeeded(d *schema.ResourceData) error {
 	case "configmap":
 		cfgmaps := driver.NewConfigMaps(m.K8sClient.CoreV1().ConfigMaps(m.Settings.TillerNamespace))
 		m.TillerEnv.Releases = storage.Init(cfgmaps)
-		m.TillerEnv.Releases.Log = newLogger("storage").Printf
 	case "secret":
 		secrets := driver.NewSecrets(m.K8sClient.CoreV1().Secrets(m.Settings.TillerNamespace))
 		m.TillerEnv.Releases = storage.Init(secrets)
-		m.TillerEnv.Releases.Log = newLogger("storage").Printf
 	}
 
 	if maxHistory > 0 {
 		m.TillerEnv.Releases.MaxHistory = maxHistory
 	}
 
-	kubeClient := kube.New(nil)
-	kubeClient.Log = newLogger("kube").Printf
-	m.TillerEnv.KubeClient = kubeClient
+	m.TillerEnv.KubeClient = m.TillerK8sClient
 
 	if tlsEnable || tlsVerify {
 		opts := tlsutil.Options{CertFile: tillerlessTlsCertFile, KeyFile: tillerlessTlsKeyFile}
@@ -747,7 +792,6 @@ func (m *Meta) runLocalTillerIfNeeded(d *schema.ResourceData) error {
 		defer close(srvErrCh)
 
 		svc := tiller.NewReleaseServer(m.TillerEnv, m.K8sClient, false)
-		svc.Log = newLogger("tiller").Printf
 		services.RegisterReleaseServiceServer(m.RootServer, svc)
 		if err := m.RootServer.Serve(lstn); err != nil {
 			srvErrCh <- err
@@ -757,6 +801,26 @@ func (m *Meta) runLocalTillerIfNeeded(d *schema.ResourceData) error {
 
 	debug("Tiller has been started locally.")
 	return nil
+}
+
+func writeTempFile(content []byte) (string, error) {
+	tmpfile, err := ioutil.TempFile("", "helm-*")
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := tmpfile.Write(content); err != nil {
+		return "", err
+	}
+	if err := tmpfile.Close(); err != nil {
+		return "", err
+	}
+
+	return tmpfile.Name(), nil
+}
+
+func (m *Meta) cleanTempFiles() {
+	os.Remove(*m.TillerK8sConfig.CAFile)
 }
 
 var (

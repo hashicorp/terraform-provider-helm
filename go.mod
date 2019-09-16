@@ -54,7 +54,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.0.0-20190409022649-727a075fdec8 // indirect
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
 	k8s.io/apiserver v0.0.0-20190409021813-1ec86e4da56c // indirect
-	k8s.io/cli-runtime v0.0.0-20190409023024-d644b00f3b79 // indirect
+	k8s.io/cli-runtime v0.0.0-20190409023024-d644b00f3b79
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/cloud-provider v0.0.0-20190409023720-1bc0c81fa51d // indirect
 	k8s.io/helm v2.14.3+incompatible
