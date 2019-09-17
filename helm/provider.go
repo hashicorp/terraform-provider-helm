@@ -712,7 +712,9 @@ func (m *Meta) runLocalTillerIfNeeded(d *schema.ResourceData) error {
 		return nil
 	}
 
-	defer m.cleanTempFiles()
+	if ok, _ := isLocalAddress(m.Settings.TillerHost); !ok {
+		return fmt.Errorf("Tiller host %s is not a local address", m.Settings.TillerHost)
+	}
 
 	var (
 		store                   = d.Get("tillerless_storage").(string)
@@ -821,6 +823,27 @@ func writeTempFile(content []byte) (string, error) {
 
 func (m *Meta) cleanTempFiles() {
 	os.Remove(*m.TillerK8sConfig.CAFile)
+}
+
+func isLocalAddress(hostport string) (bool, error) {
+	host, _, err := net.SplitHostPort(hostport)
+	if err != nil {
+		return false, err
+	}
+
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return false, err
+	}
+
+	ipStr := ips[0].String()
+	ip := net.ParseIP(ipStr)
+
+	if ip != nil {
+		return ip.IsLoopback(), nil
+	}
+
+	return false, fmt.Errorf("%s is not a valid textual representation of an IP address", ipStr)
 }
 
 var (
