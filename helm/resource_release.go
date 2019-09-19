@@ -229,6 +229,7 @@ func resourceRelease() *schema.Resource {
 						"values": {
 							Type:        schema.TypeString,
 							Computed:    true,
+							Sensitive:   true, // this can sometimes contain sensitive values due to the use of "set_sensitive"
 							Description: "The raw yaml values used for the chart.",
 						},
 					},
