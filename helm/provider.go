@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/pathorcontents"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/pathorcontents"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	homedir "github.com/mitchellh/go-homedir"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -36,7 +36,7 @@ import (
 
 // Provider returns the provider schema to Terraform.
 func Provider() terraform.ResourceProvider {
-	return &schema.Provider{
+	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"host": {
 				Type:        schema.TypeString,
@@ -149,8 +149,17 @@ func Provider() terraform.ResourceProvider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"helm_repository": dataRepository(),
 		},
-		ConfigureFunc: providerConfigure,
 	}
+	p.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
+		terraformVersion := p.TerraformVersion
+		if terraformVersion == "" {
+			// Terraform 0.12 introduced this field to the protocol
+			// We can therefore assume that if it's missing it's 0.10 or 0.11
+			terraformVersion = "0.11+compatible"
+		}
+		return providerConfigure(d, terraformVersion)
+	}
+	return p
 }
 
 func kubernetesResource() *schema.Resource {
@@ -236,8 +245,23 @@ func kubernetesResource() *schema.Resource {
 	}
 }
 
-func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	return NewMeta(d)
+func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, error) {
+	m := &Meta{data: d}
+	m.buildSettings(m.data)
+
+	if err := m.buildTLSConfig(m.data); err != nil {
+		return nil, err
+	}
+
+	if err := m.buildK8sClient(m.data, terraformVersion); err != nil {
+		return nil, err
+	}
+
+	if err := m.initHelmHomeIfNeeded(m.data); err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
 
 // Meta is the meta information structure for the provider
@@ -255,26 +279,6 @@ type Meta struct {
 	sync.Mutex
 }
 
-// NewMeta will construct a new Meta from the provided ResourceData
-func NewMeta(d *schema.ResourceData) (*Meta, error) {
-	m := &Meta{data: d}
-	m.buildSettings(m.data)
-
-	if err := m.buildTLSConfig(m.data); err != nil {
-		return nil, err
-	}
-
-	if err := m.buildK8sClient(m.data); err != nil {
-		return nil, err
-	}
-
-	if err := m.initHelmHomeIfNeeded(m.data); err != nil {
-		return nil, err
-	}
-
-	return m, nil
-}
-
 func (m *Meta) buildSettings(d *schema.ResourceData) {
 	m.Settings = &helm_env.EnvSettings{
 		Home:            helmpath.Home(d.Get("home").(string)),
@@ -284,7 +288,7 @@ func (m *Meta) buildSettings(d *schema.ResourceData) {
 	}
 }
 
-func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
+func (m *Meta) buildK8sClient(d *schema.ResourceData, terraformVersion string) error {
 	_, hasStatic := d.GetOk("kubernetes")
 
 	c, err := getK8sConfig(d)
@@ -308,7 +312,7 @@ func (m *Meta) buildK8sClient(d *schema.ResourceData) error {
 	}
 
 	// Overriding with static configuration
-	cfg.UserAgent = fmt.Sprintf("HashiCorp/1.0 Terraform/%s", terraform.VersionString())
+	cfg.UserAgent = fmt.Sprintf("HashiCorp/1.0 Terraform/%s", terraformVersion)
 
 	if v, ok := k8sGetOk(d, "host"); ok {
 		cfg.Host = v.(string)

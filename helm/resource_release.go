@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/ghodss/yaml"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/downloader"
 	"k8s.io/helm/pkg/getter"
