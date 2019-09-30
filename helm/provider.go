@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -374,12 +375,18 @@ func getK8sConfig(d *schema.ResourceData) (clientcmd.ClientConfig, error) {
 	overrides := &clientcmd.ConfigOverrides{}
 
 	if !k8sGet(d, "in_cluster").(bool) && k8sGet(d, "load_config_file").(bool) {
-		explicitPath, err := homedir.Expand(k8sGet(d, "config_path").(string))
-		if err != nil {
-			return nil, err
+		configPathSplit := strings.Split(k8sGet(d, "config_path").(string), ":")
+		precedence := make([]string, len(configPathSplit))
+		for i, path := range configPathSplit {
+			expanded, err := homedir.Expand(path)
+			if err != nil {
+				debug("Error expanding path %s", err)
+				return nil, err
+			}
+			precedence[i] = expanded
 		}
 
-		rules.ExplicitPath = explicitPath
+		rules.Precedence = precedence
 		rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 
 		context := k8sGet(d, "config_context").(string)
