@@ -1,6 +1,6 @@
 Terraform Provider for Helm
 [![Build Status](https://travis-ci.org/terraform-providers/terraform-provider-helm.svg?branch=master)](https://travis-ci.org/terraform-providers/terraform-provider-helm)
-[![GitHub release](https://img.shields.io/github/release/terraform-providers/terraform-provider-helm.svg)](https://github.com/terraform-providers/terraform-provider-helm/releases)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/terraform-providers/terraform-provider-helm?label=release)](https://github.com/terraform-providers/terraform-provider-helm/releases)
 [![license](https://img.shields.io/github/license/terraform-providers/terraform-provider-helm.svg)]()
 ===========================
 
