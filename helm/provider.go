@@ -349,6 +349,12 @@ var k8sPrefix = "kubernetes.0."
 func k8sGetOk(d *schema.ResourceData, key string) (interface{}, bool) {
 	value, ok := d.GetOk(k8sPrefix + key)
 
+	// For boolean attributes the zero value is Ok
+	switch value.(type) {
+	case bool:
+		value, ok = d.GetOkExists(k8sPrefix + key)
+	}
+
 	// fix: DefaultFunc is not being triggerred on TypeList
 	schema := kubernetesResource().Schema[key]
 	if !ok && schema.DefaultFunc != nil {
