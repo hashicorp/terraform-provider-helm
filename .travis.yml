@@ -1,6 +1,6 @@
 sudo: required
 # We need the systemd for the kubeadm and it's default from 16.04+
-dist: xenial
+dist: bionic
 services:
 - docker
 language: go
