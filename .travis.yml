@@ -32,7 +32,7 @@ jobs:
       stage: Acceptance test
       env:
         - CHANGE_MINIKUBE_NONE_USER=true
-        - KUBERNETES_VERSION=v1.10.13
+        - KUBERNETES_VERSION=v1.15.0
       install:
         - sudo apt-get update
         - sudo apt-get install -y socat
