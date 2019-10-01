@@ -325,6 +325,7 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeList,
 				Computed:    true,
 				Description: "Status of the deployed release.",
+				Sensitive:   true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
