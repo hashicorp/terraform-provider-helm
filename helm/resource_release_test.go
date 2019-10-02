@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform/helper/acctest"
-	"github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	yaml "gopkg.in/yaml.v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/helm/pkg/helm"
@@ -136,32 +136,6 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "{}\n"),
-			),
-		}},
-	})
-}
-
-func TestAccResourceRelease_setStringValues(t *testing.T) {
-	name := fmt.Sprintf("test-set-string-values-%s", acctest.RandString(10))
-	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
-	// Delete namespace automatically created by helm after checks
-	defer deleteNamespace(t, namespace)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
-		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigSetString(testResourceName, namespace, name, "0.6.3", "10.0.0.0/32,10.0.0.1/32,10.0.0.2/32"),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "test: 10.0.0.0/32,10.0.0.1/32,10.0.0.2/32\n"),
-			),
-		}, {
-			Config: testAccHelmReleaseConfigSetString(testResourceName, namespace, name, "0.6.3", "10.0.0.0\\\\/32,10.0.0.1\\\\/32,10.0.0.2\\\\/32"),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "test: 10.0.0.0/32,10.0.0.1/32,10.0.0.2/32\n"),
 			),
 		}},
 	})
@@ -506,23 +480,6 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 			}
 		}
 	`, resource, name, ns, version)
-}
-
-func testAccHelmReleaseConfigSetString(resource, ns, name, version, value string) string {
-	return fmt.Sprintf(`
-		resource "helm_release" "%s" {
- 			name      = %q
-			namespace = %q
-  			chart     = "stable/mariadb"
-			version   = %q
-
-			set_string {
-				name  = "test"
-				value =  "%s"
-			}
-
-		}
-	`, resource, name, ns, version, value)
 }
 
 func testAccHelmReleaseConfigValues(resource, ns, name, chart string, values []string) string {

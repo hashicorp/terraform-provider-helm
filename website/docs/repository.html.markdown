@@ -16,14 +16,14 @@ A chart repository is a location where packaged charts can be stored and shared.
 
 ```hcl
 data "helm_repository" "incubator" {
-    name = "incubator"
-    url  = "https://kubernetes-charts-incubator.storage.googleapis.com"
+  name = "incubator"
+  url  = "https://kubernetes-charts-incubator.storage.googleapis.com"
 }
 
 resource "helm_release" "my_cache" {
-    name       = "my-cache"
-    repository = "${data.helm_repository.incubator.metadata.0.name}"
-    chart      = "redis-cache"
+  name       = "my-cache"
+  repository = data.helm_repository.incubator.metadata[0].name
+  chart      = "redis-cache"
 }
 ```
 
