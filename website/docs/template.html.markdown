@@ -45,7 +45,7 @@ data "helm_template" "mariadb_instance" {
   }
 }
 
-output "mariadb_instance_manifest" {
+output "mariadb_instance_rendered" {
   value = data.helm_template.mariadb_instance.rendered
 }
 
@@ -78,7 +78,7 @@ data "helm_template" "mariadb_instance" {
   ]
 }
 
-output "mariadb_instance_manifest" {
+output "mariadb_instance_rendered" {
   value = data.helm_template.mariadb_instance.rendered
 }
 

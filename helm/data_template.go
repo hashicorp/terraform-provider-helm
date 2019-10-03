@@ -173,7 +173,6 @@ func dataTemplate() *schema.Resource {
 func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 
-	// Get input attributes
 	name := d.Get("name").(string)
 
 	c, _, err := getChart(d, m)
@@ -189,7 +188,6 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	ns := d.Get("namespace").(string)
 	kubeVersion := d.Get("kube_version").(string)
 
-	// Template command
 	config := &chart.Config{Raw: string(values)}
 
 	t := &templateCmd{
@@ -202,7 +200,7 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 
 	if templatesAttr, ok := d.GetOk("templates"); ok {
 		templates := templatesAttr.([]interface{})
-		t.renderFiles = make([]string, 0, len(templates))
+		t.renderFiles = []string{}
 
 		for _, template := range templates {
 			t.renderFiles = append(t.renderFiles, template.(string))
@@ -214,7 +212,6 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("cannot render template: %v", err)
 	}
 
-	// Set output attributes
 	d.SetId(name)
 
 	err = d.Set("notes", out.notes)
@@ -247,25 +244,20 @@ func newTemplateOut() *templateOut {
 	return t
 }
 
-// Helm template
-// Taken and adapted from github.com/helm/helm/cmd/helm/template.go
-
+// templateCmd originates from the implementation of the helm template command
+// in github.com/helm/helm/cmd/helm/template.go. Field which are unnecessary
+// in the context of this data source have been omitted.
 type templateCmd struct {
-	namespace string
-	//valueFiles       valueFiles
-	chartPath string
-	//values           []string
-	//stringValues     []string
-	//fileValues       []string
-	//nameTemplate     string
-	//showNotes        bool
+	namespace        string
+	chartPath        string
 	releaseName      string
 	releaseIsUpgrade bool
 	renderFiles      []string
 	kubeVersion      string
-	//outputDir        string
 }
 
+// render originates from the implementation of the helm template command and
+// have been adapter for the integration in this data source.
 func (t *templateCmd) render(c *chart.Chart, config *chart.Config) (*templateOut, error) {
 	tOut := newTemplateOut()
 
