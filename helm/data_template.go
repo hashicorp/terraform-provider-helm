@@ -241,7 +241,7 @@ func newTemplateOut() *templateOut {
 }
 
 // templateCmd originates from the implementation of the helm template command
-// in github.com/helm/helm/cmd/helm/template.go. Field which are unnecessary
+// in github.com/helm/helm/cmd/helm/template.go. Fields which are unnecessary
 // in the context of this data source have been omitted.
 type templateCmd struct {
 	namespace        string
@@ -253,7 +253,7 @@ type templateCmd struct {
 }
 
 // render originates from the implementation of the helm template command and
-// have been adapter for the integration in this data source.
+// have been adapted for the integration in this data source.
 func (t *templateCmd) render(c *chart.Chart, config *chart.Config) (*templateOut, error) {
 	tOut := newTemplateOut()
 
