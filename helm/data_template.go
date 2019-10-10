@@ -22,19 +22,16 @@ func dataTemplate() *schema.Resource {
 			"name": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    true,
 				Description: "Release name.",
 			},
 			"repository": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				ForceNew:    true,
 				Description: "Repository where to locate the requested chart. If the location is an URL the chart is rendered without installing the repository.",
 			},
 			"chart": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    true,
 				Description: "Chart name to be rendered.",
 			},
 			"version": {
@@ -141,7 +138,6 @@ func dataTemplate() *schema.Resource {
 			"namespace": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				ForceNew:    true,
 				Default:     "default",
 				Description: "Namespace of the rendered resources.",
 			},
