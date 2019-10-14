@@ -48,6 +48,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 			),
 		}, {
 			Config:            testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ResourceName:      "helm_release.test",
 			ImportState:       true,
 			ImportStateVerify: true,
@@ -59,6 +60,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}},
@@ -93,7 +95,9 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 						),
 					),
 				}, {
+					Config:            testAccHelmReleaseConfigBasic(name, namespace, name, "0.6.2"),
 					ResourceName:      fmt.Sprintf("helm_release.%s", name),
+					ImportStateId:     fmt.Sprintf("stable.%s", name),
 					ImportState:       true,
 					ImportStateVerify: true,
 				}},
@@ -124,6 +128,7 @@ func TestAccResourceRelease_update(t *testing.T) {
 			),
 		}, {
 			Config:            testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.3"),
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ResourceName:      "helm_release.test",
 			ImportState:       true,
 			ImportStateVerify: true,
@@ -136,6 +141,7 @@ func TestAccResourceRelease_update(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}},
@@ -163,7 +169,11 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "{}\n"),
 			),
 		}, {
-			ResourceName:      "helm_release.test",
+			ResourceName: "helm_release.test",
+			Config: testAccHelmReleaseConfigValues(
+				testResourceName, namespace, name, "stable/kibana", []string{""},
+			),
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}},
@@ -191,7 +201,11 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: bar\n"),
 			),
 		}, {
-			ResourceName:      "helm_release.test",
+			ResourceName: "helm_release.test",
+			Config: testAccHelmReleaseConfigValues(
+				testResourceName, namespace, name, "stable/kibana", []string{"foo: bar"},
+			),
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
@@ -206,6 +220,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}},
@@ -234,7 +249,12 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: bar\n"),
 			),
 		}, {
-			ResourceName:      "helm_release.test",
+			ResourceName: "helm_release.test",
+			Config: testAccHelmReleaseConfigValues(
+				testResourceName, namespace, name,
+				"stable/kibana", []string{"foo: bar"},
+			),
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
@@ -250,6 +270,7 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}},
@@ -275,6 +296,8 @@ func TestAccResourceRelease_repository(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			Config:            testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
@@ -287,6 +310,7 @@ func TestAccResourceRelease_repository(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}},
@@ -369,6 +393,8 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			Config:            testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
@@ -382,6 +408,7 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}},
@@ -416,6 +443,8 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 			ExpectNonEmptyPlan: true,
 		}, {
 			ResourceName:      "helm_release.test",
+			Config:            malformed,
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
@@ -428,6 +457,7 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}},
@@ -521,6 +551,7 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
@@ -550,6 +581,7 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 			),
 		}, {
 			ResourceName:      "helm_release.test",
+			ImportStateId:     fmt.Sprintf("stable.%s", name),
 			ImportState:       true,
 			ImportStateVerify: true,
 		}},
