@@ -36,7 +36,8 @@ func TestAccResourceRelease_basic(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
+			Config:       testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
+			ResourceName: "helm_release.test",
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
@@ -84,7 +85,8 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 				Providers:    testAccProviders,
 				CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 				Steps: []resource.TestStep{{
-					Config: testAccHelmReleaseConfigBasic(name, namespace, name, "0.6.2"),
+					Config:       testAccHelmReleaseConfigBasic(name, namespace, name, "0.6.2"),
+					ResourceName: fmt.Sprintf("helm_release.%s", name),
 					Check: resource.ComposeAggregateTestCheckFunc(
 						resource.TestCheckResourceAttr(
 							fmt.Sprintf("helm_release.%s", name), "metadata.0.name", name,
@@ -113,7 +115,8 @@ func TestAccResourceRelease_update(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
+			Config:       testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
+			ResourceName: "helm_release.test",
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
@@ -125,6 +128,7 @@ func TestAccResourceRelease_update(t *testing.T) {
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
+			ResourceName: "helm_release.test",
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
@@ -149,6 +153,7 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
+			ResourceName: "helm_release.test",
 			Config: testAccHelmReleaseConfigValues(
 				testResourceName, namespace, name, "stable/kibana", []string{""},
 			),
@@ -176,6 +181,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
+			ResourceName: "helm_release.test",
 			Config: testAccHelmReleaseConfigValues(
 				testResourceName, namespace, name, "stable/kibana", []string{"foo: bar"},
 			),
@@ -189,6 +195,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
+			ResourceName: "helm_release.test",
 			Config: testAccHelmReleaseConfigValues(
 				testResourceName, namespace, name, "stable/kibana", []string{"foo: baz"},
 			),
@@ -216,6 +223,7 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
+			ResourceName: "helm_release.test",
 			Config: testAccHelmReleaseConfigValues(
 				testResourceName, namespace, name,
 				"stable/kibana", []string{"foo: bar"},
@@ -230,6 +238,7 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
+			ResourceName: "helm_release.test",
 			Config: testAccHelmReleaseConfigValues(
 				testResourceName, namespace, name,
 				"stable/kibana", []string{"foo: bar", "foo: baz"},
@@ -257,7 +266,8 @@ func TestAccResourceRelease_repository(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
+			Config:       testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
+			ResourceName: "helm_release.test",
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
@@ -268,7 +278,8 @@ func TestAccResourceRelease_repository(t *testing.T) {
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
-			Config: testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
+			Config:       testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
+			ResourceName: "helm_release.test",
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
@@ -291,14 +302,16 @@ func TestAccResourceRelease_repositoryDatasource(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigRepositoryDatasource(testResourceName, namespace, name),
+			Config:       testAccHelmReleaseConfigRepositoryDatasource(testResourceName, namespace, name),
+			ResourceName: "helm_release.test",
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
 			),
 		}, {
-			Config: testAccHelmReleaseConfigRepositoryDatasource(testResourceName, namespace, name),
+			Config:       testAccHelmReleaseConfigRepositoryDatasource(testResourceName, namespace, name),
+			ResourceName: "helm_release.test",
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
@@ -325,7 +338,8 @@ func TestAccResourceRelease_repositoryMultipleDatasources(t *testing.T) {
 		},
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigRepositoryMultipleDatasource(repo1, repo2, testResourceName, namespace, name),
+			Config:       testAccHelmReleaseConfigRepositoryMultipleDatasource(repo1, repo2, testResourceName, namespace, name),
+			ResourceName: "helm_release.test",
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
@@ -345,7 +359,8 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
+			Config:       testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
+			ResourceName: "helm_release.test",
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
@@ -357,7 +372,8 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
-			Config: testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
+			ResourceName: "helm_release.test",
+			Config:       testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
@@ -394,6 +410,7 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
+			ResourceName:       "helm_release.test",
 			Config:             malformed,
 			ExpectError:        regexp.MustCompile("failed"),
 			ExpectNonEmptyPlan: true,
@@ -402,7 +419,8 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 			ImportState:       true,
 			ImportStateVerify: true,
 		}, {
-			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.3"),
+			Config:       testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.3"),
+			ResourceName: "helm_release.test",
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
@@ -427,6 +445,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
+			ResourceName: "helm_release.test",
 			Config: testAccHelmReleaseConfigValues(
 				testResourceName, namespace, name, "stable/mariadb",
 				[]string{"master:\n  persistence:\n    enabled: false", "replication:\n  enabled: false"},
@@ -436,6 +455,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
 			),
 		}, {
+			ResourceName: "helm_release.test",
 			Config: testAccHelmReleaseConfigValues(
 				testResourceName, namespace, name, "stable/mariadb",
 				[]string{"master:\n  persistence:\n    enabled: true", "replication:\n  enabled: false"},
@@ -447,6 +467,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "status", "FAILED"),
 			),
 		}, {
+			ResourceName: "helm_release.test",
 			Config: testAccHelmReleaseConfigValues(
 				testResourceName, namespace, name, "stable/mariadb",
 				[]string{"master:\n  persistence:\n    enabled: true", "replication:\n  enabled: false"},
@@ -480,6 +501,7 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
+			ResourceName: "helm_release.test",
 			Config: fmt.Sprintf(`
 			resource "helm_release" %q {
 				name      = %q
@@ -508,6 +530,7 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
+			ResourceName: "helm_release.test",
 			Config: fmt.Sprintf(`
 			resource "helm_release" %q {
 				name      = %q
