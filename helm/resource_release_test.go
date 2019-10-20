@@ -645,6 +645,8 @@ func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
 		}
 
 		client, err := m.(*Meta).GetHelmClient()
+		defer m.(*Meta).Tunnel.Close()
+
 		if err != nil {
 			return err
 		}

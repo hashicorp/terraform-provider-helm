@@ -519,9 +519,6 @@ func (m *Meta) waitForTiller(o *installer.Options) error {
 }
 
 func (m *Meta) buildTunnel(d *schema.ResourceData) error {
-	if m.Settings.TillerHost != "" {
-		return nil
-	}
 
 	// Wait a reasonable time for tiller, even if we didn't deploy it this run
 	o := &installer.Options{}

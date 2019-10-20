@@ -321,6 +321,8 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer m.Tunnel.Close()
+
 	name := d.Get("name").(string)
 
 	if err = prepareTillerForNewRelease(d, c, name); err != nil {
@@ -361,6 +363,7 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer m.Tunnel.Close()
 
 	name := d.Get("name").(string)
 
@@ -417,6 +420,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer m.Tunnel.Close()
 
 	name := d.Get("name").(string)
 	res, err := c.UpdateRelease(name, path, opts...)
@@ -433,6 +437,7 @@ func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer m.Tunnel.Close()
 
 	name := d.Get("name").(string)
 	disableWebhooks := d.Get("disable_webhooks").(bool)
@@ -451,6 +456,8 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	if err != nil {
 		return false, err
 	}
+	defer m.Tunnel.Close()
+
 	name := d.Get("name").(string)
 	_, err = getRelease(c, name)
 	if err == nil {
