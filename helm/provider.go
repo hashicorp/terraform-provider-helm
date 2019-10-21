@@ -102,7 +102,9 @@ func Provider() terraform.ResourceProvider {
 				Description: "Context to choose from the config file. Can be sourced from `HELM_KUBECONTEXT`.",
 			},
 		},
-		ResourcesMap: map[string]*schema.Resource{},
+		ResourcesMap: map[string]*schema.Resource{
+			"helm_repository": resourceRepository(),
+		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"helm_repository": dataRepository(),
 		},

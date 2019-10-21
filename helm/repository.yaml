@@ -8,3 +8,10 @@ repositories:
   password: ""
   url: https://kubernetes-charts-incubator.storage.googleapis.com
   username: ""
+- caFile: ""
+  certFile: ""
+  keyFile: ""
+  name: test-repository-upxos37ym7
+  password: ""
+  url: https://kubernetes-charts-incubator.storage.googleapis.com
+  username: ""
