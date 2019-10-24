@@ -284,83 +284,6 @@ func resourceRelease() *schema.Resource {
 	}
 }
 
-// // prepareTillerForNewRelease determines the current status of the given release and
-// // waits for Tiller to be ready to create/update a new release.
-// // If the release is FAILED then we delete and re-create it.
-// func prepareTillerForNewRelease(d *schema.ResourceData, c helm.Interface, name string) error {
-// 	for {
-// 		r, err := getRelease(c, name)
-// 		switch err {
-// 		case ErrReleaseNotFound:
-// 			// we don't have a release. create it.
-// 			return nil
-// 		case nil:
-// 			// we have a release. check its status.
-// 			break
-// 		default:
-// 			// err is not nil. we can't get a release. abort
-// 			return err
-// 		}
-
-// 		switch r.Info.Status.GetCode() {
-// 		case release.Status_DEPLOYED:
-// 			return setIDAndMetadataFromRelease(d, r)
-// 		case release.Status_FAILED:
-// 			// delete and recreate it
-// 			debug("release %s status is FAILED deleting it", name)
-
-// 			if err := deleteRelease(c,
-// 				name,
-// 				d.Get("disable_webhooks").(bool),
-// 				int64(d.Get("timeout").(int))); err != nil {
-// 				debug("could not delete release %s: %v", name, err)
-// 				return err
-// 			}
-
-// 			continue
-// 		case release.Status_DELETED:
-// 			// re-install it
-// 			return nil
-// 		case release.Status_UNKNOWN:
-// 			// re-install it
-// 			return nil
-// 		case release.Status_DELETING,
-// 			release.Status_PENDING_INSTALL,
-// 			release.Status_PENDING_ROLLBACK,
-// 			release.Status_PENDING_UPGRADE:
-// 			// wait for update?
-// 			debug("release %s waiting for status change %s", name, r.Info.Status.Code)
-// 			time.Sleep(1 * time.Second)
-// 			continue
-// 		default:
-// 			return errors.New("unknown release status")
-// 		}
-// 	}
-// }
-
-// func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
-
-// 	// Always set desired state to DEPLOYED
-// 	err := d.SetNew("status", release.Status_DEPLOYED.String())
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// Get Chart metadata, if we fail - we're done
-// 	c, _, err := getChart(d, meta.(*Meta))
-// 	if err != nil {
-// 		return nil
-// 	}
-
-// 	// Set desired version from the Chart metadata if available
-// 	if len(c.Metadata.Version) > 0 {
-// 		return d.SetNew("version", c.Metadata.Version)
-// 	} else {
-// 		return d.SetNewComputed("version")
-// 	}
-
-// }
-
 func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 	actionConfig, err := m.GetHelmConfiguration()
@@ -452,7 +375,6 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.SkipCRDs = d.Get("skip_crds").(bool)
 	client.SubNotes = d.Get("render_subchart_notes").(bool)
 
-	client.Namespace = client.Namespace
 	release, err := client.Run(chart, values)
 
 	if err != nil {
@@ -460,21 +382,6 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	return setIDAndMetadataFromRelease(d, release)
-
-	// opts := []helm.InstallOption{
-	// 	helm.ReleaseName(d.Get("name").(string)),
-	// 	helm.InstallReuseName(d.Get("reuse").(bool)),
-	// 	helm.ValueOverrides(values),
-	// 	helm.InstallDisableHooks(d.Get("disable_webhooks").(bool)),
-	// 	helm.InstallTimeout(int64(d.Get("timeout").(int))),
-	// 	helm.InstallWait(d.Get("wait").(bool)),
-	// }
-
-	//ns := d.Get("namespace").(string)
-
-	// res, err := c.InstallReleaseFromChart(chart, ns, opts...)
-
-	//return nil
 }
 
 func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
@@ -490,8 +397,6 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-
-	//  d.Set("values_source_detected_md5", d.Get("values_sources_md5"))
 
 	return setIDAndMetadataFromRelease(d, r)
 }
@@ -637,44 +542,6 @@ func getChart(d resourceGetter, m *Meta, name string, cpo action.ChartPathOption
 
 	c, err = loader.Load(n)
 
-	// p := &action.Pull{
-	// 	ChartPathOptions: cpo,
-	// 	Settings:         m.Settings,
-	// 	Devel:            d.Get("devel").(bool),
-	// 	Untar:            false,
-	// 	VerifyLater:      true,
-	// }
-
-	// l := &chartLocator{
-	// 	meta:          m,
-	// 	name:          name,
-	// 	version:       version,
-	// 	repositoryURL: repositoryURL,
-	// 	verify:
-	// 	keyring:
-	// 	cert:
-	// 	certKey:
-	// 	ca:
-	// }
-
-	// path, err = l.Locate()
-	// if err != nil {
-	// 	return
-	// }
-
-	// c, err = chartutil.Load(path)
-	// if err != nil {
-	// 	return
-	// }
-
-	// if req, err := chartutil.LoadRequirements(c); err == nil {
-	// 	if err := checkDependencies(c, req); err != nil {
-	// 		return nil, "", err
-	// 	}
-	// } else if err != chartutil.ErrRequirementsNotFound {
-	// 	return nil, "", fmt.Errorf("cannot load requirements: %v", err)
-	// }
-
 	return c, path, nil
 }
 
@@ -807,93 +674,6 @@ func resolveChartName(repository, name string) (string, string, error) {
 	return "", name, nil
 }
 
-// func (l *chartLocator) Locate() (string, error) {
-// 	pipeline := []func() (string, error){
-// 		l.locateChartPathInLocal,
-// 		l.locateChartPathInLocalRepository,
-// 		l.locateChartPathInRepository,
-// 	}
-
-// 	for _, f := range pipeline {
-// 		path, err := f()
-// 		if err != nil {
-// 			return "", err
-// 		}
-
-// 		if path == "" {
-// 			continue
-// 		}
-
-// 		return path, err
-// 	}
-
-// 	return "", fmt.Errorf("chart %q not found", l.name)
-// }
-
-// func (l *chartLocator) locateChartPathInLocal() (string, error) {
-// 	fi, err := os.Stat(l.name)
-// 	if err != nil {
-// 		if filepath.IsAbs(l.name) || strings.HasPrefix(l.name, ".") {
-// 			return "", fmt.Errorf("path %q not found", l.name)
-// 		}
-
-// 		return "", nil
-// 	}
-
-// 	abs, err := filepath.Abs(l.name)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	if l.verify {
-// 		if fi.IsDir() {
-// 			return "", fmt.Errorf("cannot verify a directory")
-// 		}
-
-// 		v := action.NewVerify()
-// 		v.Keyring = l.keyring
-// 		if err := v.Run(abs); err != nil {
-// 			return "", err
-// 		}
-// 	}
-
-// 	return abs, nil
-// }
-
-// func (l *chartLocator) locateChartPathInLocalRepository() (string, error) {
-// 	repo := filepath.Join(l.meta.Settings.RepositoryCache, l.name)
-// 	if _, err := os.Stat(repo); err == nil {
-// 		return filepath.Abs(repo)
-// 	}
-
-// 	return "", nil
-// }
-
-// func (l *chartLocator) locateChartPathInRepository() (string, error) {
-// 	ref, err := l.retrieveChartURL()
-// 	if err != nil {
-// 		return "", fmt.Errorf("failed to resolve %q, %s", l.name, err)
-// 	}
-
-// 	p := action.NewPull()
-// 	p.Settings = l.meta.Settings
-// 	p.Devel = l.devel
-// 	p.Untar = true
-
-// 	return p.Run(ref)
-// }
-
-// func (l *chartLocator) retrieveChartURL() (string, error) {
-// 	if l.repositoryURL == "" {
-// 		return l.name, nil
-// 	}
-
-// 	return repo.FindChartInRepoURL(
-// 		l.repositoryURL, l.name, l.version,
-// 		l.cert, l.certKey, l.ca, getter.All(l.meta.Settings),
-// 	)
-// }
-
 func isChartInstallable(ch *chart.Chart) (bool, error) {
 	switch ch.Metadata.Type {
 	case "", "application":
@@ -901,48 +681,3 @@ func isChartInstallable(ch *chart.Chart) (bool, error) {
 	}
 	return false, errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
-
-// func (l *chartLocator) downloadChart(ref string) (string, error) {
-// 	dl := downloader.ChartDownloader{
-// 		HelmHome: l.meta.Settings.Home,
-// 		Out:      os.Stdout,
-// 		Keyring:  l.keyring,
-// 		Getters:  getter.All(*l.meta.Settings),
-// 	}
-
-// 	if l.verify {
-// 		dl.Verify = downloader.VerifyAlways
-// 	}
-
-// 	filename, _, err := dl.DownloadTo(ref, l.version, l.meta.Settings.Home.Archive())
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	debug("Fetched %s to %s\n", ref, filename)
-// 	return filepath.Abs(filename)
-// }
-
-// // from helm
-// func checkDependencies(ch *chart.Chart, reqs *chartutil.Requirements) error {
-// 	missing := []string{}
-
-// 	deps := ch.GetDependencies()
-// 	for _, r := range reqs.Dependencies {
-// 		found := false
-// 		for _, d := range deps {
-// 			if d.Metadata.Name == r.Name {
-// 				found = true
-// 				break
-// 			}
-// 		}
-// 		if !found {
-// 			missing = append(missing, r.Name)
-// 		}
-// 	}
-
-// 	if len(missing) > 0 {
-// 		return fmt.Errorf("found in requirements.yaml, but missing in charts/ directory: %s", strings.Join(missing, ", "))
-// 	}
-// 	return nil
-// }
