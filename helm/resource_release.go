@@ -39,7 +39,7 @@ func resourceRelease() *schema.Resource {
 		Create: resourceReleaseCreate,
 		Read:   resourceReleaseRead,
 		//Delete:        resourceReleaseDelete,
-		//Update:        resourceReleaseUpdate,
+		Update: resourceReleaseUpdate,
 		Exists: resourceReleaseExists,
 		//CustomizeDiff: resourceDiff,
 		Schema: map[string]*schema.Schema{
@@ -185,7 +185,13 @@ func resourceRelease() *schema.Resource {
 			"reuse_values": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "Reuse values when upgrading the release.",
+				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored",
+				Default:     false,
+			},
+			"reset_values": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "When upgrading, reset the values to the ones built into the chart",
 				Default:     false,
 			},
 			"force_update": {
@@ -194,17 +200,23 @@ func resourceRelease() *schema.Resource {
 				Default:     false,
 				Description: "Force resource update through delete/recreate if needed.",
 			},
-			"reuse": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
-				Description: "Instruct Tiller to re-use an existing name.",
-			},
 			"recreate_pods": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
 				Description: "Perform pods restart during upgrade/rollback",
+			},
+			"cleanup_on_fail": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Allow deletion of new resources created in this upgrade when upgrade fails",
+			},
+			"max_history": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     0,
+				Description: "Limit the maximum number of revisions saved per release. Use 0 for no limit",
 			},
 			"atomic": {
 				Type:        schema.TypeBool,
@@ -284,6 +296,23 @@ func resourceRelease() *schema.Resource {
 	}
 }
 
+func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
+	m := meta.(*Meta)
+	c, err := m.GetHelmConfiguration()
+	if err != nil {
+		return err
+	}
+
+	name := d.Get("name").(string)
+
+	r, err := getRelease(c, name)
+	if err != nil {
+		return err
+	}
+
+	return setIDAndMetadataFromRelease(d, r)
+}
+
 func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 	actionConfig, err := m.GetHelmConfiguration()
@@ -356,6 +385,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 			}
 		}
 	}
+
 	client := action.NewInstall(actionConfig)
 	client.ChartPathOptions = cpo
 	client.ClientOnly = false
@@ -384,22 +414,93 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	return setIDAndMetadataFromRelease(d, release)
 }
 
-func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
+func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
-	c, err := m.GetHelmConfiguration()
+	actionConfig, err := m.GetHelmConfiguration()
 	if err != nil {
 		return err
 	}
 
 	name := d.Get("name").(string)
 
-	r, err := getRelease(c, name)
+	repository := d.Get("repository").(string)
+	repositoryURL, name, err := resolveChartName(repository, strings.TrimSpace(name))
+
 	if err != nil {
 		return err
 	}
 
-	return setIDAndMetadataFromRelease(d, r)
+	version := getVersion(d, m)
+	cpo := action.ChartPathOptions{
+		CaFile:   d.Get("repository_ca_file").(string),
+		CertFile: d.Get("repository_cert_file").(string),
+		KeyFile:  d.Get("repository_key_file").(string),
+		Keyring:  d.Get("keyring").(string),
+		RepoURL:  repositoryURL,
+		Verify:   d.Get("verify").(bool),
+		Version:  version,
+		//Username: string,
+		//Password: string,
+	}
+
+	chart, _, err := getChart(d, m, name, cpo)
+	if err != nil {
+		return err
+	}
+
+	if req := chart.Metadata.Dependencies; req != nil {
+		if err := action.CheckDependencies(chart, req); err != nil {
+			return err
+		}
+	}
+
+	client := action.NewUpgrade(actionConfig)
+	client.ChartPathOptions = cpo
+	client.Devel = d.Get("devel").(bool)
+	client.Namespace = d.Get("namespace").(string)
+	client.Timeout = time.Duration(d.Get("timeout").(int32)) * time.Second
+	client.Wait = d.Get("wait").(bool)
+	client.DryRun = false
+	client.DisableHooks = d.Get("disable_webhooks").(bool)
+	client.Atomic = d.Get("atomic").(bool)
+	client.SubNotes = d.Get("render_subchart_notes").(bool)
+	client.Force = d.Get("force_update").(bool)
+	client.ResetValues = d.Get("reset_values").(bool)
+	client.ReuseValues = d.Get("reuse_values").(bool)
+	client.Recreate = d.Get("recreate_pods").(bool)
+	client.MaxHistory = d.Get("max_history").(int)
+	client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
+
+	values, err := getValues(d)
+	if err != nil {
+		return err
+	}
+
+	release, err := client.Run(name, chart, values)
+	if err != nil {
+		return err
+	}
+
+	return setIDAndMetadataFromRelease(d, release)
 }
+
+// func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
+// 	m := meta.(*Meta)
+// 	c, err := m.GetHelmClient()
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	name := d.Get("name").(string)
+// 	disableWebhooks := d.Get("disable_webhooks").(bool)
+// 	timeout := int64(d.Get("timeout").(int))
+
+// 	if err := deleteRelease(c, name, disableWebhooks, timeout); err != nil {
+// 		return err
+// 	}
+// 	d.SetId("")
+// 	return nil
+// }
 
 func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
 	d.SetId(r.Name)
@@ -422,61 +523,6 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 		"values":    c,
 	}})
 }
-
-// func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
-// 	m := meta.(*Meta)
-
-// 	values, err := getValues(d)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	_, path, err := getChart(d, m)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	opts := []helm.UpdateOption{
-// 		helm.UpdateValueOverrides(values),
-// 		helm.UpgradeRecreate(d.Get("recreate_pods").(bool)),
-// 		helm.UpgradeForce(d.Get("force_update").(bool)),
-// 		helm.UpgradeDisableHooks(d.Get("disable_webhooks").(bool)),
-// 		helm.UpgradeTimeout(int64(d.Get("timeout").(int))),
-// 		helm.ReuseValues(d.Get("reuse_values").(bool)),
-// 		helm.UpgradeWait(d.Get("wait").(bool)),
-// 	}
-
-// 	c, err := m.GetHelmClient()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	name := d.Get("name").(string)
-// 	res, err := c.UpdateRelease(name, path, opts...)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return setIDAndMetadataFromRelease(d, res.Release)
-// }
-
-// func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
-// 	m := meta.(*Meta)
-// 	c, err := m.GetHelmClient()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	name := d.Get("name").(string)
-// 	disableWebhooks := d.Get("disable_webhooks").(bool)
-// 	timeout := int64(d.Get("timeout").(int))
-
-// 	if err := deleteRelease(c, name, disableWebhooks, timeout); err != nil {
-// 		return err
-// 	}
-// 	d.SetId("")
-// 	return nil
-// }
 
 func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, error) {
 	m := meta.(*Meta)
