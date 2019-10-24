@@ -80,9 +80,9 @@ func dataRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 	//var entry *repo.Entry
 	var file *repo.File
 
-	if fileExists(m.settings.RepositoryConfig) {
+	if fileExists(m.Settings.RepositoryConfig) {
 		var err error
-		if file, err = repo.LoadFile(m.settings.RepositoryConfig); err != nil {
+		if file, err = repo.LoadFile(m.Settings.RepositoryConfig); err != nil {
 			return err
 		}
 
@@ -114,7 +114,7 @@ func dataRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 
 	file.Update(entry)
 
-	if err := file.WriteFile(m.settings.RepositoryConfig, 0644); err != nil {
+	if err := file.WriteFile(m.Settings.RepositoryConfig, 0644); err != nil {
 		return err
 	}
 

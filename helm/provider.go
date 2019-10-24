@@ -20,7 +20,7 @@ import (
 // Meta is the meta information structure for the provider
 type Meta struct {
 	data       *schema.ResourceData
-	settings   *cli.EnvSettings
+	Settings   *cli.EnvSettings
 	HelmDriver string
 
 	// Used to lock some operations
@@ -162,7 +162,7 @@ func (m *Meta) buildSettings(d *schema.ResourceData) {
 		m.HelmDriver = v.(string)
 	}
 
-	m.settings = &settings
+	m.Settings = &settings
 }
 
 // GetHelmConfiguration will return a new Helm configuration
@@ -170,7 +170,7 @@ func (m *Meta) GetHelmConfiguration() (*action.Configuration, error) {
 	actionConfig := new(action.Configuration)
 
 	// Not sure if this should always use true for namespaces
-	if err := actionConfig.Init(m.settings, true, m.HelmDriver, debug); err != nil {
+	if err := actionConfig.Init(m.Settings, true, m.HelmDriver, debug); err != nil {
 		return nil, err
 	}
 

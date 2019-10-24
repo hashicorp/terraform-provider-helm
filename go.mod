@@ -4,9 +4,11 @@ go 1.12
 
 require (
 	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/hashicorp/terraform-plugin-sdk v1.1.0
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/pkg/errors v0.8.1
 	google.golang.org/grpc v1.24.0
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
 	helm.sh/helm/v3 v3.0.0-beta.4.0.20191011210504-34b930cb9db8
