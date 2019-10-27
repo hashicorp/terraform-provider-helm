@@ -1,4 +1,19 @@
 ## 0.10.3 (Unreleased)
+
+IMPROVEMENTS:
+
+* Upgrade Helm to v2.15.1 and Kubernetes to v1.15.5
+* Migrate to terraform-plugin-sdk
+* Allow for colon separated KUBECONFIG (#98)
+* Modernise docs
+
+FIXES:
+
+* Remove manual installation instructions
+* Fix loading kubeconfig when disabled (#307)
+* Don't enable TLS if `enable_tls` is false (#245)
+* Remove ForceNew on repo and chart changes (#173)
+
 ## 0.10.2 (August 07, 2019)
 
 FIXES:
