@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/mitchellh/go-homedir"
 
 	// Import to initialize client auth plugins.
 
@@ -65,7 +66,7 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The backend storage driver. Values are: configmap, secret, memory",
-				DefaultFunc: schema.EnvDefaultFunc("HELM_DRIVER", "secret"),
+				DefaultFunc: schema.EnvDefaultFunc("HELM_DRIVER", "configmap"),
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					drivers := []string{
 						"configmap",
@@ -83,6 +84,12 @@ func Provider() terraform.ResourceProvider {
 					errs = append(errs, fmt.Errorf("%s must be a valid storage driver", v))
 					return
 				},
+			},
+			"helm_namespace": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The namespace helm stores release information in.",
+				DefaultFunc: schema.EnvDefaultFunc("HELM_NAMESPACE", "default"),
 			},
 			"kube_config_path": {
 				Type:     schema.TypeString,
@@ -103,6 +110,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"helm_release":    resourceRelease(),
 			"helm_repository": resourceRepository(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
@@ -123,54 +131,70 @@ func Provider() terraform.ResourceProvider {
 
 func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, error) {
 	m := &Meta{data: d}
-	m.buildSettings(m.data)
+	err := m.buildSettings(m.data)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return m, nil
 }
 
-func (m *Meta) buildSettings(d *schema.ResourceData) {
+func (m *Meta) buildSettings(d *schema.ResourceData) error {
 
 	settings := cli.EnvSettings{
 		Debug: d.Get("debug").(bool),
 	}
 
-	if v, ok := d.GetOkExists("plugins_path"); ok {
+	if v, ok := d.GetOk("plugins_path"); ok {
 		settings.PluginsDirectory = v.(string)
 	}
 
-	if v, ok := d.GetOkExists("registry_config_path"); ok {
+	if v, ok := d.GetOk("registry_config_path"); ok {
 		settings.RegistryConfig = v.(string)
 	}
 
-	if v, ok := d.GetOkExists("repository_config_path"); ok {
+	if v, ok := d.GetOk("repository_config_path"); ok {
 		settings.RepositoryConfig = v.(string)
 	}
 
 	if v, ok := d.GetOk("kube_config_path"); ok {
-		settings.KubeConfig = v.(string)
+
+		expanded, err := homedir.Expand(v.(string))
+		if err != nil {
+			debug("Error expanding path %s", err)
+			return err
+		}
+
+		settings.KubeConfig = expanded
 	}
 
 	if v, ok := d.GetOkExists("kube_config_context"); ok {
+
 		settings.KubeContext = v.(string)
 	}
 
-	if v, ok := d.GetOkExists("repository_cache"); ok {
+	if v, ok := d.GetOk("repository_cache"); ok {
 		settings.RepositoryCache = v.(string)
 	}
 
-	if v, ok := d.GetOkExists("helm_driver"); ok {
+	if v, ok := d.GetOk("helm_driver"); ok {
 		m.HelmDriver = v.(string)
 	}
 
+	// if v, ok := d.GetOk("helm_namespace"); ok {
+	// 	settings
+	// }
+
 	m.Settings = &settings
+	return nil
 }
 
 // GetHelmConfiguration will return a new Helm configuration
 func (m *Meta) GetHelmConfiguration() (*action.Configuration, error) {
 	actionConfig := new(action.Configuration)
 
-	// Not sure if this should always use true for namespaces
-	if err := actionConfig.Init(m.Settings, true, m.HelmDriver, debug); err != nil {
+	if err := actionConfig.Init(m.Settings, false, m.HelmDriver, debug); err != nil {
 		return nil, err
 	}
 

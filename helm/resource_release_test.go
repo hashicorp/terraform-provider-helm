@@ -1,60 +1,63 @@
 package helm
 
-// import (
-// 	"archive/tar"
-// 	"compress/gzip"
-// 	"fmt"
-// 	"io"
-// 	"io/ioutil"
-// 	"net/http"
-// 	"os"
-// 	"path/filepath"
-// 	"regexp"
-// 	"strconv"
-// 	"strings"
-// 	"sync"
-// 	"testing"
-// 	"time"
+import (
+	"fmt"
+	"os"
+	"testing"
+	"time"
 
-// 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-// 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-// 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-// 	yaml "gopkg.in/yaml.v1"
-// 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-// 	"k8s.io/helm/pkg/helm"
-// 	"k8s.io/helm/pkg/repo"
-// )
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
-// func TestAccResourceRelease_basic(t *testing.T) {
-// 	name := fmt.Sprintf("test-basic-%s", acctest.RandString(10))
-// 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
-// 	// Delete namespace automatically created by helm after checks
-// 	defer deleteNamespace(t, namespace)
+	"helm.sh/helm/v3/pkg/action"
 
-// 	resource.ParallelTest(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
-// 		Steps: []resource.TestStep{{
-// 			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
-// 			Check: resource.ComposeAggregateTestCheckFunc(
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "mariadb"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
-// 			),
-// 		}, {
-// 			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
-// 			Check: resource.ComposeAggregateTestCheckFunc(
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
-// 			),
-// 		}},
-// 	})
-// }
+	//"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+var client kubernetes.Interface = nil
+
+func TestAccResourceRelease_basic(t *testing.T) {
+	name := fmt.Sprintf("test-basic-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	err := setK8Client()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "mariadb"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+			),
+		}},
+	})
+}
 
 // func TestAccResourceRelease_concurrent(t *testing.T) {
 // 	var wg sync.WaitGroup
@@ -461,26 +464,26 @@ package helm
 // 	})
 // }
 
-// func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
-// 	return fmt.Sprintf(`
-// 		resource "helm_release" "%s" {
-//  			name      = %q
-// 			namespace = %q
-//   			chart     = "stable/mariadb"
-// 			version   = %q
+func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name      = %q
+			namespace = %q
+  			chart     = "stable/mariadb"
+			version   = %q
 
-// 			set {
-// 				name = "foo"
-// 				value = "qux"
-// 			}
+			set {
+				name = "foo"
+				value = "qux"
+			}
 
-// 			set {
-// 				name = "qux.bar"
-// 				value = 1
-// 			}
-// 		}
-// 	`, resource, name, ns, version)
-// }
+			set {
+				name = "qux.bar"
+				value = 1
+			}
+		}
+	`, resource, name, ns, version)
+}
 
 // func testAccHelmReleaseConfigValues(resource, ns, name, chart string, values []string) string {
 // 	vals := make([]string, len(values))
@@ -632,48 +635,47 @@ package helm
 // 	t.Log(fmt.Sprintf("%q has been removed from your repositories\n", name))
 // }
 
-// func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
-// 	return func(s *terraform.State) error {
-// 		// Fix for a flaky test
-// 		// Helm doesn't instantly delete its releases causing this test to fail if not waited for a small period of time.
-// 		// TODO: improve the workaround
-// 		time.Sleep(30 * time.Second)
+func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		// Fix for a flaky test
+		// Helm doesn't instantly delete its releases causing this test to fail if not waited for a small period of time.
+		// TODO: improve the workaround
+		time.Sleep(30 * time.Second)
 
-// 		m := testAccProvider.Meta()
-// 		if m == nil {
-// 			return fmt.Errorf("provider not properly initialized")
-// 		}
+		m := testAccProvider.Meta()
+		if m == nil {
+			return fmt.Errorf("provider not properly initialized")
+		}
 
-// 		client, err := m.(*Meta).GetHelmClient()
-// 		if err != nil {
-// 			return err
-// 		}
+		actionConfig, err := m.(*Meta).GetHelmConfiguration()
+		if err != nil {
+			return err
+		}
 
-// 		res, err := client.ListReleases(
-// 			helm.ReleaseListNamespace(namespace),
-// 		)
+		client := action.NewList(actionConfig)
+		res, err := client.Run()
 
-// 		if res == nil {
-// 			return nil
-// 		}
+		if res == nil {
+			return nil
+		}
 
-// 		if err != nil {
-// 			return err
-// 		}
+		if err != nil {
+			return err
+		}
 
-// 		for _, r := range res.Releases {
-// 			if r.Name == testResourceName {
-// 				return fmt.Errorf("found %q release", testResourceName)
-// 			}
-// 		}
+		for _, r := range res {
+			if r.Name == testResourceName {
+				return fmt.Errorf("found %q release", testResourceName)
+			}
 
-// 		if res.Count != 0 {
-// 			return fmt.Errorf("%q namespace should be empty", namespace)
-// 		}
+			if r.Namespace == namespace {
+				return fmt.Errorf("%q namespace should be empty", namespace)
+			}
+		}
 
-// 		return nil
-// 	}
-// }
+		return nil
+	}
+}
 
 // func downloadTar(url, dst string) error {
 // 	rsp, err := http.Get(url)
@@ -722,24 +724,54 @@ package helm
 // 	}
 // }
 
-// func deleteNamespace(t *testing.T, namespace string) {
-// 	// Nothing to cleanup with unit test
-// 	if os.Getenv("TF_ACC") == "" {
-// 		return
-// 	}
+func deleteNamespace(t *testing.T, namespace string) {
+	// Nothing to cleanup with unit test
+	if os.Getenv("TF_ACC") == "" {
+		return
+	}
 
-// 	m := testAccProvider.Meta()
-// 	if m == nil {
-// 		t.Fatal("provider not properly initialized")
-// 	}
+	m := testAccProvider.Meta()
+	if m == nil {
+		t.Fatal("provider not properly initialized")
+	}
 
-// 	debug("[DEBUG] Deleting namespace %q", namespace)
-// 	gracePeriodSeconds := int64(0)
-// 	deleteOptions := meta_v1.DeleteOptions{
-// 		GracePeriodSeconds: &gracePeriodSeconds,
-// 	}
-// 	err := m.(*Meta).K8sClient.CoreV1().Namespaces().Delete(namespace, &deleteOptions)
-// 	if err != nil {
-// 		t.Fatalf("An error occurred while deleting namespace %q: %q", namespace, err)
-// 	}
-// }
+	debug("[DEBUG] Deleting namespace %q", namespace)
+	gracePeriodSeconds := int64(0)
+	deleteOptions := &metav1.DeleteOptions{
+		GracePeriodSeconds: &gracePeriodSeconds,
+	}
+	err := client.CoreV1().Namespaces().Delete(namespace, deleteOptions)
+	if err != nil {
+		t.Fatalf("An error occurred while deleting namespace %q: %q", namespace, err)
+	}
+}
+
+func setK8Client() error {
+
+	if client != nil {
+		return nil
+	}
+
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	overrides := &clientcmd.ConfigOverrides{}
+
+	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
+
+	if err != nil {
+		return err
+	}
+
+	if config == nil {
+		config = &rest.Config{}
+	}
+
+	c, err := kubernetes.NewForConfig(config)
+
+	if err != nil {
+		return err
+	}
+
+	client = c
+
+	return nil
+}

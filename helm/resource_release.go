@@ -36,12 +36,12 @@ var ErrReleaseNotFound = errors.New("release not found")
 
 func resourceRelease() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceReleaseCreate,
-		Read:   resourceReleaseRead,
-		//Delete:        resourceReleaseDelete,
-		Update: resourceReleaseUpdate,
-		Exists: resourceReleaseExists,
-		//CustomizeDiff: resourceDiff,
+		Create:        resourceReleaseCreate,
+		Read:          resourceReleaseRead,
+		Delete:        resourceReleaseDelete,
+		Update:        resourceReleaseUpdate,
+		Exists:        resourceReleaseExists,
+		CustomizeDiff: resourceDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -320,29 +320,14 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	name := d.Get("name").(string)
-
-	repository := d.Get("repository").(string)
-	repositoryURL, name, err := resolveChartName(repository, strings.TrimSpace(name))
-
+	cpo, chartName, err := chartPathOptions(d, m)
 	if err != nil {
 		return err
 	}
-	version := getVersion(d, m)
 
-	cpo := action.ChartPathOptions{
-		CaFile:   d.Get("repository_ca_file").(string),
-		CertFile: d.Get("repository_cert_file").(string),
-		KeyFile:  d.Get("repository_key_file").(string),
-		Keyring:  d.Get("keyring").(string),
-		RepoURL:  repositoryURL,
-		Verify:   d.Get("verify").(bool),
-		Version:  version,
-		//Username: string,
-		//Password: string,
-	}
+	//name := d.Get("name").(string)
 
-	chart, path, err := getChart(d, m, name, cpo)
+	chart, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
 		return err
 	}
@@ -387,7 +372,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	client := action.NewInstall(actionConfig)
-	client.ChartPathOptions = cpo
+	client.ChartPathOptions = *cpo
 	client.ClientOnly = false
 	client.DryRun = false
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
@@ -395,7 +380,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.Wait = d.Get("wait").(bool)
 	client.Devel = d.Get("devel").(bool)
 	client.DependencyUpdate = updateDependency
-	client.Timeout = time.Duration(d.Get("timeout").(int32)) * time.Second
+	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 	client.Namespace = d.Get("namespace").(string)
 	client.ReleaseName = d.Get("name").(string)
 	client.GenerateName = false
@@ -421,29 +406,12 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	name := d.Get("name").(string)
-
-	repository := d.Get("repository").(string)
-	repositoryURL, name, err := resolveChartName(repository, strings.TrimSpace(name))
-
+	cpo, chartName, err := chartPathOptions(d, m)
 	if err != nil {
 		return err
 	}
 
-	version := getVersion(d, m)
-	cpo := action.ChartPathOptions{
-		CaFile:   d.Get("repository_ca_file").(string),
-		CertFile: d.Get("repository_cert_file").(string),
-		KeyFile:  d.Get("repository_key_file").(string),
-		Keyring:  d.Get("keyring").(string),
-		RepoURL:  repositoryURL,
-		Verify:   d.Get("verify").(bool),
-		Version:  version,
-		//Username: string,
-		//Password: string,
-	}
-
-	chart, _, err := getChart(d, m, name, cpo)
+	chart, _, err := getChart(d, m, chartName, cpo)
 	if err != nil {
 		return err
 	}
@@ -455,7 +423,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	client := action.NewUpgrade(actionConfig)
-	client.ChartPathOptions = cpo
+	client.ChartPathOptions = *cpo
 	client.Devel = d.Get("devel").(bool)
 	client.Namespace = d.Get("namespace").(string)
 	client.Timeout = time.Duration(d.Get("timeout").(int32)) * time.Second
@@ -476,6 +444,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	name := d.Get("name").(string)
 	release, err := client.Run(name, chart, values)
 	if err != nil {
 		return err
@@ -484,23 +453,49 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	return setIDAndMetadataFromRelease(d, release)
 }
 
-// func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
-// 	m := meta.(*Meta)
-// 	c, err := m.GetHelmClient()
-// 	if err != nil {
-// 		return err
-// 	}
+func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
+	m := meta.(*Meta)
+	actionConfig, err := m.GetHelmConfiguration()
+	if err != nil {
+		return err
+	}
 
-// 	name := d.Get("name").(string)
-// 	disableWebhooks := d.Get("disable_webhooks").(bool)
-// 	timeout := int64(d.Get("timeout").(int))
+	name := d.Get("name").(string)
 
-// 	if err := deleteRelease(c, name, disableWebhooks, timeout); err != nil {
-// 		return err
-// 	}
-// 	d.SetId("")
-// 	return nil
-// }
+	return action.NewChartRemove(actionConfig).Run(nil, name)
+
+	d.SetId("")
+	return nil
+}
+
+func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
+	m := meta.(*Meta)
+
+	// Always set desired state to DEPLOYED
+	err := d.SetNew("status", release.StatusDeployed.String())
+	if err != nil {
+		return err
+	}
+
+	cpo, chartName, err := chartPathOptions(d, m)
+	if err != nil {
+		return err
+	}
+
+	// Get Chart metadata, if we fail - we're done
+	c, _, err := getChart(d, meta.(*Meta), chartName, cpo)
+	if err != nil {
+		return nil
+	}
+
+	// Set desired version from the Chart metadata if available
+	if len(c.Metadata.Version) > 0 {
+		return d.SetNew("version", c.Metadata.Version)
+	} else {
+		return d.SetNewComputed("version")
+	}
+
+}
 
 func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
 	d.SetId(r.Name)
@@ -546,21 +541,6 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	return false, err
 }
 
-// func deleteRelease(c helm.Interface, name string, disableWebhooks bool, timeout int64) error {
-
-// 	opts := []helm.DeleteOption{
-// 		helm.DeleteDisableHooks(disableWebhooks),
-// 		helm.DeletePurge(true),
-// 		helm.DeleteTimeout(timeout),
-// 	}
-
-// 	if _, err := c.DeleteRelease(name, opts...); err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
-
 type resourceGetter interface {
 	Get(string) interface{}
 }
@@ -578,7 +558,7 @@ func getVersion(d resourceGetter, m *Meta) (version string) {
 	return
 }
 
-func getChart(d resourceGetter, m *Meta, name string, cpo action.ChartPathOptions) (c *chart.Chart, path string, err error) {
+func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptions) (c *chart.Chart, path string, err error) {
 
 	n, err := cpo.LocateChart(name, m.Settings)
 
@@ -587,6 +567,10 @@ func getChart(d resourceGetter, m *Meta, name string, cpo action.ChartPathOption
 	}
 
 	c, err = loader.Load(n)
+
+	if err != nil {
+		return nil, "", err
+	}
 
 	return c, path, nil
 }
@@ -726,4 +710,28 @@ func isChartInstallable(ch *chart.Chart) (bool, error) {
 		return true, nil
 	}
 	return false, errors.Errorf("%s charts are not installable", ch.Metadata.Type)
+}
+
+func chartPathOptions(d resourceGetter, m *Meta) (*action.ChartPathOptions, string, error) {
+	chartName := d.Get("chart").(string)
+
+	repository := d.Get("repository").(string)
+	repositoryURL, chartName, err := resolveChartName(repository, strings.TrimSpace(chartName))
+
+	if err != nil {
+		return nil, "", err
+	}
+	version := getVersion(d, m)
+
+	return &action.ChartPathOptions{
+		CaFile:   d.Get("repository_ca_file").(string),
+		CertFile: d.Get("repository_cert_file").(string),
+		KeyFile:  d.Get("repository_key_file").(string),
+		Keyring:  d.Get("keyring").(string),
+		RepoURL:  repositoryURL,
+		Verify:   d.Get("verify").(bool),
+		Version:  version,
+		//Username: string,
+		//Password: string,
+	}, chartName, nil
 }

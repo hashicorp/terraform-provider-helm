@@ -1,8 +1,8 @@
 package helm
 
 import (
-	"os"
 	"testing"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -91,11 +91,9 @@ func TestProvider(t *testing.T) {
 // }
 
 func testAccPreCheck(t *testing.T) {
-
-	//Probably a better way to do this
-	os.Setenv("HELM_REPOSITORY_CONFIG", "./repository.yaml")
-
 	err := testAccProvider.Configure(terraform.NewResourceConfigRaw(nil))
+
+	os.Setenv("HELM_DRIVER", "memory")
 
 	if err != nil {
 		t.Fatal(err)

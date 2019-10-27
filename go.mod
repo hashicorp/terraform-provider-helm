@@ -7,11 +7,15 @@ require (
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/hashicorp/terraform-plugin-sdk v1.1.0
+	github.com/jmoiron/sqlx v1.2.0 // indirect
+	github.com/lib/pq v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.8.1
+	github.com/rubenv/sql-migrate v0.0.0-20191025130928-9355dd04f4b3 // indirect
 	google.golang.org/grpc v1.24.0
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
 	helm.sh/helm/v3 v3.0.0-beta.4.0.20191011210504-34b930cb9db8
+	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
 	k8s.io/helm v2.14.3+incompatible
 	k8s.io/kubernetes v1.16.1 // indirect
