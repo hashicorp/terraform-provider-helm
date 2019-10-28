@@ -1,5 +1,9 @@
 ## 0.10.4 (Unreleased)
 
+FIXES:
+
+* Tiller installed version should match helm client (#365)
+
 ## 0.10.3 (October 27, 2019)
 
 IMPROVEMENTS:
