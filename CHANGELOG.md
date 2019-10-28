@@ -1,4 +1,4 @@
-## 0.10.4 (Unreleased)
+## 0.10.4 (October 28, 2019)
 
 FIXES:
 
