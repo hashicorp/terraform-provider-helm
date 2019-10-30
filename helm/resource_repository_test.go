@@ -14,7 +14,7 @@ func TestAccResourceRepository_basic(t *testing.T) {
 	name := fmt.Sprintf("%s-%s", testRepositoryName, acctest.RandString(10))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
+		PreCheck:  func() { testAccPreCheck(t, "") },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
 			Config: testAccHelmRepositoryConfigBasic(name, testRepositoryURL),

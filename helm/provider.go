@@ -15,6 +15,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/helmpath"
+	"helm.sh/helm/v3/pkg/kube"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -194,7 +195,9 @@ func (m *Meta) buildSettings(d *schema.ResourceData) error {
 func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, error) {
 	actionConfig := new(action.Configuration)
 
-	if err := actionConfig.Init(m.Settings.RESTClientGetter(), namespace, m.HelmDriver, debug); err != nil {
+	config := kube.GetConfig(m.Settings.KubeConfig, m.Settings.KubeContext, namespace)
+
+	if err := actionConfig.Init(config, namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
 	}
 

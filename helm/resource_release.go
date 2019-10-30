@@ -319,6 +319,8 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
 
+	debug("Getting Config")
+
 	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
 		return err
@@ -328,13 +330,15 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-
+	debug("Getting chart")
 	//name := d.Get("name").(string)
 
 	chart, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
 		return err
 	}
+
+	debug("Got Chart from Helm")
 
 	p := getter.All(m.Settings)
 
@@ -393,6 +397,8 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.Atomic = d.Get("atomic").(bool)
 	client.SkipCRDs = d.Get("skip_crds").(bool)
 	client.SubNotes = d.Get("render_subchart_notes").(bool)
+
+	debug("Installing Chart")
 
 	release, err := client.Run(chart, values)
 
@@ -468,7 +474,15 @@ func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
 
 	name := d.Get("name").(string)
 
-	return action.NewChartRemove(actionConfig).Run(nil, name)
+	res, err := action.NewUninstall(actionConfig).Run(name)
+
+	if err != nil {
+		return err
+	}
+
+	if res.Info != "" {
+		return error(fmt.Errorf(res.Info))
+	}
 
 	d.SetId("")
 	return nil
@@ -505,9 +519,17 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 
 func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
 	d.SetId(r.Name)
-	d.Set("version", r.Chart.Metadata.Version)
-	d.Set("namespace", r.Namespace)
-	d.Set("status", r.Info.Status.String())
+	if err := d.Set("version", r.Chart.Metadata.Version); err != nil {
+		return err
+	}
+
+	if err := d.Set("namespace", r.Namespace); err != nil {
+		return err
+	}
+
+	if err := d.Set("status", r.Info.Status.String()); err != nil {
+		return err
+	}
 
 	c, err := json.Marshal(r.Config)
 
@@ -515,13 +537,15 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 		return err
 	}
 
+	json := string(c)
+
 	return d.Set("metadata", []map[string]interface{}{{
 		"name":      r.Name,
 		"revision":  r.Version,
 		"namespace": r.Namespace,
 		"chart":     r.Chart.Metadata.Name,
 		"version":   r.Chart.Metadata.Version,
-		"values":    c,
+		"values":    json,
 	}})
 }
 

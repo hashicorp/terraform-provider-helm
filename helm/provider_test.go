@@ -6,6 +6,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -19,7 +26,7 @@ const (
 var (
 	testAccProviders map[string]terraform.ResourceProvider
 	testAccProvider  *schema.Provider
-	//testAccHelmHome  string
+	client           kubernetes.Interface = nil
 )
 
 func init() {
@@ -90,12 +97,82 @@ func TestProvider(t *testing.T) {
 // 	return
 // }
 
-func testAccPreCheck(t *testing.T) {
-	err := testAccProvider.Configure(terraform.NewResourceConfigRaw(nil))
-
-	os.Setenv("HELM_DRIVER", "memory")
+func testAccPreCheck(t *testing.T, namespace string) {
+	err := setK8Client()
 
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	err = testAccProvider.Configure(terraform.NewResourceConfigRaw(nil))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if namespace != "" {
+		createNamespace(t, namespace)
+	}
+
+	os.Setenv("HELM_REPOSITORY_CONFIG", "/Users/amell/Library/Preferences/helm/repositories.yaml")
+	os.Setenv("HELM_REPOSITORY_CACHE", "/Users/amell/Library/Caches/helm/repository")
+	os.Setenv("HELM_REGISTRY_CONFIG", "/Users/amell/Library/Preferences/helm/registry.json")
+	os.Setenv("HELM_PLUGINS", "/Users/amell/Library/helm/plugins")
+	os.Setenv("HELM_DEBUG", "true")
+	os.Setenv("TF_LOG", "DEBUG")
+}
+
+func setK8Client() error {
+
+	if client != nil {
+		return nil
+	}
+
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	overrides := &clientcmd.ConfigOverrides{}
+
+	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
+
+	if err != nil {
+		return err
+	}
+
+	if config == nil {
+		config = &rest.Config{}
+	}
+
+	c, err := kubernetes.NewForConfig(config)
+
+	if err != nil {
+		return err
+	}
+
+	client = c
+
+	return nil
+}
+
+func createNamespace(t *testing.T, namespace string) {
+	// Nothing to cleanup with unit test
+	if os.Getenv("TF_ACC") == "" {
+		t.Log("TF_ACC Not Set")
+		return
+	}
+
+	m := testAccProvider.Meta()
+	if m == nil {
+		t.Fatal("provider not properly initialized")
+	}
+
+	k8ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}
+
+	debug("[DEBUG] Creating namespace %q", namespace)
+	_, err := client.CoreV1().Namespaces().Create(k8ns)
+	if err != nil {
+		t.Fatalf("An error occurred while creating namespace %q: %q", namespace, err)
 	}
 }

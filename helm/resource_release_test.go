@@ -11,16 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 
 	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/release"
 
 	//"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
-
-var client kubernetes.Interface = nil
 
 func TestAccResourceRelease_basic(t *testing.T) {
 	name := fmt.Sprintf("test-basic-%s", acctest.RandString(10))
@@ -28,23 +24,17 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	// Delete namespace automatically created by helm after checks
 	defer deleteNamespace(t, namespace)
 
-	err := setK8Client()
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace, t),
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "mariadb"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
 			),
@@ -53,7 +43,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
-				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 			),
 		}},
 	})
@@ -108,14 +98,14 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 			),
 // 		}, {
 // 			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.3"),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 			),
 // 		}},
 // 	})
@@ -137,7 +127,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "{}\n"),
 // 			),
 // 		}},
@@ -160,7 +150,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: bar\n"),
 // 			),
 // 		}, {
@@ -169,7 +159,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: baz\n"),
 // 			),
 // 		}},
@@ -193,7 +183,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: bar\n"),
 // 			),
 // 		}, {
@@ -203,7 +193,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "foo: baz\n"),
 // 			),
 // 		}},
@@ -223,14 +213,14 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			Config: testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
 // 			),
 // 		}, {
 // 			Config: testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
 // 			),
 // 		}},
@@ -249,14 +239,14 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			Config: testAccHelmReleaseConfigRepositoryDatasource(testResourceName, namespace, name),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
 // 			),
 // 		}, {
 // 			Config: testAccHelmReleaseConfigRepositoryDatasource(testResourceName, namespace, name),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
 // 			),
 // 		}},
@@ -283,7 +273,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			Config: testAccHelmReleaseConfigRepositoryMultipleDatasource(repo1, repo2, testResourceName, namespace, name),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
 // 			),
 // 		}},
@@ -303,7 +293,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			Config: testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
 // 				resource.TestCheckResourceAttrSet("helm_release.test", "version"),
 // 			),
@@ -311,7 +301,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			Config: testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttrSet("helm_release.test", "metadata.0.version"),
 // 				resource.TestCheckResourceAttrSet("helm_release.test", "version"),
 // 			),
@@ -349,7 +339,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 			),
 // 		}},
 // 	})
@@ -372,7 +362,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			),
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 			),
 // 		}, {
 // 			Config: testAccHelmReleaseConfigValues(
@@ -433,7 +423,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttr("helm_release.test", "version", "0.6.2"),
 // 			),
 // 		}, {
@@ -457,7 +447,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 // 			Check: resource.ComposeAggregateTestCheckFunc(
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 // 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "DEPLOYED"),
+// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 // 				resource.TestCheckResourceAttr("helm_release.test", "version", "0.6.3"),
 // 			),
 // 		}},
@@ -635,7 +625,7 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 // 	t.Log(fmt.Sprintf("%q has been removed from your repositories\n", name))
 // }
 
-func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
+func testAccCheckHelmReleaseDestroy(namespace string, t *testing.T) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Fix for a flaky test
 		// Helm doesn't instantly delete its releases causing this test to fail if not waited for a small period of time.
@@ -647,7 +637,7 @@ func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
 			return fmt.Errorf("provider not properly initialized")
 		}
 
-		actionConfig, err := m.(*Meta).GetHelmConfiguration()
+		actionConfig, err := m.(*Meta).GetHelmConfiguration(namespace)
 		if err != nil {
 			return err
 		}
@@ -727,6 +717,7 @@ func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
 func deleteNamespace(t *testing.T, namespace string) {
 	// Nothing to cleanup with unit test
 	if os.Getenv("TF_ACC") == "" {
+		t.Log("TF_ACC Not Set")
 		return
 	}
 
@@ -744,34 +735,4 @@ func deleteNamespace(t *testing.T, namespace string) {
 	if err != nil {
 		t.Fatalf("An error occurred while deleting namespace %q: %q", namespace, err)
 	}
-}
-
-func setK8Client() error {
-
-	if client != nil {
-		return nil
-	}
-
-	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	overrides := &clientcmd.ConfigOverrides{}
-
-	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
-
-	if err != nil {
-		return err
-	}
-
-	if config == nil {
-		config = &rest.Config{}
-	}
-
-	c, err := kubernetes.NewForConfig(config)
-
-	if err != nil {
-		return err
-	}
-
-	client = c
-
-	return nil
 }
