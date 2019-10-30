@@ -298,7 +298,9 @@ func resourceRelease() *schema.Resource {
 
 func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
-	c, err := m.GetHelmConfiguration()
+	n := d.Get("namespace").(string)
+
+	c, err := m.GetHelmConfiguration(n)
 	if err != nil {
 		return err
 	}
@@ -315,7 +317,9 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 
 func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
-	actionConfig, err := m.GetHelmConfiguration()
+	n := d.Get("namespace").(string)
+
+	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
 		return err
 	}
@@ -401,7 +405,8 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
-	actionConfig, err := m.GetHelmConfiguration()
+	n := d.Get("namespace").(string)
+	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
 		return err
 	}
@@ -455,7 +460,8 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
-	actionConfig, err := m.GetHelmConfiguration()
+	n := d.Get("namespace").(string)
+	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
 		return err
 	}
@@ -521,8 +527,9 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 
 func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, error) {
 	m := meta.(*Meta)
+	n := d.Get("namespace").(string)
 
-	c, err := m.GetHelmConfiguration()
+	c, err := m.GetHelmConfiguration(n)
 	if err != nil {
 		return false, err
 	}

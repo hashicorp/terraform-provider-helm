@@ -191,10 +191,10 @@ func (m *Meta) buildSettings(d *schema.ResourceData) error {
 }
 
 // GetHelmConfiguration will return a new Helm configuration
-func (m *Meta) GetHelmConfiguration() (*action.Configuration, error) {
+func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, error) {
 	actionConfig := new(action.Configuration)
 
-	if err := actionConfig.Init(m.Settings, false, m.HelmDriver, debug); err != nil {
+	if err := actionConfig.Init(m.Settings.RESTClientGetter(), namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
 	}
 

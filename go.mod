@@ -14,10 +14,9 @@ require (
 	github.com/rubenv/sql-migrate v0.0.0-20191025130928-9355dd04f4b3 // indirect
 	google.golang.org/grpc v1.24.0
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
-	helm.sh/helm/v3 v3.0.0-beta.4.0.20191011210504-34b930cb9db8
+	helm.sh/helm/v3 v3.0.0-rc.1
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
-	k8s.io/helm v2.14.3+incompatible
 	k8s.io/kubernetes v1.16.1 // indirect
 )
 
@@ -27,8 +26,6 @@ replace (
 	// version when updating.
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	github.com/russross/blackfriday => github.com/russross/blackfriday v1.5.2
-
-	helm.sh/helm/v3 => github.com/aaronmell/helm/v3 v3.0.0-20191013155437-ac389948d2e3
 
 	// k8s.io/kubernetes has a go.mod file that sets the version of the following
 	// modules to v0.0.0. This causes go to throw an error. These need to be set
