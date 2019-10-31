@@ -52,7 +52,7 @@ require (
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
-	k8s.io/helm v2.15.1+incompatible
+	k8s.io/helm v2.15.2+incompatible
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d // indirect
 	k8s.io/kubernetes v1.15.5 // indirect
