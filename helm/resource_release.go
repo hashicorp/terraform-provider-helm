@@ -437,7 +437,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	client.ChartPathOptions = *cpo
 	client.Devel = d.Get("devel").(bool)
 	client.Namespace = d.Get("namespace").(string)
-	client.Timeout = time.Duration(d.Get("timeout").(int32)) * time.Second
+	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 	client.Wait = d.Get("wait").(bool)
 	client.DryRun = false
 	client.DisableHooks = d.Get("disable_webhooks").(bool)

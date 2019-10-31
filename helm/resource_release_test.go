@@ -3,6 +3,8 @@ package helm
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -84,56 +86,56 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 	wg.Wait()
 }
 
-// func TestAccResourceRelease_update(t *testing.T) {
-// 	name := fmt.Sprintf("test-update-%s", acctest.RandString(10))
-// 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
-// 	// Delete namespace automatically created by helm after checks
-// 	defer deleteNamespace(t, namespace)
+func TestAccResourceRelease_update(t *testing.T) {
+	name := fmt.Sprintf("test-update-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
 
-// 	resource.ParallelTest(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
-// 		Steps: []resource.TestStep{{
-// 			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
-// 			Check: resource.ComposeAggregateTestCheckFunc(
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-// 			),
-// 		}, {
-// 			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.3"),
-// 			Check: resource.ComposeAggregateTestCheckFunc(
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-// 			),
-// 		}},
-// 	})
-// }
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.2"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.3"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.6.3"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+			),
+		}},
+	})
+}
 
-// func TestAccResourceRelease_emptyValuesList(t *testing.T) {
-// 	name := fmt.Sprintf("test-empty-values-list-%s", acctest.RandString(10))
-// 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
-// 	// Delete namespace automatically created by helm after checks
-// 	defer deleteNamespace(t, namespace)
+func TestAccResourceRelease_emptyValuesList(t *testing.T) {
+	name := fmt.Sprintf("test-empty-values-list-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
 
-// 	resource.ParallelTest(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
-// 		Steps: []resource.TestStep{{
-// 			Config: testAccHelmReleaseConfigValues(
-// 				testResourceName, namespace, name, "stable/kibana", []string{""},
-// 			),
-// 			Check: resource.ComposeAggregateTestCheckFunc(
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "{}\n"),
-// 			),
-// 		}},
-// 	})
-// }
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigValues(
+				testResourceName, namespace, name, "stable/kibana", []string{""},
+			),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "{}"),
+			),
+		}},
+	})
+}
 
 // func TestAccResourceRelease_updateValues(t *testing.T) {
 // 	name := fmt.Sprintf("test-update-values-%s", acctest.RandString(10))
@@ -476,20 +478,20 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	`, resource, name, ns, version)
 }
 
-// func testAccHelmReleaseConfigValues(resource, ns, name, chart string, values []string) string {
-// 	vals := make([]string, len(values))
-// 	for i, v := range values {
-// 		vals[i] = strconv.Quote(v)
-// 	}
-// 	return fmt.Sprintf(`
-// 		resource "helm_release" "%s" {
-//  			name      = %q
-// 			namespace = %q
-// 			chart     = %q
-// 			values    = [ %s ]
-// 		}
-// 	`, resource, name, ns, chart, strings.Join(vals, ","))
-// }
+func testAccHelmReleaseConfigValues(resource, ns, name, chart string, values []string) string {
+	vals := make([]string, len(values))
+	for i, v := range values {
+		vals[i] = strconv.Quote(v)
+	}
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name      = %q
+			namespace = %q
+			chart     = %q
+			values    = [ %s ]
+		}
+	`, resource, name, ns, chart, strings.Join(vals, ","))
+}
 
 // func TestGetValues(t *testing.T) {
 // 	d := resourceRelease().Data(nil)
