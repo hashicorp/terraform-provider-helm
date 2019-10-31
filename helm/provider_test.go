@@ -118,8 +118,8 @@ func testAccPreCheck(t *testing.T, namespace string) {
 	os.Setenv("HELM_REPOSITORY_CACHE", "/Users/amell/Library/Caches/helm/repository")
 	os.Setenv("HELM_REGISTRY_CONFIG", "/Users/amell/Library/Preferences/helm/registry.json")
 	os.Setenv("HELM_PLUGINS", "/Users/amell/Library/helm/plugins")
-	os.Setenv("HELM_DEBUG", "true")
-	os.Setenv("TF_LOG", "DEBUG")
+	//os.Setenv("HELM_DEBUG", "true")
+	//os.Setenv("TF_LOG", "DEBUG")
 }
 
 func setK8Client() error {
@@ -164,15 +164,25 @@ func createNamespace(t *testing.T, namespace string) {
 		t.Fatal("provider not properly initialized")
 	}
 
+	options := metav1.GetOptions{}
+
+	_, err := client.CoreV1().Namespaces().Get(namespace, options)
+
+	if err == nil {
+		return
+	}
+
 	k8ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
 		},
 	}
 
-	debug("[DEBUG] Creating namespace %q", namespace)
-	_, err := client.CoreV1().Namespaces().Create(k8ns)
+	t.Log("[DEBUG] Creating namespace", namespace)
+	_, err = client.CoreV1().Namespaces().Create(k8ns)
 	if err != nil {
-		t.Fatalf("An error occurred while creating namespace %q: %q", namespace, err)
+		// No failure here, the concurrency tests will blow up if we fail. Tried
+		// Locking in this method, but it causes the tests to hang
+		t.Log("An error occurred while creating namespace", namespace, err)
 	}
 }

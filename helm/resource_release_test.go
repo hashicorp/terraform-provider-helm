@@ -3,6 +3,7 @@ package helm
 import (
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -27,7 +28,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t, namespace) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace, t),
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "0.6.2"),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -49,39 +50,39 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	})
 }
 
-// func TestAccResourceRelease_concurrent(t *testing.T) {
-// 	var wg sync.WaitGroup
-// 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
-// 	// Delete namespace automatically created by helm after checks
-// 	defer deleteNamespace(t, namespace)
+func TestAccResourceRelease_concurrent(t *testing.T) {
+	var wg sync.WaitGroup
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
 
-// 	// This test case cannot be parallelized by using `resource.ParallelTest()` as calling `t.Parallel()` more than
-// 	// once in a single test case resuls in the following error:
-// 	// `panic: testing: t.Parallel called multiple times`
-// 	t.Parallel()
+	// This test case cannot be parallelized by using `resource.ParallelTest()` as calling `t.Parallel()` more than
+	// once in a single test case resuls in the following error:
+	// `panic: testing: t.Parallel called multiple times`
+	t.Parallel()
 
-// 	wg.Add(3)
-// 	for i := 0; i < 3; i++ {
-// 		go func(name string) {
-// 			defer wg.Done()
-// 			resource.Test(t, resource.TestCase{
-// 				PreCheck:     func() { testAccPreCheck(t) },
-// 				Providers:    testAccProviders,
-// 				CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
-// 				Steps: []resource.TestStep{{
-// 					Config: testAccHelmReleaseConfigBasic(name, namespace, name, "0.6.2"),
-// 					Check: resource.ComposeAggregateTestCheckFunc(
-// 						resource.TestCheckResourceAttr(
-// 							fmt.Sprintf("helm_release.%s", name), "metadata.0.name", name,
-// 						),
-// 					),
-// 				}},
-// 			})
-// 		}(fmt.Sprintf("concurrent-%d-%s", i, acctest.RandString(10)))
-// 	}
+	wg.Add(3)
+	for i := 0; i < 3; i++ {
+		go func(name string) {
+			defer wg.Done()
+			resource.Test(t, resource.TestCase{
+				PreCheck:     func() { testAccPreCheck(t, namespace) },
+				Providers:    testAccProviders,
+				CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+				Steps: []resource.TestStep{{
+					Config: testAccHelmReleaseConfigBasic(name, namespace, name, "0.6.2"),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr(
+							fmt.Sprintf("helm_release.%s", name), "metadata.0.name", name,
+						),
+					),
+				}},
+			})
+		}(fmt.Sprintf("concurrent-%d-%s", i, acctest.RandString(10)))
+	}
 
-// 	wg.Wait()
-// }
+	wg.Wait()
+}
 
 // func TestAccResourceRelease_update(t *testing.T) {
 // 	name := fmt.Sprintf("test-update-%s", acctest.RandString(10))
@@ -625,7 +626,7 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 // 	t.Log(fmt.Sprintf("%q has been removed from your repositories\n", name))
 // }
 
-func testAccCheckHelmReleaseDestroy(namespace string, t *testing.T) resource.TestCheckFunc {
+func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Fix for a flaky test
 		// Helm doesn't instantly delete its releases causing this test to fail if not waited for a small period of time.
@@ -713,7 +714,6 @@ func testAccCheckHelmReleaseDestroy(namespace string, t *testing.T) resource.Tes
 // 		}
 // 	}
 // }
-
 func deleteNamespace(t *testing.T, namespace string) {
 	// Nothing to cleanup with unit test
 	if os.Getenv("TF_ACC") == "" {

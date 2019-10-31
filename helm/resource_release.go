@@ -590,6 +590,9 @@ func getVersion(d resourceGetter, m *Meta) (version string) {
 }
 
 func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptions) (c *chart.Chart, path string, err error) {
+	//Load function blows up if accessed concurrently
+	m.Lock()
+	defer m.Unlock()
 
 	n, err := cpo.LocateChart(name, m.Settings)
 

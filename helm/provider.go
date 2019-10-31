@@ -193,6 +193,9 @@ func (m *Meta) buildSettings(d *schema.ResourceData) error {
 
 // GetHelmConfiguration will return a new Helm configuration
 func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, error) {
+	m.Lock()
+	defer m.Unlock()
+
 	actionConfig := new(action.Configuration)
 
 	config := kube.GetConfig(m.Settings.KubeConfig, m.Settings.KubeContext, namespace)
