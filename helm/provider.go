@@ -74,6 +74,12 @@ func Provider() terraform.ResourceProvider {
 				Default:     "gcr.io/kubernetes-helm/tiller:v2.15.1",
 				Description: "Tiller image to install.",
 			},
+			"connection_timeout": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     5,
+				Description: "Number of seconds Helm will wait to establish a connection to tiller.",
+			},
 			"service_account": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -281,10 +287,11 @@ type Meta struct {
 
 func (m *Meta) buildSettings(d *schema.ResourceData) {
 	m.Settings = &helm_env.EnvSettings{
-		Home:            helmpath.Home(d.Get("home").(string)),
-		TillerHost:      d.Get("host").(string),
-		TillerNamespace: d.Get("namespace").(string),
-		Debug:           d.Get("debug").(bool),
+		Home:                    helmpath.Home(d.Get("home").(string)),
+		TillerHost:              d.Get("host").(string),
+		TillerNamespace:         d.Get("namespace").(string),
+		TillerConnectionTimeout: int64(d.Get("connection_timeout").(int)),
+		Debug:                   d.Get("debug").(bool),
 	}
 }
 
@@ -544,6 +551,7 @@ func (m *Meta) buildTunnel(d *schema.ResourceData) error {
 func (m *Meta) buildHelmClient() helm.Interface {
 	options := []helm.Option{
 		helm.Host(m.Settings.TillerHost),
+		helm.ConnectTimeout(m.Settings.TillerConnectionTimeout),
 	}
 
 	if m.TLSConfig != nil {
