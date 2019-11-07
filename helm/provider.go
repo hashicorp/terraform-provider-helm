@@ -77,7 +77,7 @@ func Provider() terraform.ResourceProvider {
 			"connection_timeout": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				Default:     5,
+				Default:     60,
 				Description: "Number of seconds Helm will wait to establish a connection to tiller.",
 			},
 			"service_account": {
