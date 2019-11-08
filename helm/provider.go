@@ -78,7 +78,7 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Default:     60,
-				Description: "Number of seconds Helm will wait to establish a connection to tiller.",
+				Description: "Number of seconds Helm will wait before timing out a connection to tiller.",
 			},
 			"service_account": {
 				Type:        schema.TypeString,

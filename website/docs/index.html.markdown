@@ -89,7 +89,7 @@ The following arguments are supported:
 * `init_helm_home` - (Optional) Initialize Helm home directory configured by the `home` attribute if it is not already initialized, defaults to true.
 * `install_tiller` - (Optional) Install Tiller if it is not already installed. Defaults to `true`.
 * `tiller_image` - (Optional) Tiller image to install. Defaults to `gcr.io/kubernetes-helm/tiller:v2.15.1`.
-* `connection_timeout` - (Optional) Number of seconds Helm will wait to establish a connection to tiller. Defaults to `5`.
+* `connection_timeout` - (Optional) Number of seconds Helm will wait before timing out a connection to tiller. Defaults to `60`.
 * `service_account` - (Optional) Service account to install Tiller with. Defaults to `default`.
 * `automount_service_account_token` - (Optional) Auto-mount the given service account to tiller. Defaults to `true`.
 * `override` - (Optional) Override values for the Tiller Deployment manifest. Defaults to `true`.
