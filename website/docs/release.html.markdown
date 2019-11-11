@@ -66,6 +66,7 @@ The following arguments are supported:
 * `keyring` - (Optional) Location of public keys used for verification.
 * `timeout` - (Optional) Time in seconds to wait for any individual kubernetes operation.
 * `disable_webhooks` - (Optional) Prevent hooks from running.
+* `disable_crd_hooks` - (Optional) Prevent CRD hooks from running, but run other hooks.
 * `reuse_values` - (Optional) Reuse values from previous revision when upgrading a release. Same as `--reuse-values` flag in Helm CLI. Default is false.
 * `force_update` - (Optional) Force resource update through delete/recreate if needed.
 * `reuse` - (Optional) Instructs Tiller to re-use an existing name. Default is true.
