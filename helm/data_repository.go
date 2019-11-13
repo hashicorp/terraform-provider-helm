@@ -4,6 +4,8 @@ import (
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+
+	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/repo"
 )
 
@@ -115,6 +117,16 @@ func dataRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 	file.Update(entry)
 
 	if err := file.WriteFile(m.Settings.RepositoryConfig, 0644); err != nil {
+		return err
+	}
+
+	re, err := repo.NewChartRepository(entry, getter.All(m.Settings))
+
+	if err != nil {
+		return err
+	}
+
+	if _, err := re.DownloadIndexFile(); err != nil {
 		return err
 	}
 
