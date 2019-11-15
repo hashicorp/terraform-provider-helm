@@ -1049,6 +1049,8 @@ helm.sh/helm/v3 v3.0.0-beta.4.0.20191011210504-34b930cb9db8 h1:5suQfQzu133yvzcrt
 helm.sh/helm/v3 v3.0.0-beta.4.0.20191011210504-34b930cb9db8/go.mod h1:aNGjgXCYKAu7aX8wdvfggUqzoHIZ5Z7DJyCAfWKpdMU=
 helm.sh/helm/v3 v3.0.0-rc.1 h1:i/M1xi5MPMsbGQQLUekLjS/XaNqxVeV0nEk41BD85+Y=
 helm.sh/helm/v3 v3.0.0-rc.1/go.mod h1:sI7B9yfvMgxtTPMWdk1jSKJ2aa59UyP9qhPydqW6mgo=
+helm.sh/helm/v3 v3.0.0 h1:or/9cs1GgfcTQeEnR2CVJNw893/rmqIG1KsNHmUiSFw=
+helm.sh/helm/v3 v3.0.0/go.mod h1:sI7B9yfvMgxtTPMWdk1jSKJ2aa59UyP9qhPydqW6mgo=
 honnef.co/go/tools v0.0.0-20180728063816-88497007e858/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190106161140-3f1c8253044a/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=

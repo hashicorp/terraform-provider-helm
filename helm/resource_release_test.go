@@ -359,46 +359,56 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	})
 }
 
-// func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
-// 	name := fmt.Sprintf("test-update-existing-failed-%s", acctest.RandString(10))
-// 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
-// 	// Delete namespace automatically created by helm after checks
-// 	defer deleteNamespace(t, namespace)
+func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
+	name := fmt.Sprintf("test-update-existing-failed-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
 
-// 	resource.ParallelTest(t, resource.TestCase{
-// 		PreCheck:     func() { testAccPreCheck(t, namespace) },
-// 		Providers:    testAccProviders,
-// 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
-// 		Steps: []resource.TestStep{{
-// 			Config: testAccHelmReleaseConfigValues(
-// 				testResourceName, namespace, name, "stable/mariadb",
-// 				[]string{"master:\n  persistence:\n    enabled: false", "replication:\n  enabled: false"},
-// 			),
-// 			Check: resource.ComposeAggregateTestCheckFunc(
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-// 			),
-// 		}, {
-// 			Config: testAccHelmReleaseConfigValues(
-// 				testResourceName, namespace, name, "stable/mariadb",
-// 				[]string{"master:\n  persistence:\n    enabled: true", "replication:\n  enabled: false"},
-// 			),
-// 			ExpectError:        regexp.MustCompile("forbidden"),
-// 			ExpectNonEmptyPlan: true,
-// 			Check: resource.ComposeAggregateTestCheckFunc(
-// 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
-// 				resource.TestCheckResourceAttr("helm_release.test", "status", "FAILED"),
-// 			),
-// 		}, {
-// 			Config: testAccHelmReleaseConfigValues(
-// 				testResourceName, namespace, name, "stable/mariadb",
-// 				[]string{"master:\n  persistence:\n    enabled: true", "replication:\n  enabled: false"},
-// 			),
-// 			ExpectError:        regexp.MustCompile("forbidden"),
-// 			ExpectNonEmptyPlan: true,
-// 		}},
-// 	})
-// }
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigValues(
+				testResourceName, namespace, name, "stable/mariadb",
+				[]string{"master:\n  persistence:\n    enabled: false",
+					"replication:\n  enabled: false",
+					"master:\n  service:\n    annotations: {}",
+					"master:\n  updateStrategy:\n    type: Recreate"},
+			),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigValues(
+				testResourceName, namespace, name, "stable/mariadb",
+				[]string{"master:\n  persistence:\n    enabled: true",
+					"replication:\n  enabled: false",
+					"master:\n  service:\n    annotations: {}",
+					"master:\n  updateStrategy:\n    type: Recreate"},
+			),
+			ExpectError:        regexp.MustCompile("forbidden"),
+			ExpectNonEmptyPlan: true,
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", "FAILED"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigValues(
+				testResourceName, namespace, name, "stable/mariadb",
+				[]string{
+					"master:\n  persistence:\n    enabled: true",
+					"replication:\n  enabled: false",
+					"master:\n  service:\n    annotations: {}",
+					"master:\n  updateStrategy:\n    type: Recreate"},
+			),
+			ExpectError:        regexp.MustCompile("forbidden"),
+			ExpectNonEmptyPlan: true,
+		}},
+	})
+}
 
 func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 	name := fmt.Sprintf("test-update-version-from-release-%s", acctest.RandString(10))
@@ -504,43 +514,41 @@ func testAccHelmReleaseConfigValues(resource, ns, name, chart string, values []s
 	`, resource, name, ns, chart, strings.Join(vals, ","))
 }
 
-// func TestGetValues(t *testing.T) {
-// 	d := resourceRelease().Data(nil)
-// 	d.Set("values", []string{
-// 		"foo: bar\nbaz: corge",
-// 		"first: present\nbaz: grault",
-// 		"second: present\nbaz: uier",
-// 	})
-// 	d.Set("set", []interface{}{
-// 		map[string]interface{}{"name": "foo", "value": "qux"},
-// 	})
+func TestGetValues(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	d.Set("values", []string{
+		"foo: bar\nbaz: corge",
+		"first: present\nbaz: grault",
+		"second: present\nbaz: uier",
+	})
+	d.Set("set", []interface{}{
+		map[string]interface{}{"name": "foo", "value": "qux"},
+	})
 
-// 	values, err := getValues(d)
-// 	if err != nil {
-// 		t.Fatalf("error getValues: %s", err)
-// 		return
-// 	}
+	values, err := getValues(d)
+	if err != nil {
+		t.Fatalf("error getValues: %s", err)
+		return
+	}
 
-// 	base := map[string]string{}
-// 	err = yaml.Unmarshal([]byte(values), &base)
-// 	if err != nil {
-// 		t.Fatalf("error parsing returned yaml: %s", err)
-// 		return
-// 	}
+	if err != nil {
+		t.Fatalf("error parsing returned yaml: %s", err)
+		return
+	}
 
-// 	if base["foo"] != "qux" {
-// 		t.Fatalf("error merging values, expected %q, got %q", "qux", base["foo"])
-// 	}
-// 	if base["first"] != "present" {
-// 		t.Fatalf("error merging values from file, expected value file %q not read", "testdata/get_values_first.yaml")
-// 	}
-// 	if base["second"] != "present" {
-// 		t.Fatalf("error merging values from file, expected value file %q not read", "testdata/get_values_second.yaml")
-// 	}
-// 	if base["baz"] != "uier" {
-// 		t.Fatalf("error merging values from file, expected %q, got %q", "uier", base["baz"])
-// 	}
-// }
+	if values["foo"] != "qux" {
+		t.Fatalf("error merging values, expected %q, got %q", "qux", values["foo"])
+	}
+	if values["first"] != "present" {
+		t.Fatalf("error merging values from file, expected value file %q not read", "testdata/get_values_first.yaml")
+	}
+	if values["second"] != "present" {
+		t.Fatalf("error merging values from file, expected value file %q not read", "testdata/get_values_second.yaml")
+	}
+	if values["baz"] != "uier" {
+		t.Fatalf("error merging values from file, expected %q, got %q", "uier", values["baz"])
+	}
+}
 
 func testAccHelmReleaseConfigRepository(resource, ns, name string) string {
 	return fmt.Sprintf(`

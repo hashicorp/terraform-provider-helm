@@ -14,7 +14,7 @@ require (
 	github.com/rubenv/sql-migrate v0.0.0-20191025130928-9355dd04f4b3 // indirect
 	google.golang.org/grpc v1.24.0
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
-	helm.sh/helm/v3 v3.0.0-rc.1
+	helm.sh/helm/v3 v3.0.0
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
