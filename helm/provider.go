@@ -67,7 +67,7 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "The backend storage driver. Values are: configmap, secret, memory",
-				DefaultFunc: schema.EnvDefaultFunc("HELM_DRIVER", "configmap"),
+				DefaultFunc: schema.EnvDefaultFunc("HELM_DRIVER", "secret"),
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					drivers := []string{
 						"configmap",
