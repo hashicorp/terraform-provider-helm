@@ -160,18 +160,17 @@ func (m *Meta) buildSettings(d *schema.ResourceData) error {
 	}
 
 	if v, ok := d.GetOk("kube_config_path"); ok {
+		settings.KubeConfig = v.(string)
 
 		expanded, err := homedir.Expand(v.(string))
 		if err != nil {
 			debug("Error expanding path %s", err)
 			return err
 		}
-
 		settings.KubeConfig = expanded
 	}
 
 	if v, ok := d.GetOkExists("kube_config_context"); ok {
-
 		settings.KubeContext = v.(string)
 	}
 
