@@ -160,6 +160,12 @@ func resourceRelease() *schema.Resource {
 				Default:     false,
 				Description: "Prevent hooks from running.",
 			},
+			"disable_crd_hooks": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Prevent CRD hooks from, running, but run other hooks.  See helm install --no-crd-hook",
+			},
 			"reuse_values": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -342,6 +348,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		helm.InstallReuseName(d.Get("reuse").(bool)),
 		helm.ValueOverrides(values),
 		helm.InstallDisableHooks(d.Get("disable_webhooks").(bool)),
+		helm.InstallDisableCRDHook(d.Get("disable_crd_hooks").(bool)),
 		helm.InstallTimeout(int64(d.Get("timeout").(int))),
 		helm.InstallWait(d.Get("wait").(bool)),
 	}
