@@ -26,11 +26,14 @@ var ErrReleaseNotFound = errors.New("release not found")
 
 func resourceRelease() *schema.Resource {
 	return &schema.Resource{
-		Create:        resourceReleaseCreate,
-		Read:          resourceReleaseRead,
-		Delete:        resourceReleaseDelete,
-		Update:        resourceReleaseUpdate,
-		Exists:        resourceReleaseExists,
+		Create: resourceReleaseCreate,
+		Read:   resourceReleaseRead,
+		Delete: resourceReleaseDelete,
+		Update: resourceReleaseUpdate,
+		Exists: resourceReleaseExists,
+		Importer: &schema.ResourceImporter{
+			State: resourceHelmReleaseImportState,
+		},
 		CustomizeDiff: resourceDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -775,4 +778,31 @@ func chartPathOptions(d resourceGetter, m *Meta) (*action.ChartPathOptions, stri
 		Username: d.Get("repository_username").(string),
 		Password: d.Get("repository_password").(string),
 	}, chartName, nil
+}
+
+func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	namespace, name, err := idParts(d.Id())
+	if err != nil {
+		return nil, errors.Errorf("Unable to parse identifier %s: %s", d.Id(), err)
+	}
+
+	d.SetId(name)
+	d.Set("name", name)
+	d.Set("namespace", namespace)
+
+	if err := resourceReleaseRead(d, meta); err != nil {
+		return nil, errors.Errorf("Unable to fetch release: %s", err)
+	}
+
+	return []*schema.ResourceData{d}, nil
+}
+
+func idParts(id string) (string, string, error) {
+	parts := strings.Split(id, "/")
+	if len(parts) != 2 {
+		err := errors.Errorf("Unexpected ID format (%q), expected %q", id, "namespace/name")
+		return "", "", err
+	}
+
+	return parts[0], parts[1], nil
 }
