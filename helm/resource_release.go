@@ -69,6 +69,17 @@ func resourceRelease() *schema.Resource {
 				Optional:    true,
 				Description: "The Repositories CA File",
 			},
+			"repository_username": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Username for HTTP basic authentication",
+			},
+			"repository_password": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Sensitive:   true,
+				Description: "Password for HTTP basic authentication",
+			},
 			"chart": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -765,7 +776,7 @@ func chartPathOptions(d resourceGetter, m *Meta) (*action.ChartPathOptions, stri
 		RepoURL:  repositoryURL,
 		Verify:   d.Get("verify").(bool),
 		Version:  version,
-		//Username: string,
-		//Password: string,
+		Username: d.Get("repository_username").(string),
+		Password: d.Get("repository_password").(string),
 	}, chartName, nil
 }

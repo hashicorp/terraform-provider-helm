@@ -81,27 +81,49 @@ i.e. any static field will override its counterpart loaded from the config.
 
 ## Argument Reference
 
-The following arguments are supported:
+"": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "",
+			},
+			"": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Sensitive:   true,
+				Description: "",
+			},
 
-* `host` - (Required) Set an alternative Tiller host. The format is host:port. Can be sourced from `HELM_HOST` environment variable.
+The following arguments are supported:
+			
 * `home` - (Required) Set an alternative location for Helm files. By default, these are stored in `$HOME/.helm`. Can be sourced from `HELM_HOME` environment variable.
-* `namespace` - (Optional) Set an alternative Tiller namespace. Defaults to `kube-system`.
-* `init_helm_home` - (Optional) Initialize Helm home directory configured by the `home` attribute if it is not already initialized, defaults to true.
-* `install_tiller` - (Optional) Install Tiller if it is not already installed. Defaults to `true`.
-* `tiller_image` - (Optional) Tiller image to install. Defaults to `gcr.io/kubernetes-helm/tiller:v2.15.1`.
-* `connection_timeout` - (Optional) Number of seconds Helm will wait before timing out a connection to tiller. Defaults to `60`.
-* `service_account` - (Optional) Service account to install Tiller with. Defaults to `default`.
-* `automount_service_account_token` - (Optional) Auto-mount the given service account to tiller. Defaults to `true`.
-* `override` - (Optional) Override values for the Tiller Deployment manifest. Defaults to `true`.
-* `max_history` - (Optional) Maximum number of release versions stored per release. Defaults to `0` (no limit).
+* `name` - (Required) Release name.
+* `chart` - (Required) Chart name to be installed.
+* `kubernetes` - (Required) Kubernetes configuration block.
+
 * `debug` - (Optional) - Debug indicates whether or not Helm is running in Debug mode. Defaults to `false`.
-* `plugins_disable` - (Optional) Disable plugins. Can be sourced from `HELM_NO_PLUGINS` environment variable, set `HELM_NO_PLUGINS=0` to enable plugins. Defaults to `true`.
-* `insecure` - (Optional) Whether server should be accessed without verifying the TLS certificate. Defaults to `false`.
-* `enable_tls` - (Optional) Enables TLS communications with the Tiller. Defaults to `false`.
-* `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `key.pem` in the location set by `home`.
-* `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `cert.pem` in the location set by `home`.
-* `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. By default read from `ca.pem` in the location set by `home`.
-* `kubernetes` - Kubernetes configuration block.
+* `repository_key_file` - (Optional) The repositories cert key file
+* `repository_cert_file` - (Optional) The repositories cert file
+* `repository_ca_file` - (Optional) The Repositories CA File. 
+* `repository_username` - (Optional) Username for HTTP basic authentication against the repository.
+* `repository_password` - (Optional) Password for HTTP basic authentication against the reposotory.
+ * `repository` - (Optional) Repository where to locate the requested chart. If is an URL the chart is installed without install the repository.
+* `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
+* `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
+* `namespace` - (Optional) The namespace to install the release into. Defaults to `default`
+* `verify` - (Optional) Verify the package before installing it. Defaults to `false`
+* `keyring` - (Optional) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`
+* `timeout` - (Optional) Time in seconds to wait for any individual kubernetes operation. Defaults to `300` seconds.
+* `disable_webhooks` - (Optional) Prevent hooks from running. Defauts to `false`
+* `reuse_values` - (Optional) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
+* `reset_values` - (Optional) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
+* `force_update` - (Optional) Force resource update through delete/recreate if needed. Defaults to `false`.
+* `recreate_pods` - (Optional) Perform pods restart during upgrade/rollback. Defaults to `false`.
+* `cleanup_on_fail` - (Optional) Allow deletion of new resources created in this upgrade when upgrade fails. Defaults to `false`.
+* `max_history` - (Optional) Maximum number of release versions stored per release. Defaults to `0` (no limit).
+* `atomic` - (Optional) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to `false`.
+* `skip_crds` - (Optional) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
+* `render_subchart_notes` - (Optional) If set, render subchart notes along with the parent. Defaults to `true`.
+* `wait` - (Optional) Will wait until all resources are in a ready state before marking the release as successful. Defaults to `true`.
 
 The `kubernetes` block supports:
 
