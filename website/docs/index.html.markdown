@@ -81,49 +81,17 @@ i.e. any static field will override its counterpart loaded from the config.
 
 ## Argument Reference
 
-"": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "",
-			},
-			"": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Sensitive:   true,
-				Description: "",
-			},
-
 The following arguments are supported:
-			
-* `home` - (Required) Set an alternative location for Helm files. By default, these are stored in `$HOME/.helm`. Can be sourced from `HELM_HOME` environment variable.
-* `name` - (Required) Release name.
-* `chart` - (Required) Chart name to be installed.
-* `kubernetes` - (Required) Kubernetes configuration block.
 
+* `namespace` - (Optional) Set an alternative Tiller namespace. Defaults to `kube-system`.
 * `debug` - (Optional) - Debug indicates whether or not Helm is running in Debug mode. Defaults to `false`.
-* `repository_key_file` - (Optional) The repositories cert key file
-* `repository_cert_file` - (Optional) The repositories cert file
-* `repository_ca_file` - (Optional) The Repositories CA File. 
-* `repository_username` - (Optional) Username for HTTP basic authentication against the repository.
-* `repository_password` - (Optional) Password for HTTP basic authentication against the reposotory.
- * `repository` - (Optional) Repository where to locate the requested chart. If is an URL the chart is installed without install the repository.
-* `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
-* `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
-* `namespace` - (Optional) The namespace to install the release into. Defaults to `default`
-* `verify` - (Optional) Verify the package before installing it. Defaults to `false`
-* `keyring` - (Optional) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`
-* `timeout` - (Optional) Time in seconds to wait for any individual kubernetes operation. Defaults to `300` seconds.
-* `disable_webhooks` - (Optional) Prevent hooks from running. Defauts to `false`
-* `reuse_values` - (Optional) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
-* `reset_values` - (Optional) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
-* `force_update` - (Optional) Force resource update through delete/recreate if needed. Defaults to `false`.
-* `recreate_pods` - (Optional) Perform pods restart during upgrade/rollback. Defaults to `false`.
-* `cleanup_on_fail` - (Optional) Allow deletion of new resources created in this upgrade when upgrade fails. Defaults to `false`.
-* `max_history` - (Optional) Maximum number of release versions stored per release. Defaults to `0` (no limit).
-* `atomic` - (Optional) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to `false`.
-* `skip_crds` - (Optional) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
-* `render_subchart_notes` - (Optional) If set, render subchart notes along with the parent. Defaults to `true`.
-* `wait` - (Optional) Will wait until all resources are in a ready state before marking the release as successful. Defaults to `true`.
+`plugins_path` - (Optional) The path to the plugins directory. Defaults to `HELM_PLUGINS` env if it is set, otherwise uses the default path set by helm.
+`registry_config_path` - (Optional) The path to the registry config file. Defaults to `HELM_REGISTRY_CONFIG` env if it is set, otherwise uses the default path set by helm.
+`repository_config_path` - (Optional) The path to the file containing repository names and URLs. Defaults to `HELM_REPOSITORY_CONFIG` env if it is set, otherwise uses the default path set by helm.
+`repository_cache` - (Optional) The path to the file containing cached repository indexes. Defaults to `HELM_REPOSITORY_CACHE` env if it is set, otherwise uses the default path set by helm.
+`helm_driver` - (Optional) "The backend storage driver. Valid values are: `configmap`, `secret`, `memory`. Defaults to `secret`
+
+* `kubernetes` - Kubernetes configuration block.
 
 The `kubernetes` block supports:
 

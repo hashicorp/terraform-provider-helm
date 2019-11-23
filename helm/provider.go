@@ -49,19 +49,19 @@ func Provider() terraform.ResourceProvider {
 			"registry_config_path": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "The path to the helm registry config file",
+				Description: "The path to the registry config file",
 				DefaultFunc: schema.EnvDefaultFunc("HELM_REGISTRY_CONFIG", helmpath.ConfigPath("registry.json")),
 			},
 			"repository_config_path": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "The path to the helm repository conf file",
+				Description: "The path to the file containing repository names and URLs",
 				DefaultFunc: schema.EnvDefaultFunc("HELM_REPOSITORY_CONFIG", helmpath.ConfigPath("repositories.yaml")),
 			},
 			"repository_cache": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "The path to the helm repository conf file",
+				Description: "The path to the file containing cached repository indexes",
 				DefaultFunc: schema.EnvDefaultFunc("HELM_REPOSITORY_CACHE", helmpath.CachePath("repository")),
 			},
 			"helm_driver": {
