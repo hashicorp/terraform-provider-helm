@@ -193,6 +193,12 @@ func resourceRelease() *schema.Resource {
 				Default:     false,
 				Description: "Prevent hooks from running.",
 			},
+			"disable_crd_hooks": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Prevent CRD hooks from, running, but run other hooks.  See helm install --no-crd-hook",
+			},
 			"reuse_values": {
 				Type:        schema.TypeBool,
 				Optional:    true,
