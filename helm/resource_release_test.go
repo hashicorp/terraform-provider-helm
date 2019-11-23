@@ -634,7 +634,7 @@ func testAccPreCheckHelmRepositoryDestroy(t *testing.T, name string) {
 		t.Fatalf("Failed to write repositories file: %s", err)
 	}
 
-	if err := removeRepoCache(rc, name); err != nil {
+	if err := removeRepoCache(settings.RepositoryCache, name); err != nil {
 		t.Fatalf("Failed to remove repository cache: %s", err)
 	}
 
