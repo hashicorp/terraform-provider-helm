@@ -627,36 +627,24 @@ func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptio
 }
 
 // Merges source and destination map, preferring values from the source map
-// Taken from github.com/helm/cmd/install.go
-func mergeValues(dest map[string]interface{}, src map[string]interface{}) map[string]interface{} {
-	for k, v := range src {
-		// If the key doesn't exist already, then just set the key to that value
-		if _, exists := dest[k]; !exists {
-			dest[k] = v
-			continue
-		}
-		nextMap, ok := v.(map[string]interface{})
-		// If it isn't another map, overwrite the value
-		if !ok {
-			dest[k] = v
-			continue
-		}
-		// If the key doesn't exist already, then just set the key to that value
-		if _, exists := dest[k]; !exists {
-			dest[k] = nextMap
-			continue
-		}
-		// Edge case: If the key exists in the destination, but isn't a map
-		destMap, isMap := dest[k].(map[string]interface{})
-		// If the source map has a map for this key, prefer it
-		if !isMap {
-			dest[k] = v
-			continue
-		}
-		// If we got to this point, it is a map in both, so merge them
-		dest[k] = mergeValues(destMap, nextMap)
+// Taken from github.com/helm/pkg/cli/values/options.go
+func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(a))
+	for k, v := range a {
+		out[k] = v
 	}
-	return dest
+	for k, v := range b {
+		if v, ok := v.(map[string]interface{}); ok {
+			if bv, ok := out[k]; ok {
+				if bv, ok := bv.(map[string]interface{}); ok {
+					out[k] = mergeMaps(bv, v)
+					continue
+				}
+			}
+		}
+		out[k] = v
+	}
+	return out
 }
 
 func getValues(d *schema.ResourceData) (map[string]interface{}, error) {
@@ -670,7 +658,7 @@ func getValues(d *schema.ResourceData) (map[string]interface{}, error) {
 				if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
 					return nil, fmt.Errorf("---> %v %s", err, values)
 				}
-				base = mergeValues(base, currentMap)
+				base = mergeMaps(base, currentMap)
 			}
 		}
 	}

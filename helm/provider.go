@@ -1,8 +1,11 @@
 package helm
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"sync"
 
@@ -308,46 +311,68 @@ func (m *Meta) getK8sConfig(d *schema.ResourceData) error {
 
 	if v, ok := k8sGetOk(d, "username"); ok {
 		v := v.(string)
-		m.ConfigFlags.Username = &v
+		cf.Username = &v
 	}
 
 	if v, ok := k8sGetOk(d, "password"); ok {
 		v := v.(string)
-		m.ConfigFlags.Username = &v
+		cf.Password = &v
 	}
 
 	if v, ok := k8sGetOk(d, "token"); ok {
 		v := v.(string)
-		m.ConfigFlags.BearerToken = &v
+		cf.BearerToken = &v
 	}
 
 	if v, ok := k8sGetOk(d, "insecure"); ok {
 		v := v.(bool)
-		m.ConfigFlags.Insecure = &v
+		cf.Insecure = &v
 	}
 
 	if v, ok := k8sGetOk(d, "client_certificate"); ok {
 		v := v.(string)
-		m.ConfigFlags.CertFile = &v
+		if path, err := prepareTempCertFile("cert", &v); err == nil {
+			cf.CertFile = &path
+		}
 	}
 
 	if v, ok := k8sGetOk(d, "client_key"); ok {
 		v := v.(string)
-		m.ConfigFlags.KeyFile = &v
+		if path, err := prepareTempCertFile("key", &v); err == nil {
+			cf.KeyFile = &path
+		}
 	}
 
 	if v, ok := k8sGetOk(d, "cluster_ca_certificate"); ok {
 		v := v.(string)
-		m.ConfigFlags.CAFile = &v
+		if path, err := prepareTempCertFile("ca", &v); err == nil {
+			cf.CAFile = &path
+		}
 	}
 
 	if v, ok := k8sGetOk(d, "host"); ok {
 		v := v.(string)
-		m.ConfigFlags.ClusterName = &v
+		cf.APIServer = &v
 	}
 
 	m.ConfigFlags = cf
 	return nil
+}
+
+func prepareTempCertFile(prefix string, data *string) (string, error) {
+	file, err := ioutil.TempFile(os.TempDir(), prefix+".*.pem")
+	if err != nil {
+		debug("Cannot create temporary file: %s", err)
+		return "", err
+	}
+
+	b := bytes.NewBufferString(*data).Bytes()
+
+	if _, err := file.Write(b); err != nil {
+		debug("Cannot write to temporary file: %s", err)
+		return "", err
+	}
+	return file.Name(), nil
 }
 
 // GetHelmConfiguration will return a new Helm configuration
