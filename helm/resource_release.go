@@ -164,6 +164,7 @@ func resourceRelease() *schema.Resource {
 				ForceNew:    true,
 				Default:     "default",
 				Description: "Namespace to install the release into.",
+				DefaultFunc: schema.EnvDefaultFunc("HELM_NAMESPACE", "default"),
 			},
 			"verify": {
 				Type:        schema.TypeBool,
