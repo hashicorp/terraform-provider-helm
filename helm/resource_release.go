@@ -19,16 +19,6 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
 	"sigs.k8s.io/yaml"
-	// "k8s.io/helm/pkg/helm"
-	// "k8s.io/helm/pkg/strvals"
-	// "k8s.io/helm/pkg/chartutil"
-	// "k8s.io/helm/pkg/downloader"
-	// "k8s.io/helm/pkg/getter"
-	// "k8s.io/helm/pkg/helm"
-	// "k8s.io/helm/pkg/proto/hapi/chart"
-	// "k8s.io/helm/pkg/proto/hapi/release"
-	// "k8s.io/helm/pkg/repo"
-	// "k8s.io/helm/pkg/strvals"
 )
 
 // ErrReleaseNotFound is the error when a Helm release is not found
@@ -349,7 +339,6 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 	debug("Getting chart")
-	//name := d.Get("name").(string)
 
 	chart, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
@@ -365,7 +354,6 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	//
 	validInstallableChart, err := isChartInstallable(chart)
 	if !validInstallableChart {
 		return err
@@ -418,13 +406,20 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	debug("Installing Chart")
 
-	release, err := client.Run(chart, values)
+	rel, err := client.Run(chart, values)
 
-	if err != nil {
+	// Return error only if no release was created
+	// This will ensure we store even failed releases into the state
+	if err != nil && rel == nil {
+		return err
+	} else if err != nil && rel.Info.Status == release.StatusFailed {
+		if err := setIDAndMetadataFromRelease(d, rel); err != nil {
+			return err
+		}
 		return err
 	}
 
-	return setIDAndMetadataFromRelease(d, release)
+	return setIDAndMetadataFromRelease(d, rel)
 }
 
 func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {

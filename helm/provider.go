@@ -35,16 +35,16 @@ type Meta struct {
 
 // KubernetesConfig stores the k8s configuration
 type KubernetesConfig struct {
-	KubeConfig  *string
-	Context     *string
-	Username    *string
-	Password    *string
-	BearerToken *string
-	APIServer   *string
-	Insecure    *bool
-	CertFile    *string
-	KeyFile     *string
-	CAFile      *string
+	KubeConfig  string
+	Context     string
+	Username    string
+	Password    string
+	BearerToken string
+	APIServer   string
+	Insecure    bool
+	CertFile    string
+	KeyFile     string
+	CAFile      string
 }
 
 // Provider returns the provider schema to Terraform.
@@ -296,66 +296,58 @@ func (m *Meta) getK8sConfig(d *schema.ResourceData) error {
 	// Not sure if in_cluster is still valid here.
 	if !k8sGet(d, "in_cluster").(bool) && k8sGet(d, "load_config_file").(bool) {
 		if v, ok := k8sGetOk(d, "config_path"); ok {
-			v := v.(string)
-
-			expanded, err := homedir.Expand(v)
+			expanded, err := homedir.Expand(v.(string))
 			if err != nil {
 				debug("Error expanding path %s", err)
 				return err
 			}
-			kc.KubeConfig = &expanded
+			kc.KubeConfig = expanded
 		}
 	}
 
 	if v, ok := k8sGetOk(d, "config_context"); ok {
-		v := v.(string)
-		kc.Context = &v
+		kc.Context = v.(string)
 	}
 
 	if v, ok := k8sGetOk(d, "username"); ok {
-		v := v.(string)
-		kc.Username = &v
+		kc.Username = v.(string)
 	}
 
 	if v, ok := k8sGetOk(d, "password"); ok {
-		v := v.(string)
-		kc.Password = &v
+		kc.Password = v.(string)
 	}
 
 	if v, ok := k8sGetOk(d, "token"); ok {
-		v := v.(string)
-		kc.BearerToken = &v
+		kc.BearerToken = v.(string)
 	}
 
 	if v, ok := k8sGetOk(d, "insecure"); ok {
-		v := v.(bool)
-		kc.Insecure = &v
+		kc.Insecure = v.(bool)
 	}
 
 	if v, ok := k8sGetOk(d, "client_certificate"); ok {
 		v := v.(string)
 		if path, err := prepareTempCertFile("cert", &v); err == nil {
-			kc.CertFile = &path
+			kc.CertFile = path
 		}
 	}
 
 	if v, ok := k8sGetOk(d, "client_key"); ok {
 		v := v.(string)
 		if path, err := prepareTempCertFile("key", &v); err == nil {
-			kc.KeyFile = &path
+			kc.KeyFile = path
 		}
 	}
 
 	if v, ok := k8sGetOk(d, "cluster_ca_certificate"); ok {
 		v := v.(string)
 		if path, err := prepareTempCertFile("ca", &v); err == nil {
-			kc.CAFile = &path
+			kc.CAFile = path
 		}
 	}
 
 	if v, ok := k8sGetOk(d, "host"); ok {
-		v := v.(string)
-		kc.APIServer = &v
+		kc.APIServer = v.(string)
 	}
 
 	m.KubernetesConfig = kc
@@ -364,6 +356,7 @@ func (m *Meta) getK8sConfig(d *schema.ResourceData) error {
 
 func prepareTempCertFile(prefix string, data *string) (string, error) {
 	file, err := ioutil.TempFile(os.TempDir(), prefix+".*.pem")
+
 	if err != nil {
 		debug("Cannot create temporary file: %s", err)
 		return "", err
@@ -396,16 +389,16 @@ func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, er
 func getKubernetesConfiguration(kc KubernetesConfig, namespace string) *genericclioptions.ConfigFlags {
 	cf := genericclioptions.NewConfigFlags(true)
 
-	cf.KubeConfig = kc.KubeConfig
-	cf.Context = kc.Context
-	cf.Username = kc.Username
-	cf.Password = kc.Password
-	cf.BearerToken = kc.BearerToken
-	cf.Insecure = kc.Insecure
-	cf.APIServer = kc.APIServer
-	cf.CertFile = kc.CertFile
-	cf.KeyFile = kc.KeyFile
-	cf.CAFile = kc.CAFile
+	cf.KubeConfig = &kc.KubeConfig
+	cf.Context = &kc.Context
+	cf.Username = &kc.Username
+	cf.Password = &kc.Password
+	cf.BearerToken = &kc.BearerToken
+	cf.Insecure = &kc.Insecure
+	cf.APIServer = &kc.APIServer
+	cf.CertFile = &kc.CertFile
+	cf.KeyFile = &kc.KeyFile
+	cf.CAFile = &kc.CAFile
 	cf.Namespace = &namespace
 
 	return cf
