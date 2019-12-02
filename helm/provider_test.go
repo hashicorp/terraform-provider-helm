@@ -1,7 +1,9 @@
 package helm
 
 import (
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -27,13 +29,26 @@ var (
 	testAccProviders map[string]terraform.ResourceProvider
 	testAccProvider  *schema.Provider
 	client           kubernetes.Interface = nil
+	helmdir          string
 )
 
-func init() {
+func TestMain(m *testing.M) {
 	testAccProvider = Provider().(*schema.Provider)
 	testAccProviders = map[string]terraform.ResourceProvider{
 		"helm": testAccProvider,
 	}
+
+	if dir, err := ioutil.TempDir(os.TempDir(), "helmhome"); err != nil {
+		panic(err)
+	} else {
+		helmdir = dir
+	}
+
+	ec := m.Run()
+
+	os.RemoveAll(helmdir)
+
+	os.Exit(ec)
 }
 
 func TestProvider(t *testing.T) {
@@ -59,10 +74,17 @@ func testAccPreCheck(t *testing.T, namespace string) {
 		createNamespace(t, namespace)
 	}
 
-	os.Setenv("HELM_REPOSITORY_CONFIG", "/Users/amell/Library/Preferences/helm/repositories.yaml")
-	os.Setenv("HELM_REPOSITORY_CACHE", "/Users/amell/Library/Caches/helm/repository")
-	os.Setenv("HELM_REGISTRY_CONFIG", "/Users/amell/Library/Preferences/helm/registry.json")
-	os.Setenv("HELM_PLUGINS", "/Users/amell/Library/helm/plugins")
+	home, err := ioutil.TempDir(helmdir, "helm")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	os.Setenv("HELM_REPOSITORY_CONFIG", filepath.Join(home, "config/repositories.yaml"))
+	os.Setenv("HELM_REPOSITORY_CACHE", filepath.Join(home, "cache/helm/repository"))
+	os.Setenv("HELM_REGISTRY_CONFIG", filepath.Join(home, "config/registry.json"))
+	os.Setenv("HELM_PLUGINS", filepath.Join(home, "plugins"))
+	os.Setenv("XDG_CACHE_HOME", filepath.Join(home, "cache"))
 	//os.Setenv("HELM_DEBUG", "true")
 	//os.Setenv("TF_LOG", "DEBUG")
 }
