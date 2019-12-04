@@ -42,7 +42,7 @@ func TestAccDataTemplate_basic(t *testing.T) {
 
 	config := testAccHelmDataTemplateConfigBasic(testResourceName, namespace, name, "0.6.2")
 
-	expectedNotes := fmt.Sprintf(`MariaDB can be accessed via port 3306 on the following DNS name from within your cluster:
+	expectedNotesTemplate := `MariaDB can be accessed via port 3306 on the following DNS name from within your cluster:
 %[2]s-mariadb.%[1]s.svc.cluster.local
 
 To connect to your database:
@@ -52,7 +52,9 @@ To connect to your database:
     kubectl run %[2]s-mariadb-client --rm --tty -i --image bitnami/mariadb --command -- bash
 
 2. Connect using the mysql cli, then provide your password:
-    $ mysql -h %[2]s-mariadb`, namespace, name)
+    $ mysql -h %[2]s-mariadb`
+
+	expectedNotes := fmt.Sprintf(expectedNotesTemplate, namespace, name)
 
 	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
 
