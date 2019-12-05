@@ -274,7 +274,7 @@ func kubernetesResource() *schema.Resource {
 						},
 					},
 				},
-				Description: "",
+				Description: "Use a credential plugin to authenticate.",
 			},
 		},
 	}
