@@ -74,16 +74,12 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeList,
 				Optional:    true,
 				Description: "List of values in raw yaml file to pass to helm.",
-				// Suppress changes of this attribute, it's merged to `overrides`
-				DiffSuppressFunc: suppressAnyDiff,
-				Elem:             &schema.Schema{Type: schema.TypeString},
+				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
 			"set": {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Description: "Custom values to be merge with the values.",
-				// Suppress changes of this attribute, it's merged to `overrides`
-				DiffSuppressFunc: suppressAnyDiff,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -119,8 +115,6 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Description: "Custom string values to be merge with the values.",
-				// Suppress changes of this attribute, it's merged to `overrides`
-				DiffSuppressFunc: suppressAnyDiff,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -250,11 +244,6 @@ func resourceRelease() *schema.Resource {
 			},
 		},
 	}
-}
-
-// suppressAnyDiff could be used to ultimately suppresses the diff of the resource attribute
-func suppressAnyDiff(k, old, new string, d *schema.ResourceData) bool {
-	return true
 }
 
 // prepareTillerForNewRelease determines the current status of the given release and
