@@ -83,7 +83,6 @@ i.e. any static field will override its counterpart loaded from the config.
 
 The following arguments are supported:
 
-* `namespace` - (Optional) Set an alternative Tiller namespace. Defaults to `kube-system`.
 * `debug` - (Optional) - Debug indicates whether or not Helm is running in Debug mode. Defaults to `false`.
 `plugins_path` - (Optional) The path to the plugins directory. Defaults to `HELM_PLUGINS` env if it is set, otherwise uses the default path set by helm.
 `registry_config_path` - (Optional) The path to the registry config file. Defaults to `HELM_REGISTRY_CONFIG` env if it is set, otherwise uses the default path set by helm.
