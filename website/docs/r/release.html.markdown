@@ -81,7 +81,8 @@ The following arguments are supported:
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
 * `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff.
 * `set_string` - (Optional) Value block with custom STRING values to be merged with the values yaml.
-* `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`
+* `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`.
+* `replace` - (Optional) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
 
 The `set`, `set_sensitive` and `set_strings` blocks support:
 

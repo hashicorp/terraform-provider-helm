@@ -261,6 +261,12 @@ func resourceRelease() *schema.Resource {
 				Default:     false,
 				Description: "run helm dependency update before installing the chart",
 			},
+			"replace": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "re-use the given name, even if that name is already used. This is unsafe in production",
+			},
 			"metadata": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -403,6 +409,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.Atomic = d.Get("atomic").(bool)
 	client.SkipCRDs = d.Get("skip_crds").(bool)
 	client.SubNotes = d.Get("render_subchart_notes").(bool)
+	client.Replace = d.Get("replace").(bool)
 
 	debug("Installing Chart")
 

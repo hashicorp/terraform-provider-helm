@@ -22,9 +22,7 @@ BREAKING CHANGES:
 * Release no longer supports the following parameters
     * disable_crd_hooks
 * Release Parameters that were renamed
-    * reuse was renamed to replace
-
-
+    * reuse was renamed to replace to match the rename in helm v3
 
 Improvements:
 * Upgrade Helm to v3.0
