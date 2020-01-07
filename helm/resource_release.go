@@ -181,7 +181,7 @@ func resourceRelease() *schema.Resource {
 			"reuse": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     true,
 				Description: "Instruct Tiller to re-use an existing name.",
 			},
 			"recreate_pods": {
