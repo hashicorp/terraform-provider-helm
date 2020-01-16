@@ -3,9 +3,7 @@ package helm
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 	"strings"
 	"sync"
 
@@ -18,33 +16,180 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/helmpath"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/apimachinery/pkg/api/meta"
+	apimachineryschema "k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
+	memcached "k8s.io/client-go/discovery/cached/memory"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // Meta is the meta information structure for the provider
 type Meta struct {
-	data             *schema.ResourceData
-	Settings         *cli.EnvSettings
-	KubernetesConfig KubernetesConfig
-	HelmDriver       string
+	data       *schema.ResourceData
+	Settings   *cli.EnvSettings
+	HelmDriver string
 
 	// Used to lock some operations
 	sync.Mutex
 }
 
-// KubernetesConfig stores the k8s configuration
-type KubernetesConfig struct {
-	KubeConfig  string
-	Context     string
-	Username    string
-	Password    string
-	BearerToken string
-	APIServer   string
-	Insecure    bool
-	CertFile    string
-	KeyFile     string
-	CAFile      string
+// KubeConfig is a RESTClientGetter interface implementation
+type KubeConfig struct {
+	ConfigData   *schema.ResourceData
+	Namespace    *string
+	clientConfig clientcmd.ClientConfig
+	lock         sync.Mutex
+}
+
+func (k *KubeConfig) ToRESTConfig() (*rest.Config, error) {
+	return k.ToRawKubeConfigLoader().ClientConfig()
+}
+
+func (k *KubeConfig) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	config, err := k.ToRESTConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// The more groups you have, the more discovery requests you need to make.
+	// given 25 groups (our groups + a few custom resources) with one-ish version each, discovery needs to make 50 requests
+	// double it just so we don't end up here again for a while.  This config is only used for discovery.
+	config.Burst = 100
+
+	return memcached.NewMemCacheClient(discovery.NewDiscoveryClientForConfigOrDie(config)), nil
+}
+
+func (k *KubeConfig) ToRESTMapper() (meta.RESTMapper, error) {
+	discoveryClient, err := k.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
+
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(discoveryClient)
+	expander := restmapper.NewShortcutExpander(mapper, discoveryClient)
+	return expander, nil
+}
+
+func (k *KubeConfig) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+	k.lock.Lock()
+	defer k.lock.Unlock()
+
+	// Always persist config
+	if k.clientConfig == nil {
+		k.clientConfig = k.toRawKubeConfigLoader()
+	}
+
+	return k.clientConfig
+}
+
+func (k *KubeConfig) toRawKubeConfigLoader() clientcmd.ClientConfig {
+	overrides := &clientcmd.ConfigOverrides{}
+	loader := &clientcmd.ClientConfigLoadingRules{}
+
+	if k8sGet(k.ConfigData, "load_config_file").(bool) {
+		if configPath, ok := k8sGetOk(k.ConfigData, "config_path"); ok && configPath.(string) != "" {
+			path, err := homedir.Expand(configPath.(string))
+			if err != nil {
+				return nil
+			}
+			loader.ExplicitPath = path
+
+			ctx, ctxOk := k8sGetOk(k.ConfigData, "config_context")
+			authInfo, authInfoOk := k8sGetOk(k.ConfigData, "config_context_auth_info")
+			cluster, clusterOk := k8sGetOk(k.ConfigData, "config_context_cluster")
+			if ctxOk || authInfoOk || clusterOk {
+				if ctxOk {
+					overrides.CurrentContext = ctx.(string)
+					log.Printf("[DEBUG] Using custom current context: %q", overrides.CurrentContext)
+				}
+
+				overrides.Context = clientcmdapi.Context{}
+				if authInfoOk {
+					overrides.Context.AuthInfo = authInfo.(string)
+				}
+				if clusterOk {
+					overrides.Context.Cluster = cluster.(string)
+				}
+				log.Printf("[DEBUG] Using overidden context: %#v", overrides.Context)
+			}
+		}
+	}
+
+	// Overriding with static configuration
+	if v, ok := k8sGetOk(k.ConfigData, "insecure"); ok {
+		overrides.ClusterInfo.InsecureSkipTLSVerify = v.(bool)
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "cluster_ca_certificate"); ok {
+		overrides.ClusterInfo.CertificateAuthorityData = bytes.NewBufferString(v.(string)).Bytes()
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "client_certificate"); ok {
+		overrides.AuthInfo.ClientCertificateData = bytes.NewBufferString(v.(string)).Bytes()
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "host"); ok {
+		// Server has to be the complete address of the kubernetes cluster (scheme://hostname:port), not just the hostname,
+		// because `overrides` are processed too late to be taken into account by `defaultServerUrlFor()`.
+		// This basically replicates what defaultServerUrlFor() does with config but for overrides,
+		// see https://github.com/kubernetes/client-go/blob/v12.0.0/rest/url_utils.go#L85-L87
+		hasCA := len(overrides.ClusterInfo.CertificateAuthorityData) != 0
+		hasCert := len(overrides.AuthInfo.ClientCertificateData) != 0
+		defaultTLS := hasCA || hasCert || overrides.ClusterInfo.InsecureSkipTLSVerify
+		host, _, err := restclient.DefaultServerURL(v.(string), "", apimachineryschema.GroupVersion{}, defaultTLS)
+		if err != nil {
+			return nil
+		}
+
+		overrides.ClusterInfo.Server = host.String()
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "username"); ok {
+		overrides.AuthInfo.Username = v.(string)
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "password"); ok {
+		overrides.AuthInfo.Password = v.(string)
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "client_key"); ok {
+		overrides.AuthInfo.ClientKeyData = bytes.NewBufferString(v.(string)).Bytes()
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "token"); ok {
+		overrides.AuthInfo.Token = v.(string)
+	}
+
+	if v, ok := k8sGetOk(k.ConfigData, "exec"); ok {
+		exec := &clientcmdapi.ExecConfig{}
+		if spec, ok := v.([]interface{})[0].(map[string]interface{}); ok {
+			exec.APIVersion = spec["api_version"].(string)
+			exec.Command = spec["command"].(string)
+			exec.Args = expandStringSlice(spec["args"].([]interface{}))
+			for kk, vv := range spec["env"].(map[string]interface{}) {
+				exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: kk, Value: vv.(string)})
+			}
+		} else {
+			fmt.Errorf("Failed to parse exec")
+			return nil
+		}
+		overrides.AuthInfo.Exec = exec
+	}
+
+	overrides.Context.Namespace = "default"
+
+	if k.Namespace != nil {
+		overrides.Context.Namespace = *k.Namespace
+	}
+
+	cfg := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
+
+	if cfg == nil {
+		fmt.Errorf("Failed to initialize kubernetes config")
+		return nil
+	}
+
+	log.Printf("[INFO] Successfully initialized config")
+
+	return cfg
 }
 
 // Provider returns the provider schema to Terraform.
@@ -139,49 +284,43 @@ func kubernetesResource() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_HOST", ""),
-				Description: "The hostname (in form of URI) of Kubernetes master. Can be sourced from `KUBE_HOST`.",
+				Description: "The hostname (in form of URI) of Kubernetes master.",
 			},
 			"username": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_USER", ""),
-				Description: "The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_USER`.",
+				Description: "The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint.",
 			},
 			"password": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_PASSWORD", ""),
-				Description: "The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_PASSWORD`.",
-			},
-			"token": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_BEARER_TOKEN", ""),
-				Description: "The bearer token to use for authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_BEARER_TOKEN`.",
+				Description: "The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint.",
 			},
 			"insecure": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_INSECURE", false),
-				Description: "Whether server should be accessed without verifying the TLS certificate. Can be sourced from `KUBE_INSECURE`.",
+				Description: "Whether server should be accessed without verifying the TLS certificate.",
 			},
 			"client_certificate": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLIENT_CERT_DATA", ""),
-				Description: "PEM-encoded client certificate for TLS authentication. Can be sourced from `KUBE_CLIENT_CERT_DATA`.",
+				Description: "PEM-encoded client certificate for TLS authentication.",
 			},
 			"client_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLIENT_KEY_DATA", ""),
-				Description: "PEM-encoded client certificate key for TLS authentication. Can be sourced from `KUBE_CLIENT_KEY_DATA`.",
+				Description: "PEM-encoded client certificate key for TLS authentication.",
 			},
 			"cluster_ca_certificate": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLUSTER_CA_CERT_DATA", ""),
-				Description: "PEM-encoded root certificates bundle for TLS authentication. Can be sourced from `KUBE_CLUSTER_CA_CERT_DATA`.",
+				Description: "PEM-encoded root certificates bundle for TLS authentication.",
 			},
 			"config_path": {
 				Type:     schema.TypeString,
@@ -192,24 +331,64 @@ func kubernetesResource() *schema.Resource {
 						"KUBECONFIG",
 					},
 					"~/.kube/config"),
-				Description: "Path to the kube config file, defaults to ~/.kube/config. Can be sourced from `KUBE_CONFIG`.",
+				Description: "Path to the kube config file, defaults to ~/.kube/config",
 			},
 			"config_context": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX", ""),
-				Description: "Context to choose from the config file. Can be sourced from `KUBE_CTX`.",
 			},
-			"in_cluster": {
-				Type:        schema.TypeBool,
+			"config_context_auth_info": {
+				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Retrieve config from Kubernetes cluster.",
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX_AUTH_INFO", ""),
+				Description: "",
+			},
+			"config_context_cluster": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX_CLUSTER", ""),
+				Description: "",
+			},
+			"token": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_TOKEN", ""),
+				Description: "Token to authenticate an service account",
 			},
 			"load_config_file": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_LOAD_CONFIG_FILE", true),
-				Description: "By default the local config (~/.kube/config) is loaded when you use this provider. This option at false disable this behaviour.",
+				Description: "Load local kubeconfig.",
+			},
+			"exec": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"api_version": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"command": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"env": {
+							Type:     schema.TypeMap,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"args": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+				Description: "",
 			},
 		},
 	}
@@ -217,18 +396,8 @@ func kubernetesResource() *schema.Resource {
 
 func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, error) {
 	m := &Meta{data: d}
-	err := m.buildSettings(m.data)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return m, nil
-}
-
-func (m *Meta) buildSettings(d *schema.ResourceData) error {
-
-	settings := cli.EnvSettings{
+	settings := &cli.EnvSettings{
 		Debug: d.Get("debug").(bool),
 	}
 
@@ -248,14 +417,13 @@ func (m *Meta) buildSettings(d *schema.ResourceData) error {
 		settings.RepositoryCache = v.(string)
 	}
 
+	m.Settings = settings
+
 	if v, ok := d.GetOk("helm_driver"); ok {
 		m.HelmDriver = v.(string)
 	}
 
-	m.Settings = &settings
-	m.getK8sConfig(d)
-
-	return nil
+	return m, nil
 }
 
 var k8sPrefix = "kubernetes.0."
@@ -290,85 +458,17 @@ func k8sGet(d *schema.ResourceData, key string) interface{} {
 	return value
 }
 
-func (m *Meta) getK8sConfig(d *schema.ResourceData) error {
-	kc := KubernetesConfig{}
-
-	// Not sure if in_cluster is still valid here.
-	if !k8sGet(d, "in_cluster").(bool) && k8sGet(d, "load_config_file").(bool) {
-		if v, ok := k8sGetOk(d, "config_path"); ok {
-			expanded, err := homedir.Expand(v.(string))
-			if err != nil {
-				debug("Error expanding path %s", err)
-				return err
-			}
-			kc.KubeConfig = expanded
+func expandStringSlice(s []interface{}) []string {
+	result := make([]string, len(s), len(s))
+	for k, v := range s {
+		// Handle the Terraform parser bug which turns empty strings in lists to nil.
+		if v == nil {
+			result[k] = ""
+		} else {
+			result[k] = v.(string)
 		}
 	}
-
-	if v, ok := k8sGetOk(d, "config_context"); ok {
-		kc.Context = v.(string)
-	}
-
-	if v, ok := k8sGetOk(d, "username"); ok {
-		kc.Username = v.(string)
-	}
-
-	if v, ok := k8sGetOk(d, "password"); ok {
-		kc.Password = v.(string)
-	}
-
-	if v, ok := k8sGetOk(d, "token"); ok {
-		kc.BearerToken = v.(string)
-	}
-
-	if v, ok := k8sGetOk(d, "insecure"); ok {
-		kc.Insecure = v.(bool)
-	}
-
-	if v, ok := k8sGetOk(d, "client_certificate"); ok {
-		v := v.(string)
-		if path, err := prepareTempCertFile("cert", &v); err == nil {
-			kc.CertFile = path
-		}
-	}
-
-	if v, ok := k8sGetOk(d, "client_key"); ok {
-		v := v.(string)
-		if path, err := prepareTempCertFile("key", &v); err == nil {
-			kc.KeyFile = path
-		}
-	}
-
-	if v, ok := k8sGetOk(d, "cluster_ca_certificate"); ok {
-		v := v.(string)
-		if path, err := prepareTempCertFile("ca", &v); err == nil {
-			kc.CAFile = path
-		}
-	}
-
-	if v, ok := k8sGetOk(d, "host"); ok {
-		kc.APIServer = v.(string)
-	}
-
-	m.KubernetesConfig = kc
-	return nil
-}
-
-func prepareTempCertFile(prefix string, data *string) (string, error) {
-	file, err := ioutil.TempFile(os.TempDir(), prefix+".*.pem")
-
-	if err != nil {
-		debug("Cannot create temporary file: %s", err)
-		return "", err
-	}
-
-	b := bytes.NewBufferString(*data).Bytes()
-
-	if _, err := file.Write(b); err != nil {
-		debug("Cannot write to temporary file: %s", err)
-		return "", err
-	}
-	return file.Name(), nil
+	return result
 }
 
 // GetHelmConfiguration will return a new Helm configuration
@@ -377,31 +477,15 @@ func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, er
 	defer m.Unlock()
 
 	actionConfig := new(action.Configuration)
-	cf := getKubernetesConfiguration(m.KubernetesConfig, namespace)
 
-	if err := actionConfig.Init(cf, namespace, m.HelmDriver, debug); err != nil {
+	kc := &KubeConfig{ConfigData: m.data}
+	kc.Namespace = &namespace
+
+	if err := actionConfig.Init(kc, namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
 	}
 
 	return actionConfig, nil
-}
-
-func getKubernetesConfiguration(kc KubernetesConfig, namespace string) *genericclioptions.ConfigFlags {
-	cf := genericclioptions.NewConfigFlags(true)
-
-	cf.KubeConfig = &kc.KubeConfig
-	cf.Context = &kc.Context
-	cf.Username = &kc.Username
-	cf.Password = &kc.Password
-	cf.BearerToken = &kc.BearerToken
-	cf.Insecure = &kc.Insecure
-	cf.APIServer = &kc.APIServer
-	cf.CertFile = &kc.CertFile
-	cf.KeyFile = &kc.KeyFile
-	cf.CAFile = &kc.CAFile
-	cf.Namespace = &namespace
-
-	return cf
 }
 
 func debug(format string, a ...interface{}) {
