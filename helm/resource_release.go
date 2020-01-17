@@ -541,6 +541,10 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 
 func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
 	d.SetId(r.Name)
+	if err := d.Set("chart", r.Chart.Metadata.Name); err != nil {
+		return err
+	}
+
 	if err := d.Set("version", r.Chart.Metadata.Version); err != nil {
 		return err
 	}
@@ -786,10 +790,6 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 		return nil, errors.Errorf("Unable to parse identifier %s: %s", d.Id(), err)
 	}
 
-	d.SetId(name)
-	d.Set("name", name)
-	d.Set("namespace", namespace)
-
 	m := meta.(*Meta)
 
 	c, err := m.GetHelmConfiguration(namespace)
@@ -802,12 +802,13 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 		return nil, err
 	}
 
-	err = setIDAndMetadataFromRelease(d, r)
-	if err != nil {
+	d.Set("name", r.Name)
+
+	if err := setIDAndMetadataFromRelease(d, r); err != nil {
 		return nil, err
 	}
 
-	return []*schema.ResourceData{d}, nil
+	return schema.ImportStatePassthrough(d, meta)
 }
 
 func idParts(id string) (string, string, error) {
