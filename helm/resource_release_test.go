@@ -59,9 +59,6 @@ func TestAccResourceRelease_basic(t *testing.T) {
 
 func TestAccResourceRelease_concurrent(t *testing.T) {
 	var wg sync.WaitGroup
-	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
-	// Delete namespace automatically created by helm after checks
-	defer deleteNamespace(t, namespace)
 
 	// This test case cannot be parallelized by using `resource.ParallelTest()` as calling `t.Parallel()` more than
 	// once in a single test case resuls in the following error:
@@ -71,6 +68,9 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 	wg.Add(3)
 	for i := 0; i < 3; i++ {
 		go func(name string) {
+			namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+			// Delete namespace automatically created by helm after checks
+			defer deleteNamespace(t, namespace)
 			defer wg.Done()
 			resource.Test(t, resource.TestCase{
 				PreCheck:     func() { testAccPreCheck(t, namespace) },
