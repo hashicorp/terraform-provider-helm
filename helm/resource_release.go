@@ -790,8 +790,21 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 	d.Set("name", name)
 	d.Set("namespace", namespace)
 
-	if err := resourceReleaseRead(d, meta); err != nil {
-		return nil, errors.Errorf("Unable to fetch release: %s", err)
+	m := meta.(*Meta)
+
+	c, err := m.GetHelmConfiguration(namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := getRelease(c, name)
+	if err != nil {
+		return nil, err
+	}
+
+	err = setIDAndMetadataFromRelease(d, r)
+	if err != nil {
+		return nil, err
 	}
 
 	return []*schema.ResourceData{d}, nil

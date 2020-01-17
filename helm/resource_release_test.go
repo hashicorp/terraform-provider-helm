@@ -57,6 +57,33 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_import(t *testing.T) {
+	name := fmt.Sprintf("test-import-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "7.1.0"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+			),
+		}, {
+			Config:            testAccHelmReleaseConfigBasic("imported", namespace, "import", "7.1.0"),
+			ImportStateId:     fmt.Sprintf("%s/%s", namespace, name),
+			ResourceName:      "helm_release.imported",
+			ImportState:       true,
+			ImportStateVerify: true,
+		}},
+	})
+}
+
 func TestAccResourceRelease_concurrent(t *testing.T) {
 	var wg sync.WaitGroup
 
