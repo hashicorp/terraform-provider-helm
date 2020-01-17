@@ -529,6 +529,7 @@ func testAccHelmReleaseConfigRepository(resource, ns, name string) string {
 			namespace  = %q
 			repository = "${helm_repository.stable_repo.metadata.0.name}"
 			chart      = "coredns"
+			depends_on = [helm_repository.stable_repo]
 		}
 	`, resource, name, ns)
 }
