@@ -134,7 +134,6 @@ func (k *kindSorter) Less(i, j int) bool {
 	b := k.manifests[j]
 	first, aok := k.ordering[a.Head.Kind]
 	second, bok := k.ordering[b.Head.Kind]
-	// if same kind (including unknown) sub sort alphanumeric
 	if first == second {
 		// if both are unknown and of different kind sort by kind alphabetically
 		if !aok && !bok && a.Head.Kind != b.Head.Kind {
