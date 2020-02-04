@@ -7,7 +7,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/opencontainers/runc v1.0.0-rc2.0.20190611121236-6cc515888830 // indirect
 	github.com/pkg/errors v0.8.1
-	helm.sh/helm/v3 v3.0.2
+	helm.sh/helm/v3 v3.0.3
 	k8s.io/api v0.0.0
 	k8s.io/apiextensions-apiserver v0.0.0 // indirect
 	k8s.io/apimachinery v0.0.0
