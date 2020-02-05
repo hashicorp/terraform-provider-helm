@@ -1,4 +1,4 @@
-## 1.0.0 (Unreleased)
+## 1.0.0 (February 05, 2020)
 BREAKING CHANGES:
 * No longer supports helm v2 (#378)
 * Provider no longer supports the following parameters
