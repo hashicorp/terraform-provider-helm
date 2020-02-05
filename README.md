@@ -6,7 +6,20 @@ Terraform Provider for Helm
 
 This is a [Helm](https://github.com/kubernetes/helm) provider for [Terraform](https://www.terraform.io/).
 
-The provider manages the installed [Charts](https://github.com/kubernetes/charts) in your Kubernetes cluster, in the same way of Helm does, through Terraform. It will also install Tiller automatically if it is not already present.
+The provider manages the installed [Charts](https://github.com/kubernetes/charts) in your Kubernetes cluster, in the same way of Helm does, through Terraform.
+
+⚠️ Project Update: Helm 3
+---
+
+The latest release `1.0.0` for this provider brings support for Helm 3. This is a breaking change that removes support for Helm 2 and tiller. If you are still using Helm 2 see the section below.
+
+Helm 2 support 
+---
+
+If you are still using Helm 2 and tiller you will have to [pin your provider version](https://www.terraform.io/docs/configuration/providers.html#provider-versions) to the latest `0.10.x` release. 
+
+We will continue to accept bugfixes for the `0.10.x` version of the provider, please open your pull request against the latest `release-0.10.x` branch. 
+
 
 Contents
 --------
