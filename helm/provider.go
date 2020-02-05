@@ -1,144 +1,253 @@
 package helm
 
 import (
-	"crypto/tls"
-	"crypto/x509"
+	"bytes"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/pathorcontents"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-	homedir "github.com/mitchellh/go-homedir"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"github.com/mitchellh/go-homedir"
 
 	// Import to initialize client auth plugins.
+
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/helmpath"
+	"k8s.io/apimachinery/pkg/api/meta"
+	apimachineryschema "k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
+	memcached "k8s.io/client-go/discovery/cached/memory"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/helm/cmd/helm/installer"
-	"k8s.io/helm/pkg/helm"
-	helm_env "k8s.io/helm/pkg/helm/environment"
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/helm/portforwarder"
-	"k8s.io/helm/pkg/kube"
-	tiller_env "k8s.io/helm/pkg/tiller/environment"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
+
+// Meta is the meta information structure for the provider
+type Meta struct {
+	data       *schema.ResourceData
+	Settings   *cli.EnvSettings
+	HelmDriver string
+
+	// Used to lock some operations
+	sync.Mutex
+}
+
+// KubeConfig is a RESTClientGetter interface implementation
+type KubeConfig struct {
+	ConfigData   *schema.ResourceData
+	Namespace    *string
+	clientConfig clientcmd.ClientConfig
+	lock         sync.Mutex
+}
+
+func (k *KubeConfig) ToRESTConfig() (*rest.Config, error) {
+	return k.ToRawKubeConfigLoader().ClientConfig()
+}
+
+func (k *KubeConfig) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	config, err := k.ToRESTConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// The more groups you have, the more discovery requests you need to make.
+	// given 25 groups (our groups + a few custom resources) with one-ish version each, discovery needs to make 50 requests
+	// double it just so we don't end up here again for a while.  This config is only used for discovery.
+	config.Burst = 100
+
+	return memcached.NewMemCacheClient(discovery.NewDiscoveryClientForConfigOrDie(config)), nil
+}
+
+func (k *KubeConfig) ToRESTMapper() (meta.RESTMapper, error) {
+	discoveryClient, err := k.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
+
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(discoveryClient)
+	expander := restmapper.NewShortcutExpander(mapper, discoveryClient)
+	return expander, nil
+}
+
+func (k *KubeConfig) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+	k.lock.Lock()
+	defer k.lock.Unlock()
+
+	// Always persist config
+	if k.clientConfig == nil {
+		k.clientConfig = k.toRawKubeConfigLoader()
+	}
+
+	return k.clientConfig
+}
+
+func (k *KubeConfig) toRawKubeConfigLoader() clientcmd.ClientConfig {
+	overrides := &clientcmd.ConfigOverrides{}
+	loader := &clientcmd.ClientConfigLoadingRules{}
+
+	if k8sGet(k.ConfigData, "load_config_file").(bool) {
+		if configPath, ok := k8sGetOk(k.ConfigData, "config_path"); ok && configPath.(string) != "" {
+			path, err := homedir.Expand(configPath.(string))
+			if err != nil {
+				return nil
+			}
+			loader.ExplicitPath = path
+
+			ctx, ctxOk := k8sGetOk(k.ConfigData, "config_context")
+			authInfo, authInfoOk := k8sGetOk(k.ConfigData, "config_context_auth_info")
+			cluster, clusterOk := k8sGetOk(k.ConfigData, "config_context_cluster")
+			if ctxOk || authInfoOk || clusterOk {
+				if ctxOk {
+					overrides.CurrentContext = ctx.(string)
+					log.Printf("[DEBUG] Using custom current context: %q", overrides.CurrentContext)
+				}
+
+				overrides.Context = clientcmdapi.Context{}
+				if authInfoOk {
+					overrides.Context.AuthInfo = authInfo.(string)
+				}
+				if clusterOk {
+					overrides.Context.Cluster = cluster.(string)
+				}
+				log.Printf("[DEBUG] Using overidden context: %#v", overrides.Context)
+			}
+		}
+	}
+
+	// Overriding with static configuration
+	if v, ok := k8sGetOk(k.ConfigData, "insecure"); ok {
+		overrides.ClusterInfo.InsecureSkipTLSVerify = v.(bool)
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "cluster_ca_certificate"); ok {
+		overrides.ClusterInfo.CertificateAuthorityData = bytes.NewBufferString(v.(string)).Bytes()
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "client_certificate"); ok {
+		overrides.AuthInfo.ClientCertificateData = bytes.NewBufferString(v.(string)).Bytes()
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "host"); ok {
+		// Server has to be the complete address of the kubernetes cluster (scheme://hostname:port), not just the hostname,
+		// because `overrides` are processed too late to be taken into account by `defaultServerUrlFor()`.
+		// This basically replicates what defaultServerUrlFor() does with config but for overrides,
+		// see https://github.com/kubernetes/client-go/blob/v12.0.0/rest/url_utils.go#L85-L87
+		hasCA := len(overrides.ClusterInfo.CertificateAuthorityData) != 0
+		hasCert := len(overrides.AuthInfo.ClientCertificateData) != 0
+		defaultTLS := hasCA || hasCert || overrides.ClusterInfo.InsecureSkipTLSVerify
+		host, _, err := restclient.DefaultServerURL(v.(string), "", apimachineryschema.GroupVersion{}, defaultTLS)
+		if err != nil {
+			return nil
+		}
+
+		overrides.ClusterInfo.Server = host.String()
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "username"); ok {
+		overrides.AuthInfo.Username = v.(string)
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "password"); ok {
+		overrides.AuthInfo.Password = v.(string)
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "client_key"); ok {
+		overrides.AuthInfo.ClientKeyData = bytes.NewBufferString(v.(string)).Bytes()
+	}
+	if v, ok := k8sGetOk(k.ConfigData, "token"); ok {
+		overrides.AuthInfo.Token = v.(string)
+	}
+
+	if v, ok := k8sGetOk(k.ConfigData, "exec"); ok {
+		exec := &clientcmdapi.ExecConfig{}
+		if spec, ok := v.([]interface{})[0].(map[string]interface{}); ok {
+			exec.APIVersion = spec["api_version"].(string)
+			exec.Command = spec["command"].(string)
+			exec.Args = expandStringSlice(spec["args"].([]interface{}))
+			for kk, vv := range spec["env"].(map[string]interface{}) {
+				exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: kk, Value: vv.(string)})
+			}
+		} else {
+			fmt.Errorf("Failed to parse exec")
+			return nil
+		}
+		overrides.AuthInfo.Exec = exec
+	}
+
+	overrides.Context.Namespace = "default"
+
+	if k.Namespace != nil {
+		overrides.Context.Namespace = *k.Namespace
+	}
+
+	cfg := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
+
+	if cfg == nil {
+		fmt.Errorf("Failed to initialize kubernetes config")
+		return nil
+	}
+
+	log.Printf("[INFO] Successfully initialized config")
+
+	return cfg
+}
 
 // Provider returns the provider schema to Terraform.
 func Provider() terraform.ResourceProvider {
 	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"host": {
-				Type:        schema.TypeString,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc(helm_env.HostEnvVar, ""),
-				Description: "Set an alternative Tiller host. The format is host:port.",
-			},
-			"home": {
-				Type:        schema.TypeString,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc(helm_env.HomeEnvVar, helm_env.DefaultHelmHome),
-				Description: "Set an alternative location for Helm files. By default, these are stored in '~/.helm'.",
-			},
-			"namespace": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     tiller_env.DefaultTillerNamespace,
-				Description: "Set an alternative Tiller namespace.",
-			},
-			"init_helm_home": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     true,
-				Description: "Initialize Helm home directory if it is not already initialized, defaults to true.",
-			},
-			"install_tiller": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     true,
-				Description: "Install Tiller if it is not already installed.",
-			},
-			"tiller_image": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "gcr.io/kubernetes-helm/tiller:v2.15.1",
-				Description: "Tiller image to install.",
-			},
-			"connection_timeout": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     60,
-				Description: "Number of seconds Helm will wait before timing out a connection to tiller.",
-			},
-			"service_account": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "default",
-				Description: "Service account to install Tiller with.",
-			},
-			"automount_service_account_token": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     true,
-				Description: "Auto-mount the given service account to tiller.",
-			},
-			"override": {
-				Type:        schema.TypeList,
-				Optional:    true,
-				Description: "Override values for the Tiller Deployment manifest.",
-				Elem:        &schema.Schema{Type: schema.TypeString},
-			},
-			"max_history": {
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     0,
-				Description: "Maximum number of release versions stored per release.",
-			},
 			"debug": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Description: "Debug indicates whether or not Helm is running in Debug mode.",
+				DefaultFunc: schema.EnvDefaultFunc("HELM_DEBUG", false),
 			},
-			"plugins_disable": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc(helm_env.PluginDisableEnvVar, "true"),
-				Description: "Disable plugins. Set HELM_NO_PLUGINS=0 to enable plugins.",
-			},
-			"insecure": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Description: "Whether server should be accessed without verifying the TLS certificate.",
-			},
-			"enable_tls": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Description: "Enables TLS communications with the Tiller.",
-			},
-			"client_key": {
+			"plugins_path": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "PEM-encoded client certificate key for TLS authentication.",
+				Description: "The path to the helm plugins directory",
+				DefaultFunc: schema.EnvDefaultFunc("HELM_PLUGINS", helmpath.DataPath("plugins")),
 			},
-			"client_certificate": {
+			"registry_config_path": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "PEM-encoded client certificate for TLS authentication.",
+				Description: "The path to the registry config file",
+				DefaultFunc: schema.EnvDefaultFunc("HELM_REGISTRY_CONFIG", helmpath.ConfigPath("registry.json")),
 			},
-			"ca_certificate": {
+			"repository_config_path": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "PEM-encoded root certificates bundle for TLS authentication.",
+				Description: "The path to the file containing repository names and URLs",
+				DefaultFunc: schema.EnvDefaultFunc("HELM_REPOSITORY_CONFIG", helmpath.ConfigPath("repositories.yaml")),
+			},
+			"repository_cache": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The path to the file containing cached repository indexes",
+				DefaultFunc: schema.EnvDefaultFunc("HELM_REPOSITORY_CACHE", helmpath.CachePath("repository")),
+			},
+			"helm_driver": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The backend storage driver. Values are: configmap, secret, memory",
+				DefaultFunc: schema.EnvDefaultFunc("HELM_DRIVER", "secret"),
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					drivers := []string{
+						"configmap",
+						"secret",
+						"memory",
+					}
+
+					v := strings.ToLower(val.(string))
+
+					for _, d := range drivers {
+						if d == v {
+							return
+						}
+					}
+					errs = append(errs, fmt.Errorf("%s must be a valid storage driver", v))
+					return
+				},
 			},
 			"kubernetes": {
 				Type:        schema.TypeList,
@@ -175,49 +284,43 @@ func kubernetesResource() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_HOST", ""),
-				Description: "The hostname (in form of URI) of Kubernetes master. Can be sourced from `KUBE_HOST`.",
+				Description: "The hostname (in form of URI) of Kubernetes master.",
 			},
 			"username": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_USER", ""),
-				Description: "The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_USER`.",
+				Description: "The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint.",
 			},
 			"password": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_PASSWORD", ""),
-				Description: "The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_PASSWORD`.",
-			},
-			"token": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_BEARER_TOKEN", ""),
-				Description: "The bearer token to use for authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_BEARER_TOKEN`.",
+				Description: "The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint.",
 			},
 			"insecure": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_INSECURE", false),
-				Description: "Whether server should be accessed without verifying the TLS certificate. Can be sourced from `KUBE_INSECURE`.",
+				Description: "Whether server should be accessed without verifying the TLS certificate.",
 			},
 			"client_certificate": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLIENT_CERT_DATA", ""),
-				Description: "PEM-encoded client certificate for TLS authentication. Can be sourced from `KUBE_CLIENT_CERT_DATA`.",
+				Description: "PEM-encoded client certificate for TLS authentication.",
 			},
 			"client_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLIENT_KEY_DATA", ""),
-				Description: "PEM-encoded client certificate key for TLS authentication. Can be sourced from `KUBE_CLIENT_KEY_DATA`.",
+				Description: "PEM-encoded client certificate key for TLS authentication.",
 			},
 			"cluster_ca_certificate": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLUSTER_CA_CERT_DATA", ""),
-				Description: "PEM-encoded root certificates bundle for TLS authentication. Can be sourced from `KUBE_CLUSTER_CA_CERT_DATA`.",
+				Description: "PEM-encoded root certificates bundle for TLS authentication.",
 			},
 			"config_path": {
 				Type:     schema.TypeString,
@@ -228,24 +331,64 @@ func kubernetesResource() *schema.Resource {
 						"KUBECONFIG",
 					},
 					"~/.kube/config"),
-				Description: "Path to the kube config file, defaults to ~/.kube/config. Can be sourced from `KUBE_CONFIG`.",
+				Description: "Path to the kube config file, defaults to ~/.kube/config",
 			},
 			"config_context": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX", ""),
-				Description: "Context to choose from the config file. Can be sourced from `KUBE_CTX`.",
 			},
-			"in_cluster": {
-				Type:        schema.TypeBool,
+			"config_context_auth_info": {
+				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "Retrieve config from Kubernetes cluster.",
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX_AUTH_INFO", ""),
+				Description: "",
+			},
+			"config_context_cluster": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX_CLUSTER", ""),
+				Description: "",
+			},
+			"token": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_TOKEN", ""),
+				Description: "Token to authenticate an service account",
 			},
 			"load_config_file": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_LOAD_CONFIG_FILE", true),
-				Description: "By default the local config (~/.kube/config) is loaded when you use this provider. This option at false disable this behaviour.",
+				Description: "Load local kubeconfig.",
+			},
+			"exec": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"api_version": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"command": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"env": {
+							Type:     schema.TypeMap,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"args": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+				Description: "",
 			},
 		},
 	}
@@ -253,98 +396,34 @@ func kubernetesResource() *schema.Resource {
 
 func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, error) {
 	m := &Meta{data: d}
-	m.buildSettings(m.data)
 
-	if err := m.buildTLSConfig(m.data); err != nil {
-		return nil, err
+	settings := &cli.EnvSettings{
+		Debug: d.Get("debug").(bool),
 	}
 
-	if err := m.buildK8sClient(m.data, terraformVersion); err != nil {
-		return nil, err
+	if v, ok := d.GetOk("plugins_path"); ok {
+		settings.PluginsDirectory = v.(string)
 	}
 
-	if err := m.initHelmHomeIfNeeded(m.data); err != nil {
-		return nil, err
+	if v, ok := d.GetOk("registry_config_path"); ok {
+		settings.RegistryConfig = v.(string)
+	}
+
+	if v, ok := d.GetOk("repository_config_path"); ok {
+		settings.RepositoryConfig = v.(string)
+	}
+
+	if v, ok := d.GetOk("repository_cache"); ok {
+		settings.RepositoryCache = v.(string)
+	}
+
+	m.Settings = settings
+
+	if v, ok := d.GetOk("helm_driver"); ok {
+		m.HelmDriver = v.(string)
 	}
 
 	return m, nil
-}
-
-// Meta is the meta information structure for the provider
-type Meta struct {
-	Settings         *helm_env.EnvSettings
-	TLSConfig        *tls.Config
-	K8sClient        kubernetes.Interface
-	K8sConfig        *rest.Config
-	Tunnel           *kube.Tunnel
-	DefaultNamespace string
-
-	data *schema.ResourceData
-
-	// Mutex used for lock the Tiller installation and Tunnel creation.
-	sync.Mutex
-}
-
-func (m *Meta) buildSettings(d *schema.ResourceData) {
-	m.Settings = &helm_env.EnvSettings{
-		Home:                    helmpath.Home(d.Get("home").(string)),
-		TillerHost:              d.Get("host").(string),
-		TillerNamespace:         d.Get("namespace").(string),
-		TillerConnectionTimeout: int64(d.Get("connection_timeout").(int)),
-		Debug:                   d.Get("debug").(bool),
-	}
-}
-
-func (m *Meta) buildK8sClient(d *schema.ResourceData, terraformVersion string) error {
-	_, hasStatic := d.GetOk("kubernetes")
-
-	cfg, err := getK8sConfig(d)
-	if err != nil {
-		debug("could not get Kubernetes config: %s", err)
-		if !hasStatic {
-			return err
-		}
-	}
-
-	if cfg == nil {
-		cfg = &rest.Config{}
-	}
-
-	// Overriding with static configuration
-	cfg.UserAgent = fmt.Sprintf("HashiCorp/1.0 Terraform/%s", terraformVersion)
-
-	if v, ok := k8sGetOk(d, "host"); ok {
-		cfg.Host = v.(string)
-	}
-	if v, ok := k8sGetOk(d, "username"); ok {
-		cfg.Username = v.(string)
-	}
-	if v, ok := k8sGetOk(d, "password"); ok {
-		cfg.Password = v.(string)
-	}
-	if v, ok := k8sGetOk(d, "token"); ok {
-		cfg.BearerToken = v.(string)
-	}
-	if v, ok := k8sGetOk(d, "insecure"); ok {
-		cfg.Insecure = v.(bool)
-	}
-	if v, ok := k8sGetOk(d, "cluster_ca_certificate"); ok {
-		cfg.CAData = []byte(v.(string))
-	}
-	if v, ok := k8sGetOk(d, "client_certificate"); ok {
-		cfg.CertData = []byte(v.(string))
-	}
-	if v, ok := k8sGetOk(d, "client_key"); ok {
-		cfg.KeyData = []byte(v.(string))
-	}
-
-	m.K8sConfig = cfg
-	m.K8sClient, err = kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to configure kubernetes config: %s", err)
-	}
-
-	return nil
 }
 
 var k8sPrefix = "kubernetes.0."
@@ -379,268 +458,36 @@ func k8sGet(d *schema.ResourceData, key string) interface{} {
 	return value
 }
 
-func getK8sConfig(d *schema.ResourceData) (*rest.Config, error) {
-	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	overrides := &clientcmd.ConfigOverrides{}
-	path := k8sGet(d, "config_path").(string)
-
-	if !k8sGet(d, "in_cluster").(bool) && k8sGet(d, "load_config_file").(bool) {
-		configPathSplit := strings.Split(k8sGet(d, "config_path").(string), ":")
-		precedence := make([]string, len(configPathSplit))
-		for i, path := range configPathSplit {
-			expanded, err := homedir.Expand(path)
-			if err != nil {
-				debug("Error expanding path %s", err)
-				return nil, err
-			}
-			precedence[i] = expanded
+func expandStringSlice(s []interface{}) []string {
+	result := make([]string, len(s), len(s))
+	for k, v := range s {
+		// Handle the Terraform parser bug which turns empty strings in lists to nil.
+		if v == nil {
+			result[k] = ""
+		} else {
+			result[k] = v.(string)
 		}
-
-		rules.Precedence = precedence
-		rules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-
-		context := k8sGet(d, "config_context").(string)
-		if context != "" {
-			overrides.CurrentContext = context
-		}
-
-		cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides)
-		cfg, err := cc.ClientConfig()
-		if err != nil {
-			if pathErr, ok := err.(*os.PathError); ok && os.IsNotExist(pathErr.Err) {
-				log.Printf("[INFO] Unable to load config file as it doesn't exist at %q", path)
-				return nil, nil
-			}
-			return nil, fmt.Errorf("Failed to load config (%s): %s", path, err)
-		}
-
-		return cfg, nil
 	}
-
-	return nil, nil
+	return result
 }
 
-// GetHelmClient will return a new Helm client
-func (m *Meta) GetHelmClient() (helm.Interface, error) {
-	if err := m.initialize(); err != nil {
-		return nil, err
-	}
-
-	return m.buildHelmClient(), nil
-}
-
-func (m *Meta) initialize() error {
+// GetHelmConfiguration will return a new Helm configuration
+func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, error) {
 	m.Lock()
 	defer m.Unlock()
 
-	if err := m.installTillerIfNeeded(m.data); err != nil {
-		return err
-	}
+	actionConfig := new(action.Configuration)
 
-	if err := m.buildTunnel(m.data); err != nil {
-		return err
-	}
+	kc := &KubeConfig{ConfigData: m.data}
+	kc.Namespace = &namespace
 
-	return nil
-}
-
-func (m *Meta) initHelmHomeIfNeeded(d *schema.ResourceData) error {
-	if !d.Get("init_helm_home").(bool) {
-		return nil
-	}
-
-	stableRepositoryURL := "https://kubernetes-charts.storage.googleapis.com"
-	localRepositoryURL := "http://127.0.0.1:8879/charts"
-
-	if err := installer.Initialize(m.Settings.Home, os.Stdout, false, *m.Settings, stableRepositoryURL, localRepositoryURL); err != nil {
-		return fmt.Errorf("error initializing local helm home: %s", err)
-	}
-	return nil
-}
-
-func (m *Meta) installTillerIfNeeded(d *schema.ResourceData) error {
-	if !d.Get("install_tiller").(bool) {
-		return nil
-	}
-
-	o := &installer.Options{}
-	o.Namespace = d.Get("namespace").(string)
-	o.ImageSpec = d.Get("tiller_image").(string)
-	o.ServiceAccount = d.Get("service_account").(string)
-	o.AutoMountServiceAccountToken = d.Get("automount_service_account_token").(bool)
-	o.MaxHistory = d.Get("max_history").(int)
-
-	for _, rule := range d.Get("override").([]interface{}) {
-		o.Values = append(o.Values, rule.(string))
-	}
-
-	o.EnableTLS = d.Get("enable_tls").(bool)
-	if o.EnableTLS {
-		o.TLSCertFile = d.Get("client_certificate").(string)
-		o.TLSKeyFile = d.Get("client_key").(string)
-		o.VerifyTLS = !d.Get("insecure").(bool)
-		if o.VerifyTLS {
-			o.TLSCaCertFile = d.Get("ca_certificate").(string)
-		}
-	}
-
-	if err := installer.Install(m.K8sClient, o); err != nil {
-		if errors.IsAlreadyExists(err) {
-			return nil
-		}
-
-		return fmt.Errorf("error installing: %s", err)
-	}
-
-	if err := m.waitForTiller(o); err != nil {
-		return err
-	}
-
-	debug("Tiller has been installed into your Kubernetes Cluster.")
-	return nil
-}
-
-func (m *Meta) waitForTiller(o *installer.Options) error {
-	const deployment = "tiller-deploy"
-	stateConf := &resource.StateChangeConf{
-		Target:  []string{"Running"},
-		Pending: []string{"Pending"},
-		Timeout: 5 * time.Minute,
-		Refresh: func() (interface{}, string, error) {
-			debug("Waiting for tiller-deploy to become available.")
-			obj, err := m.K8sClient.AppsV1().Deployments(o.Namespace).Get(deployment, metav1.GetOptions{})
-			if err != nil {
-				return obj, "Error", err
-			}
-
-			if obj.Status.ReadyReplicas > 0 {
-				return obj, "Running", nil
-			}
-
-			return obj, "Pending", nil
-		},
-	}
-
-	_, err := stateConf.WaitForState()
-	return err
-}
-
-func (m *Meta) buildTunnel(d *schema.ResourceData) error {
-	if m.Settings.TillerHost != "" {
-		return nil
-	}
-
-	// Wait a reasonable time for tiller, even if we didn't deploy it this run
-	o := &installer.Options{}
-	o.Namespace = m.Settings.TillerNamespace
-	if err := m.waitForTiller(o); err != nil {
-		return err
-	}
-
-	var err error
-	m.Tunnel, err = portforwarder.New(m.Settings.TillerNamespace, m.K8sClient, m.K8sConfig)
-	if err != nil {
-		return fmt.Errorf("error creating tunnel: %q", err)
-	}
-
-	m.Settings.TillerHost = fmt.Sprintf("127.0.0.1:%d", m.Tunnel.Local)
-	debug("Created tunnel using local port: '%d'\n", m.Tunnel.Local)
-	return nil
-}
-
-func (m *Meta) buildHelmClient() helm.Interface {
-	options := []helm.Option{
-		helm.Host(m.Settings.TillerHost),
-		helm.ConnectTimeout(m.Settings.TillerConnectionTimeout),
-	}
-
-	if m.TLSConfig != nil {
-		debug("Found TLS settings: configuring helm client with TLS")
-		options = append(options, helm.WithTLS(m.TLSConfig))
-	}
-
-	return helm.NewClient(options...)
-}
-
-func (m *Meta) buildTLSConfig(d *schema.ResourceData) error {
-	// Don't initialize TLSConfig if TLS is disabled
-	if !d.Get("enable_tls").(bool) {
-		return nil
-	}
-
-	// The default uses the files in the provider configured helm home
-	helmHome := d.Get("home").(string)
-	clientKeyDefault := filepath.Join(helmHome, "key.pem")
-	clientCertDefault := filepath.Join(helmHome, "cert.pem")
-	caCertDefault := filepath.Join(helmHome, "ca.pem")
-
-	keyPEMBlock, err := getContent(d, "client_key", clientKeyDefault)
-	if err != nil {
-		return err
-	}
-	certPEMBlock, err := getContent(d, "client_certificate", clientCertDefault)
-	if err != nil {
-		return err
-	}
-	if len(keyPEMBlock) == 0 && len(certPEMBlock) == 0 {
-		return nil
-	}
-
-	cfg := &tls.Config{
-		InsecureSkipVerify: d.Get("insecure").(bool),
-	}
-
-	cert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)
-	if err != nil {
-		return fmt.Errorf("could not read x509 key pair: %s", err)
-	}
-
-	cfg.Certificates = []tls.Certificate{cert}
-
-	caPEMBlock, err := getContent(d, "ca_certificate", caCertDefault)
-	if err != nil {
-		return err
-	}
-
-	if !cfg.InsecureSkipVerify && len(caPEMBlock) != 0 {
-		cfg.RootCAs = x509.NewCertPool()
-		if !cfg.RootCAs.AppendCertsFromPEM(caPEMBlock) {
-			return fmt.Errorf("failed to parse ca_certificate")
-		}
-	}
-
-	m.TLSConfig = cfg
-	return nil
-}
-
-func getContent(d *schema.ResourceData, key, def string) ([]byte, error) {
-	// Check if the key is defined. If not, use the default.
-	filename := d.Get(key).(string)
-	if filename == "" {
-		filename = def
-	}
-	debug("TLS settings: Attempting to read contents of %s from %s", key, filename)
-
-	content, _, err := pathorcontents.Read(filename)
-	if err != nil {
+	if err := actionConfig.Init(kc, namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
 	}
 
-	if content == def {
-		return nil, nil
-	}
-
-	return []byte(content), nil
+	return actionConfig, nil
 }
 
 func debug(format string, a ...interface{}) {
 	log.Printf("[DEBUG] %s", fmt.Sprintf(format, a...))
 }
-
-var (
-	tlsCaCertFile string // path to TLS CA certificate file
-	tlsCertFile   string // path to TLS certificate file
-	tlsKeyFile    string // path to TLS key file
-	tlsVerify     bool   // enable TLS and verify remote certificates
-	tlsEnable     bool   // enable TLS
-)

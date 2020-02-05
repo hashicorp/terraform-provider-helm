@@ -77,6 +77,8 @@ var (
 	procLoadLibraryExW                                       = modkernel32.NewProc("LoadLibraryExW")
 	procFreeLibrary                                          = modkernel32.NewProc("FreeLibrary")
 	procGetProcAddress                                       = modkernel32.NewProc("GetProcAddress")
+	procGetModuleFileNameW                                   = modkernel32.NewProc("GetModuleFileNameW")
+	procGetModuleHandleExW                                   = modkernel32.NewProc("GetModuleHandleExW")
 	procGetVersion                                           = modkernel32.NewProc("GetVersion")
 	procFormatMessageW                                       = modkernel32.NewProc("FormatMessageW")
 	procExitProcess                                          = modkernel32.NewProc("ExitProcess")
@@ -222,6 +224,7 @@ var (
 	procFindNextVolumeMountPointW                            = modkernel32.NewProc("FindNextVolumeMountPointW")
 	procFindVolumeClose                                      = modkernel32.NewProc("FindVolumeClose")
 	procFindVolumeMountPointClose                            = modkernel32.NewProc("FindVolumeMountPointClose")
+	procGetDiskFreeSpaceExW                                  = modkernel32.NewProc("GetDiskFreeSpaceExW")
 	procGetDriveTypeW                                        = modkernel32.NewProc("GetDriveTypeW")
 	procGetLogicalDrives                                     = modkernel32.NewProc("GetLogicalDrives")
 	procGetLogicalDriveStringsW                              = modkernel32.NewProc("GetLogicalDriveStringsW")
@@ -674,6 +677,31 @@ func _GetProcAddress(module Handle, procname *byte) (proc uintptr, err error) {
 	r0, _, e1 := syscall.Syscall(procGetProcAddress.Addr(), 2, uintptr(module), uintptr(unsafe.Pointer(procname)), 0)
 	proc = uintptr(r0)
 	if proc == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func GetModuleFileName(module Handle, filename *uint16, size uint32) (n uint32, err error) {
+	r0, _, e1 := syscall.Syscall(procGetModuleFileNameW.Addr(), 3, uintptr(module), uintptr(unsafe.Pointer(filename)), uintptr(size))
+	n = uint32(r0)
+	if n == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func GetModuleHandleEx(flags uint32, moduleName *uint16, module *Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procGetModuleHandleExW.Addr(), 3, uintptr(flags), uintptr(unsafe.Pointer(moduleName)), uintptr(unsafe.Pointer(module)))
+	if r1 == 0 {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {
@@ -1179,7 +1207,7 @@ func OpenProcess(desiredAccess uint32, inheritHandle bool, processId uint32) (ha
 
 func ShellExecute(hwnd Handle, verb *uint16, file *uint16, args *uint16, cwd *uint16, showCmd int32) (err error) {
 	r1, _, e1 := syscall.Syscall6(procShellExecuteW.Addr(), 6, uintptr(hwnd), uintptr(unsafe.Pointer(verb)), uintptr(unsafe.Pointer(file)), uintptr(unsafe.Pointer(args)), uintptr(unsafe.Pointer(cwd)), uintptr(showCmd))
-	if r1 == 0 {
+	if r1 <= 32 {
 		if e1 != 0 {
 			err = errnoErr(e1)
 		} else {
@@ -2466,6 +2494,18 @@ func FindVolumeClose(findVolume Handle) (err error) {
 
 func FindVolumeMountPointClose(findVolumeMountPoint Handle) (err error) {
 	r1, _, e1 := syscall.Syscall(procFindVolumeMountPointClose.Addr(), 1, uintptr(findVolumeMountPoint), 0, 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = errnoErr(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func GetDiskFreeSpaceEx(directoryName *uint16, freeBytesAvailableToCaller *uint64, totalNumberOfBytes *uint64, totalNumberOfFreeBytes *uint64) (err error) {
+	r1, _, e1 := syscall.Syscall6(procGetDiskFreeSpaceExW.Addr(), 4, uintptr(unsafe.Pointer(directoryName)), uintptr(unsafe.Pointer(freeBytesAvailableToCaller)), uintptr(unsafe.Pointer(totalNumberOfBytes)), uintptr(unsafe.Pointer(totalNumberOfFreeBytes)), 0, 0)
 	if r1 == 0 {
 		if e1 != 0 {
 			err = errnoErr(e1)

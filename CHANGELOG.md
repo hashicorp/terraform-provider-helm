@@ -1,3 +1,52 @@
+## 1.0.0 (Unreleased)
+BREAKING CHANGES:
+* No longer supports helm v2 (#378)
+* Provider no longer supports the following parameters
+    * host
+    * home
+    * namespace
+    * init_helm_home
+    * install_tiller
+    * tiller_image
+    * connection_timeout
+    * service_account
+    * automount_service_account_token
+    * override
+    * max_history (Moved to the release)
+    * plugins_disable
+    * insecure
+    * enable_tls
+    * client_key
+    * client_certificate
+    * ca_certificate
+* Release no longer supports the following parameters
+    * disable_crd_hooks
+* Release Parameters that were renamed
+    * reuse was renamed to replace to match the rename in helm v3
+
+Improvements:
+* Upgrade Helm to v3.0
+* Adds the following parameters to the provider
+    * plugins_path - (Optional) The path to the plugins directory. Defaults to `HELM_PLUGINS` env if it is set, otherwise uses the default path set by helm.
+    * registry_config_path - (Optional) The path to the registry config file. Defaults to `HELM_REGISTRY_CONFIG` env if it is set, otherwise uses the default path set by helm.
+    * repository_config_path - (Optional) The path to the file containing repository names and URLs. Defaults to `HELM_REPOSITORY_CONFIG` env if it is set, otherwise uses the default path set by helm.
+    * repository_cache - (Optional) The path to the file containing cached repository indexes. Defaults to `HELM_REPOSITORY_CACHE` env if it is set, otherwise uses the default path set by helm.
+    * helm_driver - (Optional) "The backend storage driver. Valid values are: `configmap`, `secret`, `memory`. Defaults to `secret`
+* Adds the following parameters to the release
+    * repository_key_file - (Optional) The repositories cert key file
+    * repository_cert_file - (Optional) The repositories cert file
+    * repository_ca_file - (Optional) The Repositories CA File.
+    * repository_username - (Optional) Username for HTTP basic authentication against the repository.
+    * repository_password - (Optional) Password for HTTP basic authentication against the reposotory.
+    * reset_values - (Optional) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
+    * cleanup_on_fail - (Optional) Allow deletion of new resources created in this upgrade when upgrade fails. Defaults to `false`.
+    * max_history - (Optional) Maximum number of release versions stored per release. Defaults to 0 (no limit).
+    * atomic - (Optional) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to false.
+    * skip_crds - (Optional) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to false.
+    * render_subchart_notes - (Optional) If set, render subchart notes along with the parent. Defaults to true.
+    * dependency_update - (Optional) Runs helm dependency update before installing the chart. Defaults to false
+
+
 ## 0.10.5 (Unreleased)
 ## 0.10.4 (October 28, 2019)
 

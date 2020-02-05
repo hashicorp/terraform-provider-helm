@@ -1,13 +1,12 @@
 package helm
 
 import (
-	"errors"
-	"fmt"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"k8s.io/helm/pkg/getter"
-	"k8s.io/helm/pkg/helm/helmpath"
-	"k8s.io/helm/pkg/repo"
+
+	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/repo"
 )
 
 func dataRepository() *schema.Resource {
@@ -75,83 +74,63 @@ func dataRepository() *schema.Resource {
 
 func dataRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 	m := meta.(*Meta)
-
-	name := d.Get("name").(string)
-	err := addRepository(m,
-		name,
-		d.Get("url").(string),
-		m.Settings.Home,
-		d.Get("cert_file").(string),
-		d.Get("key_file").(string),
-		d.Get("ca_file").(string),
-		d.Get("username").(string),
-		d.Get("password").(string),
-	)
-
-	if err != nil {
-		return err
-	}
-
-	debug("%q has been added to your repositories\n", name)
-
-	r, err := getRepository(d, m)
-	if err != nil {
-		return err
-	}
-
-	return setIDAndMetadataFromRepository(d, r)
-}
-
-func getRepository(d *schema.ResourceData, m *Meta) (*repo.Entry, error) {
-	name := d.Get("name").(string)
-
-	f, err := repo.LoadRepositoriesFile(m.Settings.Home.RepositoryFile())
-	if err != nil {
-		return nil, err
-	}
-
-	for _, r := range f.Repositories {
-		if r.Name == name {
-			return r, nil
-		}
-	}
-
-	return nil, errors.New("repository not found")
-}
-
-func addRepository(m *Meta, name, url string, home helmpath.Home, certFile, keyFile, caFile string, username string, password string) error {
 	m.Lock()
 	defer m.Unlock()
 
-	repoFile, err := repo.LoadRepositoriesFile(home.RepositoryFile())
+	name := d.Get("name").(string)
+
+	//var entry *repo.Entry
+	var file *repo.File
+
+	if fileExists(m.Settings.RepositoryConfig) {
+		var err error
+		if file, err = repo.LoadFile(m.Settings.RepositoryConfig); err != nil {
+			return err
+		}
+
+	} else {
+		file = repo.NewFile()
+	}
+
+	entry := file.Get(name)
+
+	// Not sure I agree with the logic here. Should a data source really update an underlying resource every time its called?
+	if entry == nil {
+		entry = &repo.Entry{
+			Name:     name,
+			URL:      d.Get("url").(string),
+			CertFile: d.Get("cert_file").(string),
+			KeyFile:  d.Get("key_file").(string),
+			CAFile:   d.Get("ca_file").(string),
+			Username: d.Get("username").(string),
+			Password: d.Get("password").(string),
+		}
+	} else {
+		entry.URL = d.Get("url").(string)
+		entry.CertFile = d.Get("cert_file").(string)
+		entry.KeyFile = d.Get("key_file").(string)
+		entry.CAFile = d.Get("ca_file").(string)
+		entry.Username = d.Get("username").(string)
+		entry.Password = d.Get("password").(string)
+	}
+
+	file.Update(entry)
+
+	if err := file.WriteFile(m.Settings.RepositoryConfig, 0644); err != nil {
+		return err
+	}
+
+	re, err := repo.NewChartRepository(entry, getter.All(m.Settings))
+
 	if err != nil {
 		return err
 	}
 
-	cif := home.CacheIndex(name)
-	entry := repo.Entry{
-		Name:     name,
-		Cache:    cif,
-		URL:      url,
-		CertFile: certFile,
-		KeyFile:  keyFile,
-		CAFile:   caFile,
-		Username: username,
-		Password: password,
-	}
-
-	repo, err := repo.NewChartRepository(&entry, getter.All(*m.Settings))
-	if err != nil {
+	if _, err := re.DownloadIndexFile(); err != nil {
 		return err
 	}
 
-	if err := repo.DownloadIndexFile(home.Cache()); err != nil {
-		return fmt.Errorf("Looks like %q is not a valid chart repository or cannot be reached: %s", url, err.Error())
-	}
-
-	repoFile.Update(&entry)
-
-	return repoFile.WriteFile(home.RepositoryFile(), 0644)
+	return setIDAndMetadataFromRepository(d, entry)
 }
 
 func setIDAndMetadataFromRepository(d *schema.ResourceData, r *repo.Entry) error {
@@ -160,4 +139,12 @@ func setIDAndMetadataFromRepository(d *schema.ResourceData, r *repo.Entry) error
 		"name": r.Name,
 		"url":  r.URL,
 	}})
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }

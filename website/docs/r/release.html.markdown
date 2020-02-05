@@ -53,25 +53,36 @@ resource "helm_release" "example" {
 The following arguments are supported:
 
 * `name` - (Required) Release name.
-* `repository` - (Optional) Repository where to locate the requested chart. If is an URL the chart is installed without install the repository.
 * `chart` - (Required) Chart name to be installed.
+* `repository` - (Optional) Repository where to locate the requested chart. If is an URL the chart is installed without installing the repository.
+* `repository_key_file` - (Optional) The repositories cert key file
+* `repository_cert_file` - (Optional) The repositories cert file
+* `repository_ca_file` - (Optional) The Repositories CA File. 
+* `repository_username` - (Optional) Username for HTTP basic authentication against the repository.
+* `repository_password` - (Optional) Password for HTTP basic authentication against the reposotory.
 * `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
 * `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
+* `namespace` - (Optional) The namespace to install the release into. Defaults to `default`
+* `verify` - (Optional) Verify the package before installing it. Defaults to `false`
+* `keyring` - (Optional) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`
+* `timeout` - (Optional) Time in seconds to wait for any individual kubernetes operation. Defaults to `300` seconds.
+* `disable_webhooks` - (Optional) Prevent hooks from running. Defauts to `false`
+* `reuse_values` - (Optional) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
+* `reset_values` - (Optional) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
+* `force_update` - (Optional) Force resource update through delete/recreate if needed. Defaults to `false`.
+* `recreate_pods` - (Optional) Perform pods restart during upgrade/rollback. Defaults to `false`.
+* `cleanup_on_fail` - (Optional) Allow deletion of new resources created in this upgrade when upgrade fails. Defaults to `false`.
+* `max_history` - (Optional) Maximum number of release versions stored per release. Defaults to `0` (no limit).
+* `atomic` - (Optional) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to `false`.
+* `skip_crds` - (Optional) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
+* `render_subchart_notes` - (Optional) If set, render subchart notes along with the parent. Defaults to `true`.
+* `wait` - (Optional) Will wait until all resources are in a ready state before marking the release as successful. It will wait for as long as `timeout`. Defaults to `true`.
 * `values` - (Optional) List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options.
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
 * `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff.
 * `set_string` - (Optional) Value block with custom STRING values to be merged with the values yaml.
-* `namespace` - (Optional) Namespace to install the release into.
-* `verify` - (Optional) Verify the package before installing it.
-* `keyring` - (Optional) Location of public keys used for verification.
-* `timeout` - (Optional) Time in seconds to wait for any individual kubernetes operation.
-* `disable_webhooks` - (Optional) Prevent hooks from running.
-* `disable_crd_hooks` - (Optional) Prevent CRD hooks from running, but run other hooks.  Same as `--no-crd-hook` flag in Helm CLI.
-* `reuse_values` - (Optional) Reuse values from previous revision when upgrading a release. Same as `--reuse-values` flag in Helm CLI. Default is false.
-* `force_update` - (Optional) Force resource update through delete/recreate if needed.
-* `reuse` - (Optional) Instructs Tiller to re-use an existing name. Default is true.
-* `recreate_pods` - (Optional) On update performs pods restart for the resource if applicable.
-* `wait` - (Optional) Will wait until all Pods, PVCs, Services, and minimum number of Pods of a Deployment are in a ready state before marking the release as successful. It will wait for as long as `timeout`. Default is true.
+* `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`.
+* `replace` - (Optional) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
 
 The `set`, `set_sensitive` and `set_strings` blocks support:
 

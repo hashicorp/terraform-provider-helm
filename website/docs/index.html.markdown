@@ -83,24 +83,13 @@ i.e. any static field will override its counterpart loaded from the config.
 
 The following arguments are supported:
 
-* `host` - (Required) Set an alternative Tiller host. The format is host:port. Can be sourced from `HELM_HOST` environment variable.
-* `home` - (Required) Set an alternative location for Helm files. By default, these are stored in `$HOME/.helm`. Can be sourced from `HELM_HOME` environment variable.
-* `namespace` - (Optional) Set an alternative Tiller namespace. Defaults to `kube-system`.
-* `init_helm_home` - (Optional) Initialize Helm home directory configured by the `home` attribute if it is not already initialized, defaults to true.
-* `install_tiller` - (Optional) Install Tiller if it is not already installed. Defaults to `true`.
-* `tiller_image` - (Optional) Tiller image to install. Defaults to `gcr.io/kubernetes-helm/tiller:v2.15.1`.
-* `connection_timeout` - (Optional) Number of seconds Helm will wait before timing out a connection to tiller. Defaults to `60`.
-* `service_account` - (Optional) Service account to install Tiller with. Defaults to `default`.
-* `automount_service_account_token` - (Optional) Auto-mount the given service account to tiller. Defaults to `true`.
-* `override` - (Optional) Override values for the Tiller Deployment manifest. Defaults to `true`.
-* `max_history` - (Optional) Maximum number of release versions stored per release. Defaults to `0` (no limit).
 * `debug` - (Optional) - Debug indicates whether or not Helm is running in Debug mode. Defaults to `false`.
-* `plugins_disable` - (Optional) Disable plugins. Can be sourced from `HELM_NO_PLUGINS` environment variable, set `HELM_NO_PLUGINS=0` to enable plugins. Defaults to `true`.
-* `insecure` - (Optional) Whether server should be accessed without verifying the TLS certificate. Defaults to `false`.
-* `enable_tls` - (Optional) Enables TLS communications with the Tiller. Defaults to `false`.
-* `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. By default read from `key.pem` in the location set by `home`.
-* `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. By default read from `cert.pem` in the location set by `home`.
-* `ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. By default read from `ca.pem` in the location set by `home`.
+`plugins_path` - (Optional) The path to the plugins directory. Defaults to `HELM_PLUGINS` env if it is set, otherwise uses the default path set by helm.
+`registry_config_path` - (Optional) The path to the registry config file. Defaults to `HELM_REGISTRY_CONFIG` env if it is set, otherwise uses the default path set by helm.
+`repository_config_path` - (Optional) The path to the file containing repository names and URLs. Defaults to `HELM_REPOSITORY_CONFIG` env if it is set, otherwise uses the default path set by helm.
+`repository_cache` - (Optional) The path to the file containing cached repository indexes. Defaults to `HELM_REPOSITORY_CACHE` env if it is set, otherwise uses the default path set by helm.
+`helm_driver` - (Optional) "The backend storage driver. Valid values are: `configmap`, `secret`, `memory`. Defaults to `secret`
+
 * `kubernetes` - Kubernetes configuration block.
 
 The `kubernetes` block supports:
