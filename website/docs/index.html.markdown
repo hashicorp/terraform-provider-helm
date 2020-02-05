@@ -39,7 +39,7 @@ resource "helm_release" "mydatabase" {
 
 ## Requirements
 
-- You must have Kubernetes installed. We recommend version 1.4.1 or later.
+- You must have a Kubernetes cluster available. We recommend version 1.11.0 or higher.
 - You should also have a local configured copy of kubectl.
 
 ## Authentication
