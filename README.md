@@ -6,7 +6,7 @@ Terraform Provider for Helm
 
 This is a [Helm](https://github.com/kubernetes/helm) provider for [Terraform](https://www.terraform.io/).
 
-The provider manages the installed [Charts](https://github.com/kubernetes/charts) in your Kubernetes cluster, in the same way of Helm does, through Terraform.
+The provider manages the installed [Charts](https://github.com/kubernetes/charts) in your Kubernetes cluster, in the same way Helm does, through Terraform.
 
 ⚠️ Project Update: Helm 3
 ---
