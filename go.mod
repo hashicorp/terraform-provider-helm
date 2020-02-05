@@ -1,6 +1,6 @@
 module github.com/terraform-providers/terraform-provider-helm
 
-go 1.12
+go 1.13
 
 require (
 	github.com/hashicorp/terraform-plugin-sdk v1.1.0
