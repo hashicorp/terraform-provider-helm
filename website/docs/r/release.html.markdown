@@ -15,7 +15,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 
 ## Example Usage
 
-```
+```hcl
 data "helm_repository" "stable" {
   name = "stable"
   url  = "https://kubernetes-charts.storage.googleapis.com"
