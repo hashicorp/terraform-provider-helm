@@ -785,7 +785,7 @@ func chartPathOptions(d resourceGetter, m *Meta) (*action.ChartPathOptions, stri
 }
 
 func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-	namespace, name, err := idParts(d.Id())
+	namespace, name, err := parseImportIdentifier(d.Id())
 	if err != nil {
 		return nil, errors.Errorf("Unable to parse identifier %s: %s", d.Id(), err)
 	}
@@ -811,7 +811,7 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 	return schema.ImportStatePassthrough(d, meta)
 }
 
-func idParts(id string) (string, string, error) {
+func parseImportIdentifier(id string) (string, string, error) {
 	parts := strings.Split(id, "/")
 	if len(parts) != 2 {
 		err := errors.Errorf("Unexpected ID format (%q), expected %q", id, "namespace/name")
