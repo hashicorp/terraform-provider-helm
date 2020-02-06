@@ -24,6 +24,26 @@ import (
 // ErrReleaseNotFound is the error when a Helm release is not found
 var ErrReleaseNotFound = errors.New("release not found")
 
+// DefaultAttributes release attribute values
+var DefaultAttributes = map[string]interface{}{
+	"verify":                false,
+	"timeout":               300,
+	"wait":                  true,
+	"disable_webhooks":      false,
+	"atomic":                false,
+	"render_subchart_notes": true,
+	"disable_crd_hooks":     false,
+	"force_update":          false,
+	"reset_values":          false,
+	"reuse_values":          false,
+	"recreate_pods":         false,
+	"max_history":           0,
+	"skip_crds":             false,
+	"cleanup_on_fail":       false,
+	"dependency_update":     false,
+	"replace":               false,
+}
+
 func resourceRelease() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceReleaseCreate,
@@ -161,7 +181,7 @@ func resourceRelease() *schema.Resource {
 			"verify": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     DefaultAttributes["verify"],
 				Description: "Verify the package before installing it.",
 			},
 			"keyring": {
@@ -177,79 +197,79 @@ func resourceRelease() *schema.Resource {
 			"timeout": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				Default:     300,
+				Default:     DefaultAttributes["timeout"],
 				Description: "Time in seconds to wait for any individual kubernetes operation.",
 			},
 			"disable_webhooks": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     DefaultAttributes["disable_webhooks"],
 				Description: "Prevent hooks from running.",
 			},
 			"disable_crd_hooks": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     DefaultAttributes["disable_crd_hooks"],
 				Description: "Prevent CRD hooks from, running, but run other hooks.  See helm install --no-crd-hook",
 			},
 			"reuse_values": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored",
-				Default:     false,
+				Default:     DefaultAttributes["reuse_values"],
 			},
 			"reset_values": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Description: "When upgrading, reset the values to the ones built into the chart",
-				Default:     false,
+				Default:     DefaultAttributes["reset_values"],
 			},
 			"force_update": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     DefaultAttributes["force_update"],
 				Description: "Force resource update through delete/recreate if needed.",
 			},
 			"recreate_pods": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     DefaultAttributes["recreate_pods"],
 				Description: "Perform pods restart during upgrade/rollback",
 			},
 			"cleanup_on_fail": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     DefaultAttributes["cleanup_on_fail"],
 				Description: "Allow deletion of new resources created in this upgrade when upgrade fails",
 			},
 			"max_history": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				Default:     0,
+				Default:     DefaultAttributes["max_history"],
 				Description: "Limit the maximum number of revisions saved per release. Use 0 for no limit",
 			},
 			"atomic": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     DefaultAttributes["atomic"],
 				Description: "If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used",
 			},
 			"skip_crds": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
-				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
+				Default:     DefaultAttributes["skip_crds"],
+				Description: "If set, no CRDs will be installed. By DefaultAttributes, CRDs are installed if not already present",
 			},
 			"render_subchart_notes": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     true,
+				Default:     DefaultAttributes["render_subchart_notes"],
 				Description: "If set, render subchart notes along with the parent",
 			},
 			"wait": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     true,
+				Default:     DefaultAttributes["wait"],
 				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
 			},
 			"status": {
@@ -260,13 +280,13 @@ func resourceRelease() *schema.Resource {
 			"dependency_update": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     DefaultAttributes["dependency_update"],
 				Description: "run helm dependency update before installing the chart",
 			},
 			"replace": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     DefaultAttributes["replace"],
 				Description: "re-use the given name, even if that name is already used. This is unsafe in production",
 			},
 			"metadata": {
@@ -804,6 +824,10 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 
 	d.Set("name", r.Name)
 
+	for key, value := range DefaultAttributes {
+		d.Set(key, value)
+	}
+
 	if err := setIDAndMetadataFromRelease(d, r); err != nil {
 		return nil, err
 	}
@@ -814,7 +838,7 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 func parseImportIdentifier(id string) (string, string, error) {
 	parts := strings.Split(id, "/")
 	if len(parts) != 2 {
-		err := errors.Errorf("Unexpected ID format (%q), expected %q", id, "namespace/name")
+		err := errors.Errorf("Unexpected ID format (%q), expected namespace/name", id)
 		return "", "", err
 	}
 
