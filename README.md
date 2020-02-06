@@ -27,8 +27,8 @@ Contents
 * [Developing the Provider](#developing-the-provider)
 * [Example](#example)
 * [Documentation](https://www.terraform.io/docs/providers/helm/index.html)
-  * [Resource: helm_release](https://www.terraform.io/docs/providers/helm/release.html)
-  * [Resource: helm_repository](https://www.terraform.io/docs/providers/helm/repository.html)
+  * [Resource: helm_release](https://www.terraform.io/docs/providers/helm/r/release.html)
+  * [Resource: helm_repository](https://www.terraform.io/docs/providers/helm/d/repository.html)
 
 
 Developing the Provider
