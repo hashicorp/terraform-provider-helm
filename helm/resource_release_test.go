@@ -21,7 +21,6 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/repo"
 
-	//"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -75,11 +74,29 @@ func TestAccResourceRelease_import(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 			),
 		}, {
-			Config:            testAccHelmReleaseConfigBasic("imported", namespace, "import", "7.1.0"),
-			ImportStateId:     fmt.Sprintf("%s/%s", namespace, name),
-			ResourceName:      "helm_release.imported",
-			ImportState:       true,
-			ImportStateVerify: true,
+			Config:                  testAccHelmReleaseConfigBasic("imported", namespace, "import", "7.1.0"),
+			ImportStateId:           fmt.Sprintf("%s/%s", namespace, name),
+			ResourceName:            "helm_release.imported",
+			ImportState:             true,
+			ImportStateVerify:       true,
+			ImportStateVerifyIgnore: []string{"set", "set.#", "repository"},
+			Check: resource.ComposeAggregateTestCheckFunc(
+				func() []resource.TestCheckFunc {
+					importTestCheckFuncs := []resource.TestCheckFunc{
+						resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.revision", "1"),
+						resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.version", "7.1.0"),
+						resource.TestCheckResourceAttr("helm_release.imported", "status", release.StatusDeployed.String()),
+						resource.TestCheckNoResourceAttr("helm_release.imported", "repository"),
+					}
+
+					// Test for default values being set
+					for key, value := range DefaultAttributes {
+						importTestCheckFuncs = append(importTestCheckFuncs, resource.TestCheckResourceAttr("helm_release.imported", key, fmt.Sprintf("%t", value)))
+					}
+
+					return importTestCheckFuncs
+				}()...,
+			),
 		}},
 	})
 }
