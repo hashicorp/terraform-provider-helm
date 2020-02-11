@@ -91,36 +91,6 @@ resource "helm_release" "my_database" {
 }
 ```
 
-Import
-------
-
-You can import releases created using helm cli into the terraform state by providing the namespace and release name to the `terraform import` command e.g. `terraform import helm_release.<release resource name> <namespace>/<release name>`.
-
-Here's an example:
-
-```hcl
-provider "helm" {}
-
-data "helm_repository" "stable" {
-  name = "stable"
-  url  = "https://kubernetes-charts.storage.googleapis.com"
-}
-
-// Define your to-be-imported release resource
-resource "helm_release" "example" {
-  name        = "mariadb"
-  repository  = data.helm_repository.stable.metadata.0.name
-  chart       = "mariadb"
-  namespace   = "default"
-}
-```
-
-```
-$ terraform import helm_release.example default/mariadb
-```
-
-Note: Since the `repository` attribute is not being persisted as metadata by helm, it will not be set to any value by default. All other provider specific attributes will be set to their default values and they can be overriden after running `apply` using the resource definition configuration.
-
 License
 -------
 
