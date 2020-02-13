@@ -172,6 +172,7 @@ const defaultIgnore = `# Patterns to ignore when building packages.
 *.swp
 *.bak
 *.tmp
+*.orig
 *~
 # Various IDEs
 .project
@@ -443,6 +444,15 @@ func CreateFrom(chartfile *chart.Metadata, dest, src string) error {
 		return errors.Wrap(err, "transforming values file")
 	}
 	schart.Values = m
+
+	// SaveDir looks for the file values.yaml when saving rather than the values
+	// key in order to preserve the comments in the YAML. The name placeholder
+	// needs to be replaced on that file.
+	for _, f := range schart.Raw {
+		if f.Name == ValuesfileName {
+			f.Data = transform(string(f.Data), schart.Name())
+		}
+	}
 
 	return SaveDir(schart, dest)
 }
