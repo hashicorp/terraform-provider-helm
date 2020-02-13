@@ -520,7 +520,7 @@ func TestGetValues(t *testing.T) {
 func testAccHelmReleaseConfigRepository(resource, ns, name string) string {
 	return fmt.Sprintf(`
 		resource "helm_repository" "stable_repo" {
-			name = "stable-repo-resource"
+			name = "stable-repo-%s"
 			url  = "https://kubernetes-charts.storage.googleapis.com"
 		}
 
@@ -531,13 +531,13 @@ func testAccHelmReleaseConfigRepository(resource, ns, name string) string {
 			chart      = "coredns"
 			depends_on = [helm_repository.stable_repo]
 		}
-	`, resource, name, ns)
+	`, ns, resource, name, ns)
 }
 
 func testAccHelmReleaseConfigRepositoryDatasource(resource, ns, name string) string {
 	return fmt.Sprintf(`
 		data "helm_repository" "stable_repo" {
-			name = "stable-repo-data"
+			name = "stable-repo-%s"
 			url  = "https://kubernetes-charts.storage.googleapis.com"
 		}
 
@@ -547,7 +547,7 @@ func testAccHelmReleaseConfigRepositoryDatasource(resource, ns, name string) str
 			repository = "${data.helm_repository.stable_repo.metadata.0.name}"
 			chart      = "coredns"
 		}
-	`, resource, name, ns)
+	`, ns, resource, name, ns)
 }
 
 func testAccHelmReleaseConfigRepositoryMultipleDatasource(repo1, repo2, resource, ns, name string) string {
