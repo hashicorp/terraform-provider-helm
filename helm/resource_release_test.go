@@ -43,6 +43,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "mariadb"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
 			),
@@ -52,6 +53,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
 			),
 		}},
 	})
@@ -436,11 +438,12 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
- 			name       = %q
-			namespace  = %q
-			repository = "https://kubernetes-charts.storage.googleapis.com"
-  			chart      = "mariadb"
-			version    = %q
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = "https://kubernetes-charts.storage.googleapis.com"
+  			chart       = "mariadb"
+			version     = %q
 
 			set {
 				name = "foo"

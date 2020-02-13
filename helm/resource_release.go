@@ -266,6 +266,11 @@ func resourceRelease() *schema.Resource {
 				Default:     false,
 				Description: "re-use the given name, even if that name is already used. This is unsafe in production",
 			},
+			"description": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "add a custom description",
+			},
 			"metadata": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -395,7 +400,6 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.ClientOnly = false
 	client.DryRun = false
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
-	client.Replace = true
 	client.Wait = d.Get("wait").(bool)
 	client.Devel = d.Get("devel").(bool)
 	client.DependencyUpdate = updateDependency
@@ -409,6 +413,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.SkipCRDs = d.Get("skip_crds").(bool)
 	client.SubNotes = d.Get("render_subchart_notes").(bool)
 	client.Replace = d.Get("replace").(bool)
+	client.Description = d.Get("description").(string)
 
 	debug("Installing Chart")
 
@@ -468,6 +473,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	client.Recreate = d.Get("recreate_pods").(bool)
 	client.MaxHistory = d.Get("max_history").(int)
 	client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
+	client.Description = d.Get("description").(string)
 
 	values, err := getValues(d)
 	if err != nil {
