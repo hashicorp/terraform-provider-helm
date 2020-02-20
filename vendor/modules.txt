@@ -640,7 +640,7 @@ google.golang.org/grpc/test/bufconn
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
-# helm.sh/helm/v3 v3.1.0
+# helm.sh/helm/v3 v3.1.1
 helm.sh/helm/v3/internal/experimental/registry
 helm.sh/helm/v3/internal/ignore
 helm.sh/helm/v3/internal/resolver
