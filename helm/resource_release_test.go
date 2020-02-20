@@ -450,7 +450,7 @@ func TestAccResourceRelease_postrender(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 			),
 		}, {
-			Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "time"),
+			Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "date"),
 			ExpectError: regexp.MustCompile("error validating data"),
 		}, {
 			Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "foobardoesnotexist"),
