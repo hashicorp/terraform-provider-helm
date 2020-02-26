@@ -740,7 +740,6 @@ func getValues(d *schema.ResourceData) (map[string]interface{}, error) {
 }
 
 func getRelease(cfg *action.Configuration, name string) (*release.Release, error) {
-
 	get := action.NewGet(cfg)
 	res, err := get.Run(name)
 
