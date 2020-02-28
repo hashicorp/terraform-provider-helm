@@ -245,6 +245,12 @@ func resourceRelease() *schema.Resource {
 				Default:     true,
 				Description: "If set, render subchart notes along with the parent",
 			},
+			"disable_openapi_validation": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
+			},
 			"wait": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -429,6 +435,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.Atomic = d.Get("atomic").(bool)
 	client.SkipCRDs = d.Get("skip_crds").(bool)
 	client.SubNotes = d.Get("render_subchart_notes").(bool)
+	client.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
 	client.Replace = d.Get("replace").(bool)
 	client.Description = d.Get("description").(string)
 
