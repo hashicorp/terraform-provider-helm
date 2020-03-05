@@ -23,8 +23,8 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// ErrReleaseNotFound is the error when a Helm release is not found
-var ErrReleaseNotFound = errors.New("release not found")
+// errReleaseNotFound is the error when a Helm release is not found
+var errReleaseNotFound = errors.New("release not found")
 
 func resourceRelease() *schema.Resource {
 	return &schema.Resource{
@@ -453,14 +453,27 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	rel, err := client.Run(chart, values)
 
-	// Return error only if no release was created
-	// This will ensure we store even failed releases into the state
 	if err != nil && rel == nil {
 		return err
-	} else if err != nil && rel.Info.Status == release.StatusFailed {
+	}
+
+	if err != nil && rel != nil {
+		exists, existsErr := resourceReleaseExists(d, meta)
+
+		if existsErr != nil {
+			return existsErr
+		}
+
+		if !exists {
+			return err
+		}
+
+		debug("Release was created but returned an error")
+
 		if err := setIDAndMetadataFromRelease(d, rel); err != nil {
 			return err
 		}
+
 		return err
 	}
 
@@ -634,7 +647,7 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 		return true, nil
 	}
 
-	if err == ErrReleaseNotFound {
+	if err == errReleaseNotFound {
 		return false, nil
 	}
 
@@ -769,7 +782,7 @@ func getRelease(cfg *action.Configuration, name string) (*release.Release, error
 
 	if err != nil {
 		if strings.Contains(err.Error(), "release: not found") {
-			return nil, ErrReleaseNotFound
+			return nil, errReleaseNotFound
 		}
 
 		debug("could not get release %s", err)
