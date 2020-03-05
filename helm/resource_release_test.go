@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -368,18 +367,39 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	// Delete namespace automatically created by helm after checks
 	defer deleteNamespace(t, namespace)
 
-	malformed := `
+	malformed := fmt.Sprintf(`
 	resource "helm_release" "test" {
-		name        = "malformed"
+		name        = %q
+		namespace   = %q
 		repository  = "https://kubernetes-charts.storage.googleapis.com"
 
 		chart       = "nginx-ingress"
 		set {
 			name = "controller.name"
-			value = "invalid-$%!-character-for-k8s-label"
+			value = "invalid-$%%!-character-for-k8s-label"
 		}
-	}
-	`
+		set {
+			name = "controller.service.type"
+			value = "ClusterIP"
+		}
+	}`, name, namespace)
+
+	fixed := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name        = %q
+		namespace   = %q
+		repository  = "https://kubernetes-charts.storage.googleapis.com"
+
+		chart       = "nginx-ingress"
+		set {
+			name = "controller.name"
+			value = "valid-name"
+		}
+		set {
+			name = "controller.service.type"
+			value = "ClusterIP"
+		}
+	}`, name, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t, namespace) },
@@ -390,10 +410,10 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 			ExpectError:        regexp.MustCompile("invalid resource name"),
 			ExpectNonEmptyPlan: true,
 		}, {
-			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "7.1.0"),
+			Config: fixed,
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "nginx-ingress"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 			),
 		}},
@@ -473,6 +493,78 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				resource.TestCheckResourceAttr("helm_release.test", "version", "7.1.0"),
 			),
+		}},
+	})
+}
+
+func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
+	name := fmt.Sprintf("test-namespace-does-not-exist-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+
+	defer deleteNamespace(t, namespace)
+
+	broken := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name        = %q
+		namespace   = "does-not-exist"
+		repository  = "https://kubernetes-charts.storage.googleapis.com"
+		chart       = "nginx-ingress"
+		set {
+			name = "controller.service.type"
+			value = "ClusterIP"
+		}
+	}`, name)
+
+	fixed := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name        = %q
+		namespace   = %q
+		repository  = "https://kubernetes-charts.storage.googleapis.com"
+		chart       = "nginx-ingress"
+		set {
+			name = "controller.service.type"
+			value = "ClusterIP"
+		}
+	}`, name, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config:             broken,
+			ExpectError:        regexp.MustCompile(`failed to create: namespaces "does-not-exist" not found`),
+			ExpectNonEmptyPlan: true,
+		}, {
+			Config: fixed,
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+			),
+		}},
+	})
+}
+
+func TestAccResourceRelease_invalidName(t *testing.T) {
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+
+	defer deleteNamespace(t, namespace)
+
+	broken := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name        = "this_should_not_work"
+		namespace   = %q
+		repository  = "https://kubernetes-charts.storage.googleapis.com"
+		chart       = "nginx-ingress"
+	}`, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config:             broken,
+			ExpectError:        regexp.MustCompile("create: failed to create"),
+			ExpectNonEmptyPlan: true,
 		}},
 	})
 }
@@ -673,11 +765,6 @@ func removeRepoCache(root, name string) error {
 
 func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		// Fix for a flaky test
-		// Helm doesn't instantly delete its releases causing this test to fail if not waited for a small period of time.
-		// TODO: improve the workaround
-		time.Sleep(30 * time.Second)
-
 		m := testAccProvider.Meta()
 		if m == nil {
 			return fmt.Errorf("provider not properly initialized")
