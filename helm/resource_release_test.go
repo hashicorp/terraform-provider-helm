@@ -80,21 +80,28 @@ func TestAccResourceRelease_import(t *testing.T) {
 			ImportStateVerify:       true,
 			ImportStateVerifyIgnore: []string{"set", "set.#", "repository"},
 			Check: resource.ComposeAggregateTestCheckFunc(
-				func() []resource.TestCheckFunc {
-					importTestCheckFuncs := []resource.TestCheckFunc{
-						resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.revision", "1"),
-						resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.version", "7.1.0"),
-						resource.TestCheckResourceAttr("helm_release.imported", "status", release.StatusDeployed.String()),
-						resource.TestCheckNoResourceAttr("helm_release.imported", "repository"),
-					}
+				resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.version", "7.1.0"),
+				resource.TestCheckResourceAttr("helm_release.imported", "status", release.StatusDeployed.String()),
+				resource.TestCheckNoResourceAttr("helm_release.imported", "repository"),
 
-					// Test for default values being set
-					for key, value := range defaultAttributes {
-						importTestCheckFuncs = append(importTestCheckFuncs, resource.TestCheckResourceAttr("helm_release.imported", key, fmt.Sprintf("%t", value)))
-					}
-
-					return importTestCheckFuncs
-				}()...,
+				// Default values
+				resource.TestCheckResourceAttr("helm_release.imported", "verify", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "timeout", "300"),
+				resource.TestCheckResourceAttr("helm_release.imported", "wait", "true"),
+				resource.TestCheckResourceAttr("helm_release.imported", "disable_webhooks", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "atomic", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "render_subchart_notes", "true"),
+				resource.TestCheckResourceAttr("helm_release.imported", "disable_crd_hooks", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "force_update", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "reset_values", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "reuse_values", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "recreate_pods", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "max_history", "0"),
+				resource.TestCheckResourceAttr("helm_release.imported", "skip_crds", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "cleanup_on_fail", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "dependency_update", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "replace", "false"),
 			),
 		}},
 	})
