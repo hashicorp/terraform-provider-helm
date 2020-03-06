@@ -89,7 +89,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 					}
 
 					// Test for default values being set
-					for key, value := range DefaultAttributes {
+					for key, value := range defaultAttributes {
 						importTestCheckFuncs = append(importTestCheckFuncs, resource.TestCheckResourceAttr("helm_release.imported", key, fmt.Sprintf("%t", value)))
 					}
 
