@@ -16,8 +16,10 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
+
 	"sigs.k8s.io/yaml"
 )
 
@@ -243,6 +245,12 @@ func resourceRelease() *schema.Resource {
 				Default:     true,
 				Description: "If set, render subchart notes along with the parent",
 			},
+			"disable_openapi_validation": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
+			},
 			"wait": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -258,13 +266,33 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
-				Description: "run helm dependency update before installing the chart",
+				Description: "Run helm dependency update before installing the chart",
 			},
 			"replace": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
-				Description: "re-use the given name, even if that name is already used. This is unsafe in production",
+				Description: "Re-use the given name, even if that name is already used. This is unsafe in production",
+			},
+			"description": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Add a custom description",
+			},
+			"postrender": {
+				Type:        schema.TypeList,
+				MaxItems:    1,
+				Optional:    true,
+				Description: "Postrender command configuration.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"binary_path": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "The command binary path.",
+						},
+					},
+				},
 			},
 			"metadata": {
 				Type:        schema.TypeList,
@@ -395,7 +423,6 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.ClientOnly = false
 	client.DryRun = false
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
-	client.Replace = true
 	client.Wait = d.Get("wait").(bool)
 	client.Devel = d.Get("devel").(bool)
 	client.DependencyUpdate = updateDependency
@@ -408,7 +435,19 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.Atomic = d.Get("atomic").(bool)
 	client.SkipCRDs = d.Get("skip_crds").(bool)
 	client.SubNotes = d.Get("render_subchart_notes").(bool)
+	client.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
 	client.Replace = d.Get("replace").(bool)
+	client.Description = d.Get("description").(string)
+
+	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+		pr, err := postrender.NewExec(cmd)
+
+		if err != nil {
+			return err
+		}
+
+		client.PostRenderer = pr
+	}
 
 	debug("Installing Chart")
 
@@ -481,6 +520,17 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	client.Recreate = d.Get("recreate_pods").(bool)
 	client.MaxHistory = d.Get("max_history").(int)
 	client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
+	client.Description = d.Get("description").(string)
+
+	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+		pr, err := postrender.NewExec(cmd)
+
+		if err != nil {
+			return err
+		}
+
+		client.PostRenderer = pr
+	}
 
 	values, err := getValues(d)
 	if err != nil {

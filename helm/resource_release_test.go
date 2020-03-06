@@ -42,6 +42,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "mariadb"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
 			),
@@ -51,6 +52,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
 			),
 		}},
 	})
@@ -453,6 +455,30 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_postrender(t *testing.T) {
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "cat"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+			),
+		}, {
+			Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "date"),
+			ExpectError: regexp.MustCompile("error validating data"),
+		}, {
+			Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "foobardoesnotexist"),
+			ExpectError: regexp.MustCompile("unable to find binary"),
+		}},
+	})
+}
+
 func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 	name := fmt.Sprintf("test-namespace-does-not-exist-%s", acctest.RandString(10))
 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
@@ -528,11 +554,12 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
- 			name       = %q
-			namespace  = %q
-			repository = "https://kubernetes-charts.storage.googleapis.com"
-  			chart      = "mariadb"
-			version    = %q
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = "https://kubernetes-charts.storage.googleapis.com"
+  			chart       = "mariadb"
+			version     = %q
 
 			set {
 				name = "foo"
@@ -777,4 +804,29 @@ func deleteNamespace(t *testing.T, namespace string) {
 	if err != nil {
 		t.Fatalf("An error occurred while deleting namespace %q: %q", namespace, err)
 	}
+}
+
+func testAccHelmReleaseConfigPostrender(resource, ns, name, binaryPath string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			repository  = "https://kubernetes-charts.storage.googleapis.com"
+  			chart       = "mariadb"
+			version     = "7.1.0"
+
+			postrender {
+				binary_path = %q
+			}
+
+			set {
+				name = "master.persistence.enabled"
+				value = false # persistent volumes are giving non-related issues when testing
+			}
+			set {
+				name = "replication.enabled"
+				value = false
+			}
+		}
+	`, resource, name, ns, binaryPath)
 }

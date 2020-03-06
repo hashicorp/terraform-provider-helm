@@ -76,6 +76,7 @@ The following arguments are supported:
 * `atomic` - (Optional) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to `false`.
 * `skip_crds` - (Optional) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
 * `render_subchart_notes` - (Optional) If set, render subchart notes along with the parent. Defaults to `true`.
+* `disable_openapi_validation` - (Optional) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false`.
 * `wait` - (Optional) Will wait until all resources are in a ready state before marking the release as successful. It will wait for as long as `timeout`. Defaults to `true`.
 * `values` - (Optional) List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options.
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
@@ -83,11 +84,17 @@ The following arguments are supported:
 * `set_string` - (Optional) Value block with custom STRING values to be merged with the values yaml.
 * `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`.
 * `replace` - (Optional) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
+* `description` - (Optional) Set release description attribute (visible in the history).
+* `postrender` - (Optional) Configure a command to run after helm renders the manifest which can alter the manifest contents.
 
 The `set`, `set_sensitive` and `set_strings` blocks support:
 
 * `name` - (Required) full name of the variable to be set.
 * `value` - (Required) value of the variable to be set.
+
+The `postrender` block supports a single attribute:
+
+* `binary_path` - (Required) relative or full path to command binary.
 
 
 ## Attributes Reference
