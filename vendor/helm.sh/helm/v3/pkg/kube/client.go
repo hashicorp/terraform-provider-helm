@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -53,7 +54,11 @@ var ErrNoObjectsVisited = errors.New("no objects visited")
 type Client struct {
 	Factory Factory
 	Log     func(string, ...interface{})
+	// Namespace allows to bypass the kubeconfig file for the choice of the namespace
+	Namespace string
 }
+
+var addToScheme sync.Once
 
 // New creates a new Client.
 func New(getter genericclioptions.RESTClientGetter) *Client {
@@ -61,10 +66,15 @@ func New(getter genericclioptions.RESTClientGetter) *Client {
 		getter = genericclioptions.NewConfigFlags(true)
 	}
 	// Add CRDs to the scheme. They are missing by default.
-	if err := apiextv1beta1.AddToScheme(scheme.Scheme); err != nil {
-		// This should never happen.
-		panic(err)
-	}
+	addToScheme.Do(func() {
+		if err := apiextv1.AddToScheme(scheme.Scheme); err != nil {
+			// This should never happen.
+			panic(err)
+		}
+		if err := apiextv1beta1.AddToScheme(scheme.Scheme); err != nil {
+			panic(err)
+		}
+	})
 	return &Client{
 		Factory: cmdutil.NewFactory(getter),
 		Log:     nopLogger,
@@ -107,6 +117,9 @@ func (c *Client) Wait(resources ResourceList, timeout time.Duration) error {
 }
 
 func (c *Client) namespace() string {
+	if c.Namespace != "" {
+		return c.Namespace
+	}
 	if ns, _, err := c.Factory.ToRawKubeConfigLoader().Namespace(); err == nil {
 		return ns
 	}
@@ -196,11 +209,6 @@ func (c *Client) Update(original, target ResourceList, force bool) (*Result, err
 	}
 
 	for _, info := range original.Difference(target) {
-		if info.Mapping.GroupVersionKind.Kind == "CustomResourceDefinition" {
-			c.Log("Skipping the deletion of CustomResourceDefinition %q", info.Name)
-			continue
-		}
-
 		c.Log("Deleting %q in %s...", info.Name, info.Namespace)
 		res.Deleted = append(res.Deleted, info)
 		if err := deleteResource(info); err != nil {
@@ -223,11 +231,6 @@ func (c *Client) Delete(resources ResourceList) (*Result, []error) {
 	var errs []error
 	res := &Result{}
 	err := perform(resources, func(info *resource.Info) error {
-		if info.Mapping.GroupVersionKind.Kind == "CustomResourceDefinition" {
-			c.Log("Skipping the deletion of CustomResourceDefinition %q", info.Name)
-			return nil
-		}
-
 		c.Log("Starting delete for %q %s", info.Name, info.Mapping.GroupVersionKind.Kind)
 		if err := c.skipIfNotFound(deleteResource(info)); err != nil {
 			// Collect the error and continue on
