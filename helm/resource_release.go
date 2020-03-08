@@ -28,22 +28,23 @@ var errReleaseNotFound = errors.New("release not found")
 
 // defaultAttributes release attribute values
 var defaultAttributes = map[string]interface{}{
-	"verify":                false,
-	"timeout":               300,
-	"wait":                  true,
-	"disable_webhooks":      false,
-	"atomic":                false,
-	"render_subchart_notes": true,
-	"disable_crd_hooks":     false,
-	"force_update":          false,
-	"reset_values":          false,
-	"reuse_values":          false,
-	"recreate_pods":         false,
-	"max_history":           0,
-	"skip_crds":             false,
-	"cleanup_on_fail":       false,
-	"dependency_update":     false,
-	"replace":               false,
+	"verify":                     false,
+	"timeout":                    300,
+	"wait":                       true,
+	"disable_webhooks":           false,
+	"atomic":                     false,
+	"render_subchart_notes":      true,
+	"disable_openapi_validation": false,
+	"disable_crd_hooks":          false,
+	"force_update":               false,
+	"reset_values":               false,
+	"reuse_values":               false,
+	"recreate_pods":              false,
+	"max_history":                0,
+	"skip_crds":                  false,
+	"cleanup_on_fail":            false,
+	"dependency_update":          false,
+	"replace":                    false,
 }
 
 func resourceRelease() *schema.Resource {
@@ -271,7 +272,7 @@ func resourceRelease() *schema.Resource {
 			"disable_openapi_validation": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
+				Default:     defaultAttributes["disable_openapi_validation"],
 				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
 			},
 			"wait": {
@@ -637,6 +638,10 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 	}
 
 	if err := d.Set("status", r.Info.Status.String()); err != nil {
+		return err
+	}
+
+	if err := d.Set("description", r.Info.Description); err != nil {
 		return err
 	}
 

@@ -85,6 +85,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.version", "7.1.0"),
 				resource.TestCheckResourceAttr("helm_release.imported", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.imported", "description", "Test"),
 				resource.TestCheckNoResourceAttr("helm_release.imported", "repository"),
 
 				// Default values
@@ -104,6 +105,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.imported", "cleanup_on_fail", "false"),
 				resource.TestCheckResourceAttr("helm_release.imported", "dependency_update", "false"),
 				resource.TestCheckResourceAttr("helm_release.imported", "replace", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "disable_openapi_validation", "false"),
 			),
 		}},
 	})
