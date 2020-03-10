@@ -168,7 +168,7 @@ func (k *KubeConfig) toRawKubeConfigLoader() clientcmd.ClientConfig {
 				exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: kk, Value: vv.(string)})
 			}
 		} else {
-			fmt.Errorf("Failed to parse exec")
+			log.Printf("[ERROR] Failed to parse exec")
 			return nil
 		}
 		overrides.AuthInfo.Exec = exec
@@ -183,7 +183,7 @@ func (k *KubeConfig) toRawKubeConfigLoader() clientcmd.ClientConfig {
 	cfg := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
 
 	if cfg == nil {
-		fmt.Errorf("Failed to initialize kubernetes config")
+		log.Printf("[ERROR] Failed to initialize kubernetes config")
 		return nil
 	}
 
@@ -478,8 +478,7 @@ func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, er
 
 	actionConfig := new(action.Configuration)
 
-	kc := &KubeConfig{ConfigData: m.data}
-	kc.Namespace = &namespace
+	kc := &KubeConfig{ConfigData: m.data, Namespace: &namespace}
 
 	if err := actionConfig.Init(kc, namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
