@@ -641,10 +641,6 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 		return err
 	}
 
-	if err := d.Set("description", r.Info.Description); err != nil {
-		return err
-	}
-
 	c, err := json.Marshal(r.Config)
 
 	if err != nil {
@@ -890,6 +886,7 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 	}
 
 	d.Set("name", r.Name)
+	d.Set("description", r.Info.Description)
 
 	for key, value := range defaultAttributes {
 		d.Set(key, value)
