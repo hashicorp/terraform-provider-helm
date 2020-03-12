@@ -6,7 +6,7 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk v1.7.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1
-	helm.sh/helm/v3 v3.1.1
+	helm.sh/helm/v3 v3.1.2
 	k8s.io/api v0.17.3
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v0.17.3
