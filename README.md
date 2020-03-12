@@ -4,19 +4,19 @@ Terraform Provider for Helm
 [![license](https://img.shields.io/github/license/terraform-providers/terraform-provider-helm.svg)]()
 ===========================
 
-This is a [Helm](https://github.com/kubernetes/helm) provider for [Terraform](https://www.terraform.io/).
+- Website: https://www.terraform.io/docs/providers/helm/index.html
+- Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
+- Slack channel: [#terraform-providers in Kubernetes](https://kubernetes.slack.com/messages/CJY6ATQH4) ([Sign up here](http://slack.k8s.io/))
 
-The provider manages the installed [Charts](https://github.com/kubernetes/charts) in your Kubernetes cluster, in the same way Helm does, through Terraform.
+This is the [Helm](https://github.com/kubernetes/helm) provider for [Terraform](https://www.terraform.io/).
 
-⚠️ Project Update: Helm 3
+The provider manages the installed [Charts](https://github.com/helm/charts) in your Kubernetes cluster, in the same way Helm does, through Terraform.
+
+
+Helm v2 support 
 ---
 
-The latest release `1.0.0` for this provider brings support for Helm 3. This is a breaking change that removes support for Helm 2 and tiller. If you are still using Helm 2 see the section below.
-
-Helm 2 support 
----
-
-If you are still using Helm 2 and tiller you will have to [pin your provider version](https://www.terraform.io/docs/configuration/providers.html#provider-versions) to the latest `0.10.x` release. 
+Release `1.0.0` for this provider brought support for Helm v3. This was a breaking change that removed support for Helm v2 and tiller. If you are still using Helm v2 and tiller you will have to [pin your provider version](https://www.terraform.io/docs/configuration/providers.html#provider-versions) to the latest `0.10.x` release. 
 
 We will continue to accept bugfixes for the `0.10.x` version of the provider, please open your pull request against the latest `release-0.10.x` branch. 
 
@@ -36,7 +36,7 @@ Developing the Provider
 
 ### Installation from sources
 
-If you wish to compile the provider from source code, you'll first need [Go](http://www.golang.org) installed on your machine (version >=1.9 is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
+If you wish to compile the provider from source code, you'll first need [Go](http://www.golang.org) installed on your machine (version >=1.13 is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
 Clone repository to: `$GOPATH/src/github.com/terraform-providers/terraform-provider-helm`
 

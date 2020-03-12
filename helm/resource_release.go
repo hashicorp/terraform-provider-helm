@@ -261,7 +261,7 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["skip_crds"],
-				Description: "If set, no CRDs will be installed. By DefaultAttributes, CRDs are installed if not already present",
+				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
 			},
 			"render_subchart_notes": {
 				Type:        schema.TypeBool,
@@ -302,6 +302,9 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "Add a custom description",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return new == ""
+				},
 			},
 			"postrender": {
 				Type:        schema.TypeList,
