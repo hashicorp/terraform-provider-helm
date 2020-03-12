@@ -300,8 +300,8 @@ func resourceRelease() *schema.Resource {
 			},
 			"description": {
 				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "Add a custom description",
+				Computed:    true,
+				Description: `Human-friendly "log entry" about the release.`,
 			},
 			"postrender": {
 				Type:        schema.TypeList,
@@ -461,7 +461,6 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.SubNotes = d.Get("render_subchart_notes").(bool)
 	client.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
 	client.Replace = d.Get("replace").(bool)
-	client.Description = d.Get("description").(string)
 
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
 		pr, err := postrender.NewExec(cmd)
@@ -544,7 +543,6 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	client.Recreate = d.Get("recreate_pods").(bool)
 	client.MaxHistory = d.Get("max_history").(int)
 	client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
-	client.Description = d.Get("description").(string)
 
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
 		pr, err := postrender.NewExec(cmd)
@@ -638,6 +636,10 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 	}
 
 	if err := d.Set("status", r.Info.Status.String()); err != nil {
+		return err
+	}
+
+	if err := d.Set("description", r.Info.Description); err != nil {
 		return err
 	}
 
@@ -886,7 +888,6 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 	}
 
 	d.Set("name", r.Name)
-	d.Set("description", r.Info.Description)
 
 	for key, value := range defaultAttributes {
 		d.Set(key, value)

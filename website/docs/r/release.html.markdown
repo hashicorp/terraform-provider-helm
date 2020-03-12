@@ -84,7 +84,6 @@ The following arguments are supported:
 * `set_string` - (Optional) Value block with custom STRING values to be merged with the values yaml.
 * `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`.
 * `replace` - (Optional) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
-* `description` - (Optional) Set release description attribute (visible in the history).
 * `postrender` - (Optional) Configure a command to run after helm renders the manifest which can alter the manifest contents.
 
 The `set`, `set_sensitive` and `set_strings` blocks support:
@@ -102,6 +101,7 @@ The `postrender` block supports a single attribute:
 In addition to the arguments listed above, the following computed attributes are
 exported:
 
+* `description` - The human-friendly "log entry" about the release.
 * `metadata` - Block status of the deployed release.
 
 The `metadata` block supports:
