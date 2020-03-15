@@ -48,12 +48,23 @@ resource "helm_release" "example" {
 }
 ```
 
+## Example Usage - Local Chart
+
+In case a Chart is not available from a repository, a path may be used:
+
+```hcl
+resource "helm_release" "local" {
+  name       = "my-local-chart"
+  chart      = "./charts/example"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
 
 * `name` - (Required) Release name.
-* `chart` - (Required) Chart name to be installed.
+* `chart` - (Required) Chart name to be installed. A path may be used.
 * `repository` - (Optional) Repository where to locate the requested chart. If is an URL the chart is installed without installing the repository.
 * `repository_key_file` - (Optional) The repositories cert key file
 * `repository_cert_file` - (Optional) The repositories cert file
