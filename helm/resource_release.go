@@ -99,7 +99,7 @@ func resourceRelease() *schema.Resource {
 			"chart": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Chart name to be installed.",
+				Description: "Chart name to be installed. A path may be used.",
 			},
 			"version": {
 				Type:        schema.TypeString,
