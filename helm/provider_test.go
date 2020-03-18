@@ -29,7 +29,6 @@ var (
 	testAccProviders map[string]terraform.ResourceProvider
 	testAccProvider  *schema.Provider
 	client           kubernetes.Interface = nil
-	helmdir          string
 )
 
 func TestMain(m *testing.M) {
@@ -38,15 +37,21 @@ func TestMain(m *testing.M) {
 		"helm": testAccProvider,
 	}
 
-	if dir, err := ioutil.TempDir(os.TempDir(), "helmhome"); err != nil {
-		panic(err)
-	} else {
-		helmdir = dir
+	home, err := ioutil.TempDir(os.TempDir(), "helm")
+
+	if err != nil {
+		panic("Could not create temporary directory for helm config files")
 	}
+
+	os.Setenv("HELM_REPOSITORY_CONFIG", filepath.Join(home, "config/repositories.yaml"))
+	os.Setenv("HELM_REPOSITORY_CACHE", filepath.Join(home, "cache/helm/repository"))
+	os.Setenv("HELM_REGISTRY_CONFIG", filepath.Join(home, "config/registry.json"))
+	os.Setenv("HELM_PLUGINS", filepath.Join(home, "plugins"))
+	os.Setenv("XDG_CACHE_HOME", filepath.Join(home, "cache"))
 
 	ec := m.Run()
 
-	os.RemoveAll(helmdir)
+	os.RemoveAll(home)
 
 	os.Exit(ec)
 }
@@ -73,20 +78,6 @@ func testAccPreCheck(t *testing.T, namespace string) {
 	if namespace != "" {
 		createNamespace(t, namespace)
 	}
-
-	home, err := ioutil.TempDir(helmdir, "helm")
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	os.Setenv("HELM_REPOSITORY_CONFIG", filepath.Join(home, "config/repositories.yaml"))
-	os.Setenv("HELM_REPOSITORY_CACHE", filepath.Join(home, "cache/helm/repository"))
-	os.Setenv("HELM_REGISTRY_CONFIG", filepath.Join(home, "config/registry.json"))
-	os.Setenv("HELM_PLUGINS", filepath.Join(home, "plugins"))
-	os.Setenv("XDG_CACHE_HOME", filepath.Join(home, "cache"))
-	//os.Setenv("HELM_DEBUG", "true")
-	//os.Setenv("TF_LOG", "DEBUG")
 }
 
 func setK8Client() error {

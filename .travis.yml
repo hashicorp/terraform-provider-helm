@@ -1,63 +1,36 @@
+os: linux
 dist: bionic
+
 language: go
+
 go:
   - "1.13"
+
 services:
   - docker
 
 env:
   - GOFLAGS=-mod=vendor
 
-before_install:
-  # https://github.com/kubernetes/website/pull/15667
-  # It is recommended to use the apt installation of docker from ([Docker](https://www.docker.com/products/docker-desktop),
-  # when using the none driver. The snap installation of docker does not work with minikube.
-  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-  - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-  - sudo apt-get update
-  - sudo apt-get -y install docker-ce
-
 stages:
-  - Unit test
-  - Acceptance test
+  - Unit tests
+  - Acceptance tests
 
 jobs:
   include:
-    - name: Unit test
-      stage: Unit test
-      install:
-        # This script is used by the Travis build to install a cookie for
-        # go.googlesource.com so rate limits are higher when using `go get` to fetch
-        # packages that live there.
-        # See: https://github.com/golang/go/issues/12933
-        - bash scripts/gogetcookie.sh
+    - name: Unit tests
+      stage: Unit tests
       script:
         - make test
         - make vet
         - make website-test
-    - name: Acceptance test
-      stage: Acceptance test
+    - name: Acceptance tests
+      stage: Acceptance tests
       env:
-        - CHANGE_MINIKUBE_NONE_USER=true
-        - KUBERNETES_VERSION=v1.15.4
-        - MINIKUBE_VERSION=v1.4.0
+        - KIND_VERSION=0.7.0
       install:
-        - sudo apt-get update
-        - sudo apt-get install -y socat
+        - curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/v${KIND_VERSION}/kind-linux-amd64 && chmod +x ./kind
       before_script:
-        - sudo mount --make-rshared /
-        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/linux/amd64/kubectl
-        - sudo chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-linux-amd64
-        - sudo chmod +x minikube && sudo mv minikube /usr/local/bin/
-        - sudo minikube start --vm-driver=none --kubernetes-version=${KUBERNETES_VERSION}
-        - sudo chown -R travis /home/travis/.minikube/
-        - sudo chown -R travis /home/travis/.kube/
-        - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
+        - ./kind create cluster --name dev
       script:
-        - travis_wait 60 make testacc
-
-matrix:
-  fast_finish: true
-  allow_failures:
-  - go: tip
+        - make testacc
