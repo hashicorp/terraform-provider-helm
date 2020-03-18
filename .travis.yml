@@ -33,4 +33,4 @@ jobs:
       before_script:
         - ./kind create cluster --name dev
       script:
-        - travis_retry make testacc
+        - make testacc
