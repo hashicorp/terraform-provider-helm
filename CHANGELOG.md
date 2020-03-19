@@ -1,4 +1,4 @@
-## 1.1.0 (Unreleased)
+## 1.1.0 (March 19, 2020)
 IMPROVEMENTS:
 * Add import feature for helm_release (#394)
 * Run acceptance tests in travis-ci using kind
