@@ -628,9 +628,6 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 
 func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
 	d.SetId(r.Name)
-	if err := d.Set("chart", r.Chart.Metadata.Name); err != nil {
-		return err
-	}
 
 	if err := d.Set("version", r.Chart.Metadata.Version); err != nil {
 		return err
@@ -890,6 +887,7 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 
 	d.Set("name", r.Name)
 	d.Set("description", r.Info.Description)
+	d.Set("chart", r.Chart.Metadata.Name)
 
 	for key, value := range defaultAttributes {
 		d.Set(key, value)

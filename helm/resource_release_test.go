@@ -372,6 +372,31 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_repository_path(t *testing.T) {
+	name := fmt.Sprintf("test-repository-url-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t, namespace) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigRepositoryPath(testResourceName, namespace, name),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "chart", "stable/coredns"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigRepositoryPath(testResourceName, namespace, name),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "chart", "stable/coredns"),
+			),
+		}},
+	})
+}
+
 func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	name := fmt.Sprintf("test-update-after-fail-%s", acctest.RandString(10))
 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
@@ -757,6 +782,20 @@ func testAccHelmReleaseConfigRepositoryURL(resource, ns, name string) string {
 			namespace  = %q
 			repository = "https://kubernetes-charts.storage.googleapis.com"
 			chart      = "coredns"
+		}
+	`, resource, name, ns)
+}
+
+func testAccHelmReleaseConfigRepositoryPath(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		data "helm_repository" "stable" {
+			name = "stable"
+			url  = "https://kubernetes-charts.storage.googleapis.com"
+		}
+		resource "helm_release" %q {
+			name       = %q
+			namespace  = %q
+			chart      = "${data.helm_repository.stable.name}/coredns"
 		}
 	`, resource, name, ns)
 }
