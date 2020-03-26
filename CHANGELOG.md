@@ -1,4 +1,4 @@
-## 1.1.1 (Unreleased)
+## 1.1.1 (March 26, 2020)
 FIXES:
 * Fix chart path bug causing unwanted diff (#449)
 
