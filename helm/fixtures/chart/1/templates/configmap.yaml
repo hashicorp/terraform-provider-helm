@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-local-configmap
+data:
+  FOO: {{.Values.foo}}
+  BAR: {{.Values.bar}}

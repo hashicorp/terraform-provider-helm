@@ -3,13 +3,8 @@ package helm
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"net/url"
-	"os"
-	"strings"
-	"time"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -19,8 +14,13 @@ import (
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
-
+	"log"
+	"net/url"
+	"os"
 	"sigs.k8s.io/yaml"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // errReleaseNotFound is the error when a Helm release is not found
@@ -321,6 +321,11 @@ func resourceRelease() *schema.Resource {
 					},
 				},
 			},
+			"hash_local_chart": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The hash of the local chart.",
+			},
 			"metadata": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -566,6 +571,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	name := d.Get("name").(string)
 	release, err := client.Run(name, chart, values)
+
 	if err != nil {
 		return err
 	}
@@ -617,6 +623,11 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 		return nil
 	}
 
+	err = detectLocalChartUpdate(d, m)
+	if err != nil {
+		return err
+	}
+
 	// Set desired version from the Chart metadata if available
 	if len(c.Metadata.Version) > 0 {
 		return d.SetNew("version", c.Metadata.Version)
@@ -626,8 +637,44 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 
 }
 
+func detectLocalChartUpdate(d *schema.ResourceDiff, m *Meta) error {
+	localHashChart := d.Get("hash_local_chart").(string)
+	if strings.Compare(localHashChart, "") != 0 {
+		n := d.Get("namespace").(string)
+
+		helmConf, err := m.GetHelmConfiguration(n)
+		if err != nil {
+			return err
+		}
+
+		name := d.Get("name").(string)
+		r, err := getRelease(helmConf, name)
+		if err != nil {
+			return err
+		}
+
+		hash, err := getHashChart(r.Chart)
+		if err != nil {
+			return err
+		}
+
+		remoteHashChart := strconv.FormatUint(hash, 10)
+		if strings.Compare(localHashChart, remoteHashChart) != 0 {
+			err = d.SetNewComputed("hash_local_chart")
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
 	d.SetId(r.Name)
+	localHashChart, err := getLocalHashChart(d.Get("chart"))
+	if err != nil {
+		return err
+	}
 
 	if err := d.Set("version", r.Chart.Metadata.Version); err != nil {
 		return err
@@ -638,6 +685,10 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 	}
 
 	if err := d.Set("status", r.Info.Status.String()); err != nil {
+		return err
+	}
+
+	if err := d.Set("hash_local_chart", localHashChart); err != nil {
 		return err
 	}
 
@@ -657,6 +708,76 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 		"version":   r.Chart.Metadata.Version,
 		"values":    json,
 	}})
+}
+
+func getHash(v interface{}) (uint64, error) {
+	hash, err := hashstructure.Hash(v, nil)
+	if err != nil {
+		return 0, err
+	}
+	return hash, nil
+}
+
+func getDeepHashChart(charts []*chart.Chart) (uint64, error) {
+	var checkSum uint64
+
+	for _, c := range charts {
+		res, err := getHashChart(c)
+		if err != nil {
+			return checkSum, err
+		}
+
+		checkSum += res
+	}
+
+	return checkSum, nil
+}
+
+func getHashChart(c *chart.Chart) (uint64, error) {
+	var checkSum uint64
+	var res uint64
+	var err error
+	itemToHash := []interface{}{c.Values, c.Templates, c.Metadata, c.Files}
+
+	if len(c.Dependencies()) > 0 {
+		res, err = getDeepHashChart(c.Dependencies())
+		if err != nil {
+			return 0, err
+		}
+		checkSum += res
+	}
+
+	for _, i := range itemToHash {
+		res, err = getHash(i)
+		if err != nil {
+			return 0, err
+		}
+
+		checkSum += res
+	}
+
+	return checkSum, nil
+}
+
+func getLocalHashChart(chartParam interface{}) (string, error) {
+	if chartParam == nil {
+		return "", nil
+	}
+
+	chartPath := chartParam.(string)
+	if _, err := os.Stat(chartPath); os.IsNotExist(err) {
+		debug("chart path %s doesn't exist with this error %s", chartPath, err.Error())
+		return "", nil
+	}
+
+	c, err := loader.Load(chartPath)
+	if err != nil {
+		debug("Error on loading local chart: %s with this error: %s", chartPath, err.Error())
+		return "", err
+	}
+
+	hash, err := getHashChart(c)
+	return strconv.FormatUint(hash, 10), err
 }
 
 func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, error) {
