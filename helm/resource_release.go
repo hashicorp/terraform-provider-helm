@@ -617,13 +617,21 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 		return nil
 	}
 
+	// Validates the resource configuration, the values, the chart itself, and
+	// the combination of both.
+	//
+	// Maybe here is not the most canonical place to include a validation
+	// but is the only place to fail in `terraform plan`.
+	if err := resourceReleaseValidate(d, meta.(*Meta), cpo); err != nil {
+		return err
+	}
+
 	// Set desired version from the Chart metadata if available
 	if len(c.Metadata.Version) > 0 {
 		return d.SetNew("version", c.Metadata.Version)
-	} else {
-		return d.SetNewComputed("version")
 	}
 
+	return d.SetNewComputed("version")
 }
 
 func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
@@ -740,7 +748,7 @@ func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-func getValues(d *schema.ResourceData) (map[string]interface{}, error) {
+func getValues(d resourceGetter) (map[string]interface{}, error) {
 	base := map[string]interface{}{}
 
 	for _, raw := range d.Get("values").([]interface{}) {
@@ -908,4 +916,47 @@ func parseImportIdentifier(id string) (string, string, error) {
 	}
 
 	return parts[0], parts[1], nil
+}
+
+func resourceReleaseValidate(d resourceGetter, meta interface{}, cpo *action.ChartPathOptions) error {
+	cpo, name, err := chartPathOptions(d, meta.(*Meta))
+	if err != nil {
+		return fmt.Errorf("malformed values: \n\t%s", err)
+	}
+
+	values, err := getValues(d)
+	if err != nil {
+		return err
+	}
+
+	return lintChart(meta.(*Meta), name, cpo, values)
+}
+
+func lintChart(m *Meta, name string, cpo *action.ChartPathOptions, values map[string]interface{}) (err error) {
+	path, err := cpo.LocateChart(name, m.Settings)
+	if err != nil {
+		return err
+	}
+
+	l := action.NewLint()
+	result := l.Run([]string{path}, values)
+
+	return resultToError(result)
+}
+
+func resultToError(r *action.LintResult) error {
+	if len(r.Errors) == 0 {
+		return nil
+	}
+
+	errMsg := make([]string, len(r.Errors))
+	for i, msg := range r.Messages {
+		if msg.Err == nil {
+			continue
+		}
+
+		errMsg[i] = fmt.Sprintf("%s: %s", msg.Path, msg.Err)
+	}
+
+	return fmt.Errorf("malformed chart or values: \n\t%s", strings.Join(errMsg, "\n\t"))
 }
