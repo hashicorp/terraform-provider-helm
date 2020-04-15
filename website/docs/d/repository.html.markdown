@@ -8,6 +8,8 @@ description: |-
 
 # Data Source: helm_repository
 
+!> **Warning:** This resource is deprecated and will be removed in the next major version.
+
 A chart repository is a location where packaged charts can be stored and shared.
 
 `helm_repository` describes a helm repository.
@@ -50,7 +52,3 @@ The `metadata` block supports:
 
 * `name` - Name of the repository read from the home.
 * `url` - URL of the repository read from the home.
-
-## Old resource helm_repository
-
-Before 0.9.0 `helm_repository` was a resource and not a data source. The old resource is now a shim to the data source to preserve backwards compatibility. As the use of the resource is deprecated it is strongly suggested to move to the new data source as the compatibility will be removed in a future release.

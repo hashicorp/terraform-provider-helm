@@ -11,6 +11,8 @@ import (
 
 func dataRepository() *schema.Resource {
 	return &schema.Resource{
+		DeprecationMessage: "This resource is deprecated and will be removed in the next major version.",
+
 		Read: dataRepositoryRead,
 		Schema: map[string]*schema.Schema{
 			"name": {
