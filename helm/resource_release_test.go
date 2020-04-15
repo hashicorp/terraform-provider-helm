@@ -922,3 +922,31 @@ func testAccHelmReleaseConfigPostrender(resource, ns, name, binaryPath string) s
 		}
 	`, resource, name, ns, binaryPath)
 }
+
+func TestAccResourceRelease_LintFail(t *testing.T) {
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	defer deleteNamespace(t, namespace)
+
+	broken := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name        = "foo"
+		namespace   = %q
+		repository  = "https://kubernetes-charts.storage.googleapis.com"
+		chart       = "coredns"
+		values = [
+			"replicaCount:\n  - foo: qux"
+		]
+	}`, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config:             broken,
+			PlanOnly:           true,
+			ExpectError:        regexp.MustCompile("malformed chart or values"),
+			ExpectNonEmptyPlan: true,
+		}},
+	})
+}
