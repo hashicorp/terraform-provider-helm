@@ -1,6 +1,7 @@
 package helm
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databus23/helm-diff/diff"
+	"github.com/databus23/helm-diff/manifest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/pkg/errors"
@@ -351,6 +354,11 @@ func resourceRelease() *schema.Resource {
 				Default:     defaultAttributes["lint"],
 				Description: "Run helm lint when planning",
 			},
+			"diff_release": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Release resource diff",
+			},
 			"metadata": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -655,7 +663,7 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 	}
 
 	// Get Chart metadata, if we fail - we're done
-	c, _, err := getChart(d, meta.(*Meta), chartName, cpo)
+	chart, _, err := getChart(d, meta.(*Meta), chartName, cpo)
 	if err != nil {
 		return nil
 	}
@@ -673,9 +681,92 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 	}
 	debug("%s Release validated", logId)
 
+	// do dry-run upgrade to get diff
+	name := d.Get("name").(string)
+	namespace := d.Get("namespace").(string)
+
+	actionConfig, err := m.GetHelmConfiguration(namespace)
+	if err != nil {
+		return err
+	}
+
+	// check of release exists
+	old, err := getRelease(actionConfig, name)
+	if err == errReleaseNotFound {
+		if len(chart.Metadata.Version) > 0 {
+			return d.SetNew("version", chart.Metadata.Version)
+		} else {
+			return d.SetNewComputed("version")
+		}
+	} else if err != nil {
+		return err
+	}
+
+	if req := chart.Metadata.Dependencies; req != nil {
+		if err := action.CheckDependencies(chart, req); err != nil {
+			return err
+		}
+	}
+
+	client := action.NewUpgrade(actionConfig)
+	client.ChartPathOptions = *cpo
+	client.Devel = d.Get("devel").(bool)
+	client.Namespace = d.Get("namespace").(string)
+	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+	client.Wait = d.Get("wait").(bool)
+	client.DryRun = true // do not apply changes
+	client.DisableHooks = d.Get("disable_webhooks").(bool)
+	client.Atomic = d.Get("atomic").(bool)
+	client.SubNotes = d.Get("render_subchart_notes").(bool)
+	client.Force = d.Get("force_update").(bool)
+	client.ResetValues = d.Get("reset_values").(bool)
+	client.ReuseValues = d.Get("reuse_values").(bool)
+	client.Recreate = d.Get("recreate_pods").(bool)
+	client.MaxHistory = d.Get("max_history").(int)
+	client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
+	client.Description = d.Get("description").(string)
+
+	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+		pr, err := postrender.NewExec(cmd)
+
+		if err != nil {
+			return err
+		}
+
+		client.PostRenderer = pr
+	}
+
+	values, err := getValues(d)
+	if err != nil {
+		return err
+	}
+
+	new, err := client.Run(name, chart, values)
+	if err != nil {
+		return err
+	}
+
+	var diffRelease bytes.Buffer
+
+	oldSpecs := make(map[string]*manifest.MappingResult)
+	oldSpecs = manifest.Parse(old.Manifest, client.Namespace, "test")
+
+	var newSpecs map[string]*manifest.MappingResult
+	newSpecs = manifest.Parse(new.Manifest, client.Namespace, "test")
+
+	changed := diff.Releases(oldSpecs, newSpecs, []string{}, false, 2, &diffRelease)
+
+	if changed {
+		if err = d.SetNew("diff_release", diffRelease.String()); err != nil {
+			return err
+		}
+	}
+
 	// Set desired version from the Chart metadata if available
-	if len(c.Metadata.Version) > 0 {
-		return d.SetNew("version", c.Metadata.Version)
+	if len(chart.Metadata.Version) > 0 {
+		return d.SetNew("version", chart.Metadata.Version)
+	} else {
+		return d.SetNewComputed("version")
 	}
 
 	debug("%s Done", logId)
@@ -695,6 +786,11 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 	}
 
 	if err := d.Set("status", r.Info.Status.String()); err != nil {
+		return err
+	}
+
+	// remove diff on successful deploy
+	if err := d.Set("diff_release", ""); err != nil {
 		return err
 	}
 
