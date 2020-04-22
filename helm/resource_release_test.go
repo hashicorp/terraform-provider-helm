@@ -644,6 +644,10 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 		repository       = "https://kubernetes-charts.storage.googleapis.com"
 		chart            = "nginx-ingress"
 		create_namespace = true
+		set {
+			name = "controller.service.type"
+			value = "ClusterIP"
+		}
 	}`, name, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
