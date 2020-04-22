@@ -540,6 +540,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 	client.DryRun = false
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
 	client.Atomic = d.Get("atomic").(bool)
+	client.SkipCRDs = d.Get("skip_crds").(bool)
 	client.SubNotes = d.Get("render_subchart_notes").(bool)
 	client.Force = d.Get("force_update").(bool)
 	client.ResetValues = d.Get("reset_values").(bool)
