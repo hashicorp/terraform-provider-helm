@@ -64,13 +64,14 @@ func Provider() terraform.ResourceProvider {
 			"helm_driver": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "The backend storage driver. Values are: configmap, secret, memory",
+				Description: "The backend storage driver. Values are: configmap, secret, memory, sql",
 				DefaultFunc: schema.EnvDefaultFunc("HELM_DRIVER", "secret"),
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					drivers := []string{
 						"configmap",
 						"secret",
 						"memory",
+						"sql",
 					}
 
 					v := strings.ToLower(val.(string))
