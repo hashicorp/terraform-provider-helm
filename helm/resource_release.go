@@ -45,6 +45,7 @@ var defaultAttributes = map[string]interface{}{
 	"cleanup_on_fail":            false,
 	"dependency_update":          false,
 	"replace":                    false,
+	"create_namespace":           false,
 }
 
 func resourceRelease() *schema.Resource {
@@ -306,6 +307,12 @@ func resourceRelease() *schema.Resource {
 					return new == ""
 				},
 			},
+			"create_namespace": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     defaultAttributes["create_namespace"],
+				Description: "Create the namespace if it does not exist",
+			},
 			"postrender": {
 				Type:        schema.TypeList,
 				MaxItems:    1,
@@ -465,6 +472,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	client.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
 	client.Replace = d.Get("replace").(bool)
 	client.Description = d.Get("description").(string)
+	client.CreateNamespace = d.Get("create_namespace").(bool)
 
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
 		pr, err := postrender.NewExec(cmd)

@@ -107,6 +107,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.imported", "dependency_update", "false"),
 				resource.TestCheckResourceAttr("helm_release.imported", "replace", "false"),
 				resource.TestCheckResourceAttr("helm_release.imported", "disable_openapi_validation", "false"),
+				resource.TestCheckResourceAttr("helm_release.imported", "create_namespace", "false"),
 			),
 		}},
 	})
@@ -626,6 +627,35 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 			Config:             broken,
 			ExpectError:        regexp.MustCompile("create: failed to create"),
 			ExpectNonEmptyPlan: true,
+		}},
+	})
+}
+
+func TestAccResourceRelease_createNamespace(t *testing.T) {
+	name := fmt.Sprintf("create-namespace-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+
+	defer deleteNamespace(t, namespace)
+
+	config := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name             = %q
+		namespace        = %q
+		repository       = "https://kubernetes-charts.storage.googleapis.com"
+		chart            = "nginx-ingress"
+		create_namespace = true
+	}`, name, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, "") },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: config,
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+			),
 		}},
 	})
 }
