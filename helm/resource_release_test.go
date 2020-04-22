@@ -1,6 +1,7 @@
 package helm
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -889,10 +890,10 @@ func deleteNamespace(t *testing.T, namespace string) {
 
 	debug("[DEBUG] Deleting namespace %q", namespace)
 	gracePeriodSeconds := int64(0)
-	deleteOptions := &metav1.DeleteOptions{
+	deleteOptions := metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriodSeconds,
 	}
-	err := client.CoreV1().Namespaces().Delete(namespace, deleteOptions)
+	err := client.CoreV1().Namespaces().Delete(context.TODO(), namespace, deleteOptions)
 	if err != nil {
 		t.Fatalf("An error occurred while deleting namespace %q: %q", namespace, err)
 	}
