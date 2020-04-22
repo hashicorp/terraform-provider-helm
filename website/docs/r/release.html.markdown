@@ -92,6 +92,7 @@ The following arguments are supported:
 * `replace` - (Optional) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
 * `description` - (Optional) Set release description attribute (visible in the history).
 * `postrender` - (Optional) Configure a command to run after helm renders the manifest which can alter the manifest contents.
+* `create_namespace` - (Optional) Create the namespace if it does not yet exist. Defaults to `false`.
 
 The `set`, `set_sensitive` and `set_strings` blocks support:
 

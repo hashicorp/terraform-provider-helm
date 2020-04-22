@@ -38,6 +38,7 @@ The following arguments are supported:
 * `key_file` - (Optional) Identify HTTPS client using this SSL key file
 * `cert_file` - (Optional) Identify HTTPS client using this SSL certificate file.
 * `ca_file` - (Optional) Verify certificates of HTTPS-enabled servers using this CA bundle
+* `insecure_skip_tls_verify` - (Optional) Skip TLS certificate validation.
 * `username` - (Optional) Username for HTTP basic authentication.
 * `password` - (Optional) Password for HTTP basic authentication.
 
