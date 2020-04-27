@@ -40,11 +40,6 @@ func dataRepository() *schema.Resource {
 				Optional:    true,
 				Description: "Verify certificates of HTTPS-enabled servers using this CA bundle",
 			},
-			"insecure_skip_tls_verify": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Description: "Skip TLS certificate verification",
-			},
 			"username": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -104,21 +99,19 @@ func dataRepositoryRead(d *schema.ResourceData, meta interface{}) error {
 	// Not sure I agree with the logic here. Should a data source really update an underlying resource every time its called?
 	if entry == nil {
 		entry = &repo.Entry{
-			Name:                  name,
-			URL:                   d.Get("url").(string),
-			CertFile:              d.Get("cert_file").(string),
-			KeyFile:               d.Get("key_file").(string),
-			CAFile:                d.Get("ca_file").(string),
-			InsecureSkipTLSverify: d.Get("insecure_skip_tls_verify").(bool),
-			Username:              d.Get("username").(string),
-			Password:              d.Get("password").(string),
+			Name:     name,
+			URL:      d.Get("url").(string),
+			CertFile: d.Get("cert_file").(string),
+			KeyFile:  d.Get("key_file").(string),
+			CAFile:   d.Get("ca_file").(string),
+			Username: d.Get("username").(string),
+			Password: d.Get("password").(string),
 		}
 	} else {
 		entry.URL = d.Get("url").(string)
 		entry.CertFile = d.Get("cert_file").(string)
 		entry.KeyFile = d.Get("key_file").(string)
 		entry.CAFile = d.Get("ca_file").(string)
-		entry.InsecureSkipTLSverify = d.Get("insecure_skip_tls_verify").(bool)
 		entry.Username = d.Get("username").(string)
 		entry.Password = d.Get("password").(string)
 	}
