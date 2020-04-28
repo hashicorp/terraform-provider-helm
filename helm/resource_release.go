@@ -762,13 +762,13 @@ func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptio
 	m.Lock()
 	defer m.Unlock()
 
-	n, err := cpo.LocateChart(name, m.Settings)
+	path, err = cpo.LocateChart(name, m.Settings)
 
 	if err != nil {
 		return nil, "", err
 	}
 
-	c, err = loader.Load(n)
+	c, err = loader.Load(path)
 
 	if err != nil {
 		return nil, "", err
