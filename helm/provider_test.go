@@ -1,6 +1,7 @@
 package helm
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -122,9 +123,9 @@ func createNamespace(t *testing.T, namespace string) {
 		t.Fatal("provider not properly initialized")
 	}
 
-	options := metav1.GetOptions{}
+	getOptions := metav1.GetOptions{}
 
-	_, err := client.CoreV1().Namespaces().Get(namespace, options)
+	_, err := client.CoreV1().Namespaces().Get(context.TODO(), namespace, getOptions)
 
 	if err == nil {
 		return
@@ -137,7 +138,10 @@ func createNamespace(t *testing.T, namespace string) {
 	}
 
 	t.Log("[DEBUG] Creating namespace", namespace)
-	_, err = client.CoreV1().Namespaces().Create(k8ns)
+
+	createOptions := metav1.CreateOptions{}
+
+	_, err = client.CoreV1().Namespaces().Create(context.TODO(), k8ns, createOptions)
 	if err != nil {
 		// No failure here, the concurrency tests will blow up if we fail. Tried
 		// Locking in this method, but it causes the tests to hang
