@@ -228,6 +228,30 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_cloakValues(t *testing.T) {
+	name := fmt.Sprintf("test-update-values-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigSensitiveValue(
+				testResourceName, namespace, name, "kibana", "3.2.5", "foo", "bar",
+			),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values",
+					"{\"foo\":\"(sensitive value)\"}"),
+			),
+		}},
+	})
+}
+
 func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 	name := fmt.Sprintf("test-update-multiple-values-%s", acctest.RandString(10))
 	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
@@ -678,6 +702,22 @@ func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, v
 	`, resource, name, ns, chart, version, strings.Join(vals, ","))
 }
 
+func testAccHelmReleaseConfigSensitiveValue(resource, ns, name, chart, version string, key, value string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name       = %q
+			namespace  = %q
+			repository = "https://kubernetes-charts.storage.googleapis.com"
+			chart      = %q
+			version    = %q
+			set_sensitive {
+				name  = %q
+				value = %q
+			  }
+		}
+	`, resource, name, ns, chart, version, key, value)
+}
+
 func TestGetValues(t *testing.T) {
 	d := resourceRelease().Data(nil)
 	d.Set("values", []string{
@@ -687,6 +727,7 @@ func TestGetValues(t *testing.T) {
 	})
 	d.Set("set", []interface{}{
 		map[string]interface{}{"name": "foo", "value": "qux"},
+		map[string]interface{}{"name": "int", "value": "42"},
 	})
 
 	values, err := getValues(d)
@@ -703,6 +744,9 @@ func TestGetValues(t *testing.T) {
 	if values["foo"] != "qux" {
 		t.Fatalf("error merging values, expected %q, got %q", "qux", values["foo"])
 	}
+	if values["int"] != int64(42) {
+		t.Fatalf("error merging values, expected %s, got %s", "42", values["int"])
+	}
 	if values["first"] != "present" {
 		t.Fatalf("error merging values from file, expected value file %q not read", "testdata/get_values_first.yaml")
 	}
@@ -711,6 +755,82 @@ func TestGetValues(t *testing.T) {
 	}
 	if values["baz"] != "uier" {
 		t.Fatalf("error merging values from file, expected %q, got %q", "uier", values["baz"])
+	}
+}
+
+func TestGetValuesString(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	d.Set("set", []interface{}{
+		map[string]interface{}{"name": "foo", "value": "42", "type": "string"},
+	})
+
+	values, err := getValues(d)
+	if err != nil {
+		t.Fatalf("error getValues: %s", err)
+		return
+	}
+
+	if err != nil {
+		t.Fatalf("error parsing returned yaml: %s", err)
+		return
+	}
+
+	if values["foo"] != "42" {
+		t.Fatalf("error merging values, expected %q, got %s", "42", values["foo"])
+	}
+}
+
+func TestCloakSetValues(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	d.Set("set_sensitive", []interface{}{
+		map[string]interface{}{"name": "foo", "value": "42"},
+	})
+
+	values := map[string]interface{}{
+		"foo": "foo",
+	}
+
+	cloakSetValues(values, d)
+	if values["foo"] != sensitiveContentValue {
+		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, values["foo"])
+	}
+}
+
+func TestCloakSetValuesNested(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	d.Set("set_sensitive", []interface{}{
+		map[string]interface{}{"name": "foo.qux.bar", "value": "42"},
+	})
+
+	qux := map[string]interface{}{
+		"bar": "bar",
+	}
+
+	values := map[string]interface{}{
+		"foo": map[string]interface{}{
+			"qux": qux,
+		},
+	}
+
+	cloakSetValues(values, d)
+	if qux["bar"] != sensitiveContentValue {
+		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, qux["bar"])
+	}
+}
+
+func TestCloakSetValuesNotMatching(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	d.Set("set_sensitive", []interface{}{
+		map[string]interface{}{"name": "foo.qux.bar", "value": "42"},
+	})
+
+	values := map[string]interface{}{
+		"foo": "42",
+	}
+
+	cloakSetValues(values, d)
+	if values["foo"] != "42" {
+		t.Fatalf("error cloak values, expected %q, got %s", "42", values["foo"])
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -19,7 +20,6 @@ import (
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
-
 	"sigs.k8s.io/yaml"
 )
 
@@ -136,6 +136,13 @@ func resourceRelease() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
+						"type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"auto", "string",
+							}, false),
+						},
 					},
 				},
 			},
@@ -154,6 +161,13 @@ func resourceRelease() *schema.Resource {
 							Required:  true,
 							Sensitive: true,
 						},
+						"type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"auto", "string",
+							}, false),
+						},
 					},
 				},
 			},
@@ -161,6 +175,8 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				Description: "Custom string values to be merged with the values.",
+				Deprecated: "This argument is deprecated and will be removed in the next major" +
+					" version. Use `set` argument with `type` equals to `string`",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -324,6 +340,7 @@ func resourceRelease() *schema.Resource {
 			"metadata": {
 				Type:        schema.TypeList,
 				Computed:    true,
+				MaxItems:    1,
 				Description: "Status of the deployed release.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -355,7 +372,7 @@ func resourceRelease() *schema.Resource {
 						"values": {
 							Type:        schema.TypeString,
 							Computed:    true,
-							Description: "The raw yaml values used for the chart.",
+							Description: "Set of extra values, added to the chart. The sensitive data is cloaked. JSON encoded.",
 						},
 					},
 				},
@@ -649,13 +666,11 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 		return err
 	}
 
-	c, err := json.Marshal(r.Config)
-
+	cloakSetValues(r.Config, d)
+	values, err := json.Marshal(r.Config)
 	if err != nil {
 		return err
 	}
-
-	json := string(c)
 
 	return d.Set("metadata", []map[string]interface{}{{
 		"name":      r.Name,
@@ -663,8 +678,34 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 		"namespace": r.Namespace,
 		"chart":     r.Chart.Metadata.Name,
 		"version":   r.Chart.Metadata.Version,
-		"values":    json,
+		"values":    string(values),
 	}})
+}
+
+func cloakSetValues(config map[string]interface{}, d resourceGetter) {
+	for _, raw := range d.Get("set_sensitive").(*schema.Set).List() {
+		set := raw.(map[string]interface{})
+		cloakSetValue(config, set["name"].(string))
+	}
+}
+
+const sensitiveContentValue = "(sensitive value)"
+
+func cloakSetValue(values map[string]interface{}, valuePath string) {
+	pathKeys := strings.Split(valuePath, ".")
+	sensitiveKey := pathKeys[len(pathKeys)-1]
+	parentPathKeys := pathKeys[:len(pathKeys)-1]
+
+	m := values
+	for _, key := range parentPathKeys {
+		v, ok := m[key].(map[string]interface{})
+		if !ok {
+			return
+		}
+		m = v
+	}
+
+	m[sensitiveKey] = sensitiveContentValue
 }
 
 func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, error) {
@@ -752,37 +793,34 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 	base := map[string]interface{}{}
 
 	for _, raw := range d.Get("values").([]interface{}) {
-		if raw != nil {
-			values := raw.(string)
-			if values != "" {
-				currentMap := map[string]interface{}{}
-				if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
-					return nil, fmt.Errorf("---> %v %s", err, values)
-				}
-				base = mergeMaps(base, currentMap)
-			}
+		if raw == nil {
+			continue
 		}
+
+		values := raw.(string)
+		if values == "" {
+			continue
+		}
+
+		currentMap := map[string]interface{}{}
+		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+			return nil, fmt.Errorf("---> %v %s", err, values)
+		}
+
+		base = mergeMaps(base, currentMap)
 	}
 
 	for _, raw := range d.Get("set").(*schema.Set).List() {
 		set := raw.(map[string]interface{})
-
-		name := set["name"].(string)
-		value := set["value"].(string)
-
-		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			return nil, fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
+		if err := getValue(base, set); err != nil {
+			return nil, err
 		}
 	}
 
 	for _, raw := range d.Get("set_sensitive").(*schema.Set).List() {
 		set := raw.(map[string]interface{})
-
-		name := set["name"].(string)
-		value := set["value"].(string)
-
-		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			return nil, fmt.Errorf("failed parsing key %q with sensitive value, %s", name, err)
+		if err := getValue(base, set); err != nil {
+			return nil, err
 		}
 	}
 
@@ -797,18 +835,49 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 		}
 	}
 
-	yaml, err := yaml.Marshal(base)
-	if err == nil {
-		yamlString := string(yaml)
-		for _, raw := range d.Get("set_sensitive").(*schema.Set).List() {
-			set := raw.(map[string]interface{})
-			yamlString = strings.Replace(yamlString, set["value"].(string), "<SENSITIVE>", -1)
-		}
+	return base, logValues(base, d)
+}
 
-		log.Printf("---[ values.yaml ]-----------------------------------\n%s\n", yamlString)
+func getValue(base, set map[string]interface{}) error {
+	name := set["name"].(string)
+	value := set["value"].(string)
+	valueType := set["type"].(string)
+
+	switch valueType {
+	case "auto", "":
+		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+			return fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
+		}
+	case "string":
+		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+			return fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
+		}
+	default:
+		return fmt.Errorf("unexpected type: %s", valueType)
 	}
 
-	return base, err
+	return nil
+}
+
+func logValues(values map[string]interface{}, d resourceGetter) error {
+	// copy array to avoid change values by the cloak function.
+	asJSON, _ := json.Marshal(values)
+	var copy map[string]interface{}
+	json.Unmarshal(asJSON, &copy)
+
+	cloakSetValues(copy, d)
+
+	yaml, err := yaml.Marshal(copy)
+	if err != nil {
+		return err
+	}
+
+	log.Printf(
+		"---[ values.yaml ]-----------------------------------\n%s\n",
+		string(yaml),
+	)
+
+	return nil
 }
 
 func getRelease(cfg *action.Configuration, name string) (*release.Release, error) {
