@@ -1,4 +1,11 @@
 ## 1.1.2 (Unreleased)
+
+IMPROVEMENTS:
+* Cloak sensitive values in metadata field (#480)
+* Upgrade to Helm 3.2.0
+* Deprecate helm_repository data source
+* Lint chart at plan time
+
 ## 1.1.1 (March 26, 2020)
 FIXES:
 * Fix chart path bug causing unwanted diff (#449)
