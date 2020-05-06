@@ -1,4 +1,4 @@
-## 1.1.2 (Unreleased)
+## 1.2.0 (Unreleased)
 
 IMPROVEMENTS:
 * Cloak sensitive values in metadata field (#480)
