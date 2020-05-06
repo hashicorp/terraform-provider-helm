@@ -1,4 +1,4 @@
-## 1.2.0 (Unreleased)
+## 1.2.0 (May 06, 2020)
 
 IMPROVEMENTS:
 * Cloak sensitive values in metadata field (#480)
