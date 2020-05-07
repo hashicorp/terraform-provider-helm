@@ -1,0 +1,25 @@
+name: "Tests"
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  kind:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Unit tests
+      env:
+        GOPATH: /home/runner/go
+      run: |
+        make test
+        make vet
+        make website-test
+    - uses: engineerd/setup-kind@v0.3.0
+    - name: Acceptance Tests
+      run: |
+        make testacc 
