@@ -1027,14 +1027,15 @@ func resultToError(r *action.LintResult) error {
 		return nil
 	}
 
-	errMsg := make([]string, len(r.Errors))
-	for i, msg := range r.Messages {
-		if msg.Err == nil {
-			continue
+	messages := []string{}
+	for _, msg := range r.Messages {
+		for _, err := range r.Errors {
+			if err == msg.Err {
+				messages = append(messages, fmt.Sprintf("%s: %s", msg.Path, msg.Err))
+				break
+			}
 		}
-
-		errMsg[i] = fmt.Sprintf("%s: %s", msg.Path, msg.Err)
 	}
 
-	return fmt.Errorf("malformed chart or values: \n\t%s", strings.Join(errMsg, "\n\t"))
+	return fmt.Errorf("malformed chart or values: \n\t%s", strings.Join(messages, "\n\t"))
 }
