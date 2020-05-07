@@ -2,6 +2,7 @@ Terraform Provider for Helm
 [![Actions Status](https://github.com/terraform-providers/terraform-provider-helm/workflows/tests/badge.svg)](https://github.com/terraform-providers/terraform-provider-helm/actions)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/terraform-providers/terraform-provider-helm?label=release)](https://github.com/terraform-providers/terraform-provider-helm/releases)
 [![license](https://img.shields.io/github/license/terraform-providers/terraform-provider-helm.svg)]()
+[![Go Report Card](https://goreportcard.com/badge/github.com/terraform-providers/terraform-provider-helm)](https://goreportcard.com/report/github.com/terraform-providers/terraform-provider-helm)
 ===========================
 
 - Website: https://www.terraform.io/docs/providers/helm/index.html
@@ -28,8 +29,6 @@ Contents
 * [Example](#example)
 * [Documentation](https://www.terraform.io/docs/providers/helm/index.html)
   * [Resource: helm_release](https://www.terraform.io/docs/providers/helm/r/release.html)
-  * [Resource: helm_repository](https://www.terraform.io/docs/providers/helm/d/repository.html)
-
 
 Developing the Provider
 ------------
