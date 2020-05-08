@@ -1,4 +1,4 @@
-## 1.2.1 (Unreleased)
+## 1.2.1 (May 08, 2020)
 FIXES:
 * Fix linter crash (#487)
 
