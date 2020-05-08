@@ -11,7 +11,9 @@ import (
 
 func dataRepository() *schema.Resource {
 	return &schema.Resource{
-		DeprecationMessage: "This resource is deprecated and will be removed in the next major version.",
+		DeprecationMessage: `This resource is deprecated and will be removed in the next major version. 
+Please supply the URL of your repository to helm_release resources directly, using the repository attribute.
+See: https://www.terraform.io/docs/providers/helm/r/release.html#example-usage`,
 
 		Read: dataRepositoryRead,
 		Schema: map[string]*schema.Schema{
