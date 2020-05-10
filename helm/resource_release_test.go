@@ -1135,7 +1135,7 @@ func testAccHelmReleaseConfigDependency(resource, ns, name string, dependencyUpd
 		resource "helm_release" "%s" {
  			name        = %q
 			namespace   = %q
-  			chart       = "./local-chart"
+  			chart       = "./test-fixtures/charts/local-chart"
 			dependency_update = %t
 		}
 	`, resource, name, ns, dependencyUpdate)
