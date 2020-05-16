@@ -94,7 +94,13 @@ The following arguments are supported:
 * `postrender` - (Optional) Configure a command to run after helm renders the manifest which can alter the manifest contents.
 * `create_namespace` - (Optional) Create the namespace if it does not yet exist. Defaults to `false`.
 
-The `set`, `set_sensitive` and `set_strings` blocks support:
+The `set` and `set_sensitive` blocks support:
+
+* `name` - (Required) full name of the variable to be set.
+* `value` - (Required) value of the variable to be set.
+* `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
+
+The `set_strings` block supports:
 
 * `name` - (Required) full name of the variable to be set.
 * `value` - (Required) value of the variable to be set.
