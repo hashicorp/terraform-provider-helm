@@ -20,15 +20,15 @@ import (
 
 // KubeConfig is a RESTClientGetter interface implementation
 type KubeConfig struct {
-	ConfigData   *schema.ResourceData
-	Namespace    *string
-	clientConfig clientcmd.ClientConfig
-	lock         sync.Mutex
+	ClientConfig clientcmd.ClientConfig
+
+	sync.Mutex
 }
 
 // ToRESTConfig implemented interface method
 func (k *KubeConfig) ToRESTConfig() (*rest.Config, error) {
-	return k.ToRawKubeConfigLoader().ClientConfig()
+	config, err := k.ToRawKubeConfigLoader().ClientConfig()
+	return config, err
 }
 
 // ToDiscoveryClient implemented interface method
@@ -60,32 +60,24 @@ func (k *KubeConfig) ToRESTMapper() (meta.RESTMapper, error) {
 
 // ToRawKubeConfigLoader implemented interface method
 func (k *KubeConfig) ToRawKubeConfigLoader() clientcmd.ClientConfig {
-	k.lock.Lock()
-	defer k.lock.Unlock()
-
-	// Always persist config
-	if k.clientConfig == nil {
-		k.clientConfig = k.toRawKubeConfigLoader()
-	}
-
-	return k.clientConfig
+	return k.ClientConfig
 }
 
-func (k *KubeConfig) toRawKubeConfigLoader() clientcmd.ClientConfig {
+func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConfig {
 	overrides := &clientcmd.ConfigOverrides{}
 	loader := &clientcmd.ClientConfigLoadingRules{}
 
-	if k8sGet(k.ConfigData, "load_config_file").(bool) {
-		if configPath, ok := k8sGetOk(k.ConfigData, "config_path"); ok && configPath.(string) != "" {
+	if k8sGet(configData, "load_config_file").(bool) {
+		if configPath, ok := k8sGetOk(configData, "config_path"); ok && configPath.(string) != "" {
 			path, err := homedir.Expand(configPath.(string))
 			if err != nil {
 				return nil
 			}
 			loader.ExplicitPath = path
 
-			ctx, ctxOk := k8sGetOk(k.ConfigData, "config_context")
-			authInfo, authInfoOk := k8sGetOk(k.ConfigData, "config_context_auth_info")
-			cluster, clusterOk := k8sGetOk(k.ConfigData, "config_context_cluster")
+			ctx, ctxOk := k8sGetOk(configData, "config_context")
+			authInfo, authInfoOk := k8sGetOk(configData, "config_context_auth_info")
+			cluster, clusterOk := k8sGetOk(configData, "config_context_cluster")
 			if ctxOk || authInfoOk || clusterOk {
 				if ctxOk {
 					overrides.CurrentContext = ctx.(string)
@@ -105,16 +97,16 @@ func (k *KubeConfig) toRawKubeConfigLoader() clientcmd.ClientConfig {
 	}
 
 	// Overriding with static configuration
-	if v, ok := k8sGetOk(k.ConfigData, "insecure"); ok {
+	if v, ok := k8sGetOk(configData, "insecure"); ok {
 		overrides.ClusterInfo.InsecureSkipTLSVerify = v.(bool)
 	}
-	if v, ok := k8sGetOk(k.ConfigData, "cluster_ca_certificate"); ok {
+	if v, ok := k8sGetOk(configData, "cluster_ca_certificate"); ok {
 		overrides.ClusterInfo.CertificateAuthorityData = bytes.NewBufferString(v.(string)).Bytes()
 	}
-	if v, ok := k8sGetOk(k.ConfigData, "client_certificate"); ok {
+	if v, ok := k8sGetOk(configData, "client_certificate"); ok {
 		overrides.AuthInfo.ClientCertificateData = bytes.NewBufferString(v.(string)).Bytes()
 	}
-	if v, ok := k8sGetOk(k.ConfigData, "host"); ok {
+	if v, ok := k8sGetOk(configData, "host"); ok {
 		// Server has to be the complete address of the kubernetes cluster (scheme://hostname:port), not just the hostname,
 		// because `overrides` are processed too late to be taken into account by `defaultServerUrlFor()`.
 		// This basically replicates what defaultServerUrlFor() does with config but for overrides,
@@ -129,20 +121,20 @@ func (k *KubeConfig) toRawKubeConfigLoader() clientcmd.ClientConfig {
 
 		overrides.ClusterInfo.Server = host.String()
 	}
-	if v, ok := k8sGetOk(k.ConfigData, "username"); ok {
+	if v, ok := k8sGetOk(configData, "username"); ok {
 		overrides.AuthInfo.Username = v.(string)
 	}
-	if v, ok := k8sGetOk(k.ConfigData, "password"); ok {
+	if v, ok := k8sGetOk(configData, "password"); ok {
 		overrides.AuthInfo.Password = v.(string)
 	}
-	if v, ok := k8sGetOk(k.ConfigData, "client_key"); ok {
+	if v, ok := k8sGetOk(configData, "client_key"); ok {
 		overrides.AuthInfo.ClientKeyData = bytes.NewBufferString(v.(string)).Bytes()
 	}
-	if v, ok := k8sGetOk(k.ConfigData, "token"); ok {
+	if v, ok := k8sGetOk(configData, "token"); ok {
 		overrides.AuthInfo.Token = v.(string)
 	}
 
-	if v, ok := k8sGetOk(k.ConfigData, "exec"); ok {
+	if v, ok := k8sGetOk(configData, "exec"); ok {
 		exec := &clientcmdapi.ExecConfig{}
 		if spec, ok := v.([]interface{})[0].(map[string]interface{}); ok {
 			exec.APIVersion = spec["api_version"].(string)
@@ -160,18 +152,16 @@ func (k *KubeConfig) toRawKubeConfigLoader() clientcmd.ClientConfig {
 
 	overrides.Context.Namespace = "default"
 
-	if k.Namespace != nil {
-		overrides.Context.Namespace = *k.Namespace
+	if namespace != nil {
+		overrides.Context.Namespace = *namespace
 	}
 
-	cfg := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
-
-	if cfg == nil {
+	client := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
+	if client == nil {
 		log.Printf("[ERROR] Failed to initialize kubernetes config")
 		return nil
 	}
+	log.Printf("[INFO] Successfully initialized kubernetes config")
 
-	log.Printf("[INFO] Successfully initialized config")
-
-	return cfg
+	return &KubeConfig{ClientConfig: client}
 }
