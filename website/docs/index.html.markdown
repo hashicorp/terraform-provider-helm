@@ -59,22 +59,78 @@ provider "helm" {
 ```
 
 ### Statically defined credentials
+It is important for having authenticated. Can be done via:
 
+```console
+PROJECT_ID=YOUR_PROJECT_ID
+gcloud config set project ${PROJECT_ID}
+
+gcloud auth application-default login 
+
+OR (with service account)
+
+gcloud auth activate-service-account --key-file=<service-account-key>.json
+
+```
 The other way is **statically** define all the credentials:
 
 ```hcl
+data "google_client_config" "current" {}
+
 provider "helm" {
   kubernetes {
     host     = "https://104.196.242.174"
     username = "ClusterMaster"
     password = "MindTheGap"
 
+    token = data.google_client_config.current.access_token
     client_certificate     = file("~/.kube/client-cert.pem")
     client_key             = file("~/.kube/client-key.pem")
     cluster_ca_certificate = file("~/.kube/cluster-ca-cert.pem")
   }
 }
 ```
+or 
+
+```hcl
+
+resource "google_container_cluster" "cluster" {
+  name     = "my-cluster"
+  location = var.deployment-zone
+
+  # We can't create a cluster with no node pool defined, but we want to only use
+  # separately managed node pools. So we create the smallest possible default
+  # node pool and immediately delete it.
+  remove_default_node_pool = true
+  initial_node_count       = 1
+
+  master_auth {
+    username = ""
+    password = ""
+
+    client_certificate_config {
+      issue_client_certificate = false
+    }
+  }
+}
+
+data "google_client_config" "current" {}
+
+provider "helm" {
+  kubernetes {
+    host     = "https://104.196.242.174"
+    username = "ClusterMaster"
+    password = "MindTheGap"
+    
+    
+    token = data.google_client_config.current.access_token
+    client_certificate     = base64decode(google_container_cluster.cluster.master_auth.0.client_certificate)
+    client_key             = base64decode(google_container_cluster.cluster.master_auth.0.client_key)
+    cluster_ca_certificate = base64decode(google_container_cluster.cluster.master_auth.0.cluster_ca_certificate)
+  }
+}
+```
+
 
 If you have **both** valid configuration in a config file and static configuration, the static one is used as override.
 i.e. any static field will override its counterpart loaded from the config.
