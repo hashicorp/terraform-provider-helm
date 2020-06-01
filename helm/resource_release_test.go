@@ -1088,6 +1088,7 @@ func TestAccResourceRelease_LintFailValues(t *testing.T) {
 		namespace   = %q
 		repository  = "https://kubernetes-charts.storage.googleapis.com"
 		chart       = "coredns"
+		lint        = true
 		values = [
 			"replicaCount:\n  - foo: qux"
 		]
@@ -1115,6 +1116,7 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 		name        = "foo"
 		namespace   = %q
 		chart       = "./test-fixtures/charts/broken-chart"
+		lint        = true
 	}`, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
