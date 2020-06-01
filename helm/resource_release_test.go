@@ -1088,6 +1088,7 @@ func TestAccResourceRelease_LintFailValues(t *testing.T) {
 		namespace   = %q
 		repository  = "https://kubernetes-charts.storage.googleapis.com"
 		chart       = "coredns"
+		lint        = true
 		values = [
 			"replicaCount:\n  - foo: qux"
 		]
