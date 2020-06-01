@@ -12,7 +12,6 @@ The HashiCorp Terraform Kubernetes provider team is :
 
 Our collaborators are:
 * Maximo Cuadros - [@mcuadros](https://github.com/mcuadros)
-* Maartje Eyskens - [@meyskens](https://github.com/meyskens)
 
 ### Why isn’t my PR merged yet?
 
