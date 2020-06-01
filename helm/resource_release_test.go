@@ -1115,6 +1115,7 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 		name        = "foo"
 		namespace   = %q
 		chart       = "./test-fixtures/charts/broken-chart"
+		lint        = true
 	}`, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{

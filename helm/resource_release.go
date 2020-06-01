@@ -46,6 +46,7 @@ var defaultAttributes = map[string]interface{}{
 	"dependency_update":          false,
 	"replace":                    false,
 	"create_namespace":           false,
+	"lint":                       false,
 }
 
 func resourceRelease() *schema.Resource {
@@ -343,6 +344,12 @@ func resourceRelease() *schema.Resource {
 						},
 					},
 				},
+			},
+			"lint": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     defaultAttributes["lint"],
+				Description: "Run helm lint when planning",
 			},
 			"metadata": {
 				Type:        schema.TypeList,
@@ -648,8 +655,10 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 	//
 	// Maybe here is not the most canonical place to include a validation
 	// but is the only place to fail in `terraform plan`.
-	if err := resourceReleaseValidate(d, meta.(*Meta), cpo); err != nil {
-		return err
+	if d.Get("lint").(bool) {
+		if err := resourceReleaseValidate(d, meta.(*Meta), cpo); err != nil {
+			return err
+		}
 	}
 
 	// Set desired version from the Chart metadata if available
