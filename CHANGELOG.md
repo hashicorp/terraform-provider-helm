@@ -1,4 +1,7 @@
 ## 1.2.2 (Unreleased)
+FIXES:
+* Add a lint attribute to helm_release (#514)
+
 ## 1.2.1 (May 08, 2020)
 FIXES:
 * Fix linter crash (#487)
