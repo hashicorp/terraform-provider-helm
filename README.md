@@ -30,7 +30,7 @@ We will continue to accept bugfixes for the `0.10.x` version of the provider, pl
 
 * [Requirements](#requirements)
 * [Getting Started](#getting-started)
-* [Contributing to the provider](#Contributing)
+* [Contributing to the provider](#contributing)
 
 ## Requirements
 
