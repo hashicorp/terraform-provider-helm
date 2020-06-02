@@ -1,3 +1,4 @@
+## 1.2.3 (Unreleased)
 ## 1.2.2 (June 01, 2020)
 FIXES:
 * Add a lint attribute to helm_release (#514)
