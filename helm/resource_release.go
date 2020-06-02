@@ -424,7 +424,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	debug("Getting chart")
 
-	chart, path, err := getChart(d, m, chartName, cpo)
+	chart, path, err := getChart(m, chartName, cpo)
 	if err != nil {
 		return err
 	}
@@ -545,7 +545,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	chart, _, err := getChart(d, m, chartName, cpo)
+	chart, _, err := getChart(m, chartName, cpo)
 	if err != nil {
 		return err
 	}
@@ -637,10 +637,9 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 		return err
 	}
 
-	// Get Chart metadata, if we fail - we're done
-	c, _, err := getChart(d, meta.(*Meta), chartName, cpo)
+	c, _, err := getChart(meta.(*Meta), chartName, cpo)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Validates the resource configuration, the values, the chart itself, and
@@ -757,7 +756,7 @@ func getVersion(d resourceGetter, m *Meta) (version string) {
 	return
 }
 
-func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptions) (c *chart.Chart, path string, err error) {
+func getChart(m *Meta, name string, cpo *action.ChartPathOptions) (c *chart.Chart, path string, err error) {
 	//Load function blows up if accessed concurrently
 	m.Lock()
 	defer m.Unlock()
