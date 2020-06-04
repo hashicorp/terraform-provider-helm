@@ -10,7 +10,7 @@ jobs:
         if: github.event_name == 'issues' && github.event.action == 'opened'
         uses: aareet/github-project-automation-plus@v0.1.0
         with:
-          project: Kubernetes Triage
+          project: Terraform Kubernetes Triage
           column: Needs triage
           repo-token: ${{ secrets.k8s_github_actions }}
 
@@ -18,6 +18,6 @@ jobs:
         if: github.event_name == 'pull_request' && github.event.action == 'opened'
         uses: aareet/github-project-automation-plus@v0.1.0
         with:
-          project: Kubernetes Triage
+          project: Terraform Kubernetes Triage
           column: Needs triage
           repo-token: ${{ secrets.k8s_github_actions }}
