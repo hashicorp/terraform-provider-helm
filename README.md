@@ -1,8 +1,8 @@
 Terraform Provider for Helm
-[![Actions Status](https://github.com/terraform-providers/terraform-provider-helm/workflows/tests/badge.svg)](https://github.com/terraform-providers/terraform-provider-helm/actions)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/terraform-providers/terraform-provider-helm?label=release)](https://github.com/terraform-providers/terraform-provider-helm/releases)
-[![license](https://img.shields.io/github/license/terraform-providers/terraform-provider-helm.svg)]()
-[![Go Report Card](https://goreportcard.com/badge/github.com/terraform-providers/terraform-provider-helm)](https://goreportcard.com/report/github.com/terraform-providers/terraform-provider-helm)
+[![Actions Status](https://github.com/terraform-providers/terraform-provider-helm/workflows/tests/badge.svg)](https://github.com/hashicorp/terraform-provider-helm/actions)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/hashicorp/terraform-provider-helm?label=release)](https://github.com/terraform-providers/terraform-provider-helm/releases)
+[![license](https://img.shields.io/github/license/hashicorp/terraform-provider-helm.svg)]()
+[![Go Report Card](https://goreportcard.com/badge/github.com/hashicorp/terraform-provider-helm)](https://goreportcard.com/report/github.com/hashicorp/terraform-provider-helm)
 ===========================
 <a href="https://terraform.io">
     <img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" alt="Terraform logo" title="Terrafpr," align="right" height="50" />
@@ -74,6 +74,6 @@ resource "helm_release" "my_database" {
 
 The Terraform Kubernetes Provider is the work of many contributors. We appreciate your help!
 
-To contribute, please read the [contribution guidelines](_about/CONTRIBUTING.md). You may also [report an issue](https://github.com/terraform-providers/terraform-provider-kubernetes/issues/new/choose). Once you've filed an issue, it will follow the [issue lifecycle](ISSUES.md).
+To contribute, please read the [contribution guidelines](_about/CONTRIBUTING.md). You may also [report an issue](https://github.com/hashicorp/terraform-provider-helm/issues/new/choose). Once you've filed an issue, it will follow the [issue lifecycle](_about/ISSUES.md).
 
 Also available are some answers to [Frequently Asked Questions](_about/FAQ.md).
