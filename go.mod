@@ -1,4 +1,4 @@
-module github.com/terraform-providers/terraform-provider-helm
+module github.com/hashicorp/terraform-provider-helm
 
 go 1.14
 
