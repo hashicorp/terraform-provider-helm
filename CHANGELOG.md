@@ -1,4 +1,17 @@
 ## 0.10.5 (Unreleased)
+
+FIXES:
+
+* Update helm & tiller to version 2.16.8 (#529)
+* Fix GKE test-infra error related to node_version
+* Set connection_timeout parameter (#355)
+
+IMPROVEMENTS:
+
+* Update Kubernetes to 1.16.1
+* Update Go to version 1.14
+
+
 ## 0.10.4 (October 28, 2019)
 
 FIXES:
