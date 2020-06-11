@@ -1,3 +1,4 @@
+## 0.10.6 (Unreleased)
 ## 1.2.3 (Unreleased)
 ## 1.2.2 (June 01, 2020)
 FIXES:
