@@ -23,6 +23,7 @@ import (
 	goerrors "errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"sort"
 	"strings"
@@ -42,6 +43,8 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	metav1beta1 "k8s.io/apimachinery/pkg/apis/meta/v1beta1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,15 +54,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	cachetools "k8s.io/client-go/tools/cache"
 	watchtools "k8s.io/client-go/tools/watch"
-	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	"k8s.io/kubernetes/pkg/apis/core"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+	"k8s.io/kubectl/pkg/validation"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/get"
-	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/validation"
 )
 
 // MissingGetHeader is added to Get's output when a resource is not found.
@@ -159,6 +162,40 @@ func (c *Client) BuildUnstructured(namespace string, reader io.Reader) (Result, 
 	return result, scrubValidationError(err)
 }
 
+// BuildUnstructuredTable reads Kubernetes objects and returns unstructured infos
+// as a Table. This is meant for viewing resources and displaying them in a table.
+// This is similar to BuildUnstructured but transforms the request for table
+// display.
+func (c *Client) BuildUnstructuredTable(namespace string, reader io.Reader) (Result, error) {
+	var result Result
+
+	result, err := c.NewBuilder().
+		Unstructured().
+		ContinueOnError().
+		NamespaceParam(namespace).
+		DefaultNamespace().
+		Stream(reader, "").
+		Flatten().
+		TransformRequests(transformRequests).
+		Do().Infos()
+	return result, scrubValidationError(err)
+}
+
+// This is used to retrieve a table view of the data. A table view is how kubectl
+// retrieves the information Helm displays as resources in status. Note, table
+// data is returned as a Table type that does not conform to the runtime.Object
+// interface but is that type. So, you can't transform it into Go objects easily.
+func transformRequests(req *rest.Request) {
+
+	// The request headers are for both the v1 and v1beta1 versions of the table
+	// as Kubernetes 1.14 and older used the beta version.
+	req.SetHeader("Accept", strings.Join([]string{
+		fmt.Sprintf("application/json;as=Table;v=%s;g=%s", metav1.SchemeGroupVersion.Version, metav1.GroupName),
+		fmt.Sprintf("application/json;as=Table;v=%s;g=%s", metav1beta1.SchemeGroupVersion.Version, metav1beta1.GroupName),
+		"application/json",
+	}, ","))
+}
+
 // Validate reads Kubernetes manifests and validates the content.
 //
 // This function does not actually do schema validation of manifests. Adding
@@ -200,7 +237,7 @@ func resourceInfoToObject(info *resource.Info, c *Client) runtime.Object {
 	return internalObj
 }
 
-func sortByKey(objs map[string](map[string]runtime.Object)) []string {
+func sortByKey(objs map[string][]runtime.Object) []string {
 	var keys []string
 	// Create a simple slice, so we can sort it
 	for key := range objs {
@@ -211,24 +248,95 @@ func sortByKey(objs map[string](map[string]runtime.Object)) []string {
 	return keys
 }
 
+// We have slices of tables that need to be sorted by name. In this case the
+// self link is used so the sorting will include namespace and name.
+func sortTableSlice(objs []runtime.Object) []runtime.Object {
+	// If there are 0 or 1 objects to sort there is nothing to sort so
+	// the list can be returned
+	if len(objs) < 2 {
+		return objs
+	}
+
+	ntbl := &metav1.Table{}
+	unstr, ok := objs[0].(*unstructured.Unstructured)
+	if !ok {
+		return objs
+	}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstr.Object, ntbl); err != nil {
+		return objs
+	}
+
+	// Sort the list of objects
+	var newObjs []runtime.Object
+	namesCache := make(map[string]runtime.Object, len(objs))
+	var names []string
+	var key string
+	for _, obj := range objs {
+		unstr, ok := obj.(*unstructured.Unstructured)
+		if !ok {
+			return objs
+		}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstr.Object, ntbl); err != nil {
+			return objs
+		}
+
+		// At this point we have a table. Each table has just one row. We are
+		// sorting the tables by the first cell (name) in the first and only
+		// row. If the first cell of the first row cannot be gotten as a string
+		// we return the original unsorted list.
+		if len(ntbl.Rows) == 0 { // Make sure there are rows to read from
+			return objs
+		}
+		if len(ntbl.Rows[0].Cells) == 0 { // Make sure there are cells to read
+			return objs
+		}
+		key, ok = ntbl.Rows[0].Cells[0].(string)
+		if !ok {
+			return objs
+		}
+		namesCache[key] = obj
+		names = append(names, key)
+	}
+
+	sort.Strings(names)
+
+	for _, name := range names {
+		newObjs = append(newObjs, namesCache[name])
+	}
+
+	return newObjs
+}
+
 // Get gets Kubernetes resources as pretty-printed string.
 //
 // Namespace will set the namespace.
 func (c *Client) Get(namespace string, reader io.Reader) (string, error) {
 	// Since we don't know what order the objects come in, let's group them by the types and then sort them, so
 	// that when we print them, they come out looking good (headers apply to subgroups, etc.).
-	objs := make(map[string](map[string]runtime.Object))
+	objs := make(map[string][]runtime.Object)
+	gk := make(map[string]schema.GroupKind)
 	mux := &sync.Mutex{}
 
-	infos, err := c.BuildUnstructured(namespace, reader)
+	// The contents of the reader are used two times. The bytes are coppied out
+	// for use in future readers.
+	b, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return "", err
 	}
 
-	var objPods = make(map[string][]v1.Pod)
+	// Get the table display for the objects associated with the release. This
+	// is done in table format so that it can be displayed in the status in
+	// the same way kubectl displays the resource information.
+	// Note, the response returns unstructured data instead of typed objects.
+	// These cannot be easily (i.e., via the go packages) transformed into
+	// Go types.
+	tinfos, err := c.BuildUnstructuredTable(namespace, bytes.NewBuffer(b))
+	if err != nil {
+		return "", err
+	}
 
 	missing := []string{}
-	err = perform(infos, func(info *resource.Info) error {
+	err = perform(tinfos, func(info *resource.Info) error {
 		mux.Lock()
 		defer mux.Unlock()
 		c.Log("Doing get for %s: %q", info.Mapping.GroupVersionKind.Kind, info.Name)
@@ -242,18 +350,41 @@ func (c *Client) Get(namespace string, reader io.Reader) (string, error) {
 		// versions per cluster, but this certainly won't hurt anything, so let's be safe.
 		gvk := info.ResourceMapping().GroupVersionKind
 		vk := gvk.Version + "/" + gvk.Kind
+		gk[vk] = gvk.GroupKind()
 
 		// Initialize map. The main map groups resources based on version/kind
 		// The second level is a simple 'Name' to 'Object', that will help sort
 		// the individual resource later
 		if objs[vk] == nil {
-			objs[vk] = make(map[string]runtime.Object)
+			objs[vk] = []runtime.Object{}
 		}
 		// Map between the resource name to the underlying info object
-		objs[vk][info.Name] = resourceInfoToObject(info, c)
+		objs[vk] = append(objs[vk], resourceInfoToObject(info, c))
+
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// This section finds related resources (e.g., pods). Before looking up pods
+	// the resources the pods are made from need to be looked up in a manner
+	// that can be turned into Go types and worked with.
+	infos, err := c.BuildUnstructured(namespace, bytes.NewBuffer(b))
+	if err != nil {
+		return "", err
+	}
+	err = perform(infos, func(info *resource.Info) error {
+		mux.Lock()
+		defer mux.Unlock()
+		if err := info.Get(); err != nil {
+			c.Log("WARNING: Failed Get for resource %q: %s", info.Name, err)
+			missing = append(missing, fmt.Sprintf("%v\t\t%s", info.Mapping.Resource, info.Name))
+			return nil
+		}
 
 		//Get the relation pods
-		objPods, err = c.getSelectRelationPod(info, objPods)
+		objs, err = c.getSelectRelationPod(info, objs)
 		if err != nil {
 			c.Log("Warning: get the relation pod is failed, err:%s", err.Error())
 		}
@@ -264,25 +395,11 @@ func (c *Client) Get(namespace string, reader io.Reader) (string, error) {
 		return "", err
 	}
 
-	//here, we will add the objPods to the objs
-	for key, podItems := range objPods {
-		for i := range podItems {
-			pod := &core.Pod{}
-
-			legacyscheme.Scheme.Convert(&podItems[i], pod, nil)
-			if objs[key+"(related)"] == nil {
-				objs[key+"(related)"] = make(map[string]runtime.Object)
-			}
-			objs[key+"(related)"][pod.ObjectMeta.Name] = runtime.Object(pod)
-		}
-	}
-
 	// Ok, now we have all the objects grouped by types (say, by v1/Pod, v1/Service, etc.), so
 	// spin through them and print them. Printer is cool since it prints the header only when
 	// an object type changes, so we can just rely on that. Problem is it doesn't seem to keep
 	// track of tab widths.
 	buf := new(bytes.Buffer)
-	printFlags := get.NewHumanPrintFlags()
 
 	// Sort alphabetically by version/kind keys
 	vkKeys := sortByKey(objs)
@@ -291,20 +408,29 @@ func (c *Client) Get(namespace string, reader io.Reader) (string, error) {
 		if _, err = fmt.Fprintf(buf, "==> %s\n", t); err != nil {
 			return "", err
 		}
-		typePrinter, _ := printFlags.ToPrinter("")
-
-		var sortedResources []string
-		for resource := range objs[t] {
-			sortedResources = append(sortedResources, resource)
-		}
-		sort.Strings(sortedResources)
-
-		// Now that each individual resource within the specific version/kind
-		// is sorted, we print each resource using the k8s printer
 		vk := objs[t]
-		for _, resourceName := range sortedResources {
-			if err := typePrinter.PrintObj(vk[resourceName], buf); err != nil {
-				c.Log("failed to print object type %s, object: %q :\n %v", t, resourceName, err)
+
+		// The request made for tables returns each Kubernetes object as its
+		// own table. The normal sorting provided by kubectl and cli-runtime
+		// does not handle this case. Here we sort within each of our own
+		// grouping.
+		vk = sortTableSlice(vk)
+
+		// The printer flag setup follows a simalar setup to kubectl
+		printFlags := get.NewHumanPrintFlags()
+		if lgk, ok := gk[t]; ok {
+			printFlags.SetKind(lgk)
+		}
+		printer, _ := printFlags.ToPrinter("")
+		printer, err = printers.NewTypeSetter(scheme.Scheme).WrapToPrinter(printer, nil)
+		if err != nil {
+			return "", err
+		}
+		printer = &get.TablePrinter{Delegate: printer}
+
+		for _, resource := range vk {
+			if err := printer.PrintObj(resource, buf); err != nil {
+				c.Log("failed to print object type %s: %v", t, err)
 				return "", err
 			}
 		}
@@ -838,7 +964,13 @@ func getSelectorFromObject(obj runtime.Object) (map[string]string, bool) {
 }
 
 func (c *Client) watchUntilReady(timeout time.Duration, info *resource.Info) error {
-	lw := cachetools.NewListWatchFromClient(info.Client, info.Mapping.Resource.Resource, info.Namespace, fields.Everything())
+	// Use a selector on the name of the resource. This should be unique for the
+	// given version and kind
+	selector, err := fields.ParseSelector(fmt.Sprintf("metadata.name=%s", info.Name))
+	if err != nil {
+		return err
+	}
+	lw := cachetools.NewListWatchFromClient(info.Client, info.Mapping.Resource.Resource, info.Namespace, selector)
 
 	kind := info.Mapping.GroupVersionKind.Kind
 	c.Log("Watching for changes to %s %s with timeout of %v", kind, info.Name, timeout)
@@ -851,7 +983,7 @@ func (c *Client) watchUntilReady(timeout time.Duration, info *resource.Info) err
 
 	ctx, cancel := watchtools.ContextWithOptionalTimeout(context.Background(), timeout)
 	defer cancel()
-	_, err := watchtools.ListWatchUntil(ctx, lw, func(e watch.Event) (bool, error) {
+	_, err = watchtools.ListWatchUntil(ctx, lw, func(e watch.Event) (bool, error) {
 		switch e.Type {
 		case watch.Added, watch.Modified:
 			// For things like a secret or a config map, this is the best indicator
@@ -882,7 +1014,7 @@ func (c *Client) watchUntilReady(timeout time.Duration, info *resource.Info) err
 // This operates on an event returned from a watcher.
 func (c *Client) waitForJob(e watch.Event, name string) (bool, error) {
 	job := &batch.Job{}
-	err := legacyscheme.Scheme.Convert(e.Object, job, nil)
+	err := scheme.Scheme.Convert(e.Object, job, nil)
 	if err != nil {
 		return true, err
 	}
@@ -980,11 +1112,11 @@ func isPodComplete(event watch.Event) (bool, error) {
 	return false, nil
 }
 
-//get a kubernetes resources' relation pods
+// get a kubernetes resources' relation pods
 // kubernetes resource used select labels to relate pods
-func (c *Client) getSelectRelationPod(info *resource.Info, objPods map[string][]v1.Pod) (map[string][]v1.Pod, error) {
+func (c *Client) getSelectRelationPod(info *resource.Info, objs map[string][]runtime.Object) (map[string][]runtime.Object, error) {
 	if info == nil {
-		return objPods, nil
+		return objs, nil
 	}
 
 	c.Log("get relation pod of object: %s/%s/%s", info.Namespace, info.Mapping.GroupVersionKind.Kind, info.Name)
@@ -992,34 +1124,31 @@ func (c *Client) getSelectRelationPod(info *resource.Info, objPods map[string][]
 	versioned := asVersionedOrUnstructured(info)
 	selector, ok := getSelectorFromObject(versioned)
 	if !ok {
-		return objPods, nil
+		return objs, nil
 	}
 
-	client, _ := c.KubernetesClientSet()
-
-	pods, err := client.CoreV1().Pods(info.Namespace).List(metav1.ListOptions{
-		LabelSelector: labels.Set(selector).AsSelector().String(),
-	})
+	// The related pods are looked up in Table format so that their display can
+	// be printed in a manner similar to kubectl when it get pods. The response
+	// can be used with a table printer.
+	infos, err := c.NewBuilder().
+		Unstructured().
+		ContinueOnError().
+		NamespaceParam(info.Namespace).
+		DefaultNamespace().
+		ResourceTypes("pods").
+		LabelSelector(labels.Set(selector).AsSelector().String()).
+		TransformRequests(transformRequests).
+		Do().Infos()
 	if err != nil {
-		return objPods, err
+		return objs, err
 	}
 
-	for _, pod := range pods.Items {
-		vk := "v1/Pod"
-		if !isFoundPod(objPods[vk], pod) {
-			objPods[vk] = append(objPods[vk], pod)
-		}
+	for _, info := range infos {
+		vk := "v1/Pod(related)"
+		objs[vk] = append(objs[vk], info.Object)
 	}
-	return objPods, nil
-}
 
-func isFoundPod(podItem []v1.Pod, pod v1.Pod) bool {
-	for _, value := range podItem {
-		if (value.Namespace == pod.Namespace) && (value.Name == pod.Name) {
-			return true
-		}
-	}
-	return false
+	return objs, nil
 }
 
 func asVersionedOrUnstructured(info *resource.Info) runtime.Object {
@@ -1043,5 +1172,5 @@ func asVersioned(info *resource.Info) (runtime.Object, error) {
 
 func asInternal(info *resource.Info) (runtime.Object, error) {
 	groupVersioner := info.Mapping.GroupVersionKind.GroupKind().WithVersion(runtime.APIVersionInternal).GroupVersion()
-	return legacyscheme.Scheme.ConvertToVersion(info.Object, groupVersioner)
+	return scheme.Scheme.ConvertToVersion(info.Object, groupVersioner)
 }

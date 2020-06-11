@@ -71,7 +71,7 @@ func Provider() terraform.ResourceProvider {
 			"tiller_image": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "gcr.io/kubernetes-helm/tiller:v2.15.1",
+				Default:     "gcr.io/kubernetes-helm/tiller:v2.16.8",
 				Description: "Tiller image to install.",
 			},
 			"connection_timeout": {

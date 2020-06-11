@@ -5,10 +5,10 @@ services:
 - docker
 language: go
 go:
-  - "1.12.x"
+  - 1.14.x
 
 env:
-  - GOFLAGS=-mod=vendor
+  - GO111MODULE=on
 
 stages:
   - Unit test
