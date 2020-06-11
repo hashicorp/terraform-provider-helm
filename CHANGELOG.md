@@ -1,4 +1,4 @@
-## 0.10.5 (Unreleased)
+## 0.10.5 (June 11, 2020)
 
 FIXES:
 
