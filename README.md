@@ -1,7 +1,7 @@
 Terraform Provider for Helm
-[![Build Status](https://travis-ci.org/terraform-providers/terraform-provider-helm.svg?branch=master)](https://travis-ci.org/terraform-providers/terraform-provider-helm)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/terraform-providers/terraform-provider-helm?label=release)](https://github.com/terraform-providers/terraform-provider-helm/releases)
-[![license](https://img.shields.io/github/license/terraform-providers/terraform-provider-helm.svg)]()
+[![Build Status](https://travis-ci.org/hashicorp/terraform-provider-helm.svg?branch=master)](https://travis-ci.org/hashicorp/terraform-provider-helm)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/hashicorp/terraform-provider-helm?label=release)](https://github.com/hashicorp/terraform-provider-helm/releases)
+[![license](https://img.shields.io/github/license/hashicorp/terraform-provider-helm.svg)]()
 ===========================
 
 This is a [Helm](https://github.com/kubernetes/helm) provider for [Terraform](https://www.terraform.io/).
@@ -25,17 +25,17 @@ Developing the Provider
 
 If you wish to compile the provider from source code, you'll first need [Go](http://www.golang.org) installed on your machine (version >=1.9 is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
-Clone repository to: `$GOPATH/src/github.com/terraform-providers/terraform-provider-helm`
+Clone repository to: `$GOPATH/src/github.com/hashicorp/terraform-provider-helm`
 
 ```sh
 > mkdir -p $GOPATH/src/github.com/terraform-providers
-> git clone https://github.com/terraform-providers/terraform-provider-helm.git $GOPATH/src/github.com/terraform-providers/terraform-provider-helm
+> git clone https://github.com/hashicorp/terraform-provider-helm.git $GOPATH/src/github.com/hashicorp/terraform-provider-helm
 ```
 
 Enter the provider directory and build the provider
 
 ```sh
-> cd $GOPATH/src/github.com/terraform-providers/terraform-provider-helm
+> cd $GOPATH/src/github.com/hashicorp/terraform-provider-helm
 > make build
 ```
 
