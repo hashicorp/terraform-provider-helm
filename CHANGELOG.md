@@ -8,7 +8,7 @@ FIXES:
 
 IMPROVEMENTS:
 
-* Update Kubernetes to 1.16.1
+* Update Kubernetes to version 1.16.1
 * Update Go to version 1.14
 
 
