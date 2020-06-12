@@ -1,6 +1,6 @@
 Terraform Provider for Helm
-[![Actions Status](https://github.com/terraform-providers/terraform-provider-helm/workflows/tests/badge.svg)](https://github.com/hashicorp/terraform-provider-helm/actions)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/hashicorp/terraform-provider-helm?label=release)](https://github.com/terraform-providers/terraform-provider-helm/releases)
+[![Actions Status](https://github.com/hashicorp/terraform-provider-helm/workflows/tests/badge.svg)](https://github.com/hashicorp/terraform-provider-helm/actions)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/hashicorp/terraform-provider-helm?label=release)](https://github.com/hashicorp/terraform-provider-helm/releases)
 [![license](https://img.shields.io/github/license/hashicorp/terraform-provider-helm.svg)]()
 [![Go Report Card](https://goreportcard.com/badge/github.com/hashicorp/terraform-provider-helm)](https://goreportcard.com/report/github.com/hashicorp/terraform-provider-helm)
 ===========================
