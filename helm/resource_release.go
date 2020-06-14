@@ -383,6 +383,11 @@ func resourceRelease() *schema.Resource {
 							Computed:    true,
 							Description: "A SemVer 2 conformant version string of the chart.",
 						},
+						"app_version": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The version number of the application being deployed.",
+						},
 						"values": {
 							Type:        schema.TypeString,
 							Computed:    true,
@@ -691,12 +696,13 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 	}
 
 	return d.Set("metadata", []map[string]interface{}{{
-		"name":      r.Name,
-		"revision":  r.Version,
-		"namespace": r.Namespace,
-		"chart":     r.Chart.Metadata.Name,
-		"version":   r.Chart.Metadata.Version,
-		"values":    string(values),
+		"name":        r.Name,
+		"revision":    r.Version,
+		"namespace":   r.Namespace,
+		"chart":       r.Chart.Metadata.Name,
+		"version":     r.Chart.Metadata.Version,
+		"app_version": r.Chart.Metadata.AppVersion,
+		"values":      string(values),
 	}})
 }
 
