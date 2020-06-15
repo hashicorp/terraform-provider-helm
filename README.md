@@ -72,7 +72,7 @@ resource "helm_release" "my_database" {
 
 ## Contributing
 
-The Terraform Kubernetes Provider is the work of many contributors. We appreciate your help!
+The Terraform Helm Provider is the work of many contributors. We appreciate your help!
 
 To contribute, please read the [contribution guidelines](_about/CONTRIBUTING.md). You may also [report an issue](https://github.com/hashicorp/terraform-provider-helm/issues/new/choose). Once you've filed an issue, it will follow the [issue lifecycle](_about/ISSUES.md).
 
