@@ -396,6 +396,9 @@ func resourceRelease() *schema.Resource {
 }
 
 func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
+	logId := fmt.Sprintf("[resourceReleaseRead: %s]", d.Get("name").(string))
+	debug("%s Started", logId)
+
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
 
@@ -406,20 +409,24 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 
 	name := d.Get("name").(string)
 
-	r, err := getRelease(c, name)
+	r, err := getRelease(m, c, name)
 	if err != nil {
 		return err
 	}
+	result := setIDAndMetadataFromRelease(d, r)
 
-	return setIDAndMetadataFromRelease(d, r)
+	debug("%s Done", logId)
+	return result
 }
 
 func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
+	logId := fmt.Sprintf("[resourceReleaseCreate: %s]", d.Get("name").(string))
+	debug("%s Started", logId)
+
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
 
-	debug("Getting Config")
-
+	debug("%s Getting helm configuration", logId)
 	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
 		return err
@@ -429,14 +436,14 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
-	debug("Getting chart")
 
+	debug("%s Getting chart", logId)
 	chart, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
 		return err
 	}
 
-	debug("Got Chart from Helm")
+	debug("%s Preparing for installation", logId)
 
 	p := getter.All(m.Settings)
 
@@ -508,7 +515,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		client.PostRenderer = pr
 	}
 
-	debug("Installing Chart")
+	debug("%s Installing chart", logId)
 
 	rel, err := client.Run(chart, values)
 
@@ -527,7 +534,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 			return err
 		}
 
-		debug("Release was created but returned an error")
+		debug("%s Release was created but returned an error", logId)
 
 		if err := setIDAndMetadataFromRelease(d, rel); err != nil {
 			return err
@@ -631,6 +638,9 @@ func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
+	logId := fmt.Sprintf("[resourceDiff: %s]", d.Get("name").(string))
+	debug("%s Start", logId)
+
 	m := meta.(*Meta)
 
 	// Always set desired state to DEPLOYED
@@ -649,6 +659,7 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 	if err != nil {
 		return nil
 	}
+	debug("%s Got chart", logId)
 
 	// Validates the resource configuration, the values, the chart itself, and
 	// the combination of both.
@@ -660,11 +671,14 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 			return err
 		}
 	}
+	debug("%s Release validated", logId)
 
 	// Set desired version from the Chart metadata if available
 	if len(c.Metadata.Version) > 0 {
 		return d.SetNew("version", c.Metadata.Version)
 	}
+
+	debug("%s Done", logId)
 
 	return d.SetNewComputed("version")
 }
@@ -727,6 +741,9 @@ func cloakSetValue(values map[string]interface{}, valuePath string) {
 }
 
 func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, error) {
+	logId := fmt.Sprintf("[resourceReleaseExists: %s]", d.Get("name").(string))
+	debug("%s Start", logId)
+
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
 
@@ -736,7 +753,9 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	}
 
 	name := d.Get("name").(string)
-	_, err = getRelease(c, name)
+	_, err = getRelease(m, c, name)
+
+	debug("%s Done", logId)
 
 	if err == nil {
 		return true, nil
@@ -898,11 +917,21 @@ func logValues(values map[string]interface{}, d resourceGetter) error {
 	return nil
 }
 
-func getRelease(cfg *action.Configuration, name string) (*release.Release, error) {
+func getRelease(m *Meta, cfg *action.Configuration, name string) (*release.Release, error) {
+	debug("%s getRelease wait for lock", name)
+	m.Lock()
+	defer m.Unlock()
+	debug("%s getRelease got lock, started", name)
+
 	get := action.NewGet(cfg)
+	debug("%s getRelease post action created", name)
+
 	res, err := get.Run(name)
+	debug("%s getRelease post run", name)
 
 	if err != nil {
+		debug("getRelease for %s errored", name)
+		debug("%v", err)
 		if strings.Contains(err.Error(), "release: not found") {
 			return nil, errReleaseNotFound
 		}
@@ -912,7 +941,7 @@ func getRelease(cfg *action.Configuration, name string) (*release.Release, error
 		return nil, err
 	}
 
-	debug("got release %v", res)
+	debug("%s getRelease done", name)
 
 	return res, nil
 }
@@ -975,7 +1004,7 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 		return nil, err
 	}
 
-	r, err := getRelease(c, name)
+	r, err := getRelease(m, c, name)
 	if err != nil {
 		return nil, err
 	}

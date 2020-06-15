@@ -311,15 +311,15 @@ func expandStringSlice(s []interface{}) []string {
 func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, error) {
 	m.Lock()
 	defer m.Unlock()
-
+	debug("[INFO] GetHelmConfiguration start")
 	actionConfig := new(action.Configuration)
 
-	kc := &KubeConfig{ConfigData: m.data, Namespace: &namespace}
+	kc := newKubeConfig(m.data, &namespace)
 
 	if err := actionConfig.Init(kc, namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
 	}
-
+	debug("[INFO] GetHelmConfiguration success")
 	return actionConfig, nil
 }
 

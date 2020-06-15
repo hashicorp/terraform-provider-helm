@@ -113,6 +113,52 @@ func TestAccResourceRelease_import(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_multiple_charts(t *testing.T) {
+	const resourceCount = 10
+
+	basicHelmRelease := func(index int, namespace string) (string, resource.TestCheckFunc) {
+		randomKey := acctest.RandString(10)
+		randomValue := acctest.RandString(10)
+		resourceName := fmt.Sprintf("test_%d", index)
+		releaseName := fmt.Sprintf("test-%d", index)
+		return fmt.Sprintf(`
+			resource "helm_release" %q {
+				name        = %q
+				namespace   = %q
+				chart       = "./test-fixtures/charts/basic-chart"
+
+				set {
+					name = %q
+					value = %q
+				}
+			}`, resourceName, releaseName, namespace, randomKey, randomValue),
+			resource.TestCheckResourceAttr(
+				fmt.Sprintf("helm_release.%s", resourceName), "metadata.0.name", releaseName,
+			)
+	}
+	config := ""
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	var resourceChecks []resource.TestCheckFunc
+	for i := 0; i < resourceCount; i++ {
+		releaseConfig, releaseCheck := basicHelmRelease(i, namespace)
+		resourceChecks = append(resourceChecks, releaseCheck)
+		config += releaseConfig
+	}
+
+	defer deleteNamespace(t, namespace)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: config,
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resourceChecks...,
+			),
+		}},
+	})
+}
+
 func TestAccResourceRelease_concurrent(t *testing.T) {
 	var wg sync.WaitGroup
 
