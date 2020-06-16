@@ -1,5 +1,5 @@
 ## 0.10.6 (Unreleased)
-## 1.2.3 (Unreleased)
+## 1.2.3 (June 16, 2020)
 FIXES
 * Fix concurrent read/write crash (#525)
 * Fix for provider hang (#505)
