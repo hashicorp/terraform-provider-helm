@@ -95,7 +95,13 @@ The following arguments are supported:
 * `lint` - (Optional) Run the helm chart linter during the plan. Defaults to `false`.
 * `create_namespace` - (Optional) Create the namespace if it does not yet exist. Defaults to `false`.
 
-The `set`, `set_sensitive` and `set_strings` blocks support:
+The `set` and `set_sensitive` blocks support:
+
+* `name` - (Required) full name of the variable to be set.
+* `value` - (Required) value of the variable to be set.
+* `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
+
+The `set_strings` block supports:
 
 * `name` - (Required) full name of the variable to be set.
 * `value` - (Required) value of the variable to be set.
