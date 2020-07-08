@@ -133,7 +133,7 @@ The `metadata` block supports:
 A Helm Release resource can be imported using its namespace and name e.g.
 
 ```
-$ terraform import helm_release.example default/example-name`
+$ terraform import helm_release.example default/example-name
 ```
 
 ~> **NOTE:** Since the `repository` attribute is not being persisted as metadata by helm, it will not be set to any value by default. All other provider specific attributes will be set to their default values and they can be overriden after running `apply` using the resource definition configuration.
