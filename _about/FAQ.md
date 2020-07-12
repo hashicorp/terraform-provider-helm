@@ -30,7 +30,11 @@ Our policy is described on the Terraform website [here](https://www.terraform.io
 
 Due to the constant release pace of Kubernetes and the relatively infrequent major version releases of the provider, there can be cases where a minor version update may contain unexpected changes depending on your configuration or environment.
 
-### How can I help?
+### Where is the result of NOTES.txt?
+
+Helm charts often contain NOTES.txt output that provide helpful next steps and occasionally provide debug information on missing environment variables etc. At present, this provider will not output or log the result of NOTES.txt on any installed charts. Temporarily install the chart via helm directly to see the output of NOTES.txt
+
+### How can I help? 
 
 Check out the [Contributing Guide](CONTRIBUTING.md) for additional information.
 
