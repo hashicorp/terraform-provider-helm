@@ -124,6 +124,13 @@ func resourceRelease() *schema.Resource {
 				Description: "List of values in raw yaml format to pass to helm.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
+			"values_sensitive": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Sensitive:   true,
+				Description: "List of sensitive values in raw yaml format to pass to helm.",
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
 			"set": {
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -719,6 +726,41 @@ func cloakSetValues(config map[string]interface{}, d resourceGetter) {
 		set := raw.(map[string]interface{})
 		cloakSetValue(config, set["name"].(string))
 	}
+
+	for _, raw := range d.Get("values_sensitive").([]interface{}) {
+		if raw == nil {
+			continue
+		}
+
+		values := raw.(string)
+		if values == "" {
+			continue
+		}
+
+		currentMap := map[string]interface{}{}
+		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+			//This should never happen since we should already have failed upstream in getValues.
+			continue
+		}
+
+		cloakSensitiveValues(config, currentMap)
+	}
+}
+
+func cloakSensitiveValues(outputValues map[string]interface{}, inputSensitiveValues map[string]interface{}) {
+	for key, element := range inputSensitiveValues {
+		iv, ivOk := element.(map[string]interface{})
+		ov, ovOk := outputValues[key].(map[string]interface{})
+		//both values at "key" are maps, so keep traversing.
+		if ivOk && ovOk {
+			cloakSensitiveValues(ov, iv)
+		} else {
+			// both values are non-map values, so cloak the value
+			if !ivOk && !ovOk {
+				outputValues[key] = sensitiveContentValue
+			}
+		}
+	}
 }
 
 const sensitiveContentValue = "(sensitive value)"
@@ -830,6 +872,24 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 	base := map[string]interface{}{}
 
 	for _, raw := range d.Get("values").([]interface{}) {
+		if raw == nil {
+			continue
+		}
+
+		values := raw.(string)
+		if values == "" {
+			continue
+		}
+
+		currentMap := map[string]interface{}{}
+		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+			return nil, fmt.Errorf("---> %v %s", err, values)
+		}
+
+		base = mergeMaps(base, currentMap)
+	}
+
+	for _, raw := range d.Get("values_sensitive").([]interface{}) {
 		if raw == nil {
 			continue
 		}
