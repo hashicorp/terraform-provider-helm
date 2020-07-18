@@ -66,6 +66,9 @@ github.com/apparentlymart/go-cidr/cidr
 github.com/apparentlymart/go-textseg/textseg
 # github.com/armon/go-radix v1.0.0
 github.com/armon/go-radix
+# github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a
+## explicit
+github.com/aryann/difflib
 # github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496
 github.com/asaskevich/govalidator
 # github.com/aws/aws-sdk-go v1.25.3
@@ -132,6 +135,10 @@ github.com/containerd/containerd/sys
 github.com/containerd/containerd/version
 # github.com/cyphar/filepath-securejoin v0.2.2
 github.com/cyphar/filepath-securejoin
+# github.com/databus23/helm-diff v3.1.1+incompatible
+## explicit
+github.com/databus23/helm-diff/diff
+github.com/databus23/helm-diff/manifest
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/deislabs/oras v0.8.1
@@ -415,6 +422,9 @@ github.com/mattn/go-isatty
 github.com/mattn/go-runewidth
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
+# github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
+## explicit
+github.com/mgutz/ansi
 # github.com/mitchellh/cli v1.0.0
 github.com/mitchellh/cli
 # github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
@@ -908,6 +918,10 @@ k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/workqueue
 # k8s.io/component-base v0.18.0
 k8s.io/component-base/version
+# k8s.io/helm v2.16.9+incompatible
+## explicit
+k8s.io/helm/pkg/proto/hapi/chart
+k8s.io/helm/pkg/proto/hapi/release
 # k8s.io/klog v1.0.0
 ## explicit
 k8s.io/klog
