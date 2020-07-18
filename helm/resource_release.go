@@ -690,8 +690,8 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 		return err
 	}
 
-	// check of release exists
-	old, err := getRelease(actionConfig, name)
+	// check if release exists
+	old, err := getRelease(m, actionConfig, name)
 	if err == errReleaseNotFound {
 		if len(chart.Metadata.Version) > 0 {
 			return d.SetNew("version", chart.Metadata.Version)
@@ -699,12 +699,12 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 			return d.SetNewComputed("version")
 		}
 	} else if err != nil {
-		return err
+		return fmt.Errorf("error retrieving old release for a diff: %v", err)
 	}
 
 	if req := chart.Metadata.Dependencies; req != nil {
 		if err := action.CheckDependencies(chart, req); err != nil {
-			return err
+			return fmt.Errorf("error checking dependencies for a diff: %v", err)
 		}
 	}
 
@@ -738,21 +738,25 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 
 	values, err := getValues(d)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting values for a diff: %v", err)
 	}
 
 	new, err := client.Run(name, chart, values)
-	if err != nil {
-		return err
+	if err != nil && strings.Contains(err.Error(), "has no deployed releases") {
+		if len(chart.Metadata.Version) > 0 {
+			return d.SetNew("version", chart.Metadata.Version)
+		}
+
+		return d.SetNewComputed("version")
+	} else if err != nil {
+		return fmt.Errorf("error running dry run for a diff: %v", err)
 	}
 
 	var diffRelease bytes.Buffer
 
-	oldSpecs := make(map[string]*manifest.MappingResult)
-	oldSpecs = manifest.Parse(old.Manifest, client.Namespace, "test")
+	oldSpecs := manifest.Parse(old.Manifest, client.Namespace, "test")
 
-	var newSpecs map[string]*manifest.MappingResult
-	newSpecs = manifest.Parse(new.Manifest, client.Namespace, "test")
+	newSpecs := manifest.Parse(new.Manifest, client.Namespace, "test")
 
 	changed := diff.Releases(oldSpecs, newSpecs, []string{}, false, 2, &diffRelease)
 
@@ -762,14 +766,12 @@ func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
 		}
 	}
 
+	debug("%s Done", logId)
+
 	// Set desired version from the Chart metadata if available
 	if len(chart.Metadata.Version) > 0 {
 		return d.SetNew("version", chart.Metadata.Version)
-	} else {
-		return d.SetNewComputed("version")
 	}
-
-	debug("%s Done", logId)
 
 	return d.SetNewComputed("version")
 }
