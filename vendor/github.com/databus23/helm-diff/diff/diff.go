@@ -22,48 +22,53 @@ import (
 func Manifests(oldIndex, newIndex map[string]*manifest.MappingResult, suppressedKinds []string, showSecrets bool, context int, to io.Writer) bool {
 	seenAnyChanges := false
 	emptyMapping := &manifest.MappingResult{}
-	for key, oldContent := range oldIndex {
+
+	oldIndexKeys := getIndexKeys(oldIndex)
+
+	for _, key := range oldIndexKeys {
 		if newContent, ok := newIndex[key]; ok {
-			if oldContent.Content != newContent.Content {
+			if oldIndex[key].Content != newContent.Content {
 				// modified
 				fmt.Fprintf(to, ansi.Color("%s has changed:", "yellow")+"\n", key)
 				if !showSecrets {
-					redactSecrets(oldContent, newContent)
+					redactSecrets(oldIndex[key], newContent)
 				}
 
-				diffs := diffMappingResults(oldContent, newContent)
+				diffs := diffMappingResults(oldIndex[key], newContent)
 				if len(diffs) > 0 {
 					seenAnyChanges = true
 				}
-				printDiffRecords(suppressedKinds, oldContent.Kind, context, diffs, to)
+				printDiffRecords(suppressedKinds, oldIndex[key].Kind, context, diffs, to)
 			}
 		} else {
 			// removed
 			fmt.Fprintf(to, ansi.Color("%s has been removed:", "yellow")+"\n", key)
 			if !showSecrets {
-				redactSecrets(oldContent, nil)
+				redactSecrets(oldIndex[key], nil)
 
 			}
-			diffs := diffMappingResults(oldContent, emptyMapping)
+			diffs := diffMappingResults(oldIndex[key], emptyMapping)
 			if len(diffs) > 0 {
 				seenAnyChanges = true
 			}
-			printDiffRecords(suppressedKinds, oldContent.Kind, context, diffs, to)
+			printDiffRecords(suppressedKinds, oldIndex[key].Kind, context, diffs, to)
 		}
 	}
 
-	for key, newContent := range newIndex {
+	newIndexKeys := getIndexKeys(newIndex)
+
+	for _, key := range newIndexKeys {
 		if _, ok := oldIndex[key]; !ok {
 			// added
 			fmt.Fprintf(to, ansi.Color("%s has been added:", "yellow")+"\n", key)
 			if !showSecrets {
-				redactSecrets(nil, newContent)
+				redactSecrets(nil, newIndex[key])
 			}
-			diffs := diffMappingResults(emptyMapping, newContent)
+			diffs := diffMappingResults(emptyMapping, newIndex[key])
 			if len(diffs) > 0 {
 				seenAnyChanges = true
 			}
-			printDiffRecords(suppressedKinds, newContent.Kind, context, diffs, to)
+			printDiffRecords(suppressedKinds, newIndex[key].Kind, context, diffs, to)
 		}
 	}
 	return seenAnyChanges
@@ -135,6 +140,21 @@ func getComment(s string) string {
 	}
 	return s[:i+1]
 
+}
+
+// return sorted list of manifest index keys
+func getIndexKeys(index map[string]*manifest.MappingResult) []string {
+	keys := make([]string, len(index))
+
+	i := 0
+	for k := range index {
+		keys[i] = k
+		i++
+	}
+
+	sort.Strings(keys)
+
+	return keys
 }
 
 // Releases reindex the content  based on the template names and pass it to Manifests

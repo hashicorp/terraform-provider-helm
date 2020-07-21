@@ -67,7 +67,6 @@ github.com/apparentlymart/go-textseg/textseg
 # github.com/armon/go-radix v1.0.0
 github.com/armon/go-radix
 # github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a
-## explicit
 github.com/aryann/difflib
 # github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496
 github.com/asaskevich/govalidator
@@ -135,7 +134,7 @@ github.com/containerd/containerd/sys
 github.com/containerd/containerd/version
 # github.com/cyphar/filepath-securejoin v0.2.2
 github.com/cyphar/filepath-securejoin
-# github.com/databus23/helm-diff v3.1.1+incompatible
+# github.com/databus23/helm-diff v3.1.1+incompatible => github.com/gordonbondon/helm-diff v0.1.0-alpha1
 ## explicit
 github.com/databus23/helm-diff/diff
 github.com/databus23/helm-diff/manifest
@@ -423,7 +422,6 @@ github.com/mattn/go-runewidth
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
-## explicit
 github.com/mgutz/ansi
 # github.com/mitchellh/cli v1.0.0
 github.com/mitchellh/cli
@@ -919,7 +917,6 @@ k8s.io/client-go/util/workqueue
 # k8s.io/component-base v0.18.0
 k8s.io/component-base/version
 # k8s.io/helm v2.16.9+incompatible
-## explicit
 k8s.io/helm/pkg/proto/hapi/chart
 k8s.io/helm/pkg/proto/hapi/release
 # k8s.io/klog v1.0.0
@@ -975,3 +972,4 @@ sigs.k8s.io/structured-merge-diff/v3/value
 ## explicit
 sigs.k8s.io/yaml
 # github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.3+incompatible
+# github.com/databus23/helm-diff => github.com/gordonbondon/helm-diff v0.1.0-alpha1
