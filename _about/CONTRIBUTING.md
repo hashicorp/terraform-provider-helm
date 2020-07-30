@@ -1,7 +1,7 @@
 Developing the Provider
 ------------
 
-Thank you for your interest in contributing to the Kubernetes provider. We welcome your contributions. Here you'll find information to help you get started with provider development.
+Thank you for your interest in contributing to the Helm provider. We welcome your contributions. Here you'll find information to help you get started with provider development.
 
 ## Documentation
 
