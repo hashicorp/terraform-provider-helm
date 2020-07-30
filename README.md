@@ -1,4 +1,4 @@
-Terraform Provider for Helm
+Helm Provider for Terraform
 [![Actions Status](https://github.com/hashicorp/terraform-provider-helm/workflows/tests/badge.svg)](https://github.com/hashicorp/terraform-provider-helm/actions)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/hashicorp/terraform-provider-helm?label=release)](https://github.com/hashicorp/terraform-provider-helm/releases)
 [![license](https://img.shields.io/github/license/hashicorp/terraform-provider-helm.svg)]()
@@ -71,7 +71,7 @@ resource "helm_release" "my_database" {
 
 ## Contributing
 
-The Terraform Helm Provider is the work of many contributors. We appreciate your help!
+The Helm Provider for Terraform is the work of many contributors. We appreciate your help!
 
 To contribute, please read the [contribution guidelines](_about/CONTRIBUTING.md). You may also [report an issue](https://github.com/hashicorp/terraform-provider-helm/issues/new/choose). Once you've filed an issue, it will follow the [issue lifecycle](_about/ISSUES.md).
 
