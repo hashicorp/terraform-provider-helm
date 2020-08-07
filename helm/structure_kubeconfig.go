@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 
 	apimachineryschema "k8s.io/apimachinery/pkg/runtime/schema"
 	memcached "k8s.io/client-go/discovery/cached/memory"
@@ -64,35 +65,52 @@ func (k *KubeConfig) ToRawKubeConfigLoader() clientcmd.ClientConfig {
 }
 
 func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConfig {
-	overrides := &clientcmd.ConfigOverrides{}
+	overrides := &clientcmd.ConfigOverrides{
+		AuthInfo:        api.AuthInfo{},
+		ClusterDefaults: api.Cluster{},
+		ClusterInfo:     api.Cluster{},
+		Context:         api.Context{},
+		CurrentContext:  "",
+		Timeout:         "",
+	}
+
+	// Let's store the config here if Kubeconfig is passed via config_content
+	var configFromFile *api.Config
+	// Otherwise, we use loader for loading Kubeconfig passed in config_path
 	loader := &clientcmd.ClientConfigLoadingRules{}
 
 	if k8sGet(configData, "load_config_file").(bool) {
-		if configPath, ok := k8sGetOk(configData, "config_path"); ok && configPath.(string) != "" {
+		if configContent, ok := k8sGetOk(configData, "config_content"); ok && configContent.(string) != "" {
+			config, err := clientcmd.Load([]byte(configContent.(string)))
+			if err != nil {
+				log.Printf("[ERROR] Failed to parse kubeconfig_content")
+				return nil
+			}
+			configFromFile = config
+		} else if configPath, ok := k8sGetOk(configData, "config_path"); ok && configPath.(string) != "" {
 			path, err := homedir.Expand(configPath.(string))
 			if err != nil {
 				return nil
 			}
 			loader.ExplicitPath = path
-
-			ctx, ctxOk := k8sGetOk(configData, "config_context")
-			authInfo, authInfoOk := k8sGetOk(configData, "config_context_auth_info")
-			cluster, clusterOk := k8sGetOk(configData, "config_context_cluster")
-			if ctxOk || authInfoOk || clusterOk {
-				if ctxOk {
-					overrides.CurrentContext = ctx.(string)
-					log.Printf("[DEBUG] Using custom current context: %q", overrides.CurrentContext)
-				}
-
-				overrides.Context = clientcmdapi.Context{}
-				if authInfoOk {
-					overrides.Context.AuthInfo = authInfo.(string)
-				}
-				if clusterOk {
-					overrides.Context.Cluster = cluster.(string)
-				}
-				log.Printf("[DEBUG] Using overidden context: %#v", overrides.Context)
+		}
+		ctx, ctxOk := k8sGetOk(configData, "config_context")
+		authInfo, authInfoOk := k8sGetOk(configData, "config_context_auth_info")
+		cluster, clusterOk := k8sGetOk(configData, "config_context_cluster")
+		if ctxOk || authInfoOk || clusterOk {
+			if ctxOk {
+				overrides.CurrentContext = ctx.(string)
+				log.Printf("[DEBUG] Using custom current context: %q", overrides.CurrentContext)
 			}
+
+			overrides.Context = clientcmdapi.Context{}
+			if authInfoOk {
+				overrides.Context.AuthInfo = authInfo.(string)
+			}
+			if clusterOk {
+				overrides.Context.Cluster = cluster.(string)
+			}
+			log.Printf("[DEBUG] Using overidden context: %#v", overrides.Context)
 		}
 	}
 
@@ -156,7 +174,15 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConf
 		overrides.Context.Namespace = *namespace
 	}
 
-	client := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
+	var client clientcmd.ClientConfig
+	if configFromFile != nil {
+		log.Printf("[INFO] Creating configuration from kubeconfig_content")
+		client = clientcmd.NewDefaultClientConfig(*configFromFile, overrides)
+	} else {
+		log.Printf("[INFO] Creating configuration from kubeconfig_file")
+		client = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
+	}
+
 	if client == nil {
 		log.Printf("[ERROR] Failed to initialize kubernetes config")
 		return nil

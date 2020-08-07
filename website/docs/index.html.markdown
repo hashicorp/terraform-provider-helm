@@ -46,7 +46,7 @@ resource "helm_release" "mydatabase" {
 
 There are generally two ways to configure the Helm provider.
 
-### File config
+### File or file content config
 
 The provider always first tries to load **a config file** (usually `$HOME/.kube/config`), for access kubernetes and reads all the Helm files from home (usually `$HOME/.helm`). You can also define that file with the following setting:
 
@@ -54,6 +54,61 @@ The provider always first tries to load **a config file** (usually `$HOME/.kube/
 provider "helm" {
   kubernetes {
     config_path = "/path/to/kube_cluster.yaml"
+  }
+}
+```
+
+You can also pass content of kube config directly to provider. It may be more convenient to pass complete kube config as a single option instead of passing `exec`, `host` and `cluster_ca_certificate` separately (see [`kubeconfig` output of `terraform-aws-eks` module](https://github.com/terraform-aws-modules/terraform-aws-eks#outputs)). If you pass non-empty string to `config_content`, it's used instead of `config_path` and no external kube config is used:
+
+```hcl
+variable "cluster_id" {
+  type        = string
+  description = "EKS Cluster ID used to configure Helm & Kubernetes providers."
+}
+
+data "aws_eks_cluster" "cluster" {
+  name = var.cluster_id
+}
+
+data "aws_region" "current" {}
+
+locals {
+  # AWS EKS Cluster KubeConfig Sample
+  # i.e. `terraform-aws-eks` module has kubeconfig output, which is a string with similar content as below
+  kubeconfig = <<-EOF
+    apiVersion: v1
+    kind: Config
+    preferences: {}
+    clusters:
+    - name: eks-cluster
+      cluster:
+        certificate-authority-data: ${data.aws_eks_cluster.cluster.certificate_authority.0.data}
+        server: ${data.aws_eks_cluster.cluster.endpoint}
+    contexts:
+    - name: terraform
+      context:
+        cluster: eks-cluster
+        user: terraform
+    current-context: terraform
+    users:
+    - name: terraform
+      user:
+        exec:
+          apiVersion: client.authentication.k8s.io/v1alpha1
+          command: aws
+          args:
+          - --region
+          - ${data.aws_region.current.name}
+          - eks
+          - get-token
+          - --cluster-name
+          - ${var.cluster_id}
+  EOF
+}
+
+provider "helm" {
+  kubernetes {
+    config_content = local.kubeconfig
   }
 }
 ```
@@ -94,6 +149,7 @@ The following arguments are supported:
 
 The `kubernetes` block supports:
 
+* `config_content` - (Optional) Content of kube config file, defaults to empty string.
 * `config_path` - (Optional) Path to the kube config file, defaults to `~/.kube/config`. Can be sourced from `KUBE_CONFIG` or `KUBECONFIG`..
 * `host` - (Optional) The hostname (in form of URI) of Kubernetes master. Can be sourced from `KUBE_HOST`.
 * `username` - (Optional) The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_USER`.

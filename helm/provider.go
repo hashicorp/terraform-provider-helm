@@ -1,6 +1,7 @@
 package helm
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -158,6 +159,14 @@ func kubernetesResource() *schema.Resource {
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLUSTER_CA_CERT_DATA", ""),
 				Description: "PEM-encoded root certificates bundle for TLS authentication.",
 			},
+			"config_content": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DefaultFunc: func() (interface{}, error) {
+					return "", nil
+				},
+				Description: "Kube config file contents, you may use it instead of config_path.",
+			},
 			"config_path": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -273,7 +282,7 @@ func k8sGetOk(d *schema.ResourceData, key string) (interface{}, bool) {
 		value, ok = d.GetOkExists(k8sPrefix + key)
 	}
 
-	// fix: DefaultFunc is not being triggerred on TypeList
+	// fix: DefaultFunc is not being triggered on TypeList
 	schema := kubernetesResource().Schema[key]
 	if !ok && schema.DefaultFunc != nil {
 		value, _ = schema.DefaultFunc()
@@ -315,6 +324,10 @@ func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, er
 	actionConfig := new(action.Configuration)
 
 	kc := newKubeConfig(m.data, &namespace)
+
+	if kc == nil {
+		return nil, errors.New("could not initialize kubeconfig: check if helm provider kubernetes options are valid")
+	}
 
 	if err := actionConfig.Init(kc, namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
