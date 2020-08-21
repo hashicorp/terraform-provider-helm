@@ -13,7 +13,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 
 `helm_release` describes the desired status of a chart in a kubernetes cluster.
 
-## Example Usage
+## Example Usage - Chart Repository
 
 ```hcl
 resource "helm_release" "example" {
@@ -48,9 +48,20 @@ resource "helm_release" "example" {
 In case a Chart is not available from a repository, a path may be used:
 
 ```hcl
-resource "helm_release" "local" {
+resource "helm_release" "example" {
   name       = "my-local-chart"
   chart      = "./charts/example"
+}
+```
+
+## Example Usage - Chart URL
+
+In case a Chart is not available from a repository, a path may be used:
+
+```hcl
+resource "helm_release" "example" {
+  name  = "redis"
+  chart = "https://charts.bitnami.com/bitnami/redis-10.7.16.tgz"
 }
 ```
 
