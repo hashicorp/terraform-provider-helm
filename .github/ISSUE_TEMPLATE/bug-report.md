@@ -26,7 +26,9 @@ labels: bug
 ```
 
 ### Debug Output
-<!--Please provider a link to a GitHub Gist containing the complete debug output: https://www.terraform.io/docs/internals/debugging.html. Please do NOT paste the debug output in the issue; just paste a link to the Gist.-->
+<!--Please provider a link to a GitHub Gist containing the complete debug output: https://www.terraform.io/docs/internals/debugging.html. Please do NOT paste the debug output in the issue; just paste a link to the Gist. 
+
+NOTE: In addition to Terraform debugging, please set HELM_DEBUG=1 to enable debugging info from helm.-->
 
 ### Panic Output
 <!--If Terraform produced a panic, please provide a link to a GitHub Gist containing the output of the `crash.log`.-->
