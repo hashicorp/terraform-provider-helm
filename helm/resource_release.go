@@ -55,7 +55,6 @@ func resourceRelease() *schema.Resource {
 		Read:   resourceReleaseRead,
 		Delete: resourceReleaseDelete,
 		Update: resourceReleaseUpdate,
-		Exists: resourceReleaseExists,
 		Importer: &schema.ResourceImporter{
 			State: resourceHelmReleaseImportState,
 		},
@@ -354,7 +353,6 @@ func resourceRelease() *schema.Resource {
 			"metadata": {
 				Type:        schema.TypeList,
 				Computed:    true,
-				MaxItems:    1,
 				Description: "Status of the deployed release.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -1013,9 +1011,26 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 	d.Set("description", r.Info.Description)
 	d.Set("chart", r.Chart.Metadata.Name)
 
-	for key, value := range defaultAttributes {
-		d.Set(key, value)
-	}
+	// Setting String literal keys to resolve tfprovider lint issue
+	d.Set("verify", defaultAttributes["verify"])
+	d.Set("timeout", defaultAttributes["timeout"])
+	d.Set("wait", defaultAttributes["wait"])
+	d.Set("disable_webhooks", defaultAttributes["disable_webhooks"])
+	d.Set("atomic", defaultAttributes["atomic"])
+	d.Set("render_subchart_notes", defaultAttributes["render_subchart_notes"])
+	d.Set("disable_openapi_validation", defaultAttributes["disable_openapi_validation"])
+	d.Set("disable_crd_hooks", defaultAttributes["disable_crd_hooks"])
+	d.Set("force_update", defaultAttributes["force_update"])
+	d.Set("reset_values", defaultAttributes["reset_values"])
+	d.Set("reuse_values", defaultAttributes["reuse_values"])
+	d.Set("recreate_pods", defaultAttributes["recreate_pods"])
+	d.Set("max_history", defaultAttributes["max_history"])
+	d.Set("skip_crds", defaultAttributes["skip_crds"])
+	d.Set("cleanup_on_fail", defaultAttributes["cleanup_on_fail"])
+	d.Set("dependency_update", defaultAttributes["dependency_update"])
+	d.Set("replace", defaultAttributes["replace"])
+	d.Set("create_namespace", defaultAttributes["create_namespace"])
+	d.Set("lint", defaultAttributes["lint"])
 
 	if err := setIDAndMetadataFromRelease(d, r); err != nil {
 		return nil, err

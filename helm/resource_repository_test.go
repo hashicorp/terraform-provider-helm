@@ -12,7 +12,11 @@ import (
 
 func TestAccResourceRepository_basic(t *testing.T) {
 	name := fmt.Sprintf("%s-%s", testRepositoryName, acctest.RandString(10))
+	// Adding tfproviderlint ignore for missing CheckDestroy as this resource
+	// is being removed next release per the message on the data_source_repository
+	// Space is required for linter ignore to work
 
+	//lintignore:AT001
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t, "") },
 		Providers: testAccProviders,

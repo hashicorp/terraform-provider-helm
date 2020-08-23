@@ -46,70 +46,52 @@ func TestAccResourceRelease_basic(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "mariadb"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
 			),
-		}, {
-			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "7.1.0"),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
-				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
-			),
-		}},
-	})
-}
+		},
+			{
+				Config:                  testAccHelmReleaseConfigBasic("imported", namespace, "import", "7.1.0"),
+				ImportStateId:           fmt.Sprintf("%s/%s", namespace, name),
+				ResourceName:            "helm_release.imported",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"set", "set.#", "repository"},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.version", "7.1.0"),
+					resource.TestCheckResourceAttr("helm_release.imported", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.imported", "description", "Test"),
+					resource.TestCheckNoResourceAttr("helm_release.imported", "repository"),
 
-func TestAccResourceRelease_import(t *testing.T) {
-	name := fmt.Sprintf("test-import-%s", acctest.RandString(10))
-	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
-	// Delete namespace automatically created by helm after checks
-	defer deleteNamespace(t, namespace)
+					// Default values
+					resource.TestCheckResourceAttr("helm_release.imported", "verify", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "timeout", "300"),
+					resource.TestCheckResourceAttr("helm_release.imported", "wait", "true"),
+					resource.TestCheckResourceAttr("helm_release.imported", "disable_webhooks", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "atomic", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "render_subchart_notes", "true"),
+					resource.TestCheckResourceAttr("helm_release.imported", "disable_crd_hooks", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "force_update", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "reset_values", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "reuse_values", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "recreate_pods", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "max_history", "0"),
+					resource.TestCheckResourceAttr("helm_release.imported", "skip_crds", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "cleanup_on_fail", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "dependency_update", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "replace", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "disable_openapi_validation", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "create_namespace", "false"),
+				),
+			},
+			{
 
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t, namespace) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
-		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "7.1.0"),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
-				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-			),
-		}, {
-			Config:                  testAccHelmReleaseConfigBasic("imported", namespace, "import", "7.1.0"),
-			ImportStateId:           fmt.Sprintf("%s/%s", namespace, name),
-			ResourceName:            "helm_release.imported",
-			ImportState:             true,
-			ImportStateVerify:       true,
-			ImportStateVerifyIgnore: []string{"set", "set.#", "repository"},
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.revision", "1"),
-				resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.version", "7.1.0"),
-				resource.TestCheckResourceAttr("helm_release.imported", "status", release.StatusDeployed.String()),
-				resource.TestCheckResourceAttr("helm_release.imported", "description", "Test"),
-				resource.TestCheckNoResourceAttr("helm_release.imported", "repository"),
-
-				// Default values
-				resource.TestCheckResourceAttr("helm_release.imported", "verify", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "timeout", "300"),
-				resource.TestCheckResourceAttr("helm_release.imported", "wait", "true"),
-				resource.TestCheckResourceAttr("helm_release.imported", "disable_webhooks", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "atomic", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "render_subchart_notes", "true"),
-				resource.TestCheckResourceAttr("helm_release.imported", "disable_crd_hooks", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "force_update", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "reset_values", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "reuse_values", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "recreate_pods", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "max_history", "0"),
-				resource.TestCheckResourceAttr("helm_release.imported", "skip_crds", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "cleanup_on_fail", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "dependency_update", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "replace", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "disable_openapi_validation", "false"),
-				resource.TestCheckResourceAttr("helm_release.imported", "create_namespace", "false"),
-			),
-		}},
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "7.1.0"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
+				),
+			}},
 	})
 }
 
@@ -341,8 +323,9 @@ func TestAccResourceRelease_repository(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t, namespace) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigRepository(testResourceName, namespace, name),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -368,8 +351,9 @@ func TestAccResourceRelease_repositoryDatasource(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t, namespace) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigRepositoryDatasource(testResourceName, namespace, name),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -403,7 +387,8 @@ func TestAccResourceRelease_repositoryMultipleDatasources(t *testing.T) {
 			testAccPreCheckHelmRepositoryDestroy(t, repo1)
 			testAccPreCheckHelmRepositoryDestroy(t, repo2)
 		},
-		Providers: testAccProviders,
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigRepositoryMultipleDatasource(repo1, repo2, testResourceName, namespace, name),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -422,8 +407,9 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t, namespace) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -451,8 +437,9 @@ func TestAccResourceRelease_repository_path(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t, namespace) },
-		Providers: testAccProviders,
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
 			Config: testAccHelmReleaseConfigRepositoryPath(testResourceName, namespace, name),
 			Check: resource.ComposeAggregateTestCheckFunc(

@@ -14,7 +14,7 @@ func main() {
 	klog.InitFlags(klogFlags)
 	err := klogFlags.Set("logtostderr", "false")
 	if err != nil {
-		panic(err)
+		klog.Fatalf("Initialization failed: %s", err)
 	}
 	plugin.Serve(&plugin.ServeOpts{
 		ProviderFunc: helm.Provider,

@@ -41,6 +41,10 @@ func TestMain(m *testing.M) {
 	home, err := ioutil.TempDir(os.TempDir(), "helm")
 
 	if err != nil {
+		// Setting to ignore this linter error as it is for test code, not the provider
+		// itself affecting users. Also need space for ignore comment to work.
+
+		//lintignore:R009
 		panic("Could not create temporary directory for helm config files")
 	}
 
