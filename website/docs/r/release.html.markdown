@@ -56,7 +56,7 @@ resource "helm_release" "example" {
 
 ## Example Usage - Chart URL
 
-In case a Chart is not available from a repository, a path may be used:
+An absolute URL to the .tgz of the Chart may also be used:
 
 ```hcl
 resource "helm_release" "example" {
