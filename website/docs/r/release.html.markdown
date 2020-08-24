@@ -80,7 +80,7 @@ The following arguments are supported:
 * `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
 * `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
 * `namespace` - (Optional) The namespace to install the release into. Defaults to `default`.
-* `verify` - (Optional) Verify the package before installing it. Helm uses a provenance file to verify the integrity of the chart, this must be hosted alongside the chart. For more information see the [Helm Documentation](https://helm.sh/docs/topics/provenance/). Defaults to `false`
+* `verify` - (Optional) Verify the package before installing it. Helm uses a provenance file to verify the integrity of the chart; this must be hosted alongside the chart. For more information see the [Helm Documentation](https://helm.sh/docs/topics/provenance/). Defaults to `false`.
 * `keyring` - (Optional) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`
 * `timeout` - (Optional) Time in seconds to wait for any individual kubernetes operation (like Jobs for hooks). Defaults to `300` seconds.
 * `disable_webhooks` - (Optional) Prevent hooks from running. Defauts to `false`
