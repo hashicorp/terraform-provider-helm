@@ -45,6 +45,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "mariadb"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.app_version", "10.3.20"),
 			),
 		}, {
 			Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "7.1.0"),
