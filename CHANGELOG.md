@@ -1,7 +1,7 @@
 ## 1.3.0 (Unreleased)
 
 IMPROVEMENTS:
-* Added app_version to metadata attribute block #532
+* Added app_version to metadata attribute block (#532)
 
 BUG FIXES:
 * Fix nil path for `dependency_update` flag (#482)
