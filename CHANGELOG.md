@@ -1,4 +1,4 @@
-## 1.3.0 (Unreleased)
+## 1.3.0 (September 02, 2020)
 
 IMPROVEMENTS:
 * Added app_version to metadata attribute block (#532)
