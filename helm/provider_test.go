@@ -3,6 +3,7 @@ package helm
 import (
 	"context"
 	"io/ioutil"
+
 	"os"
 	"path/filepath"
 	"testing"
@@ -49,6 +50,8 @@ func TestMain(m *testing.M) {
 	os.Setenv("HELM_REGISTRY_CONFIG", filepath.Join(home, "config/registry.json"))
 	os.Setenv("HELM_PLUGINS", filepath.Join(home, "plugins"))
 	os.Setenv("XDG_CACHE_HOME", filepath.Join(home, "cache"))
+	os.Setenv("HTTP_PROXY", "")
+	os.Setenv("HTTPS_PROXY", "")
 
 	ec := m.Run()
 

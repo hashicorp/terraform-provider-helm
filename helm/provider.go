@@ -61,6 +61,18 @@ func Provider() terraform.ResourceProvider {
 				Description: "The path to the file containing cached repository indexes",
 				DefaultFunc: schema.EnvDefaultFunc("HELM_REPOSITORY_CACHE", helmpath.CachePath("repository")),
 			},
+			"http_proxy": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Setting http proxy for helm config",
+				DefaultFunc: schema.EnvDefaultFunc("HTTP_PROXY", ""),
+			},
+			"https_proxy": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Setting https proxy for helm config",
+				DefaultFunc: schema.EnvDefaultFunc("HTTPS_PROXY", ""),
+			},
 			"helm_driver": {
 				Type:        schema.TypeString,
 				Optional:    true,
