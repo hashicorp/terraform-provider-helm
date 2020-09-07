@@ -1191,7 +1191,8 @@ func testAccHelmReleaseConfigDependency(resource, ns, name string, dependencyUpd
 }
 
 func removeCharts(path string) error {
-	chartsPath := fmt.Sprintf(`%s/charts`, path)
+	wd, _ := os.Getwd()
+	chartsPath := fmt.Sprintf(`%s/%s/charts`, wd, path)
 	if _, err := os.Stat(chartsPath); os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
