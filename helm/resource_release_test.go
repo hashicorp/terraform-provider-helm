@@ -1192,7 +1192,14 @@ func testAccHelmReleaseConfigDependency(resource, ns, name string, dependencyUpd
 
 func removeCharts(path string) error {
 	wd, _ := os.Getwd()
-	chartsPath := fmt.Sprintf(`%s/%s/charts`, wd, path)
+	// check if root folder exist
+	chartPath := fmt.Sprintf(`%s/test-fixtures/charts/%s`, wd, path)
+
+	if _, err := os.Stat(chartPath); os.IsNotExist(err) {
+		return fmt.Errorf("Root chart folder not exist")
+	}
+
+	chartsPath := fmt.Sprintf(`%s/charts`, chartPath)
 	if _, err := os.Stat(chartsPath); os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
