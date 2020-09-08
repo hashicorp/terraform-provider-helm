@@ -1179,12 +1179,59 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 	})
 }
 
+func testAccHelmRelease_OpenAPIBrokenChart(name, namespace string, disableValidation bool) string {
+	return fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name        = %q
+		namespace   = %q
+		chart       = "./test-fixtures/charts/api-broken-chart"
+		disable_openapi_validation = %t
+
+		set_string {
+			name  = "fake.value"
+			value = %q
+		}
+	}`, name, namespace, disableValidation, acctest.RandString(10))
+
+}
+
+func TestAccResourceRelease_OpenAPIBrokenChart(t *testing.T) {
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	name := fmt.Sprintf("test-openapi-validation-%s", acctest.RandString(10))
+
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config:      testAccHelmRelease_OpenAPIBrokenChart(name, namespace, false),
+			ExpectError: regexp.MustCompile("errors during apply: unable to build kubernetes objects from release manifest: error validating.*"),
+		}, {
+			Config: testAccHelmRelease_OpenAPIBrokenChart(name, namespace, true),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "disable_openapi_validation", "true"),
+			),
+		}, {
+			Config: testAccHelmRelease_OpenAPIBrokenChart(name, namespace, true),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "disable_openapi_validation", "true"),
+			),
+		}},
+	})
+}
+
 func testAccHelmReleaseConfigDependency(resource, ns, name string, dependencyUpdate bool) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
  			name        = %q
 			namespace   = %q
-  			chart       = "./test-fixtures/charts/local-chart"
+  		chart       = "./test-fixtures/charts/local-chart"
 			dependency_update = %t
 		}
 	`, resource, name, ns, dependencyUpdate)
