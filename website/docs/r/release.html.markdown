@@ -137,6 +137,7 @@ The `metadata` block supports:
 * `revision` - Version is an int32 which represents the version of the release.
 * `status` - Status of the release.
 * `version` - A SemVer 2 conformant version string of the chart.
+* `app_version` - The version number of the application being deployed.
 * `values` - The compounded values from `values` and `set*` attributes.
 
 ## Import

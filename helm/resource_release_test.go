@@ -45,6 +45,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "mariadb"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.app_version", "10.3.20"),
 			),
 		},
 			{
@@ -1161,6 +1162,55 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 			PlanOnly:           true,
 			ExpectError:        regexp.MustCompile(`function "BAD_FUNCTION" not defined`),
 			ExpectNonEmptyPlan: true,
+		}},
+	})
+}
+
+func testAccHelmReleaseConfigDependency(resource, ns, name string, dependencyUpdate bool) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+  			chart       = "./test-fixtures/charts/local-chart"
+			dependency_update = %t
+		}
+	`, resource, name, ns, dependencyUpdate)
+}
+
+func removeCharts(path string) error {
+	chartsPath := fmt.Sprintf(`%s/charts`, path)
+	if _, err := os.Stat(chartsPath); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return errors.Wrapf(err, "can't remove charts directory %s", chartsPath)
+	}
+	return os.RemoveAll(chartsPath)
+}
+
+func TestAccResourceRelease_dependency(t *testing.T) {
+	if err := removeCharts("local-chart"); err != nil {
+		t.Fatalf("Failed to remove repository cache: %s", err)
+	}
+
+	name := fmt.Sprintf("test-dependency-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config:      testAccHelmReleaseConfigDependency(testResourceName, namespace, name, false),
+			ExpectError: regexp.MustCompile("found in Chart.yaml, but missing in charts/ directory"),
+		}, {
+			Config: testAccHelmReleaseConfigDependency(testResourceName, namespace, name, true),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),
+			),
 		}},
 	})
 }

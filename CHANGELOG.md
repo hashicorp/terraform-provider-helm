@@ -1,4 +1,11 @@
-## 1.2.5 (Unreleased)
+## 1.3.0 (September 02, 2020)
+
+IMPROVEMENTS:
+* Added app_version to metadata attribute block (#532)
+
+BUG FIXES:
+* Fix nil path for `dependency_update` flag (#482)
+
 ## 1.2.4 (July 22, 2020)
 
 BUG FIXES:
