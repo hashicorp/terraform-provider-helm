@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,14 +27,14 @@ const (
 )
 
 var (
-	testAccProviders map[string]terraform.ResourceProvider
+	testAccProviders map[string]*schema.Provider
 	testAccProvider  *schema.Provider
 	client           kubernetes.Interface = nil
 )
 
 func TestMain(m *testing.M) {
-	testAccProvider = Provider().(*schema.Provider)
-	testAccProviders = map[string]terraform.ResourceProvider{
+	testAccProvider = Provider()
+	testAccProviders = map[string]*schema.Provider{
 		"helm": testAccProvider,
 	}
 
@@ -44,36 +44,58 @@ func TestMain(m *testing.M) {
 		panic("Could not create temporary directory for helm config files")
 	}
 
-	os.Setenv("HELM_REPOSITORY_CONFIG", filepath.Join(home, "config/repositories.yaml"))
-	os.Setenv("HELM_REPOSITORY_CACHE", filepath.Join(home, "cache/helm/repository"))
-	os.Setenv("HELM_REGISTRY_CONFIG", filepath.Join(home, "config/registry.json"))
-	os.Setenv("HELM_PLUGINS", filepath.Join(home, "plugins"))
-	os.Setenv("XDG_CACHE_HOME", filepath.Join(home, "cache"))
+	err = os.Setenv("HELM_REPOSITORY_CONFIG", filepath.Join(home, "config/repositories.yaml"))
+	if err != nil {
+		panic("setenv failed for HELM_REPOSITORY_CONFIG")
+	}
+
+	err = os.Setenv("HELM_REPOSITORY_CACHE", filepath.Join(home, "cache/helm/repository"))
+	if err != nil {
+		panic("setenv failed for HELM_REPOSITORY_CACHE")
+	}
+
+	err = os.Setenv("HELM_REGISTRY_CONFIG", filepath.Join(home, "config/registry.json"))
+	if err != nil {
+		panic("setenv failed for HELM_REGISTRY_CONFIG")
+	}
+
+	err = os.Setenv("HELM_PLUGINS", filepath.Join(home, "plugins"))
+	if err != nil {
+		panic("setenv failed for HELM_PLUGINS")
+	}
+
+	err = os.Setenv("XDG_CACHE_HOME", filepath.Join(home, "cache"))
+	if err != nil {
+		panic("setenv failed for XDG_CACHE_HOME")
+	}
 
 	ec := m.Run()
 
-	os.RemoveAll(home)
+	err = os.RemoveAll(home)
+	if err != nil {
+		panic("TempDir deletion failed")
+	}
 
 	os.Exit(ec)
 }
 
 func TestProvider(t *testing.T) {
-	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
+	if err := Provider().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }
 
 func testAccPreCheck(t *testing.T, namespace string) {
+	ctx := context.TODO()
 	err := setK8Client()
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = testAccProvider.Configure(terraform.NewResourceConfigRaw(nil))
-
-	if err != nil {
-		t.Fatal(err)
+	diags := testAccProvider.Configure(ctx, terraform.NewResourceConfigRaw(nil))
+	if diags.HasError() {
+		t.Fatal(diags)
 	}
 
 	if namespace != "" {
