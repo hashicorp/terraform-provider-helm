@@ -18,7 +18,6 @@ jobs:
       run: |
         make test
         make vet
-        make website-test
     - uses: engineerd/setup-kind@v0.3.0
     - name: Acceptance Tests
       run: |

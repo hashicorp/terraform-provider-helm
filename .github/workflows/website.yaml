@@ -1,0 +1,17 @@
+name: website
+on:
+  push:
+    paths:
+      - "website/**"
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: website-lint
+        run: |
+          make website-lint
