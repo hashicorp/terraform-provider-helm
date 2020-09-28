@@ -696,7 +696,7 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
 			Config:             broken,
-			ExpectError:        regexp.MustCompile("create: failed to create"),
+			ExpectError:        regexp.MustCompile("releaseContent: Release name is invalid"),
 			ExpectNonEmptyPlan: true,
 		}},
 	})
@@ -1191,7 +1191,7 @@ func testAccHelmReleaseConfigDependency(resource, ns, name string, dependencyUpd
 }
 
 func removeCharts(path string) error {
-	chartsPath := fmt.Sprintf(`%s/charts`, path)
+	chartsPath := fmt.Sprintf(`test-fixtures/charts/%s/charts`, path)
 	if _, err := os.Stat(chartsPath); os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
