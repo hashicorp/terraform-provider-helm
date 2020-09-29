@@ -1,4 +1,4 @@
-## 1.3.1 (Unreleased)
+## 1.3.1 (September 29, 2020)
 
 IMPROVEMENTS:
 * Upgrade Helm to 3.3.4 (#572)
