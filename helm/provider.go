@@ -84,13 +84,13 @@ func Provider() *schema.Provider {
 							return
 						}
 					}
-					diags = append(diags, diag.Diagnostic{
-						Severity: diag.Error,
-						Summary:  "Invalid storage driver: " + v + " used for helm_driver",
-						Detail:   "Helm backend storage driver must be set to one of the following values:" + strings.Join(drivers, ","),
-					})
-
-					return
+					return diag.Diagnostics{
+						{
+							Severity: diag.Error,
+							Summary:  fmt.Sprintf("Invalid storage driver: %v used for helm_driver", v),
+							Detail:   fmt.Sprintf("Helm backend storage driver must be set to one of the following values: %v", strings.Join(drivers, ", ")),
+						},
+					}
 				},
 			},
 			"kubernetes": {

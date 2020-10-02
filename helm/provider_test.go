@@ -41,39 +41,39 @@ func TestMain(m *testing.M) {
 	home, err := ioutil.TempDir(os.TempDir(), "helm")
 
 	if err != nil {
-		panic("Could not create temporary directory for helm config files")
+		panic(err)
 	}
 
 	err = os.Setenv("HELM_REPOSITORY_CONFIG", filepath.Join(home, "config/repositories.yaml"))
 	if err != nil {
-		panic("setenv failed for HELM_REPOSITORY_CONFIG")
+		panic(err)
 	}
 
 	err = os.Setenv("HELM_REPOSITORY_CACHE", filepath.Join(home, "cache/helm/repository"))
 	if err != nil {
-		panic("setenv failed for HELM_REPOSITORY_CACHE")
+		panic(err)
 	}
 
 	err = os.Setenv("HELM_REGISTRY_CONFIG", filepath.Join(home, "config/registry.json"))
 	if err != nil {
-		panic("setenv failed for HELM_REGISTRY_CONFIG")
+		panic(err)
 	}
 
 	err = os.Setenv("HELM_PLUGINS", filepath.Join(home, "plugins"))
 	if err != nil {
-		panic("setenv failed for HELM_PLUGINS")
+		panic(err)
 	}
 
 	err = os.Setenv("XDG_CACHE_HOME", filepath.Join(home, "cache"))
 	if err != nil {
-		panic("setenv failed for XDG_CACHE_HOME")
+		panic(err)
 	}
 
 	ec := m.Run()
 
 	err = os.RemoveAll(home)
 	if err != nil {
-		panic("TempDir deletion failed")
+		panic(err)
 	}
 
 	os.Exit(ec)

@@ -847,7 +847,8 @@ func TestGetValuesString(t *testing.T) {
 		map[string]interface{}{"name": "foo", "value": "42", "type": "string"},
 	})
 	if err != nil {
-		t.Fatalf("error setting values: %v", err)
+		t.Fatalf("error setting values: %s", err)
+		return
 	}
 
 	values, err := getValues(d)

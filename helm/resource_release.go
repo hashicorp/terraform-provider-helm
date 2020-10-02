@@ -414,7 +414,7 @@ func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta inter
 			{
 				Severity: diag.Warning,
 				Summary:  "Release does not exist",
-				Detail:   "resourceReleaseExists() returned 'false' for resource ID: " + d.Id(),
+				Detail:   fmt.Sprintf("Release name: %v does not exist. It may have been deleted outside of Terraform", d.Id()),
 			},
 		}
 	}
@@ -478,12 +478,9 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	validInstallableChart, err := isChartInstallable(c)
-	if !validInstallableChart {
-		if err != nil {
-			return diag.FromErr(err)
-		}
-		return diag.FromErr(errors.New("Unknown error. isChartInstallable returned 'false'"))
+	err = isChartInstallable(c)
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	updateDependency := d.Get("dependency_update").(bool)
@@ -1000,12 +997,12 @@ func resolveChartName(repository, name string) (string, string, error) {
 	return "", name, nil
 }
 
-func isChartInstallable(ch *chart.Chart) (bool, error) {
+func isChartInstallable(ch *chart.Chart) error {
 	switch ch.Metadata.Type {
 	case "", "application":
-		return true, nil
+		return nil
 	}
-	return false, errors.Errorf("%s charts are not installable", ch.Metadata.Type)
+	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
 func chartPathOptions(d resourceGetter, m *Meta) (*action.ChartPathOptions, string, error) {
