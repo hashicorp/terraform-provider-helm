@@ -18,7 +18,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 ```hcl
 resource "helm_release" "example" {
   name       = "my-redis-release"
-  repository = "https://kubernetes-charts.storage.googleapis.com" 
+  repository = "https://kubernetes-charts.storage.googleapis.com"
   chart      = "redis"
   version    = "6.0.1"
 
@@ -74,7 +74,7 @@ The following arguments are supported:
 * `repository` - (Optional) Repository URL where to locate the requested chart.
 * `repository_key_file` - (Optional) The repositories cert key file
 * `repository_cert_file` - (Optional) The repositories cert file
-* `repository_ca_file` - (Optional) The Repositories CA File. 
+* `repository_ca_file` - (Optional) The Repositories CA File.
 * `repository_username` - (Optional) Username for HTTP basic authentication against the repository.
 * `repository_password` - (Optional) Password for HTTP basic authentication against the repository.
 * `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
@@ -144,7 +144,7 @@ The `metadata` block supports:
 
 A Helm Release resource can be imported using its namespace and name e.g.
 
-```
+```shell
 $ terraform import helm_release.example default/example-name
 ```
 
