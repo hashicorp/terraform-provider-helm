@@ -233,9 +233,8 @@ func kubernetesResource() *schema.Resource {
 func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, error) {
 	m := &Meta{data: d}
 
-	settings := &cli.EnvSettings{
-		Debug: d.Get("debug").(bool),
-	}
+	settings := cli.New()
+	settings.Debug = d.Get("debug").(bool)
 
 	if v, ok := d.GetOk("plugins_path"); ok {
 		settings.PluginsDirectory = v.(string)
