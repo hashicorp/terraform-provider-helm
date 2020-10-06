@@ -83,18 +83,33 @@ packages:
 clean:
 	@rm -rf $(BUILD_PATH)
 
-website:
-ifeq (,$(wildcard $(GOPATH)/src/$(WEBSITE_REPO)))
-	echo "$(WEBSITE_REPO) not found in your GOPATH (necessary for layouts and assets), get-ting..."
-	git clone https://$(WEBSITE_REPO) $(GOPATH)/src/$(WEBSITE_REPO)
+# The docker command and run options may be overridden using env variables DOCKER and DOCKER_RUN_OPTS.
+# Example:
+#   DOCKER="podman --cgroup-manager=cgroupfs" make website-lint
+#   DOCKER_RUN_OPTS="--userns=keep-id" make website-lint
+#   This option is needed for systems using SELinux and rootless containers.
+#   DOCKER_VOLUME_OPTS="rw,Z"
+# For more info, see https://docs.docker.com/storage/bind-mounts/#configure-the-selinux-label
+DOCKER?=$(shell which docker)
+ifeq ($(strip $(DOCKER)),)
+$(error "Docker binary could not be found in PATH. Please install docker, or specify an alternative by setting DOCKER=/path/to/binary")
 endif
-	@$(MAKE) -C $(GOPATH)/src/$(WEBSITE_REPO) website-provider PROVIDER_PATH=$(shell pwd) PROVIDER_NAME=$(PKG_NAME)
-
-website-test:
-ifeq (,$(wildcard $(GOPATH)/src/$(WEBSITE_REPO)))
-	echo "$(WEBSITE_REPO) not found in your GOPATH (necessary for layouts and assets), get-ting..."
-	git clone https://$(WEBSITE_REPO) $(GOPATH)/src/$(WEBSITE_REPO)
+DOCKER_VOLUME_OPTS?="rw"
+DOCKER_SELINUX := $(shell which setenforce)
+ifeq ($(.SHELLSTATUS),0)
+DOCKER_VOLUME_OPTS="rw,Z"
 endif
-	@$(MAKE) -C $(GOPATH)/src/$(WEBSITE_REPO) website-provider-test PROVIDER_PATH=$(shell pwd) PROVIDER_NAME=$(PKG_NAME)
+# PROVIDER_DIR_DOCKER is used instead of PWD since docker volume commands can be dangerous to run in $HOME.
+# This ensures docker volumes are mounted from within provider directory instead.
+PROVIDER_DIR_DOCKER := $(abspath $(lastword $(dir $(MAKEFILE_LIST))))
 
-.PHONY: build test testacc testrace cover vet fmt fmtcheck errcheck test-compile packages clean website website-test
+website-lint:
+	@echo "==> Checking website against linters..."
+	@echo "==> Running markdownlint-cli using DOCKER='$(DOCKER)', DOCKER_RUN_OPTS='$(DOCKER_RUN_OPTS)' and DOCKER_VOLUME_OPTS='$(DOCKER_VOLUME_OPTS)'"
+	@$(DOCKER) run --rm $(DOCKER_RUN_OPTS) -v $(PROVIDER_DIR_DOCKER):/workspace:$(DOCKER_VOLUME_OPTS) -w /workspace 06kellyjac/markdownlint-cli ./website \
+		&& (echo; echo "PASS - website markdown files pass linting"; echo ) \
+		|| (echo; echo "FAIL - issues found in website markdown files"; echo ; exit 1)
+	@echo "==> Checking for broken links..."
+	@scripts/markdown-link-check.sh "$(DOCKER)" "$(DOCKER_RUN_OPTS)" "$(DOCKER_VOLUME_OPTS)" "$(PROVIDER_DIR_DOCKER)"
+
+.PHONY: build test testacc testrace cover vet fmt fmtcheck errcheck test-compile packages clean website-lint
