@@ -1,4 +1,4 @@
-## 1.3.2 (Unreleased)
+## 1.3.2 (October 07, 2020)
 
 BUG FIXES:
 * Fix nil pointer crash when using Helm plugins (#598)
