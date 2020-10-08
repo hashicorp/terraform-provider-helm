@@ -1,0 +1,8 @@
+apiVersion: v1
+name: sleept
+description: Basic chart which simply creates a pod to emulate wiat timeout
+
+type: application
+
+version: 0.1.0
+appVersion: 0.1.0

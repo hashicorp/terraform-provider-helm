@@ -114,6 +114,61 @@ func TestAccResourceRelease_import(t *testing.T) {
 	})
 }
 
+func sleepHelmRelease(releaseName, namespace string, sleepTime, timeout int) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "test" {
+			name        = %q
+			namespace   = %q
+			chart       = "./test-fixtures/charts/sleep-chart"
+
+			wait        = true
+			timeout			= "%d"
+
+			set {
+				name = "init.sleep"
+				value = "%d"
+			}
+		}`, releaseName, namespace, timeout, sleepTime)
+}
+func TestAccResourceRelease_wait_timeout_success(t *testing.T) {
+	name := fmt.Sprintf("test-update-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: sleepHelmRelease(name, namespace, 5, 100),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.1.0"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+			),
+		}},
+	})
+
+}
+
+func TestAccResourceRelease_wait_timeout_triggered(t *testing.T) {
+	name := fmt.Sprintf("test-update-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config:      sleepHelmRelease(name, namespace, 400, 5),
+			ExpectError: regexp.MustCompile("timed out waiting for the condition"),
+		}},
+	})
+
+}
 func TestAccResourceRelease_multiple_charts(t *testing.T) {
 	const resourceCount = 10
 

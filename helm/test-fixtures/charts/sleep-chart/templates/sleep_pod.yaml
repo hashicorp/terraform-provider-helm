@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-demo
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+  # These containers are run during pod initialization
+  initContainers:
+  - name: install
+    image: busybox
+    command:
+    args:
+    - sleep
+    - "{{ .Values.init.sleep }}"
+  dnsPolicy: Default
+  volumes:
+  - name: workdir
+    emptyDir: {}
