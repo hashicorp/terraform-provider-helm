@@ -11,9 +11,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/pkg/errors"
 
 	"helm.sh/helm/v3/pkg/action"
@@ -802,24 +802,25 @@ func testAccHelmReleaseConfigSensitiveValue(resource, ns, name, chart, version s
 
 func TestGetValues(t *testing.T) {
 	d := resourceRelease().Data(nil)
-	d.Set("values", []string{
+	err := d.Set("values", []string{
 		"foo: bar\nbaz: corge",
 		"first: present\nbaz: grault",
 		"second: present\nbaz: uier",
 	})
-	d.Set("set", []interface{}{
+	if err != nil {
+		t.Fatalf("error setting values: %v", err)
+	}
+	err = d.Set("set", []interface{}{
 		map[string]interface{}{"name": "foo", "value": "qux"},
 		map[string]interface{}{"name": "int", "value": "42"},
 	})
+	if err != nil {
+		t.Fatalf("error setting values: %v", err)
+	}
 
 	values, err := getValues(d)
 	if err != nil {
 		t.Fatalf("error getValues: %s", err)
-		return
-	}
-
-	if err != nil {
-		t.Fatalf("error parsing returned yaml: %s", err)
 		return
 	}
 
@@ -842,18 +843,17 @@ func TestGetValues(t *testing.T) {
 
 func TestGetValuesString(t *testing.T) {
 	d := resourceRelease().Data(nil)
-	d.Set("set", []interface{}{
+	err := d.Set("set", []interface{}{
 		map[string]interface{}{"name": "foo", "value": "42", "type": "string"},
 	})
+	if err != nil {
+		t.Fatalf("error setting values: %s", err)
+		return
+	}
 
 	values, err := getValues(d)
 	if err != nil {
 		t.Fatalf("error getValues: %s", err)
-		return
-	}
-
-	if err != nil {
-		t.Fatalf("error parsing returned yaml: %s", err)
 		return
 	}
 
@@ -864,9 +864,12 @@ func TestGetValuesString(t *testing.T) {
 
 func TestCloakSetValues(t *testing.T) {
 	d := resourceRelease().Data(nil)
-	d.Set("set_sensitive", []interface{}{
+	err := d.Set("set_sensitive", []interface{}{
 		map[string]interface{}{"name": "foo", "value": "42"},
 	})
+	if err != nil {
+		t.Fatalf("error setting values: %v", err)
+	}
 
 	values := map[string]interface{}{
 		"foo": "foo",
@@ -880,9 +883,12 @@ func TestCloakSetValues(t *testing.T) {
 
 func TestCloakSetValuesNested(t *testing.T) {
 	d := resourceRelease().Data(nil)
-	d.Set("set_sensitive", []interface{}{
+	err := d.Set("set_sensitive", []interface{}{
 		map[string]interface{}{"name": "foo.qux.bar", "value": "42"},
 	})
+	if err != nil {
+		t.Fatalf("error setting values: %v", err)
+	}
 
 	qux := map[string]interface{}{
 		"bar": "bar",
@@ -902,9 +908,12 @@ func TestCloakSetValuesNested(t *testing.T) {
 
 func TestCloakSetValuesNotMatching(t *testing.T) {
 	d := resourceRelease().Data(nil)
-	d.Set("set_sensitive", []interface{}{
+	err := d.Set("set_sensitive", []interface{}{
 		map[string]interface{}{"name": "foo.qux.bar", "value": "42"},
 	})
+	if err != nil {
+		t.Fatalf("error setting values: %v", err)
+	}
 
 	values := map[string]interface{}{
 		"foo": "42",
@@ -1022,7 +1031,11 @@ func testAccPreCheckHelmRepositoryDestroy(t *testing.T, name string) {
 		t.Fatalf("Failed to remove repository cache: %s", err)
 	}
 
-	fmt.Fprintf(os.Stdout, "%q has been removed from your repositories\n", name)
+	_, err = fmt.Fprintf(os.Stdout, "%q has been removed from your repositories\n", name)
+	if err != nil {
+		t.Fatalf("error printing stdout: %v", err)
+	}
+
 	t.Log(fmt.Sprintf("%q has been removed from your repositories\n", name))
 }
 

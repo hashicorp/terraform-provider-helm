@@ -1,17 +1,20 @@
 package helm
 
 import (
+	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"log"
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/helmpath"
+	"helm.sh/helm/v3/pkg/storage/driver"
 
 	// Import to initialize client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -28,7 +31,7 @@ type Meta struct {
 }
 
 // Provider returns the provider schema to Terraform.
-func Provider() terraform.ResourceProvider {
+func Provider() *schema.Provider {
 	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"debug": {
@@ -66,12 +69,12 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Description: "The backend storage driver. Values are: configmap, secret, memory, sql",
 				DefaultFunc: schema.EnvDefaultFunc("HELM_DRIVER", "secret"),
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+				ValidateDiagFunc: func(val interface{}, key cty.Path) (diags diag.Diagnostics) {
 					drivers := []string{
-						"configmap",
-						"secret",
-						"memory",
-						"sql",
+						strings.ToLower(driver.MemoryDriverName),
+						strings.ToLower(driver.ConfigMapsDriverName),
+						strings.ToLower(driver.SecretsDriverName),
+						strings.ToLower(driver.SQLDriverName),
 					}
 
 					v := strings.ToLower(val.(string))
@@ -81,8 +84,13 @@ func Provider() terraform.ResourceProvider {
 							return
 						}
 					}
-					errs = append(errs, fmt.Errorf("%s must be a valid storage driver", v))
-					return
+					return diag.Diagnostics{
+						{
+							Severity: diag.Error,
+							Summary:  fmt.Sprintf("Invalid storage driver: %v used for helm_driver", v),
+							Detail:   fmt.Sprintf("Helm backend storage driver must be set to one of the following values: %v", strings.Join(drivers, ", ")),
+						},
+					}
 				},
 			},
 			"kubernetes": {
@@ -101,7 +109,7 @@ func Provider() terraform.ResourceProvider {
 			"helm_repository": dataRepository(),
 		},
 	}
-	p.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
+	p.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		terraformVersion := p.TerraformVersion
 		if terraformVersion == "" {
 			// Terraform 0.12 introduced this field to the protocol
@@ -230,7 +238,7 @@ func kubernetesResource() *schema.Resource {
 	}
 }
 
-func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, error) {
+func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, diag.Diagnostics) {
 	m := &Meta{data: d}
 
 	settings := cli.New()
@@ -269,13 +277,15 @@ func k8sGetOk(d *schema.ResourceData, key string) (interface{}, bool) {
 	// For boolean attributes the zero value is Ok
 	switch value.(type) {
 	case bool:
+		// TODO: replace deprecated GetOkExists with SDK v2 equivalent
+		// https://github.com/hashicorp/terraform-plugin-sdk/pull/350
 		value, ok = d.GetOkExists(k8sPrefix + key)
 	}
 
-	// fix: DefaultFunc is not being triggerred on TypeList
-	schema := kubernetesResource().Schema[key]
-	if !ok && schema.DefaultFunc != nil {
-		value, _ = schema.DefaultFunc()
+	// fix: DefaultFunc is not being triggered on TypeList
+	s := kubernetesResource().Schema[key]
+	if !ok && s.DefaultFunc != nil {
+		value, _ = s.DefaultFunc()
 
 		switch v := value.(type) {
 		case string:

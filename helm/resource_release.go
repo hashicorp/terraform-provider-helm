@@ -1,16 +1,18 @@
 package helm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"log"
 	"net/url"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -51,13 +53,12 @@ var defaultAttributes = map[string]interface{}{
 
 func resourceRelease() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceReleaseCreate,
-		Read:   resourceReleaseRead,
-		Delete: resourceReleaseDelete,
-		Update: resourceReleaseUpdate,
-		Exists: resourceReleaseExists,
+		CreateContext: resourceReleaseCreate,
+		ReadContext:   resourceReleaseRead,
+		DeleteContext: resourceReleaseDelete,
+		UpdateContext: resourceReleaseUpdate,
 		Importer: &schema.ResourceImporter{
-			State: resourceHelmReleaseImportState,
+			StateContext: resourceHelmReleaseImportState,
 		},
 		CustomizeDiff: resourceDiff,
 		Schema: map[string]*schema.Schema{
@@ -141,6 +142,8 @@ func resourceRelease() *schema.Resource {
 						"type": {
 							Type:     schema.TypeString,
 							Optional: true,
+							// TODO: use ValidateDiagFunc once an SDK v2 version of StringInSlice exists.
+							// https://github.com/hashicorp/terraform-plugin-sdk/issues/534
 							ValidateFunc: validation.StringInSlice([]string{
 								"auto", "string",
 							}, false),
@@ -354,7 +357,6 @@ func resourceRelease() *schema.Resource {
 			"metadata": {
 				Type:        schema.TypeList,
 				Computed:    true,
-				MaxItems:    1,
 				Description: "Status of the deployed release.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -400,7 +402,23 @@ func resourceRelease() *schema.Resource {
 	}
 }
 
-func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
+func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+
+	exists, err := resourceReleaseExists(d, meta)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if !exists {
+		return diag.Diagnostics{
+			{
+				Severity: diag.Warning,
+				Summary:  "Release does not exist",
+				Detail:   fmt.Sprintf("Release name: %v does not exist. It may have been deleted outside of Terraform", d.Id()),
+			},
+		}
+	}
+
 	logId := fmt.Sprintf("[resourceReleaseRead: %s]", d.Get("name").(string))
 	debug("%s Started", logId)
 
@@ -409,22 +427,25 @@ func resourceReleaseRead(d *schema.ResourceData, meta interface{}) error {
 
 	c, err := m.GetHelmConfiguration(n)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	name := d.Get("name").(string)
 
 	r, err := getRelease(m, c, name)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
-	result := setIDAndMetadataFromRelease(d, r)
+	err = setIDAndMetadataFromRelease(d, r)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	debug("%s Done", logId)
-	return result
+	return nil
 }
 
-func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	logId := fmt.Sprintf("[resourceReleaseCreate: %s]", d.Get("name").(string))
 	debug("%s Started", logId)
 
@@ -434,18 +455,18 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 	debug("%s Getting helm configuration", logId)
 	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	cpo, chartName, err := chartPathOptions(d, m)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	debug("%s Getting chart", logId)
-	chart, path, err := getChart(d, m, chartName, cpo)
+	c, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	debug("%s Preparing for installation", logId)
@@ -454,21 +475,21 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	values, err := getValues(d)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	validInstallableChart, err := isChartInstallable(chart)
-	if !validInstallableChart {
-		return err
+	err = isChartInstallable(c)
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	updateDependency := d.Get("dependency_update").(bool)
 
-	if req := chart.Metadata.Dependencies; req != nil {
+	if req := c.Metadata.Dependencies; req != nil {
 		// If CheckDependencies returns an error, we have unfulfilled dependencies.
 		// As of Helm 2.4.0, this is treated as a stopping condition:
 		// https://github.com/helm/helm/issues/2209
-		if err := action.CheckDependencies(chart, req); err != nil {
+		if err := action.CheckDependencies(c, req); err != nil {
 			if updateDependency {
 				man := &downloader.Manager{
 					Out:              os.Stdout,
@@ -480,10 +501,10 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 					RepositoryCache:  m.Settings.RepositoryCache,
 				}
 				if err := man.Update(); err != nil {
-					return err
+					return diag.FromErr(err)
 				}
 			} else {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}
@@ -514,7 +535,7 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		pr, err := postrender.NewExec(cmd)
 
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 
 		client.PostRenderer = pr
@@ -522,56 +543,60 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	debug("%s Installing chart", logId)
 
-	rel, err := client.Run(chart, values)
+	rel, err := client.Run(c, values)
 
 	if err != nil && rel == nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if err != nil && rel != nil {
 		exists, existsErr := resourceReleaseExists(d, meta)
 
 		if existsErr != nil {
-			return existsErr
+			return diag.FromErr(existsErr)
 		}
 
 		if !exists {
-			return err
+			return diag.FromErr(err)
 		}
 
 		debug("%s Release was created but returned an error", logId)
 
 		if err := setIDAndMetadataFromRelease(d, rel); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 
-		return err
+		return nil
 	}
 
-	return setIDAndMetadataFromRelease(d, rel)
+	err = setIDAndMetadataFromRelease(d, rel)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
-func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
 	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	cpo, chartName, err := chartPathOptions(d, m)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	chart, _, err := getChart(d, m, chartName, cpo)
+	c, _, err := getChart(d, m, chartName, cpo)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	if req := chart.Metadata.Dependencies; req != nil {
-		if err := action.CheckDependencies(chart, req); err != nil {
-			return err
+	if req := c.Metadata.Dependencies; req != nil {
+		if err := action.CheckDependencies(c, req); err != nil {
+			return diag.FromErr(err)
 		}
 	}
 
@@ -598,7 +623,7 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 		pr, err := postrender.NewExec(cmd)
 
 		if err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 
 		client.PostRenderer = pr
@@ -606,24 +631,28 @@ func resourceReleaseUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	values, err := getValues(d)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	name := d.Get("name").(string)
-	release, err := client.Run(name, chart, values)
+	r, err := client.Run(name, c, values)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	return setIDAndMetadataFromRelease(d, release)
+	err = setIDAndMetadataFromRelease(d, r)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
-func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
 	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	name := d.Get("name").(string)
@@ -631,18 +660,18 @@ func resourceReleaseDelete(d *schema.ResourceData, meta interface{}) error {
 	res, err := action.NewUninstall(actionConfig).Run(name)
 
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	if res.Info != "" {
-		return error(fmt.Errorf(res.Info))
+		return diag.Errorf(res.Info)
 	}
 
 	d.SetId("")
 	return nil
 }
 
-func resourceDiff(d *schema.ResourceDiff, meta interface{}) error {
+func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
 	logId := fmt.Sprintf("[resourceDiff: %s]", d.Get("name").(string))
 	debug("%s Start", logId)
 
@@ -905,19 +934,22 @@ func getValue(base, set map[string]interface{}) error {
 func logValues(values map[string]interface{}, d resourceGetter) error {
 	// copy array to avoid change values by the cloak function.
 	asJSON, _ := json.Marshal(values)
-	var copy map[string]interface{}
-	json.Unmarshal(asJSON, &copy)
+	var c map[string]interface{}
+	err := json.Unmarshal(asJSON, &c)
+	if err != nil {
+		return err
+	}
 
-	cloakSetValues(copy, d)
+	cloakSetValues(c, d)
 
-	yaml, err := yaml.Marshal(copy)
+	y, err := yaml.Marshal(c)
 	if err != nil {
 		return err
 	}
 
 	log.Printf(
 		"---[ values.yaml ]-----------------------------------\n%s\n",
-		string(yaml),
+		string(y),
 	)
 
 	return nil
@@ -965,12 +997,12 @@ func resolveChartName(repository, name string) (string, string, error) {
 	return "", name, nil
 }
 
-func isChartInstallable(ch *chart.Chart) (bool, error) {
+func isChartInstallable(ch *chart.Chart) error {
 	switch ch.Metadata.Type {
 	case "", "application":
-		return true, nil
+		return nil
 	}
-	return false, errors.Errorf("%s charts are not installable", ch.Metadata.Type)
+	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
 func chartPathOptions(d resourceGetter, m *Meta) (*action.ChartPathOptions, string, error) {
@@ -997,7 +1029,7 @@ func chartPathOptions(d resourceGetter, m *Meta) (*action.ChartPathOptions, stri
 	}, chartName, nil
 }
 
-func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+func resourceHelmReleaseImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	namespace, name, err := parseImportIdentifier(d.Id())
 	if err != nil {
 		return nil, errors.Errorf("Unable to parse identifier %s: %s", d.Id(), err)
@@ -1015,19 +1047,33 @@ func resourceHelmReleaseImportState(d *schema.ResourceData, meta interface{}) ([
 		return nil, err
 	}
 
-	d.Set("name", r.Name)
-	d.Set("description", r.Info.Description)
-	d.Set("chart", r.Chart.Metadata.Name)
+	err = d.Set("name", r.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	err = d.Set("description", r.Info.Description)
+	if err != nil {
+		return nil, err
+	}
+
+	err = d.Set("chart", r.Chart.Metadata.Name)
+	if err != nil {
+		return nil, err
+	}
 
 	for key, value := range defaultAttributes {
-		d.Set(key, value)
+		err = d.Set(key, value)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := setIDAndMetadataFromRelease(d, r); err != nil {
 		return nil, err
 	}
 
-	return schema.ImportStatePassthrough(d, meta)
+	return schema.ImportStatePassthroughContext(ctx, d, meta)
 }
 
 func parseImportIdentifier(id string) (string, string, error) {
