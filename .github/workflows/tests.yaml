@@ -21,4 +21,4 @@ jobs:
     - uses: engineerd/setup-kind@v0.3.0
     - name: Acceptance Tests
       run: |
-        make testacc 
+        make testacc KUBE_CONFIG_PATH="${HOME}/.kube/config"

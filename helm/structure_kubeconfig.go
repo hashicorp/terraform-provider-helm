@@ -67,32 +67,30 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConf
 	overrides := &clientcmd.ConfigOverrides{}
 	loader := &clientcmd.ClientConfigLoadingRules{}
 
-	if k8sGet(configData, "load_config_file").(bool) {
-		if configPath, ok := k8sGetOk(configData, "config_path"); ok && configPath.(string) != "" {
-			path, err := homedir.Expand(configPath.(string))
-			if err != nil {
-				return nil
-			}
-			loader.ExplicitPath = path
+	if configPath, ok := k8sGetOk(configData, "config_path"); ok && configPath.(string) != "" {
+		path, err := homedir.Expand(configPath.(string))
+		if err != nil {
+			return nil
+		}
+		loader.ExplicitPath = path
 
-			ctx, ctxOk := k8sGetOk(configData, "config_context")
-			authInfo, authInfoOk := k8sGetOk(configData, "config_context_auth_info")
-			cluster, clusterOk := k8sGetOk(configData, "config_context_cluster")
-			if ctxOk || authInfoOk || clusterOk {
-				if ctxOk {
-					overrides.CurrentContext = ctx.(string)
-					log.Printf("[DEBUG] Using custom current context: %q", overrides.CurrentContext)
-				}
-
-				overrides.Context = clientcmdapi.Context{}
-				if authInfoOk {
-					overrides.Context.AuthInfo = authInfo.(string)
-				}
-				if clusterOk {
-					overrides.Context.Cluster = cluster.(string)
-				}
-				log.Printf("[DEBUG] Using overidden context: %#v", overrides.Context)
+		ctx, ctxOk := k8sGetOk(configData, "config_context")
+		authInfo, authInfoOk := k8sGetOk(configData, "config_context_auth_info")
+		cluster, clusterOk := k8sGetOk(configData, "config_context_cluster")
+		if ctxOk || authInfoOk || clusterOk {
+			if ctxOk {
+				overrides.CurrentContext = ctx.(string)
+				log.Printf("[DEBUG] Using custom current context: %q", overrides.CurrentContext)
 			}
+
+			overrides.Context = clientcmdapi.Context{}
+			if authInfoOk {
+				overrides.Context.AuthInfo = authInfo.(string)
+			}
+			if clusterOk {
+				overrides.Context.Cluster = cluster.(string)
+			}
+			log.Printf("[DEBUG] Using overidden context: %#v", overrides.Context)
 		}
 	}
 

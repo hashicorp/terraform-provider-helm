@@ -163,15 +163,10 @@ func kubernetesResource() *schema.Resource {
 				Description: "PEM-encoded root certificates bundle for TLS authentication.",
 			},
 			"config_path": {
-				Type:     schema.TypeString,
-				Optional: true,
-				DefaultFunc: schema.MultiEnvDefaultFunc(
-					[]string{
-						"KUBE_CONFIG",
-						"KUBECONFIG",
-					},
-					"~/.kube/config"),
-				Description: "Path to the kube config file, defaults to ~/.kube/config",
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_CONFIG_PATH", ""),
+				Description: "Path to the kube config file. Can be set with KUBE_CONFIG_PATH environment variable.",
 			},
 			"config_context": {
 				Type:        schema.TypeString,
@@ -195,12 +190,6 @@ func kubernetesResource() *schema.Resource {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_TOKEN", ""),
 				Description: "Token to authenticate an service account",
-			},
-			"load_config_file": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_LOAD_CONFIG_FILE", true),
-				Description: "Load local kubeconfig.",
 			},
 			"exec": {
 				Type:     schema.TypeList,
