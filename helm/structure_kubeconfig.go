@@ -2,12 +2,14 @@ package helm
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"sync"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/mitchellh/go-homedir"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
@@ -63,14 +65,29 @@ func (k *KubeConfig) ToRawKubeConfigLoader() clientcmd.ClientConfig {
 	return k.ClientConfig
 }
 
-func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConfig {
+func newInClusterKubeConfig(namespace string) (*genericclioptions.ConfigFlags, error) {
+	inClusterConfig, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	config := genericclioptions.NewConfigFlags(false)
+	config.APIServer = &inClusterConfig.Host
+	config.BearerToken = &inClusterConfig.BearerToken
+	config.CAFile = &inClusterConfig.CAFile
+	config.Namespace = &namespace
+
+	return config, nil
+}
+
+func newKubeConfig(configData *schema.ResourceData, namespace string) (*KubeConfig, error) {
 	overrides := &clientcmd.ConfigOverrides{}
 	loader := &clientcmd.ClientConfigLoadingRules{}
 
 	if configPath, ok := k8sGetOk(configData, "config_path"); ok && configPath.(string) != "" {
 		path, err := homedir.Expand(configPath.(string))
 		if err != nil {
-			return nil
+			return nil, err
 		}
 		loader.ExplicitPath = path
 
@@ -114,7 +131,7 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConf
 		defaultTLS := hasCA || hasCert || overrides.ClusterInfo.InsecureSkipTLSVerify
 		host, _, err := rest.DefaultServerURL(v.(string), "", apimachineryschema.GroupVersion{}, defaultTLS)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		overrides.ClusterInfo.Server = host.String()
@@ -142,24 +159,13 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConf
 				exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: kk, Value: vv.(string)})
 			}
 		} else {
-			log.Printf("[ERROR] Failed to parse exec")
-			return nil
+			return nil, fmt.Errorf("could not parse exec attribute")
 		}
 		overrides.AuthInfo.Exec = exec
 	}
 
-	overrides.Context.Namespace = "default"
-
-	if namespace != nil {
-		overrides.Context.Namespace = *namespace
-	}
+	overrides.Context.Namespace = namespace
 
 	client := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
-	if client == nil {
-		log.Printf("[ERROR] Failed to initialize kubernetes config")
-		return nil
-	}
-	log.Printf("[INFO] Successfully initialized kubernetes config")
-
-	return &KubeConfig{ClientConfig: client}
+	return &KubeConfig{ClientConfig: client}, nil
 }

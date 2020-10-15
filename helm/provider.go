@@ -17,6 +17,7 @@ import (
 	"helm.sh/helm/v3/pkg/storage/driver"
 
 	// Import to initialize client auth plugins.
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -191,6 +192,11 @@ func kubernetesResource() *schema.Resource {
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_TOKEN", ""),
 				Description: "Token to authenticate an service account",
 			},
+			"in_cluster_config": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Use in-cluster configuration when running Terraform inside Kubernetes.",
+			},
 			"exec": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -308,9 +314,18 @@ func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, er
 	debug("[INFO] GetHelmConfiguration start")
 	actionConfig := new(action.Configuration)
 
-	kc := newKubeConfig(m.data, &namespace)
+	var kubeConfig genericclioptions.RESTClientGetter
+	var err error
+	if v, ok := k8sGetOk(m.data, "in_cluster_config"); ok && v.(bool) {
+		kubeConfig, err = newInClusterKubeConfig(namespace)
+	} else {
+		kubeConfig, err = newKubeConfig(m.data, namespace)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error initializing kubernetes config: %v", err)
+	}
 
-	if err := actionConfig.Init(kc, namespace, m.HelmDriver, debug); err != nil {
+	if err := actionConfig.Init(kubeConfig, namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
 	}
 	debug("[INFO] GetHelmConfiguration success")
