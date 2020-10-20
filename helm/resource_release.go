@@ -176,25 +176,6 @@ func resourceRelease() *schema.Resource {
 					},
 				},
 			},
-			"set_string": {
-				Type:        schema.TypeSet,
-				Optional:    true,
-				Description: "Custom string values to be merged with the values.",
-				Deprecated: "This argument is deprecated and will be removed in the next major" +
-					" version. Use `set` argument with `type` equals to `string`",
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"value": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-					},
-				},
-			},
 			"namespace": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -893,17 +874,6 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 		set := raw.(map[string]interface{})
 		if err := getValue(base, set); err != nil {
 			return nil, err
-		}
-	}
-
-	for _, raw := range d.Get("set_string").(*schema.Set).List() {
-		set := raw.(map[string]interface{})
-
-		name := set["name"].(string)
-		value := set["value"].(string)
-
-		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			return nil, fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
 		}
 	}
 

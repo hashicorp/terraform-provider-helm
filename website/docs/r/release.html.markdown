@@ -36,9 +36,10 @@ resource "helm_release" "example" {
     value = "true"
   }
 
-  set_string {
+  set {
     name  = "service.annotations.prometheus\\.io/port"
     value = "9127"
+    type  = "string"
   }
 }
 ```
@@ -98,7 +99,6 @@ The following arguments are supported:
 * `values` - (Optional) List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options.
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
 * `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff.
-* `set_string` - (Optional) Value block with custom STRING values to be merged with the values yaml.
 * `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`.
 * `replace` - (Optional) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
 * `description` - (Optional) Set release description attribute (visible in the history).
@@ -111,11 +111,6 @@ The `set` and `set_sensitive` blocks support:
 * `name` - (Required) full name of the variable to be set.
 * `value` - (Required) value of the variable to be set.
 * `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
-
-The `set_strings` block supports:
-
-* `name` - (Required) full name of the variable to be set.
-* `value` - (Required) value of the variable to be set.
 
 The `postrender` block supports a single attribute:
 
