@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -296,6 +297,31 @@ func TestAccResourceRelease_cloakValues(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values",
 					"{\"foo\":\"(sensitive value)\"}"),
+			),
+		}},
+	})
+}
+
+func TestAccResourceRelease_cloakValuesYaml(t *testing.T) {
+	name := fmt.Sprintf("test-update-values-list-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigSensitiveValuesYaml(
+				testResourceName, namespace, name, "kibana", "3.2.5",
+				[]string{"foo: bar", "fizz:\n  bazz:\n    foo: bar"},
+			),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values",
+					"{\"fizz\":{\"bazz\":{\"foo\":\"(sensitive value)\"}},\"foo\":\"(sensitive value)\"}"),
 			),
 		}},
 	})
@@ -694,6 +720,23 @@ func testAccHelmReleaseConfigSensitiveValue(resource, ns, name, chart, version s
 	`, resource, name, ns, chart, version, key, value)
 }
 
+func testAccHelmReleaseConfigSensitiveValuesYaml(resource, ns, name, chart, version string, values []string) string {
+	vals := make([]string, len(values))
+	for i, v := range values {
+		vals[i] = strconv.Quote(v)
+	}
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name       = %q
+			namespace  = %q
+			repository = "https://kubernetes-charts.storage.googleapis.com"
+			chart      = %q
+			version    = %q
+			values_sensitive = [ %s ]
+		}
+	`, resource, name, ns, chart, version, strings.Join(vals, ","))
+}
+
 func TestGetValues(t *testing.T) {
 	d := resourceRelease().Data(nil)
 	err := d.Set("values", []string{
@@ -753,6 +796,55 @@ func TestGetValuesString(t *testing.T) {
 
 	if values["foo"] != "42" {
 		t.Fatalf("error merging values, expected %q, got %s", "42", values["foo"])
+	}
+}
+
+func TestCloakSetValuesYaml(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	err := d.Set("values_sensitive", []string{
+		"foo: foo",
+		"fizz:\n  bazz: bar",
+	})
+	if err != nil {
+		t.Fatalf("error setting values: %v", err)
+	}
+
+	values := map[string]interface{}{
+		"foo": "foo",
+		"fizz": map[string]interface{}{
+			"bazz": "bar",
+		},
+	}
+
+	expected := map[string]interface{}{
+		"foo": sensitiveContentValue,
+		"fizz": map[string]interface{}{
+			"bazz": sensitiveContentValue,
+		},
+	}
+
+	cloakSetValues(values, d)
+	if !reflect.DeepEqual(expected, values) {
+		t.Fatalf("error cloak values, expected %v, got %v", expected, values)
+	}
+}
+
+func TestCloakSetValuesYamlNotMatching(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	err := d.Set("values_sensitive", []string{
+		"foo:\n  bar: baz",
+	})
+	if err != nil {
+		t.Fatalf("error setting values: %v", err)
+	}
+
+	values := map[string]interface{}{
+		"foo": "42",
+	}
+
+	cloakSetValues(values, d)
+	if values["foo"] != "42" {
+		t.Fatalf("error cloak values, expected %q, got %s", "42", values["foo"])
 	}
 }
 

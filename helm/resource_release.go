@@ -125,6 +125,13 @@ func resourceRelease() *schema.Resource {
 				Description: "List of values in raw yaml format to pass to helm.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
+			"values_sensitive": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Sensitive:   true,
+				Description: "List of sensitive values in raw yaml format to pass to helm.",
+				Elem:        &schema.Schema{Type: schema.TypeString},
+			},
 			"set": {
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -735,9 +742,41 @@ func cloakSetValues(config map[string]interface{}, d resourceGetter) {
 		set := raw.(map[string]interface{})
 		cloakSetValue(config, set["name"].(string))
 	}
+
+	for _, raw := range d.Get("values_sensitive").([]interface{}) {
+		if raw == nil {
+			continue
+		}
+
+		values := raw.(string)
+		if values == "" {
+			continue
+		}
+
+		currentMap := map[string]interface{}{}
+		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+			continue // unreachable since unmarshall was already called in getValues
+		}
+
+		cloakSetValuesMap(config, currentMap)
+	}
 }
 
 const sensitiveContentValue = "(sensitive value)"
+
+func cloakSetValuesMap(values, sensitive map[string]interface{}) {
+	for k, v := range sensitive {
+		if v, ok := v.(map[string]interface{}); ok {
+			if vv, ok := values[k]; ok {
+				if vv, ok := vv.(map[string]interface{}); ok {
+					cloakSetValuesMap(vv, v)
+				}
+			}
+		} else {
+			values[k] = sensitiveContentValue
+		}
+	}
+}
 
 func cloakSetValue(values map[string]interface{}, valuePath string) {
 	pathKeys := strings.Split(valuePath, ".")
@@ -843,24 +882,15 @@ func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 }
 
 func getValues(d resourceGetter) (map[string]interface{}, error) {
+	var err error
 	base := map[string]interface{}{}
 
-	for _, raw := range d.Get("values").([]interface{}) {
-		if raw == nil {
-			continue
-		}
+	if base, err = getValuesYaml(base, d.Get("values")); err != nil {
+		return nil, err
+	}
 
-		values := raw.(string)
-		if values == "" {
-			continue
-		}
-
-		currentMap := map[string]interface{}{}
-		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
-			return nil, fmt.Errorf("---> %v %s", err, values)
-		}
-
-		base = mergeMaps(base, currentMap)
+	if base, err = getValuesYaml(base, d.Get("values_sensitive")); err != nil {
+		return nil, err
 	}
 
 	for _, raw := range d.Get("set").(*schema.Set).List() {
@@ -878,6 +908,28 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 	}
 
 	return base, logValues(base, d)
+}
+
+func getValuesYaml(base map[string]interface{}, d interface{}) (map[string]interface{}, error) {
+	for _, raw := range d.([]interface{}) {
+		if raw == nil {
+			continue
+		}
+
+		values := raw.(string)
+		if values == "" {
+			continue
+		}
+
+		currentMap := map[string]interface{}{}
+		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+			return base, fmt.Errorf("---> %v %s", err, values)
+		}
+
+		base = mergeMaps(base, currentMap)
+	}
+
+	return base, nil
 }
 
 func getValue(base, set map[string]interface{}) error {

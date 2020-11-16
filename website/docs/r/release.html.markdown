@@ -97,6 +97,7 @@ The following arguments are supported:
 * `disable_openapi_validation` - (Optional) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false`.
 * `wait` - (Optional) Will wait until all resources are in a ready state before marking the release as successful. It will wait for as long as `timeout`. Defaults to `true`.
 * `values` - (Optional) List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options.
+* `values_sensitive` - (Optional) List of sensitive values in raw yaml to pass to helm. Sensitive values will be merged, in order, as Helm does with multiple `-f` options. Sensitive values won't be exposed in the plan's diff.
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
 * `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff.
 * `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`.
