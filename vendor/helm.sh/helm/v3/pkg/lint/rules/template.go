@@ -17,7 +17,10 @@ limitations under the License.
 package rules
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -25,7 +28,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/yaml"
+	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
@@ -114,19 +117,59 @@ func Templates(linter *support.Linter, values map[string]interface{}, namespace 
 
 		renderedContent := renderedContentMap[path.Join(chart.Name(), fileName)]
 		if strings.TrimSpace(renderedContent) != "" {
-			var yamlStruct K8sYamlStruct
-			// Even though K8sYamlStruct only defines a few fields, an error in any other
-			// key will be raised as well
-			err := yaml.Unmarshal([]byte(renderedContent), &yamlStruct)
+			linter.RunLinterRule(support.WarningSev, fpath, validateTopIndentLevel(renderedContent))
 
-			// If YAML linting fails, we sill progress. So we don't capture the returned state
-			// on this linter run.
-			linter.RunLinterRule(support.ErrorSev, fpath, validateYamlContent(err))
-			linter.RunLinterRule(support.ErrorSev, fpath, validateMetadataName(&yamlStruct))
-			linter.RunLinterRule(support.ErrorSev, fpath, validateNoDeprecations(&yamlStruct))
-			linter.RunLinterRule(support.ErrorSev, fpath, validateMatchSelector(&yamlStruct, renderedContent))
+			decoder := yaml.NewYAMLOrJSONDecoder(strings.NewReader(renderedContent), 4096)
+
+			// Lint all resources if the file contains multiple documents separated by ---
+			for {
+				// Even though K8sYamlStruct only defines a few fields, an error in any other
+				// key will be raised as well
+				var yamlStruct *K8sYamlStruct
+
+				err := decoder.Decode(&yamlStruct)
+				if err == io.EOF {
+					break
+				}
+
+				// If YAML linting fails, we sill progress. So we don't capture the returned state
+				// on this linter run.
+				linter.RunLinterRule(support.ErrorSev, fpath, validateYamlContent(err))
+
+				if yamlStruct != nil {
+					linter.RunLinterRule(support.ErrorSev, fpath, validateMetadataName(yamlStruct))
+					linter.RunLinterRule(support.ErrorSev, fpath, validateNoDeprecations(yamlStruct))
+					linter.RunLinterRule(support.ErrorSev, fpath, validateMatchSelector(yamlStruct, renderedContent))
+				}
+			}
 		}
 	}
+}
+
+// validateTopIndentLevel checks that the content does not start with an indent level > 0.
+//
+// This error can occur when a template accidentally inserts space. It can cause
+// unpredictable errors dependening on whether the text is normalized before being passed
+// into the YAML parser. So we trap it here.
+//
+// See https://github.com/helm/helm/issues/8467
+func validateTopIndentLevel(content string) error {
+	// Read lines until we get to a non-empty one
+	scanner := bufio.NewScanner(bytes.NewBufferString(content))
+	for scanner.Scan() {
+		line := scanner.Text()
+		// If line is empty, skip
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		// If it starts with one or more spaces, this is an error
+		if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
+			return fmt.Errorf("document starts with an illegal indent: %q, which may cause parsing problems", line)
+		}
+		// Any other condition passes.
+		return nil
+	}
+	return scanner.Err()
 }
 
 // Validation functions
@@ -157,6 +200,9 @@ func validateYamlContent(err error) error {
 }
 
 func validateMetadataName(obj *K8sYamlStruct) error {
+	if len(obj.Metadata.Name) == 0 || len(obj.Metadata.Name) > 253 {
+		return fmt.Errorf("object name must be between 0 and 253 characters: %q", obj.Metadata.Name)
+	}
 	// This will return an error if the characters do not abide by the standard OR if the
 	// name is left empty.
 	if err := chartutil.ValidateMetadataName(obj.Metadata.Name); err != nil {
