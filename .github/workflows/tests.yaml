@@ -18,7 +18,7 @@ jobs:
       run: |
         make test
         make vet
-    - uses: engineerd/setup-kind@v0.3.0
+    - uses: engineerd/setup-kind@v0.5.0
     - name: Acceptance Tests
       run: |
         make testacc KUBE_CONFIG_PATH="${HOME}/.kube/config"
