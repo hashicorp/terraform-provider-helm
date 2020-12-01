@@ -17,6 +17,12 @@ The Helm provider is used to deploy software packages in Kubernetes. The provide
 ## Example Usage
 
 ```hcl
+provider "helm" {
+  kubernetes {
+    config_path = "~/.kube/config"
+  }
+}
+
 resource "helm_release" "mydatabase" {
   name  = "mydatabase"
   chart = "stable/mariadb"
@@ -91,6 +97,7 @@ The following arguments are supported:
 The `kubernetes` block supports:
 
 * `config_path` - (Optional) Path to the kube config file. Can be sourced from `KUBE_CONFIG_PATH`.
+* `config_paths` - (Optional) A list of paths to the kube config files. Can be sourced from `KUBE_CONFIG_PATHS`.
 * `host` - (Optional) The hostname (in form of URI) of Kubernetes master. Can be sourced from `KUBE_HOST`.
 * `username` - (Optional) The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_USER`.
 * `password` - (Optional) The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_PASSWORD`.

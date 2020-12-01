@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 
@@ -156,11 +157,18 @@ func kubernetesResource() *schema.Resource {
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLUSTER_CA_CERT_DATA", ""),
 				Description: "PEM-encoded root certificates bundle for TLS authentication.",
 			},
-			"config_path": {
-				Type:        schema.TypeString,
+			"config_paths": {
+				Type:        schema.TypeList,
+				Elem:        &schema.Schema{Type: schema.TypeString},
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_CONFIG_PATH", ""),
-				Description: "Path to the kube config file. Can be set with KUBE_CONFIG_PATH environment variable.",
+				Description: "A list of paths to kube config files. Can be set with KUBE_CONFIG_PATHS environment variable.",
+			},
+			"config_path": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				DefaultFunc:   schema.EnvDefaultFunc("KUBE_CONFIG_PATH", nil),
+				Description:   "Path to the kube config file. Can be set with KUBE_CONFIG_PATH.",
+				ConflictsWith: []string{"kubernetes.0.config_paths"},
 			},
 			"config_context": {
 				Type:        schema.TypeString,
@@ -217,8 +225,49 @@ func kubernetesResource() *schema.Resource {
 	}
 }
 
+func inCluster() bool {
+	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+	return host != "" && port != ""
+}
+
+var authDocumentationURL = "https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs#authentication"
+
+func checkKubernetesConfigurationValid(d *schema.ResourceData) error {
+	if inCluster() {
+		log.Printf("[DEBUG] Terraform appears to be running inside the Kubernetes cluster")
+		return nil
+	}
+
+	if os.Getenv("KUBE_CONFIG_PATHS") != "" {
+		return nil
+	}
+
+	atLeastOneOf := []string{
+		"host",
+		"config_path",
+		"config_paths",
+		"client_certificate",
+		"token",
+		"exec",
+	}
+	for _, a := range atLeastOneOf {
+		if _, ok := k8sGetOk(d, a); ok {
+			return nil
+		}
+	}
+
+	return fmt.Errorf(`provider not configured: you must configure a path to your kubeconfig
+or explicitly supply credentials via the provider block or environment variables.
+
+See our documentation at: %s`, authDocumentationURL)
+}
+
 func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, diag.Diagnostics) {
 	m := &Meta{data: d}
+
+	if err := checkKubernetesConfigurationValid(d); err != nil {
+		return nil, diag.FromErr(err)
+	}
 
 	settings := cli.New()
 	settings.Debug = d.Get("debug").(bool)
@@ -302,7 +351,10 @@ func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, er
 	debug("[INFO] GetHelmConfiguration start")
 	actionConfig := new(action.Configuration)
 
-	kc := newKubeConfig(m.data, &namespace)
+	kc, err := newKubeConfig(m.data, &namespace)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := actionConfig.Init(kc, namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
