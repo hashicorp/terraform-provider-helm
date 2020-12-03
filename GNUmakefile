@@ -22,7 +22,7 @@ build: fmtcheck
 	go build -v .
 
 test: fmtcheck
-	go test $(TEST) || exit 1
+	go test $(TEST) -v || exit 1
 	echo $(TEST) | \
 		xargs -t -n4 go test $(TESTARGS) -timeout=30s
 
