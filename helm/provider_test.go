@@ -128,8 +128,6 @@ func buildChartRepository() {
 		os.Mkdir(testRepositoryDir, os.ModePerm)
 	}
 
-	// TODO check helm is available
-
 	charts, err := ioutil.ReadDir(testChartsPath)
 	if err != nil {
 		panic(err)
