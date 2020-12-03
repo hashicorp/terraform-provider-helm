@@ -137,7 +137,7 @@ func buildChartRepository() {
 
 	// package all the charts
 	for _, c := range charts {
-		cmd := exec.Command("helm", "package",
+		cmd := exec.Command("helm", "package", "-u",
 			filepath.Join(testChartsPath, c.Name()),
 			"-d", testRepositoryDir)
 		out, err := cmd.CombinedOutput()
