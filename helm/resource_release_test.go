@@ -166,16 +166,15 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 }
 
 func TestAccResourceRelease_concurrent(t *testing.T) {
-	var wg sync.WaitGroup
-
 	t.Parallel()
 
+	wg := sync.WaitGroup{}
 	wg.Add(3)
 	for i := 0; i < 3; i++ {
 		go func(name string) {
+			defer wg.Done()
 			namespace := createRandomNamespace(t)
 			defer deleteNamespace(t, namespace)
-			defer wg.Done()
 			resource.Test(t, resource.TestCase{
 				PreCheck:     func() { testAccPreCheck(t) },
 				Providers:    testAccProviders,
@@ -193,7 +192,6 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 			})
 		}(fmt.Sprintf("concurrent-%d-%s", i, acctest.RandString(10)))
 	}
-
 	wg.Wait()
 }
 
@@ -966,14 +964,14 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 }
 
 func TestAccResourceRelease_dependency(t *testing.T) {
+	name := fmt.Sprintf("test-dependency-%s", acctest.RandString(10))
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
 	// remove the subcharts so we can use `dependency_update` to grab them
 	if err := removeSubcharts("umbrella-chart"); err != nil {
 		t.Fatalf("Failed to remove subcharts: %s", err)
 	}
-
-	name := fmt.Sprintf("test-dependency-%s", acctest.RandString(10))
-	namespace := createRandomNamespace(t)
-	defer deleteNamespace(t, namespace)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },

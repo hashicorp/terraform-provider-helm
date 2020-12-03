@@ -32,6 +32,7 @@ const (
 )
 
 var (
+	accTest           bool
 	testRepositoryURL string
 
 	testAccProviders map[string]*schema.Provider
@@ -81,17 +82,22 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	c, err := createKubernetesClient()
-	if err != nil {
-		panic(err)
-	}
-	client = c
+	accTest = os.Getenv("TF_ACC") == "1"
 
-	// Build the test repository and start the server
-	buildChartRepository()
 	var stopRepositoryServer func()
-	testRepositoryURL, stopRepositoryServer = startRepositoryServer()
-	log.Println("Test repository is listening on", testRepositoryURL)
+	if accTest {
+		// create the Kubernetes client
+		c, err := createKubernetesClient()
+		if err != nil {
+			panic(err)
+		}
+		client = c
+
+		// Build the test repository and start the server
+		buildChartRepository()
+		testRepositoryURL, stopRepositoryServer = startRepositoryServer()
+		log.Println("Test repository is listening on", testRepositoryURL)
+	}
 
 	ec := m.Run()
 
@@ -100,8 +106,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	stopRepositoryServer()
-	cleanupChartRepository()
+	if accTest {
+		stopRepositoryServer()
+		cleanupChartRepository()
+	}
+
 	os.Exit(ec)
 }
 
@@ -194,6 +203,9 @@ func startRepositoryServer() (string, func()) {
 }
 
 func testAccPreCheck(t *testing.T) {
+	if !accTest {
+		t.Skip("TF_ACC=1 not set")
+	}
 	http.DefaultClient.CloseIdleConnections()
 	ctx := context.TODO()
 	diags := testAccProvider.Configure(ctx, terraform.NewResourceConfigRaw(nil))
@@ -224,6 +236,11 @@ func createKubernetesClient() (kubernetes.Interface, error) {
 }
 
 func createRandomNamespace(t *testing.T) string {
+	if !accTest {
+		t.Skip("TF_ACC=1 not set")
+		return ""
+	}
+
 	namespace := fmt.Sprintf("%s-%s", testNamespacePrefix, acctest.RandString(10))
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -238,6 +255,11 @@ func createRandomNamespace(t *testing.T) string {
 }
 
 func deleteNamespace(t *testing.T, namespace string) {
+	if !accTest {
+		t.Skip("TF_ACC=1 not set")
+		return
+	}
+
 	gracePeriodSeconds := int64(0)
 	deleteOptions := metav1.DeleteOptions{
 		GracePeriodSeconds: &gracePeriodSeconds,
