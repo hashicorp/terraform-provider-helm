@@ -1,4 +1,0 @@
-apiVersion: v1
-name: local-chart
-version: 0.0.1
-appVersion: 0.0.1

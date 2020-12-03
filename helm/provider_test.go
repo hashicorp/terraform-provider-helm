@@ -2,11 +2,18 @@ package helm
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
+	"log"
+	"net"
+	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
@@ -14,25 +21,30 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
-	testNamespace        = "terraform-acc-test"
-	testResourceName     = "test"
-	testRepositoryName   = "test-repository"
-	testRepositoryURL    = "https://kubernetes-charts.storage.googleapis.com"
-	testRepositoryURLAlt = "https://kubernetes-charts-incubator.storage.googleapis.com"
+	testNamespacePrefix = "terraform-acc-test"
+	testResourceName    = "test"
+	testChartsPath      = "./testdata/charts"
+	testRepositoryDir   = "./testdata/repository"
 )
 
 var (
+	testRepositoryURL string
+
 	testAccProviders map[string]*schema.Provider
 	testAccProvider  *schema.Provider
 	client           kubernetes.Interface = nil
 )
 
 func TestMain(m *testing.M) {
+	_, err := exec.LookPath("helm")
+	if err != nil {
+		panic(`command "helm" needs to be available to run the test suite`)
+	}
+
 	testAccProvider = Provider()
 	testAccProviders = map[string]*schema.Provider{
 		"helm": testAccProvider,
@@ -69,6 +81,18 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	c, err := createKubernetesClient()
+	if err != nil {
+		panic(err)
+	}
+	client = c
+
+	// Build the test repository and start the server
+	buildChartRepository()
+	var stopRepositoryServer func()
+	testRepositoryURL, stopRepositoryServer = startRepositoryServer()
+	log.Println("Test repository is listening on", testRepositoryURL)
+
 	ec := m.Run()
 
 	err = os.RemoveAll(home)
@@ -76,6 +100,8 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	stopRepositoryServer()
+	cleanupChartRepository()
 	os.Exit(ec)
 }
 
@@ -85,88 +111,143 @@ func TestProvider(t *testing.T) {
 	}
 }
 
-func testAccPreCheck(t *testing.T, namespace string) {
-	ctx := context.TODO()
-	err := setK8Client()
+// buildChartRepository packages all the test charts and builds the repository index
+func buildChartRepository() {
+	log.Println("Building chart repository...")
 
-	if err != nil {
-		t.Fatal(err)
+	if _, err := os.Stat(testRepositoryDir); os.IsNotExist(err) {
+		os.Mkdir(testRepositoryDir, os.ModePerm)
 	}
 
+	// TODO check helm is available
+
+	charts, err := ioutil.ReadDir(testChartsPath)
+	if err != nil {
+		panic(err)
+	}
+
+	// package all the charts
+	for _, c := range charts {
+		cmd := exec.Command("helm", "package",
+			filepath.Join(testChartsPath, c.Name()),
+			"-d", testRepositoryDir)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Println(string(out))
+			panic(err)
+		}
+
+		log.Printf("Created repository package for %q\n", c.Name())
+	}
+
+	// build the repository index
+	cmd := exec.Command("helm", "repo", "index", testRepositoryDir)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println(string(out))
+		panic(err)
+	}
+
+	log.Println("Built chart repository index")
+}
+
+// cleanupChartRepository cleans up the repository of test charts
+func cleanupChartRepository() {
+	if _, err := os.Stat(testRepositoryDir); err == nil {
+		err := os.RemoveAll(testRepositoryDir)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+}
+
+// startRepositoryServer starts a helm repository in a goroutine using
+// a plain HTTP server on a random port and returns the URL
+func startRepositoryServer() (string, func()) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	var shutdownFunc func()
+	go func() {
+		fileserver := http.Server{
+			Handler: http.FileServer(http.Dir(testRepositoryDir)),
+		}
+		// NOTE we disable keep alive to prevent the server from chewing
+		// up a lot of open connections as the test suite is run
+		fileserver.SetKeepAlivesEnabled(false)
+		shutdownFunc = func() { fileserver.Shutdown(context.Background()) }
+		listener, err := net.Listen("tcp", ":0")
+		if err != nil {
+			panic(err)
+		}
+		port := listener.Addr().(*net.TCPAddr).Port
+		testRepositoryURL = fmt.Sprintf("http://localhost:%d", port)
+		wg.Done()
+		err = fileserver.Serve(listener)
+		if err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
+	wg.Wait()
+
+	return testRepositoryURL, shutdownFunc
+}
+
+func testAccPreCheck(t *testing.T) {
+	http.DefaultClient.CloseIdleConnections()
+	ctx := context.TODO()
 	diags := testAccProvider.Configure(ctx, terraform.NewResourceConfigRaw(nil))
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-
-	if namespace != "" {
-		createNamespace(t, namespace)
-	}
 }
 
-func setK8Client() error {
-
-	if client != nil {
-		return nil
-	}
-
+func createKubernetesClient() (kubernetes.Interface, error) {
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	overrides := &clientcmd.ConfigOverrides{}
 
-	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
-
-	if err != nil {
-		return err
+	kubeconfig := os.Getenv("KUBE_CONFIG_PATH")
+	if kubeconfig == "" {
+		panic("Need to set KUBE_CONFIG_PATH")
 	}
+	rules.ExplicitPath = kubeconfig
 
-	if config == nil {
-		config = &rest.Config{}
+	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, &clientcmd.ConfigOverrides{}).ClientConfig()
+	if err != nil {
+		return nil, err
 	}
 
 	c, err := kubernetes.NewForConfig(config)
-
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	client = c
-
-	return nil
+	return c, nil
 }
 
-func createNamespace(t *testing.T, namespace string) {
-	// Nothing to cleanup with unit test
-	if os.Getenv("TF_ACC") == "" {
-		t.Log("TF_ACC Not Set")
-		return
-	}
-
-	m := testAccProvider.Meta()
-	if m == nil {
-		t.Fatal("provider not properly initialized")
-	}
-
-	getOptions := metav1.GetOptions{}
-
-	_, err := client.CoreV1().Namespaces().Get(context.TODO(), namespace, getOptions)
-
-	if err == nil {
-		return
-	}
-
-	k8ns := &v1.Namespace{
+func createRandomNamespace(t *testing.T) string {
+	namespace := fmt.Sprintf("%s-%s", testNamespacePrefix, acctest.RandString(10))
+	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
 		},
 	}
-
-	t.Log("[DEBUG] Creating namespace", namespace)
-
-	createOptions := metav1.CreateOptions{}
-
-	_, err = client.CoreV1().Namespaces().Create(context.TODO(), k8ns, createOptions)
+	_, err := client.CoreV1().Namespaces().Create(context.TODO(), ns, metav1.CreateOptions{})
 	if err != nil {
-		// No failure here, the concurrency tests will blow up if we fail. Tried
-		// Locking in this method, but it causes the tests to hang
-		t.Log("An error occurred while creating namespace", namespace, err)
+		t.Fatalf("Could not create test namespace %q: %s", namespace, err)
 	}
+	return namespace
+}
+
+func deleteNamespace(t *testing.T, namespace string) {
+	gracePeriodSeconds := int64(0)
+	deleteOptions := metav1.DeleteOptions{
+		GracePeriodSeconds: &gracePeriodSeconds,
+	}
+	err := client.CoreV1().Namespaces().Delete(context.TODO(), namespace, deleteOptions)
+	if err != nil {
+		t.Fatalf("An error occurred while deleting namespace %q: %q", namespace, err)
+	}
+}
+
+func randName(prefix string) string {
+	return fmt.Sprintf("%s-%s", prefix, acctest.RandString(10))
 }

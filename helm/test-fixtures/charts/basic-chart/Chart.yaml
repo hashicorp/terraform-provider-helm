@@ -1,8 +1,0 @@
-apiVersion: v2
-name: basic-chart
-description: Basic chart which simply creates a config map with direct passthrough of all values to values in CM.
-
-type: application
-
-version: 0.1.0
-appVersion: 0.1.0

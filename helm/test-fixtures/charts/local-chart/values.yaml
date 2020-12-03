@@ -1,8 +1,0 @@
-replicaCount: 1
-image:
-  repository: busybox
-  tag: latest
-  pullPolicy: IfNotPresent
-
-mariadb:
-  enabled: true
