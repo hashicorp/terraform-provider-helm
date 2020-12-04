@@ -6,10 +6,16 @@ labels: bug
 
 ---
 
-### Terraform Version and Provider Version
-<!--Run `terraform -v` to show the version. If you are not running the latest version of Terraform, please upgrade because your issue may have already been fixed.-->
+### Terraform, Provider, Kubernetes and Helm Versions
+<!--Run `terraform -v` to show the version. If you are not running the latest version of Terraform, please upgrade because your issue may have already been fixed.
+Please note that this provider only supports Helm 3.-->
 
-### Provider Version
+```
+Terraform version:
+Provider version:
+Kubernetes version:
+Helm version:
+```
 
 ### Affected Resource(s)
 <!--Please list the resources as a list, for example:-->
@@ -26,22 +32,22 @@ labels: bug
 ```
 
 ### Debug Output
-<!--Please provider a link to a GitHub Gist containing the complete debug output: https://www.terraform.io/docs/internals/debugging.html. Please do NOT paste the debug output in the issue; just paste a link to the Gist. 
+<!--Please provider a link to a GitHub Gist containing the complete debug output: https://www.terraform.io/docs/internals/debugging.html. Please do NOT paste the debug output in the issue; just paste a link to the Gist. -->
 
-NOTE: In addition to Terraform debugging, please set HELM_DEBUG=1 to enable debugging info from helm.-->
+NOTE: In addition to Terraform debugging, please set HELM_DEBUG=1 to enable debugging info from helm.
 
 ### Panic Output
 <!--If Terraform produced a panic, please provide a link to a GitHub Gist containing the output of the `crash.log`.-->
+
+### Steps to Reproduce
+<!--Please list the steps required to reproduce the issue, for example:-->
+1. `terraform apply`
 
 ### Expected Behavior
 <!--What should have happened?-->
 
 ### Actual Behavior
 <!--What actually happened?-->
-
-### Steps to Reproduce
-<!--Please list the steps required to reproduce the issue, for example:-->
-1. `terraform apply`
 
 ### Important Factoids
 <!--Are there anything atypical about your accounts that we should know? For example: Running in EC2 Classic? Custom version of OpenStack? Tight ACLs?-->
