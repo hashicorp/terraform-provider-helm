@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	tftest "github.com/hashicorp/terraform-plugin-test/v2"
 	testing "github.com/mitchellh/go-testing-interface"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/plugintest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func testStepNewImportState(t testing.T, c TestCase, helper *tftest.Helper, wd *tftest.WorkingDir, step TestStep, cfg string) error {
+func testStepNewImportState(t testing.T, c TestCase, helper *plugintest.Helper, wd *plugintest.WorkingDir, step TestStep, cfg string) error {
 	t.Helper()
 
 	spewConf := spew.NewDefaultConfig()
@@ -23,10 +23,14 @@ func testStepNewImportState(t testing.T, c TestCase, helper *tftest.Helper, wd *
 
 	// get state from check sequence
 	var state *terraform.State
-	err := runProviderCommand(t, func() error {
-		state = getState(t, wd)
+	var err error
+	err = runProviderCommand(t, func() error {
+		state, err = getState(t, wd)
+		if err != nil {
+			return err
+		}
 		return nil
-	}, wd, c.ProviderFactories)
+	}, wd, c.ProviderFactories, c.ProtoV5ProviderFactories)
 	if err != nil {
 		t.Fatalf("Error getting state: %s", err)
 	}
@@ -60,28 +64,33 @@ func testStepNewImportState(t testing.T, c TestCase, helper *tftest.Helper, wd *
 	}
 	importWd := helper.RequireNewWorkingDir(t)
 	defer importWd.Close()
-	importWd.RequireSetConfig(t, step.Config)
+	err = importWd.SetConfig(step.Config)
+	if err != nil {
+		t.Fatalf("Error setting test config: %s", err)
+	}
 
 	err = runProviderCommand(t, func() error {
-		importWd.RequireInit(t)
-		return nil
-	}, importWd, c.ProviderFactories)
+		return importWd.Init()
+	}, importWd, c.ProviderFactories, c.ProtoV5ProviderFactories)
 	if err != nil {
 		t.Fatalf("Error running init: %s", err)
 	}
 
 	err = runProviderCommand(t, func() error {
 		return importWd.Import(step.ResourceName, importId)
-	}, importWd, c.ProviderFactories)
+	}, importWd, c.ProviderFactories, c.ProtoV5ProviderFactories)
 	if err != nil {
 		return err
 	}
 
 	var importState *terraform.State
 	err = runProviderCommand(t, func() error {
-		importState = getState(t, importWd)
+		importState, err = getState(t, importWd)
+		if err != nil {
+			return err
+		}
 		return nil
-	}, importWd, c.ProviderFactories)
+	}, importWd, c.ProviderFactories, c.ProtoV5ProviderFactories)
 	if err != nil {
 		t.Fatalf("Error getting state: %s", err)
 	}
