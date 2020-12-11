@@ -35,7 +35,7 @@ We will continue to accept bugfixes for the `0.10.x` version of the provider, pl
 ## Requirements
 
 -	[Terraform](https://www.terraform.io/downloads.html) v0.12.x
-    - Note that version v0.11.x currently works, but is [deprecated](https://www.hashicorp.com/blog/deprecating-terraform-0-11-support-in-terraform-providers/)
+    - Note that version v0.11.x currently works, but support is [deprecated](https://www.hashicorp.com/blog/deprecating-terraform-0-11-support-in-terraform-providers/) and will be removed in provider version 2.0
 -	[Go](https://golang.org/doc/install) v1.14.x (to build the provider plugin)
 -   [Helm](https://github.com/helm/helm/releases) v3.x.x to deploy your charts
 
