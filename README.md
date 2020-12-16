@@ -18,14 +18,6 @@ This is the [Helm](https://github.com/kubernetes/helm) provider for [Terraform](
 The provider manages the installed [Charts](https://github.com/helm/charts) in your Kubernetes cluster, in the same way Helm does, through Terraform.
 
 
-## Helm v2 support 
-
-
-Release `1.0.0` for this provider brought support for Helm v3. This was a breaking change that removed support for Helm v2 and tiller. If you are still using Helm v2 and tiller you will have to [pin your provider version](https://www.terraform.io/docs/configuration/providers.html#provider-versions) to the latest `0.10.x` release. 
-
-We will continue to accept bugfixes for the `0.10.x` version of the provider, please open your pull request against the latest `release-0.10.x` branch. 
-
-
 ## Contents
 
 * [Requirements](#requirements)
@@ -35,7 +27,6 @@ We will continue to accept bugfixes for the `0.10.x` version of the provider, pl
 ## Requirements
 
 -	[Terraform](https://www.terraform.io/downloads.html) v0.12.x
-    - Note that version v0.11.x currently works, but support is [deprecated](https://www.hashicorp.com/blog/deprecating-terraform-0-11-support-in-terraform-providers/) and will be removed in provider version 2.0
 -	[Go](https://golang.org/doc/install) v1.14.x (to build the provider plugin)
 -   [Helm](https://github.com/helm/helm/releases) v3.x.x to deploy your charts
 
@@ -46,27 +37,19 @@ kubernetes cluster, since the provider was initialized, all the configuration
 is retrieved from the environment. Please read the [documentation](https://www.terraform.io/docs/providers/helm/index.html) for more
 information.
 
-You should have a local configured copy of kubectl.
+You should have a local configured copy of [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
 ```hcl
-resource "helm_release" "my_database" {
-    name      = "my-database"
-    chart     = "stable/mariadb"
+resource helm_release nginx_ingress {
+  name       = "nginx-ingress-controller"
 
-    set {
-        name  = "mariadbUser"
-        value = "foo"
-    }
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "nginx-ingress-controller"
 
-    set {
-        name = "mariadbPassword"
-        value = "qux"
-    }
-
-    set_string {
-        name = "image.tags"
-        value = "registry\\.io/terraform-provider-helm\\,example\\.io/terraform-provider-helm"
-    }
+  set {
+    name  = "service.type"
+    value = "ClusterIP"
+  }
 }
 ```
 
