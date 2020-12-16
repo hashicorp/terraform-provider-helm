@@ -1,3 +1,18 @@
+## 2.0.0 (Unreleased)
+
+BREAKING CHANGES:
+Please review our [upgrade guide](https://github.com/hashicorp/terraform-provider-helm/blob/master/website/docs/guides/v2-upgrade-guide.markdown).
+
+* Update Terraform SDK to v2 (#594). 
+* Remove helm_repository resource and data source (#600)
+* Remove implicit support for KUBECONFIG (#604)
+* Remove set_string attribute from helm_release (#608)
+
+IMPROVEMENTS:
+* Remove remote dependencies from test-fixtures (#638)
+* Set up matrix build to run acc tests against different tf versions (#637)
+
+
 ## 1.3.2 (October 07, 2020)
 
 BUG FIXES:
