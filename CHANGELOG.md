@@ -6,6 +6,7 @@ Please review our [upgrade guide](https://github.com/hashicorp/terraform-provide
 * Update Terraform SDK to v2 (#594). 
 * Remove helm_repository resource and data source (#600)
 * Remove implicit support for KUBECONFIG (#604)
+* Remove load_config_file attribute (#604)
 * Remove set_string attribute from helm_release (#608)
 
 IMPROVEMENTS:
