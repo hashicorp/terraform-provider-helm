@@ -16,12 +16,14 @@ This guide covers the changes introduced in v2.0.0 of the Helm provider and what
 We have made several changes to the way access to Kubernetes is configured in the provider block.
 
 1. The `load_config_file` attribute has been removed.
-2. Support for the `KUBECONFIG` environment variable has been dropped.
-3. The `config_path` attribute will no longer default to `~/.kube/config`.
+2. Support for the `KUBECONFIG` environment variable has been dropped and replaced with `KUBE_CONFIG_PATH`.
+3. The `config_path` attribute will no longer default to `~/.kube/config` and must be set explicitly.
 
 The above changes have been made to encourage the best practise of configuring access to Kubernetes in the provider block explicitly, instead of relying upon default paths or `KUBECONFIG` being set. We have done this because allowing the provider to configure its access to Kubernetes implicitly caused confusion with a subset of our users. It also created risk for users who use Terraform to manage multiple clusters. Requiring explicit configuring for kubernetes in the provider block eliminates the possibility that the configuration will be applied to the wrong cluster.
 
 You will therefore need to explicity configure access to your Kubernetes cluster in the provider block going forward. For many users this will simply mean specifying the `config_path` attribute in the provider block. Users already explicitly configuring the provider should not be affected by this change, but will need to remove the `load_config_file` attribute if they are currently using it.
+
+When running Terraform inside a Kubernetes cluster no provider configuration is neccessary, as the provider will detect that is has access to a service account token.
 
 ### Removal of the `helm_repository` data source
 
