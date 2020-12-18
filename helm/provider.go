@@ -239,7 +239,7 @@ func inCluster() bool {
 	return true
 }
 
-var authDocumentationURL = "https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs#authentication"
+var authDocumentationURL = "https://registry.terraform.io/providers/hashicorp/helm/latest/docs#authentication"
 
 func checkKubernetesConfigurationValid(d *schema.ResourceData) error {
 	if inCluster() {
