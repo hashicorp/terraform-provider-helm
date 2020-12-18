@@ -23,46 +23,56 @@ provider "helm" {
   }
 }
 
-resource "helm_release" "mydatabase" {
-  name  = "mydatabase"
-  chart = "stable/mariadb"
+resource "helm_release" "nginx_ingress" {
+  name       = "nginx-ingress-controller"
+
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "nginx-ingress-controller"
 
   set {
-    name  = "mariadbUser"
-    value = "foo"
-  }
-
-  set {
-    name  = "mariadbPassword"
-    value = "qux"
+    name  = "service.type"
+    value = "ClusterIP"
   }
 }
 ```
 
 ## Requirements
 
-- You must have a Kubernetes cluster available. We recommend version 1.11.0 or higher.
+- You must have a Kubernetes cluster available. We recommend version 1.14.0 or higher.
 - You should also have a local configured copy of kubectl.
 
 ## Authentication
 
-There are generally two ways to configure the Helm provider.
+The provider must be explicitly configured either using the provider block or using environment variables. There are two ways to configure the Helm provider.
 
 ### File config
 
-The provider always first tries to load **a config file** (usually `$HOME/.kube/config`), for access kubernetes and reads all the Helm files from home (usually `$HOME/.helm`). You can also define that file with the following setting:
+The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable.
 
 ```hcl
 provider "helm" {
   kubernetes {
-    config_path = "/path/to/kube_cluster.yaml"
+    config_path = "~/.kube/config"
+  }
+}
+```
+
+The provider also supports multiple paths in the same way that kubectl does.
+
+```hcl
+provider "helm" {
+  kubernetes {
+    config_paths = [
+      "/path/to/config_a.yaml",
+      "/path/to/config_b.yaml"
+    ]
   }
 }
 ```
 
 ### Statically defined credentials
 
-The other way is **statically** define all the credentials:
+You can also **statically** define all the credentials:
 
 ```hcl
 provider "helm" {
@@ -77,9 +87,6 @@ provider "helm" {
   }
 }
 ```
-
-If you have **both** valid configuration in a config file and static configuration, the static one is used as override.
-i.e. any static field will override its counterpart loaded from the config.
 
 ## Argument Reference
 
