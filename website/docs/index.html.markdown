@@ -88,6 +88,11 @@ provider "helm" {
 }
 ```
 
+### In-cluster Configuration
+
+The provider is able to detect when it is running inside a cluster, so in this case you do not need to specify any configuration options in the provider block.
+
+
 ## Argument Reference
 
 The following arguments are supported:
