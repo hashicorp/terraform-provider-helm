@@ -2,7 +2,10 @@ package helm
 
 import (
 	"bytes"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -63,16 +66,44 @@ func (k *KubeConfig) ToRawKubeConfigLoader() clientcmd.ClientConfig {
 	return k.ClientConfig
 }
 
-func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConfig {
+func newKubeConfig(configData *schema.ResourceData, namespace *string) (*KubeConfig, error) {
 	overrides := &clientcmd.ConfigOverrides{}
 	loader := &clientcmd.ClientConfigLoadingRules{}
 
-	if configPath, ok := k8sGetOk(configData, "config_path"); ok && configPath.(string) != "" {
-		path, err := homedir.Expand(configPath.(string))
-		if err != nil {
-			return nil
+	configPaths := []string{}
+
+	if v, ok := k8sGetOk(configData, "config_path"); ok && v != "" {
+		configPaths = []string{v.(string)}
+	} else if v, ok := k8sGetOk(configData, "config_paths"); ok {
+		for _, p := range v.([]interface{}) {
+			configPaths = append(configPaths, p.(string))
 		}
-		loader.ExplicitPath = path
+	} else if v := os.Getenv("KUBE_CONFIG_PATHS"); v != "" {
+		// NOTE we have to do this here because the schema
+		// does not yet allow you to set a default for a TypeList
+		configPaths = filepath.SplitList(v)
+	}
+
+	if len(configPaths) > 0 {
+		expandedPaths := []string{}
+		for _, p := range configPaths {
+			path, err := homedir.Expand(p)
+			if err != nil {
+				return nil, err
+			}
+			if _, err := os.Stat(path); err != nil {
+				return nil, fmt.Errorf("could not open kubeconfig %q: %v", p, err)
+			}
+
+			log.Printf("[DEBUG] Using kubeconfig: %s", path)
+			expandedPaths = append(expandedPaths, path)
+		}
+
+		if len(expandedPaths) == 1 {
+			loader.ExplicitPath = expandedPaths[0]
+		} else {
+			loader.Precedence = expandedPaths
+		}
 
 		ctx, ctxOk := k8sGetOk(configData, "config_context")
 		authInfo, authInfoOk := k8sGetOk(configData, "config_context_auth_info")
@@ -114,7 +145,7 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConf
 		defaultTLS := hasCA || hasCert || overrides.ClusterInfo.InsecureSkipTLSVerify
 		host, _, err := rest.DefaultServerURL(v.(string), "", apimachineryschema.GroupVersion{}, defaultTLS)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		overrides.ClusterInfo.Server = host.String()
@@ -143,7 +174,7 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConf
 			}
 		} else {
 			log.Printf("[ERROR] Failed to parse exec")
-			return nil
+			return nil, fmt.Errorf("failed to parse exec")
 		}
 		overrides.AuthInfo.Exec = exec
 	}
@@ -157,9 +188,9 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) *KubeConf
 	client := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
 	if client == nil {
 		log.Printf("[ERROR] Failed to initialize kubernetes config")
-		return nil
+		return nil, nil
 	}
 	log.Printf("[INFO] Successfully initialized kubernetes config")
 
-	return &KubeConfig{ClientConfig: client}
+	return &KubeConfig{ClientConfig: client}, nil
 }

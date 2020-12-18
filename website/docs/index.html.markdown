@@ -17,46 +17,62 @@ The Helm provider is used to deploy software packages in Kubernetes. The provide
 ## Example Usage
 
 ```hcl
-resource "helm_release" "mydatabase" {
-  name  = "mydatabase"
-  chart = "stable/mariadb"
-
-  set {
-    name  = "mariadbUser"
-    value = "foo"
+provider "helm" {
+  kubernetes {
+    config_path = "~/.kube/config"
   }
+}
+
+resource "helm_release" "nginx_ingress" {
+  name       = "nginx-ingress-controller"
+
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "nginx-ingress-controller"
 
   set {
-    name  = "mariadbPassword"
-    value = "qux"
+    name  = "service.type"
+    value = "ClusterIP"
   }
 }
 ```
 
 ## Requirements
 
-- You must have a Kubernetes cluster available. We recommend version 1.11.0 or higher.
+- You must have a Kubernetes cluster available. We recommend version 1.14.0 or higher.
 - You should also have a local configured copy of kubectl.
 
 ## Authentication
 
-There are generally two ways to configure the Helm provider.
+The provider must be explicitly configured either using the provider block or using environment variables. There are two ways to configure the Helm provider.
 
 ### File config
 
-The provider always first tries to load **a config file** (usually `$HOME/.kube/config`), for access kubernetes and reads all the Helm files from home (usually `$HOME/.helm`). You can also define that file with the following setting:
+The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable.
 
 ```hcl
 provider "helm" {
   kubernetes {
-    config_path = "/path/to/kube_cluster.yaml"
+    config_path = "~/.kube/config"
+  }
+}
+```
+
+The provider also supports multiple paths in the same way that kubectl does.
+
+```hcl
+provider "helm" {
+  kubernetes {
+    config_paths = [
+      "/path/to/config_a.yaml",
+      "/path/to/config_b.yaml"
+    ]
   }
 }
 ```
 
 ### Statically defined credentials
 
-The other way is **statically** define all the credentials:
+You can also **statically** define all the credentials:
 
 ```hcl
 provider "helm" {
@@ -72,8 +88,10 @@ provider "helm" {
 }
 ```
 
-If you have **both** valid configuration in a config file and static configuration, the static one is used as override.
-i.e. any static field will override its counterpart loaded from the config.
+### In-cluster Configuration
+
+The provider is able to detect when it is running inside a cluster, so in this case you do not need to specify any configuration options in the provider block.
+
 
 ## Argument Reference
 
@@ -91,6 +109,7 @@ The following arguments are supported:
 The `kubernetes` block supports:
 
 * `config_path` - (Optional) Path to the kube config file. Can be sourced from `KUBE_CONFIG_PATH`.
+* `config_paths` - (Optional) A list of paths to the kube config files. Can be sourced from `KUBE_CONFIG_PATHS`.
 * `host` - (Optional) The hostname (in form of URI) of Kubernetes master. Can be sourced from `KUBE_HOST`.
 * `username` - (Optional) The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_USER`.
 * `password` - (Optional) The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_PASSWORD`.

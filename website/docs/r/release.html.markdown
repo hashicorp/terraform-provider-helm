@@ -9,6 +9,7 @@ description: |-
 # Resource: helm_release
 
 A Release is an instance of a chart running in a Kubernetes cluster.
+
 A Chart is a Helm package. It contains all of the resource definitions necessary to run an application, tool, or service inside of a Kubernetes cluster.
 
 `helm_release` describes the desired status of a chart in a kubernetes cluster.
@@ -18,7 +19,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 ```hcl
 resource "helm_release" "example" {
   name       = "my-redis-release"
-  repository = "https://kubernetes-charts.storage.googleapis.com"
+  repository = "https://charts.bitnami.com/bitnami"
   chart      = "redis"
   version    = "6.0.1"
 
@@ -63,6 +64,20 @@ An absolute URL to the .tgz of the Chart may also be used:
 resource "helm_release" "example" {
   name  = "redis"
   chart = "https://charts.bitnami.com/bitnami/redis-10.7.16.tgz"
+}
+```
+
+## Example Usage - Chart Repository configured outside of Terraform
+
+The provider also supports repositories that are added to the local machine outside of Terraform by running `helm repo add`
+
+```hcl
+
+# run this first: `helm repo add bitnami https://charts.bitnami.com/bitnami`
+
+resource "helm_release" "example" {
+  name  = "redis"
+  chart = "bitnami/redis"
 }
 ```
 
