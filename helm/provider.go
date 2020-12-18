@@ -225,9 +225,18 @@ func kubernetesResource() *schema.Resource {
 	}
 }
 
+var apiTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
+
 func inCluster() bool {
 	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-	return host != "" && port != ""
+	if host == "" || port == "" {
+		return false
+	}
+
+	if _, err := os.Stat(apiTokenMountPath); err != nil {
+		return false
+	}
+	return true
 }
 
 var authDocumentationURL = "https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs#authentication"
