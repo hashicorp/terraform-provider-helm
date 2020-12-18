@@ -4,12 +4,13 @@ BREAKING CHANGES:
 Please review our [upgrade guide](https://github.com/hashicorp/terraform-provider-helm/blob/master/website/docs/guides/v2-upgrade-guide.markdown).
 
 * Update Terraform SDK to v2 (#594). 
-* Remove helm_repository resource and data source (#600)
+* Remove deprecated helm_repository resource and data source (#600)
 * Remove implicit support for KUBECONFIG (#604)
 * Remove load_config_file attribute (#604)
 * Remove set_string attribute from helm_release (#608)
 
 IMPROVEMENTS:
+* Add support for multiple paths to kubeconfig files (#636)
 * Remove remote dependencies from test-fixtures (#638)
 * Set up matrix build to run acc tests against different tf versions (#637)
 
