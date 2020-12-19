@@ -41,11 +41,6 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	_, err := exec.LookPath("helm")
-	if err != nil {
-		panic(`command "helm" needs to be available to run the test suite`)
-	}
-
 	testAccProvider = Provider()
 	testAccProviders = map[string]*schema.Provider{
 		"helm": testAccProvider,
@@ -86,6 +81,11 @@ func TestMain(m *testing.M) {
 
 	var stopRepositoryServer func()
 	if accTest {
+		_, err := exec.LookPath("helm")
+		if err != nil {
+			panic(`command "helm" needs to be available to run the test suite`)
+		}
+
 		// create the Kubernetes client
 		c, err := createKubernetesClient()
 		if err != nil {
