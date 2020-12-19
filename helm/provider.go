@@ -268,15 +268,11 @@ func checkKubernetesConfigurationValid(d *schema.ResourceData) error {
 	return fmt.Errorf(`provider not configured: you must configure a path to your kubeconfig
 or explicitly supply credentials via the provider block or environment variables.
 
-See our documentation at: %s`, authDocumentationURL)
+See our authentication documentation at: %s`, authDocumentationURL)
 }
 
 func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, diag.Diagnostics) {
 	m := &Meta{data: d}
-
-	if err := checkKubernetesConfigurationValid(d); err != nil {
-		return nil, diag.FromErr(err)
-	}
 
 	settings := cli.New()
 	settings.Debug = d.Get("debug").(bool)
@@ -359,6 +355,10 @@ func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, er
 	defer m.Unlock()
 	debug("[INFO] GetHelmConfiguration start")
 	actionConfig := new(action.Configuration)
+
+	if err := checkKubernetesConfigurationValid(m.data); err != nil {
+		return nil, err
+	}
 
 	kc, err := newKubeConfig(m.data, &namespace)
 	if err != nil {
