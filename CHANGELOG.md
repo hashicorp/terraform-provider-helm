@@ -1,3 +1,8 @@
+## 2.0.1 (Unreleased)
+
+FIX:
+* Move kubernetes config check out of providerConfigure (#648)
+
 ## 2.0.0 (December 19, 2020)
 
 BREAKING CHANGES:
