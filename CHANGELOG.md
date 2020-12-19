@@ -1,4 +1,4 @@
-## 2.0.0 (Unreleased)
+## 2.0.0 (December 19, 2020)
 
 BREAKING CHANGES:
 Please review our [upgrade guide](https://github.com/hashicorp/terraform-provider-helm/blob/master/website/docs/guides/v2-upgrade-guide.markdown).
