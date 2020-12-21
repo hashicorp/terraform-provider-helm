@@ -449,7 +449,7 @@ func (m *Meta) initHelmHomeIfNeeded(d *schema.ResourceData) error {
 		return nil
 	}
 
-	stableRepositoryURL := "https://kubernetes-charts.storage.googleapis.com"
+	stableRepositoryURL := "https://charts.helm.sh/stable"
 	localRepositoryURL := "http://127.0.0.1:8879/charts"
 
 	if err := installer.Initialize(m.Settings.Home, os.Stdout, false, *m.Settings, stableRepositoryURL, localRepositoryURL); err != nil {
