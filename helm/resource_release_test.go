@@ -411,7 +411,7 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
 			PreConfig: func() {
-				err := downloadTar("https://kubernetes-charts.storage.googleapis.com/mariadb-0.6.2.tgz", dir)
+				err := downloadTar("https://charts.helm.sh/stable/mariadb-0.6.2.tgz", dir)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -435,7 +435,7 @@ func TestAccResourceRelease_updateVersionFromRelease(t *testing.T) {
 			),
 		}, {
 			PreConfig: func() {
-				err := downloadTar("https://kubernetes-charts.storage.googleapis.com/mariadb-0.6.3.tgz", dir)
+				err := downloadTar("https://charts.helm.sh/stable/mariadb-0.6.3.tgz", dir)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -539,7 +539,7 @@ func testAccHelmReleaseConfigRepository(resource, ns, name string) string {
 	return fmt.Sprintf(`
 		resource "helm_repository" "stable_repo" {
 			name = "stable-repo"
-			url  = "https://kubernetes-charts.storage.googleapis.com"
+			url  = "https://charts.helm.sh/stable"
 		}
 
 		resource "helm_release" %q {
@@ -555,7 +555,7 @@ func testAccHelmReleaseConfigRepositoryDatasource(resource, ns, name string) str
 	return fmt.Sprintf(`
 		data "helm_repository" "stable_repo" {
 			name = "stable-repo"
-			url  = "https://kubernetes-charts.storage.googleapis.com"
+			url  = "https://charts.helm.sh/stable"
 		}
 
 		resource "helm_release" %q {
@@ -571,12 +571,12 @@ func testAccHelmReleaseConfigRepositoryMultipleDatasource(repo1, repo2, resource
 	return fmt.Sprintf(`
 		data "helm_repository" "stable_repo" {
 			name = %q
-			url  = "https://kubernetes-charts.storage.googleapis.com"
+			url  = "https://charts.helm.sh/stable"
 		}
 
 		data "helm_repository" "stable_repo_2" {
 			name = %q
-			url  = "https://kubernetes-charts.storage.googleapis.com"
+			url  = "https://charts.helm.sh/stable"
 		}
 
 		resource "helm_release" %q {
@@ -600,7 +600,7 @@ func testAccHelmReleaseConfigRepositoryURL(resource, ns, name string) string {
 		resource "helm_release" %q {
 			name       = %q
 			namespace  = %q
-			repository = "https://kubernetes-charts.storage.googleapis.com"
+			repository = "https://charts.helm.sh/stable"
 			chart      = "coredns"
 		}
 	`, resource, name, ns)
