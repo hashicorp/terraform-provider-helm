@@ -1,4 +1,4 @@
-## 0.10.6 (Unreleased)
+## 0.10.6 (December 21, 2020)
 
 HOTFIX:
 * Update URL for stable chart repo 
