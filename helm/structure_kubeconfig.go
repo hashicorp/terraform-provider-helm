@@ -176,6 +176,10 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) (*KubeCon
 		overrides.AuthInfo.Exec = exec
 	}
 
+	if v, ok := k8sGetOk(configData, "bastion_host"); ok {
+		overrides.ClusterDefaults.ProxyURL = v.(string)
+	}
+
 	overrides.Context.Namespace = "default"
 
 	if namespace != nil {
