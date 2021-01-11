@@ -250,7 +250,7 @@ func kubernetesResource() *schema.Resource {
 				},
 				Description: "",
 			},
-			"bastion_host": {
+			"proxy_url": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "URL to the proxy to be used for all requests",
