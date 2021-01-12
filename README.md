@@ -40,6 +40,10 @@ information.
 You should have a local configured copy of [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
 ```hcl
+provider "helm" {
+  config_path = "~/.kube/config"
+}
+
 resource helm_release nginx_ingress {
   name       = "nginx-ingress-controller"
 
