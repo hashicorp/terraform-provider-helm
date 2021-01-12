@@ -41,7 +41,9 @@ You should have a local configured copy of [kubectl](https://kubernetes.io/docs/
 
 ```hcl
 provider "helm" {
-  config_path = "~/.kube/config"
+  kubernetes {
+    config_path = "~/.kube/config"
+  }
 }
 
 resource helm_release nginx_ingress {
