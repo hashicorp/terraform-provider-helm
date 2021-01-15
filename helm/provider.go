@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"sync"
 
@@ -225,52 +224,6 @@ func kubernetesResource() *schema.Resource {
 	}
 }
 
-var apiTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
-
-func inCluster() bool {
-	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
-	if host == "" || port == "" {
-		return false
-	}
-
-	if _, err := os.Stat(apiTokenMountPath); err != nil {
-		return false
-	}
-	return true
-}
-
-var authDocumentationURL = "https://registry.terraform.io/providers/hashicorp/helm/latest/docs#authentication"
-
-func checkKubernetesConfigurationValid(d *schema.ResourceData) error {
-	if inCluster() {
-		log.Printf("[DEBUG] Terraform appears to be running inside the Kubernetes cluster")
-		return nil
-	}
-
-	if os.Getenv("KUBE_CONFIG_PATHS") != "" {
-		return nil
-	}
-
-	atLeastOneOf := []string{
-		"host",
-		"config_path",
-		"config_paths",
-		"client_certificate",
-		"token",
-		"exec",
-	}
-	for _, a := range atLeastOneOf {
-		if _, ok := k8sGetOk(d, a); ok {
-			return nil
-		}
-	}
-
-	return fmt.Errorf(`provider not configured: you must configure a path to your kubeconfig
-or explicitly supply credentials via the provider block or environment variables.
-
-See our authentication documentation at: %s`, authDocumentationURL)
-}
-
 func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, diag.Diagnostics) {
 	m := &Meta{data: d}
 
@@ -355,10 +308,6 @@ func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, er
 	defer m.Unlock()
 	debug("[INFO] GetHelmConfiguration start")
 	actionConfig := new(action.Configuration)
-
-	if err := checkKubernetesConfigurationValid(m.data); err != nil {
-		return nil, err
-	}
 
 	kc, err := newKubeConfig(m.data, &namespace)
 	if err != nil {
