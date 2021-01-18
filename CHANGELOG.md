@@ -1,3 +1,8 @@
+## 2.0.2 (Unreleased)
+
+FIX:
+* Remove check for empty kubernetes block 
+
 ## 2.0.1 (December 19, 2020)
 
 FIX:
