@@ -638,14 +638,10 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 
 	name := d.Get("name").(string)
 
-	res, err := action.NewUninstall(actionConfig).Run(name)
+	_, err = action.NewUninstall(actionConfig).Run(name)
 
 	if err != nil {
 		return diag.FromErr(err)
-	}
-
-	if res.Info != "" {
-		return diag.Errorf(res.Info)
 	}
 
 	d.SetId("")
