@@ -48,6 +48,7 @@ When not running inside a cluster, the provider must be explicitly configured ei
 1. [Using a kubeconfig file](#file-config)
 2. [Supplying credentials](#credentials-config)
 3. [Using the in-cluster config](#in-cluster-config)
+4. [Exec plugins](#exec-plugins)
 
 ### File config
 
@@ -96,6 +97,23 @@ provider "helm" {
 
 The provider is able to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block.
 
+## Exec plugins
+
+Some cloud providers have short-lived authentication tokens that can expire relatively quickly. To ensure the Kubernetes provider is receiving valid credentials, an exec-based plugin can be used to fetch a new token before initializing the provider. For example, on EKS, the command `eks get-token` can be used:
+
+```hcl
+provider "helm" {
+  kubernetes {
+    host                   = var.cluster_endpoint
+    cluster_ca_certificate = base64decode(var.cluster_ca_cert)
+    exec {
+      api_version = "client.authentication.k8s.io/v1alpha1"
+      args        = ["eks", "get-token", "--cluster-name", var.cluster_name]
+      command     = "aws"
+    }
+  }
+}
+```
 
 ## Argument Reference
 
