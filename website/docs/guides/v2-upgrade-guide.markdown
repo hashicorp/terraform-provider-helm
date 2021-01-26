@@ -33,8 +33,8 @@ This feature of the provider caused a fair bit of confusion and was a source of 
 resource "helm_release" "redis" {
   name  = "redis"
 
-  repository_url = "https://charts.bitnami.com/bitnami"
-  chart          = "redis"
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "redis"
 }
 ```
 
@@ -48,8 +48,8 @@ The addition of a `type` attribute to the `set` block has rendered `set_string` 
 resource "helm_release" "redis" {
   name  = "redis"
 
-  repository_url = "https://charts.bitnami.com/bitnami"
-  chart          = "redis"
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "redis"
 
   set {
     name  = "test.value"
