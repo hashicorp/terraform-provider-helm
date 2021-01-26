@@ -43,7 +43,11 @@ resource "helm_release" "nginx_ingress" {
 
 ## Authentication
 
-The provider must be explicitly configured either using the provider block or using environment variables. There are two ways to configure the Helm provider.
+When not running inside a cluster, the provider must be explicitly configured either using the provider block or using environment variables. There are three ways to configure the Helm provider:
+
+1. [Using a kubeconfig file](#file-config)
+2. [Supplying credentials](#credentials-config)
+3. [Using the in-cluster config](#in-cluster-config)
 
 ### File config
 
@@ -70,7 +74,7 @@ provider "helm" {
 }
 ```
 
-### Statically defined credentials
+### Credentials config
 
 You can also **statically** define all the credentials:
 
@@ -88,9 +92,9 @@ provider "helm" {
 }
 ```
 
-### In-cluster Configuration
+### In-cluster Config
 
-The provider is able to detect when it is running inside a cluster, so in this case you do not need to specify any configuration options in the provider block.
+The provider is able to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block.
 
 
 ## Argument Reference
