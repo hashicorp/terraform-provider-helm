@@ -43,7 +43,12 @@ resource "helm_release" "nginx_ingress" {
 
 ## Authentication
 
-When not running inside a cluster, the provider must be explicitly configured either using the provider block or using environment variables. There are three ways to configure the Helm provider:
+The Helm provider can get its configuration in two ways: 
+
+1. _Explicitly_ by supplying attributes to the provider block.
+2. _Implicitly_ through environment variables or using in-cluster configuration.
+
+The provider supports several methods of authenticating with the Kubernetes cluster, outlined below:
 
 1. [Using a kubeconfig file](#file-config)
 2. [Supplying credentials](#credentials-config)
@@ -62,7 +67,7 @@ provider "helm" {
 }
 ```
 
-The provider also supports multiple paths in the same way that kubectl does.
+The provider also supports multiple paths in the same way that kubectl does using the `config_paths` attribute or `KUBE_CONFIG_PATHS` environment variable.
 
 ```hcl
 provider "helm" {
@@ -77,14 +82,14 @@ provider "helm" {
 
 ### Credentials config
 
-You can also **statically** define all the credentials:
+You can also configure the host, basic auth credentials, and client certificate authentication explicitly or through environment variables.
 
 ```hcl
 provider "helm" {
   kubernetes {
-    host     = "https://104.196.242.174"
-    username = "ClusterMaster"
-    password = "MindTheGap"
+    host     = "https://cluster_endpoint:port" 
+    username = "username"
+    password = "password"
 
     client_certificate     = file("~/.kube/client-cert.pem")
     client_key             = file("~/.kube/client-key.pem")
