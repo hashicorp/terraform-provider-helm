@@ -100,7 +100,7 @@ provider "helm" {
 
 ### In-cluster Config
 
-The provider is able to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block.
+The provider is able to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block if you want to connect to the local kubernetes cluster. If you want to connect to a different cluster than the one terraform is running inside, configure the provider as above.
 
 ## Exec plugins
 
