@@ -1047,6 +1047,41 @@ func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_delete_regression(t *testing.T) {
+	name := randName("outside-delete")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+			{
+				PreConfig: func() {
+					// delete the release outside of terraform
+					cmd := exec.Command("helm", "delete", "--namespace", namespace, name)
+					out, err := cmd.CombinedOutput()
+					t.Log(string(out))
+					if err != nil {
+						t.Fatal(err)
+					}
+				},
+				Config:             testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
+				ResourceName:       testResourceName,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
 func testAccHelmReleaseConfig_helm_repo_add(resource, ns, name string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {

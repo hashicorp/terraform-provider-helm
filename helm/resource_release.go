@@ -391,17 +391,12 @@ func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta inter
 	}
 
 	if !exists {
-		return diag.Diagnostics{
-			{
-				Severity: diag.Warning,
-				Summary:  "Release does not exist",
-				Detail:   fmt.Sprintf("Release name: %v does not exist. It may have been deleted outside of Terraform", d.Id()),
-			},
-		}
+		d.SetId("")
+		return diag.Diagnostics{}
 	}
 
-	logId := fmt.Sprintf("[resourceReleaseRead: %s]", d.Get("name").(string))
-	debug("%s Started", logId)
+	logID := fmt.Sprintf("[resourceReleaseRead: %s]", d.Get("name").(string))
+	debug("%s Started", logID)
 
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
@@ -422,18 +417,18 @@ func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta inter
 		return diag.FromErr(err)
 	}
 
-	debug("%s Done", logId)
+	debug("%s Done", logID)
 	return nil
 }
 
 func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	logId := fmt.Sprintf("[resourceReleaseCreate: %s]", d.Get("name").(string))
-	debug("%s Started", logId)
+	logID := fmt.Sprintf("[resourceReleaseCreate: %s]", d.Get("name").(string))
+	debug("%s Started", logID)
 
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
 
-	debug("%s Getting helm configuration", logId)
+	debug("%s Getting helm configuration", logID)
 	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
 		return diag.FromErr(err)
@@ -444,13 +439,13 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	debug("%s Getting chart", logId)
+	debug("%s Getting chart", logID)
 	c, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	debug("%s Preparing for installation", logId)
+	debug("%s Preparing for installation", logID)
 
 	p := getter.All(m.Settings)
 
@@ -522,7 +517,7 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		client.PostRenderer = pr
 	}
 
-	debug("%s Installing chart", logId)
+	debug("%s Installing chart", logID)
 
 	rel, err := client.Run(c, values)
 
@@ -541,7 +536,7 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 			return diag.FromErr(err)
 		}
 
-		debug("%s Release was created but returned an error", logId)
+		debug("%s Release was created but returned an error", logID)
 
 		if err := setIDAndMetadataFromRelease(d, rel); err != nil {
 			return diag.FromErr(err)
@@ -653,8 +648,8 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 }
 
 func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
-	logId := fmt.Sprintf("[resourceDiff: %s]", d.Get("name").(string))
-	debug("%s Start", logId)
+	logID := fmt.Sprintf("[resourceDiff: %s]", d.Get("name").(string))
+	debug("%s Start", logID)
 
 	m := meta.(*Meta)
 
@@ -674,7 +669,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	if err != nil {
 		return nil
 	}
-	debug("%s Got chart", logId)
+	debug("%s Got chart", logID)
 
 	// Validates the resource configuration, the values, the chart itself, and
 	// the combination of both.
@@ -686,14 +681,14 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			return err
 		}
 	}
-	debug("%s Release validated", logId)
+	debug("%s Release validated", logID)
 
 	// Set desired version from the Chart metadata if available
 	if len(c.Metadata.Version) > 0 {
 		return d.SetNew("version", c.Metadata.Version)
 	}
 
-	debug("%s Done", logId)
+	debug("%s Done", logID)
 
 	return d.SetNewComputed("version")
 }
@@ -757,8 +752,8 @@ func cloakSetValue(values map[string]interface{}, valuePath string) {
 }
 
 func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, error) {
-	logId := fmt.Sprintf("[resourceReleaseExists: %s]", d.Get("name").(string))
-	debug("%s Start", logId)
+	logID := fmt.Sprintf("[resourceReleaseExists: %s]", d.Get("name").(string))
+	debug("%s Start", logID)
 
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
@@ -771,7 +766,7 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	name := d.Get("name").(string)
 	_, err = getRelease(m, c, name)
 
-	debug("%s Done", logId)
+	debug("%s Done", logID)
 
 	if err == nil {
 		return true, nil
