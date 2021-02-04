@@ -39,25 +39,24 @@ resource "helm_release" "nginx_ingress" {
 ## Requirements
 
 - You must have a Kubernetes cluster available. We recommend version 1.14.0 or higher.
-- You should also have a local configured copy of kubectl.
 
 ## Authentication
 
 The Helm provider can get its configuration in two ways: 
 
-1. _Explicitly_ by supplying attributes to the provider block.
-2. _Implicitly_ through environment variables or using in-cluster configuration.
+1. _Explicitly_ by supplying attributes to the provider block. This includes:
+   * [Using a kubeconfig file](#file-config)
+   * [Supplying credentials](#credentials-config)
+   * [Exec plugins](#exec-plugins)
+2. _Implicitly_ through environment variables. This includes:
+   * [Using the in-cluster config](#in-cluster-config)
 
-The provider supports several methods of authenticating with the Kubernetes cluster, outlined below:
+For a full list of supported provider authentication arguments and their corresponding environment variables, see the [argument reference](#argument-reference) below.
 
-1. [Using a kubeconfig file](#file-config)
-2. [Supplying credentials](#credentials-config)
-3. [Using the in-cluster config](#in-cluster-config)
-4. [Exec plugins](#exec-plugins)
 
 ### File config
 
-The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable.
+The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable. A kubeconfig file may have multiple contexts. If `config_context` is specified, the provider will use the `default` context.
 
 ```hcl
 provider "helm" {
@@ -88,8 +87,6 @@ You can also configure the host, basic auth credentials, and client certificate 
 provider "helm" {
   kubernetes {
     host     = "https://cluster_endpoint:port" 
-    username = "username"
-    password = "password"
 
     client_certificate     = file("~/.kube/client-cert.pem")
     client_key             = file("~/.kube/client-key.pem")
@@ -100,7 +97,9 @@ provider "helm" {
 
 ### In-cluster Config
 
-The provider is able to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block if you want to connect to the local kubernetes cluster. If you want to connect to a different cluster than the one terraform is running inside, configure the provider as above.
+The provider use the `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` environment variables to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block if you want to connect to the local kubernetes cluster. 
+
+If you want to connect to a different cluster than the one terraform is running inside, configure the provider as [above](#credentials-config).
 
 ## Exec plugins
 
