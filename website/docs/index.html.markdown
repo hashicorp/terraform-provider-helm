@@ -38,7 +38,7 @@ resource "helm_release" "nginx_ingress" {
 
 ## Requirements
 
-- You must have a Kubernetes cluster available. We recommend version 1.14.0 or higher.
+- You must have a Kubernetes cluster available. We support version 1.14.0 or higher.
 
 ## Authentication
 
@@ -56,7 +56,7 @@ For a full list of supported provider authentication arguments and their corresp
 
 ### File config
 
-The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable. A kubeconfig file may have multiple contexts. If `config_context` is specified, the provider will use the `default` context.
+The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable. A kubeconfig file may have multiple contexts. If `config_context` is not specified, the provider will use the `default` context.
 
 ```hcl
 provider "helm" {
@@ -97,7 +97,7 @@ provider "helm" {
 
 ### In-cluster Config
 
-The provider use the `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` environment variables to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block if you want to connect to the local kubernetes cluster. 
+The provider uses the `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` environment variables to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block if you want to connect to the local kubernetes cluster. 
 
 If you want to connect to a different cluster than the one terraform is running inside, configure the provider as [above](#credentials-config).
 
