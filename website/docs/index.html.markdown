@@ -42,7 +42,7 @@ resource "helm_release" "nginx_ingress" {
 
 ## Authentication
 
-The Helm provider can get its configuration in two ways: 
+The Helm provider can get its configuration in two ways:
 
 1. _Explicitly_ by supplying attributes to the provider block. This includes:
    * [Using a kubeconfig file](#file-config)
@@ -86,7 +86,7 @@ You can also configure the host, basic auth credentials, and client certificate 
 ```hcl
 provider "helm" {
   kubernetes {
-    host     = "https://cluster_endpoint:port" 
+    host     = "https://cluster_endpoint:port"
 
     client_certificate     = file("~/.kube/client-cert.pem")
     client_key             = file("~/.kube/client-key.pem")
@@ -97,7 +97,7 @@ provider "helm" {
 
 ### In-cluster Config
 
-The provider uses the `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` environment variables to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block if you want to connect to the local kubernetes cluster. 
+The provider uses the `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` environment variables to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block if you want to connect to the local kubernetes cluster.
 
 If you want to connect to a different cluster than the one terraform is running inside, configure the provider as [above](#credentials-config).
 
