@@ -38,16 +38,25 @@ resource "helm_release" "nginx_ingress" {
 
 ## Requirements
 
-- You must have a Kubernetes cluster available. We recommend version 1.14.0 or higher.
-- You should also have a local configured copy of kubectl.
+- You must have a Kubernetes cluster available. We support version 1.14.0 or higher.
 
 ## Authentication
 
-The provider must be explicitly configured either using the provider block or using environment variables. There are two ways to configure the Helm provider.
+The Helm provider can get its configuration in two ways:
+
+1. _Explicitly_ by supplying attributes to the provider block. This includes:
+   * [Using a kubeconfig file](#file-config)
+   * [Supplying credentials](#credentials-config)
+   * [Exec plugins](#exec-plugins)
+2. _Implicitly_ through environment variables. This includes:
+   * [Using the in-cluster config](#in-cluster-config)
+
+For a full list of supported provider authentication arguments and their corresponding environment variables, see the [argument reference](#argument-reference) below.
+
 
 ### File config
 
-The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable.
+The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable. A kubeconfig file may have multiple contexts. If `config_context` is not specified, the provider will use the `default` context.
 
 ```hcl
 provider "helm" {
@@ -57,7 +66,7 @@ provider "helm" {
 }
 ```
 
-The provider also supports multiple paths in the same way that kubectl does.
+The provider also supports multiple paths in the same way that kubectl does using the `config_paths` attribute or `KUBE_CONFIG_PATHS` environment variable.
 
 ```hcl
 provider "helm" {
@@ -70,16 +79,14 @@ provider "helm" {
 }
 ```
 
-### Statically defined credentials
+### Credentials config
 
-You can also **statically** define all the credentials:
+You can also configure the host, basic auth credentials, and client certificate authentication explicitly or through environment variables.
 
 ```hcl
 provider "helm" {
   kubernetes {
-    host     = "https://104.196.242.174"
-    username = "ClusterMaster"
-    password = "MindTheGap"
+    host     = "https://cluster_endpoint:port"
 
     client_certificate     = file("~/.kube/client-cert.pem")
     client_key             = file("~/.kube/client-key.pem")
@@ -88,10 +95,29 @@ provider "helm" {
 }
 ```
 
-### In-cluster Configuration
+### In-cluster Config
 
-The provider is able to detect when it is running inside a cluster, so in this case you do not need to specify any configuration options in the provider block.
+The provider uses the `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` environment variables to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block if you want to connect to the local kubernetes cluster.
 
+If you want to connect to a different cluster than the one terraform is running inside, configure the provider as [above](#credentials-config).
+
+## Exec plugins
+
+Some cloud providers have short-lived authentication tokens that can expire relatively quickly. To ensure the Kubernetes provider is receiving valid credentials, an exec-based plugin can be used to fetch a new token before initializing the provider. For example, on EKS, the command `eks get-token` can be used:
+
+```hcl
+provider "helm" {
+  kubernetes {
+    host                   = var.cluster_endpoint
+    cluster_ca_certificate = base64decode(var.cluster_ca_cert)
+    exec {
+      api_version = "client.authentication.k8s.io/v1alpha1"
+      args        = ["eks", "get-token", "--cluster-name", var.cluster_name]
+      command     = "aws"
+    }
+  }
+}
+```
 
 ## Argument Reference
 
