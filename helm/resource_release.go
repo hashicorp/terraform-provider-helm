@@ -638,10 +638,20 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 
 	name := d.Get("name").(string)
 
-	_, err = action.NewUninstall(actionConfig).Run(name)
+	res, err := action.NewUninstall(actionConfig).Run(name)
 
 	if err != nil {
 		return diag.FromErr(err)
+	}
+
+	if res.Info != "" {
+		return diag.Diagnostics{
+			{
+				Severity: diag.Warning,
+				Summary:  "Helm uninstall returned an information message",
+				Detail:   res.Info,
+			},
+		}
 	}
 
 	d.SetId("")
