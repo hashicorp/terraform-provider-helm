@@ -32,12 +32,8 @@ The provider manages the installed [Charts](https://github.com/helm/charts) in y
 
 ## Getting Started
 
-This is a small example of how to install the mariadb chart on your default
-kubernetes cluster, since the provider was initialized, all the configuration
-is retrieved from the environment. Please read the [documentation](https://www.terraform.io/docs/providers/helm/index.html) for more
+This is a small example of how to install the nginx ingress controller chart. Please read the [documentation](https://www.terraform.io/docs/providers/helm/index.html) for more
 information.
-
-You should have a local configured copy of [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
 ```hcl
 provider "helm" {
