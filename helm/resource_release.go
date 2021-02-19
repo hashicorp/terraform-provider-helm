@@ -640,7 +640,13 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 	}
 
 	if res.Info != "" {
-		return diag.Errorf(res.Info)
+		return diag.Diagnostics{
+			{
+				Severity: diag.Warning,
+				Summary:  "Helm uninstall returned an information message",
+				Detail:   res.Info,
+			},
+		}
 	}
 
 	d.SetId("")
