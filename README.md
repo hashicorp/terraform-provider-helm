@@ -27,7 +27,7 @@ The provider manages the installed [Charts](https://github.com/helm/charts) in y
 ## Requirements
 
 -	[Terraform](https://www.terraform.io/downloads.html) v0.12.x
--	[Go](https://golang.org/doc/install) v1.14.x (to build the provider plugin)
+-	[Go](https://golang.org/doc/install) v1.16.x (to build the provider plugin)
 -   [Helm](https://github.com/helm/helm/releases) v3.x.x to deploy your charts
 
 ## Getting Started

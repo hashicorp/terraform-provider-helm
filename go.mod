@@ -1,6 +1,6 @@
 module github.com/hashicorp/terraform-provider-helm
 
-go 1.14
+go 1.16
 
 require (
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
