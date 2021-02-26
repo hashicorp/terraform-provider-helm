@@ -25,8 +25,8 @@ jobs:
         terraform_version: 
         - "0.12.30"
         - "0.13.6"
-        - "0.14.4"
-        - "0.15.0-alpha20210107"
+        - "0.14.7"
+        - "0.15.0-beta1"
     steps:
     - uses: actions/checkout@master
     - uses: engineerd/setup-kind@v0.5.0  
