@@ -1,0 +1,63 @@
+{
+    "secret/diff-tester": {
+        "kind": "Secret",
+        "apiVersion": "v1",
+        "metadata": {
+            "name": "diff-tester",
+            "creationTimestamp": null,
+            "labels": {
+                "app.kubernetes.io/instance": "diff-tester",
+                "app.kubernetes.io/managed-by": "Helm",
+                "app.kubernetes.io/name": "test",
+                "app.kubernetes.io/version": "1.16.0",
+                "helm.sh/chart": "test-0.1.5"
+            }
+        },
+        "data": {
+            "PASSWORD": "cmVkYWN0ZWQuOTE1MTQ0MDk2NWNmOWM1ZQ=="
+        }
+    },
+    "service/diff-tester": {
+        "apiVersion": "v1",
+        "kind": "Service",
+        "metadata": {
+            "labels": {
+                "app.kubernetes.io/instance": "diff-tester",
+                "app.kubernetes.io/managed-by": "Helm",
+                "app.kubernetes.io/name": "test",
+                "app.kubernetes.io/version": "1.16.0",
+                "helm.sh/chart": "test-0.1.5"
+            },
+            "name": "diff-tester"
+        },
+        "spec": {
+            "ports": [
+                {
+                    "name": "http",
+                    "port": 80,
+                    "protocol": "TCP",
+                    "targetPort": "http"
+                }
+            ],
+            "selector": {
+                "app.kubernetes.io/instance": "diff-tester",
+                "app.kubernetes.io/name": "test"
+            },
+            "type": "ClusterIP"
+        }
+    },
+    "serviceaccount/diff-tester": {
+        "apiVersion": "v1",
+        "kind": "ServiceAccount",
+        "metadata": {
+            "labels": {
+                "app.kubernetes.io/instance": "diff-tester",
+                "app.kubernetes.io/managed-by": "Helm",
+                "app.kubernetes.io/name": "test",
+                "app.kubernetes.io/version": "1.16.0",
+                "helm.sh/chart": "test-0.1.5"
+            },
+            "name": "diff-tester"
+        }
+    }
+}

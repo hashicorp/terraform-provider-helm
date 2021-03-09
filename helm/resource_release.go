@@ -335,6 +335,11 @@ func resourceRelease() *schema.Resource {
 				Default:     defaultAttributes["lint"],
 				Description: "Run helm lint when planning",
 			},
+			"manifest": {
+				Type:        schema.TypeString,
+				Description: "The rendered manifest as JSON.",
+				Computed:    true,
+			},
 			"metadata": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -384,7 +389,6 @@ func resourceRelease() *schema.Resource {
 }
 
 func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-
 	exists, err := resourceReleaseExists(d, meta)
 	if err != nil {
 		return diag.FromErr(err)
@@ -407,17 +411,18 @@ func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta inter
 	}
 
 	name := d.Get("name").(string)
-
 	r, err := getRelease(m, c, name)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	err = setIDAndMetadataFromRelease(d, r)
+
+	err = setReleaseAttributes(d, r, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	debug("%s Done", logID)
+
 	return nil
 }
 
@@ -538,14 +543,14 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 
 		debug("%s Release was created but returned an error", logID)
 
-		if err := setIDAndMetadataFromRelease(d, rel); err != nil {
+		if err := setReleaseAttributes(d, rel, m); err != nil {
 			return diag.FromErr(err)
 		}
 
 		return nil
 	}
 
-	err = setIDAndMetadataFromRelease(d, rel)
+	err = setReleaseAttributes(d, rel, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -616,7 +621,7 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	err = setIDAndMetadataFromRelease(d, r)
+	err = setReleaseAttributes(d, r, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -671,7 +676,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	}
 
 	// Get Chart metadata, if we fail - we're done
-	c, _, err := getChart(d, meta.(*Meta), chartName, cpo)
+	chart, _, err := getChart(d, meta.(*Meta), chartName, cpo)
 	if err != nil {
 		return nil
 	}
@@ -689,17 +694,113 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	}
 	debug("%s Release validated", logID)
 
-	// Set desired version from the Chart metadata if available
-	if len(c.Metadata.Version) > 0 {
-		return d.SetNew("version", c.Metadata.Version)
+	// FIXME: make this a function so we can re-use it
+	// do dry-run upgrade to get diff
+	name := d.Get("name").(string)
+	namespace := d.Get("namespace").(string)
+
+	actionConfig, err := m.GetHelmConfiguration(namespace)
+	if err != nil {
+		return err
+	}
+
+	// check if release exists
+	_, err = getRelease(m, actionConfig, name)
+	if err == errReleaseNotFound {
+		if len(chart.Metadata.Version) > 0 {
+			return d.SetNew("version", chart.Metadata.Version)
+		}
+
+		if m.ExperimentEnabled("manifest") {
+			d.SetNewComputed("manifest")
+		} else {
+			d.Clear("manifest")
+		}
+
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("error retrieving old release for a diff: %v", err)
+	}
+
+	if req := chart.Metadata.Dependencies; req != nil {
+		if err := action.CheckDependencies(chart, req); err != nil {
+			return fmt.Errorf("error checking dependencies for a diff: %v", err)
+		}
+	}
+
+	debug("%s performing dry run", logID)
+
+	client := action.NewUpgrade(actionConfig)
+	client.ChartPathOptions = *cpo
+	client.Devel = d.Get("devel").(bool)
+	client.Namespace = d.Get("namespace").(string)
+	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+	client.Wait = d.Get("wait").(bool)
+	client.DryRun = true // do not apply changes
+	client.DisableHooks = d.Get("disable_webhooks").(bool)
+	client.Atomic = d.Get("atomic").(bool)
+	client.SubNotes = d.Get("render_subchart_notes").(bool)
+	client.Force = d.Get("force_update").(bool)
+	client.ResetValues = d.Get("reset_values").(bool)
+	client.ReuseValues = d.Get("reuse_values").(bool)
+	client.Recreate = d.Get("recreate_pods").(bool)
+	client.MaxHistory = d.Get("max_history").(int)
+	client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
+	client.Description = d.Get("description").(string)
+
+	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+		pr, err := postrender.NewExec(cmd)
+
+		if err != nil {
+			return err
+		}
+
+		client.PostRenderer = pr
+	}
+
+	values, err := getValues(d)
+	if err != nil {
+		return fmt.Errorf("error getting values for a diff: %v", err)
+	}
+
+	dry, err := client.Run(name, chart, values)
+	if err != nil && strings.Contains(err.Error(), "has no deployed releases") {
+		if len(chart.Metadata.Version) > 0 {
+			return d.SetNew("version", chart.Metadata.Version)
+		}
+		d.SetNewComputed("version")
+
+		if m.ExperimentEnabled("manifest") {
+			d.SetNewComputed("manifest")
+		} else {
+			d.Clear("manifest")
+		}
+
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("error running dry run for a diff: %v", err)
+	}
+
+	if m.ExperimentEnabled("manifest") {
+		jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
+		if err != nil {
+			return err
+		}
+		d.SetNew("manifest", redactSensitiveValues(string(jsonManifest), d))
+		debug("%s set manifest: %s", logID, jsonManifest)
 	}
 
 	debug("%s Done", logID)
 
+	// Set desired version from the Chart metadata if available
+	if len(chart.Metadata.Version) > 0 {
+		return d.SetNew("version", chart.Metadata.Version)
+	}
+
 	return d.SetNewComputed("version")
 }
 
-func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) error {
+func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta interface{}) error {
 	d.SetId(r.Name)
 
 	if err := d.Set("version", r.Chart.Metadata.Version); err != nil {
@@ -718,6 +819,15 @@ func setIDAndMetadataFromRelease(d *schema.ResourceData, r *release.Release) err
 	values, err := json.Marshal(r.Config)
 	if err != nil {
 		return err
+	}
+
+	m := meta.(*Meta)
+	if m.ExperimentEnabled("manifest") {
+		jsonManifest, err := convertYAMLManifestToJSON(r.Manifest)
+		if err != nil {
+			return err
+		}
+		d.Set("manifest", redactSensitiveValues(string(jsonManifest), d))
 	}
 
 	return d.Set("metadata", []map[string]interface{}{{
@@ -1040,7 +1150,7 @@ func resourceHelmReleaseImportState(ctx context.Context, d *schema.ResourceData,
 		}
 	}
 
-	if err := setIDAndMetadataFromRelease(d, r); err != nil {
+	if err := setReleaseAttributes(d, r, m); err != nil {
 		return nil, err
 	}
 

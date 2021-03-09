@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -28,6 +30,9 @@ type Meta struct {
 
 	// Used to lock some operations
 	sync.Mutex
+
+	// Experimental feature toggles
+	experiments map[string]bool
 }
 
 // Provider returns the provider schema to Terraform.
@@ -99,6 +104,31 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				Description: "Kubernetes configuration.",
 				Elem:        kubernetesResource(),
+			},
+			"experiments": {
+				Type:        schema.TypeList,
+				MaxItems:    1,
+				Optional:    true,
+				Description: "Enable and disable experimental features.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"manifest": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							DefaultFunc: func() (interface{}, error) {
+								if v := os.Getenv("TF_X_HELM_MANIFEST_DIFF"); v != "" {
+									vv, err := strconv.ParseBool(v)
+									if err != nil {
+										return false, err
+									}
+									return vv, nil
+								}
+								return false, nil
+							},
+							Description: "Enable full diff by storing the rendered manifest in the state.",
+						},
+					},
+				},
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
@@ -225,7 +255,18 @@ func kubernetesResource() *schema.Resource {
 }
 
 func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, diag.Diagnostics) {
-	m := &Meta{data: d}
+	m := &Meta{
+		data: d,
+		experiments: map[string]bool{
+			"manifest": d.Get("experiments.0.manifest").(bool),
+		},
+	}
+
+	if m.ExperimentEnabled("manifest") {
+		debug("manifest is enabled")
+	} else {
+		debug("manifest is disabled")
+	}
 
 	settings := cli.New()
 	settings.Debug = d.Get("debug").(bool)
@@ -300,6 +341,11 @@ func expandStringSlice(s []interface{}) []string {
 		}
 	}
 	return result
+}
+
+// ExperimentEnabled returns true it the named experiment is enabled
+func (m *Meta) ExperimentEnabled(name string) bool {
+	return m.experiments[name]
 }
 
 // GetHelmConfiguration will return a new Helm configuration

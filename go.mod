@@ -8,6 +8,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/pkg/errors v0.9.1
+	github.com/stretchr/testify v1.7.0
 	helm.sh/helm/v3 v3.5.3
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.2

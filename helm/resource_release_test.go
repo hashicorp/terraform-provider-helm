@@ -1082,6 +1082,40 @@ func TestAccResourceRelease_delete_regression(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_manifestDiff(t *testing.T) {
+	name := randName("diff")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "manifest", "FIXME"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "2.0.0"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "manifest", "FIXME"),
+				),
+			},
+		},
+	})
+}
+
 func testAccHelmReleaseConfig_helm_repo_add(resource, ns, name string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {

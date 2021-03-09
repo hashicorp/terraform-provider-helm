@@ -137,6 +137,7 @@ The `postrender` block supports a single attribute:
 In addition to the arguments listed above, the following computed attributes are
 exported:
 
+* `manifest` - The rendered manifest of the release as JSON. Enable the `manifest` experiment to use this feature.
 * `metadata` - Block status of the deployed release.
 
 The `metadata` block supports:
