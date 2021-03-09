@@ -1082,7 +1082,21 @@ func TestAccResourceRelease_delete_regression(t *testing.T) {
 	})
 }
 
-func TestAccResourceRelease_manifestDiff(t *testing.T) {
+func getReleaseJSONManifest(namespace, name string) (string, error) {
+	cmd := exec.Command("helm", "get", "manifest", "--namespace", namespace, name)
+	manifest, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	jsonManifest, err := convertYAMLManifestToJSON(string(manifest))
+	if err != nil {
+		return "", err
+	}
+	return jsonManifest, nil
+}
+
+func TestAccResourceRelease_manifest(t *testing.T) {
 	name := randName("diff")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -1095,25 +1109,41 @@ func TestAccResourceRelease_manifestDiff(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
+				Config: testAccHelmReleaseConfigManifestExperimentEnabled(testResourceName, namespace, name, "1.2.3"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
-					resource.TestCheckResourceAttr("helm_release.test", "manifest", "FIXME"),
-				),
-			},
-			{
-				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "2.0.0"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
-					resource.TestCheckResourceAttr("helm_release.test", "manifest", "FIXME"),
+					func(state *terraform.State) error {
+						// FIXME this is bordering on testing the implementation
+						t.Logf("getting JSON manifest for release %q", name)
+						m, err := getReleaseJSONManifest(namespace, name)
+						if err != nil {
+							t.Fatal(err.Error())
+						}
+						return resource.TestCheckResourceAttr("helm_release.test", "manifest", m)(state)
+					},
 				),
 			},
 		},
 	})
+}
+
+func testAccHelmReleaseConfigManifestExperimentEnabled(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments {
+				manifest = true
+			}
+		}
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+		}
+	`, resource, name, ns, testRepositoryURL, version)
 }
 
 func testAccHelmReleaseConfig_helm_repo_add(resource, ns, name string) string {
