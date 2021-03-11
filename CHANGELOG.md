@@ -1,12 +1,12 @@
 ## 2.0.3 (Unreleased)
 
 BUG FIXES:
-* Fix documentation for KUBE_TOKEN env var name #684
-* Fix destroy stage error for charts with "helm.sh/resource-policy:keep" annotation #671
-* Fix read function to set resource id to null when not found #674
+* Fix documentation for KUBE_TOKEN env var name (#684)
+* Fix destroy stage error for charts with "helm.sh/resource-policy:keep" annotation (#671)
+* Fix read function to set resource id to null when not found (#674)
 
 IMPROVEMENTS:
-* Update provider configuration docs #673
+* Update provider configuration docs (#673)
 
 ## 2.0.2 (January 18, 2021)
 
