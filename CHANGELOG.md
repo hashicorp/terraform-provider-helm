@@ -1,11 +1,21 @@
+## 2.0.3 (Unreleased)
+
+BUG FIXES:
+* Fix documentation for KUBE_TOKEN env var name #684
+* Fix destroy stage error for charts with "helm.sh/resource-policy:keep" annotation #671
+* Fix read function to set resource id to null when not found #674
+
+IMPROVEMENTS:
+* Update provider configuration docs #673
+
 ## 2.0.2 (January 18, 2021)
 
-FIX:
+BUG FIXES:
 * Remove check for empty kubernetes block 
 
 ## 2.0.1 (December 19, 2020)
 
-FIX:
+BUG FIXES:
 * Move kubernetes config check out of providerConfigure (#648)
 
 ## 2.0.0 (December 19, 2020)
