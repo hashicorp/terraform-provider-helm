@@ -50,11 +50,7 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 			}
 
 			for k, v := range secret.Data {
-				// compute a checksum for the secret field so it appears in the diff
-				sha := sha512.New()
-				sha.Write(v)
-				sum := sha.Sum(nil)
-				secret.Data[k] = []byte(fmt.Sprintf("(sensitive value %x)", sum[:8]))
+				secret.Data[k] = []byte(hashSensitiveValue(string(v)))
 			}
 
 			jsonbytes, err = json.Marshal(secret)
@@ -74,6 +70,18 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 	return string(b), nil
 }
 
+// hashSensitiveValue creates a hash of a sensitive value and returns the string
+// "(sensitive value xxxxxx)". We have to do this because Terraform's sensitive
+// value feature can't reach inside a text string and would supress the entire
+// manifest if we marked it as sensitive. This allows us to redact the value
+// still being able to surface that something has changed so it appears in the diff.
+func hashSensitiveValue(v string) string {
+	sha := sha512.New()
+	sha.Write([]byte(v))
+	sum := sha.Sum(nil)[:8] // we just take the first 8 bytes so we don't create too much noise in the diff
+	return fmt.Sprintf("(sensitive value %x)", sum)
+}
+
 // redactSensitiveValues removes values that appear in `set_sensitive` blocks from
 // the manifest JSON
 func redactSensitiveValues(text string, d resourceGetter) string {
@@ -83,7 +91,7 @@ func redactSensitiveValues(text string, d resourceGetter) string {
 		vv := v.(map[string]interface{})
 
 		if sensitiveValue, ok := vv["value"].(string); ok {
-			masked = strings.ReplaceAll(masked, sensitiveValue, "(sensitive value)")
+			masked = strings.ReplaceAll(masked, sensitiveValue, hashSensitiveValue(sensitiveValue))
 		}
 	}
 
