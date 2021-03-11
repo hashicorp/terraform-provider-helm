@@ -1,4 +1,4 @@
-## 2.0.3 (Unreleased)
+## 2.0.3 (March 11, 2021)
 
 BUG FIXES:
 * Fix documentation for KUBE_TOKEN env var name (#684)
