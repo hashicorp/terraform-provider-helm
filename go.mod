@@ -3,7 +3,6 @@ module github.com/hashicorp/terraform-provider-helm
 go 1.16
 
 require (
-	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.4.4
 	github.com/mitchellh/go-homedir v1.1.0
@@ -14,8 +13,6 @@ require (
 	k8s.io/apimachinery v0.20.2
 	k8s.io/client-go v0.20.2
 	k8s.io/klog v1.0.0
-	rsc.io/letsencrypt v0.0.3 // indirect
-	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
