@@ -7,7 +7,7 @@
 
 
 ### Release Note
-Release note for [CHANGELOG](https://github.com/hashicorp/terraform-provider-helm/blob/master/CHANGELOG.md):
+Release note for [CHANGELOG](https://github.com/hashicorp/terraform-provider-helm/blob/main/CHANGELOG.md):
 <!--
 If change is not user facing, just write "NONE" in the release-note block below.
 -->
