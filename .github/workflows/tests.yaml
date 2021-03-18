@@ -2,16 +2,16 @@ name: "tests"
 on:
   push:
     branches:
-    - master
+    - main
   pull_request:
     branches:
-    - master
+    - main
 
 jobs:
   unit_test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@main
     - name: Unit tests
       env:
         GOPATH: /home/runner/go
@@ -28,7 +28,7 @@ jobs:
         - "0.14.7"
         - "0.15.0-beta1"
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@main
     - uses: engineerd/setup-kind@v0.5.0  
     - name: Acceptance Tests
       env: 
