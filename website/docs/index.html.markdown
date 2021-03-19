@@ -10,6 +10,8 @@ description: |-
 
 The Helm provider is used to deploy software packages in Kubernetes. The provider needs to be configured with the proper credentials before it can be used.
 
+Try the [hands-on tutorial](https://learn.hashicorp.com/tutorials/terraform/helm-provider?in=terraform/kubernetes) on the Helm provider on the HashiCorp Learn site.
+
 ## Resources
 
 * [Resource: helm_release](r/release.html)
