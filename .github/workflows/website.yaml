@@ -5,13 +5,13 @@ on:
       - "website/**"
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@main
       - name: website-lint
         run: |
           make website-lint
