@@ -659,6 +659,12 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 }
 
 func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	// we don't need a custom diff if the release hasn't been created yet
+	old, _ := d.GetChange("status")
+	if old.(string) == "" {
+		return nil
+	}
+
 	logID := fmt.Sprintf("[resourceDiff: %s]", d.Get("name").(string))
 	debug("%s Start", logID)
 
