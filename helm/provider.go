@@ -262,11 +262,7 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 		},
 	}
 
-	if m.ExperimentEnabled("manifest") {
-		debug("manifest is enabled")
-	} else {
-		debug("manifest is disabled")
-	}
+	log.Println("[DEBUG] Experiments enabled:", m.GetEnabledExperiments())
 
 	settings := cli.New()
 	settings.Debug = d.Get("debug").(bool)
@@ -346,6 +342,17 @@ func expandStringSlice(s []interface{}) []string {
 // ExperimentEnabled returns true it the named experiment is enabled
 func (m *Meta) ExperimentEnabled(name string) bool {
 	return m.experiments[name]
+}
+
+// GetEnabledExperiments returns a list of the experimental features that are enabled
+func (m *Meta) GetEnabledExperiments() []string {
+	enabled := []string{}
+	for k, v := range m.experiments {
+		if v {
+			enabled = append(enabled, k)
+		}
+	}
+	return enabled
 }
 
 // GetHelmConfiguration will return a new Helm configuration
