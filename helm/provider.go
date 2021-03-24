@@ -116,7 +116,7 @@ func Provider() *schema.Provider {
 							Type:     schema.TypeBool,
 							Optional: true,
 							DefaultFunc: func() (interface{}, error) {
-								if v := os.Getenv("TF_X_HELM_MANIFEST_DIFF"); v != "" {
+								if v := os.Getenv("TF_X_HELM_MANIFEST"); v != "" {
 									vv, err := strconv.ParseBool(v)
 									if err != nil {
 										return false, err
