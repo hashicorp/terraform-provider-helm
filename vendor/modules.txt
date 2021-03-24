@@ -409,6 +409,9 @@ github.com/mitchellh/go-homedir
 github.com/mitchellh/go-testing-interface
 # github.com/mitchellh/go-wordwrap v1.0.0
 github.com/mitchellh/go-wordwrap
+# github.com/mitchellh/hashstructure/v2 v2.0.1
+## explicit
+github.com/mitchellh/hashstructure/v2
 # github.com/mitchellh/mapstructure v1.1.2
 github.com/mitchellh/mapstructure
 # github.com/mitchellh/reflectwalk v1.0.1

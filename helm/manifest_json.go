@@ -1,18 +1,20 @@
 package helm
 
 import (
-	"crypto/sha512"
 	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/mitchellh/hashstructure/v2"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
-)
 
-var yamlDocumentSeparator = "\n---"
+	"helm.sh/helm/v3/pkg/releaseutil"
+)
 
 type resourceMeta struct {
 	metav1.TypeMeta
@@ -21,7 +23,8 @@ type resourceMeta struct {
 
 func convertYAMLManifestToJSON(manifest string) (string, error) {
 	m := map[string]json.RawMessage{}
-	resources := strings.Split(manifest, yamlDocumentSeparator)
+
+	resources := releaseutil.SplitManifests(manifest)
 	for _, resource := range resources {
 		jsonbytes, err := yaml.YAMLToJSON([]byte(resource))
 		if err != nil {
@@ -35,7 +38,8 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 		}
 
 		gvk := resourceMeta.GetObjectKind().GroupVersionKind()
-		key := fmt.Sprintf("%s/%s", strings.ToLower(gvk.GroupKind().String()),
+		key := fmt.Sprintf("%s/%s/%s", strings.ToLower(gvk.GroupKind().String()),
+			resourceMeta.APIVersion,
 			resourceMeta.Metadata.Name)
 
 		if namespace := resourceMeta.Metadata.Namespace; namespace != "" {
@@ -76,10 +80,8 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 // manifest if we marked it as sensitive. This allows us to redact the value
 // still being able to surface that something has changed so it appears in the diff.
 func hashSensitiveValue(v string) string {
-	sha := sha512.New()
-	sha.Write([]byte(v))
-	sum := sha.Sum(nil)[:8] // we just take the first 8 bytes so we don't create too much noise in the diff
-	return fmt.Sprintf("(sensitive value %x)", sum)
+	hash, _ := hashstructure.Hash(v, hashstructure.FormatV2, nil)
+	return fmt.Sprintf("(sensitive value %d)", hash)
 }
 
 // redactSensitiveValues removes values that appear in `set_sensitive` blocks from

@@ -1,5 +1,5 @@
 {
-    "secret/diff-tester": {
+    "secret/v1/diff-tester": {
         "kind": "Secret",
         "apiVersion": "v1",
         "metadata": {
@@ -14,10 +14,10 @@
             }
         },
         "data": {
-            "PASSWORD": "KHNlbnNpdGl2ZSB2YWx1ZSA5MTUxNDQwOTY1Y2Y5YzVlKQ=="
+            "PASSWORD": "KHNlbnNpdGl2ZSB2YWx1ZSA1MDQ2MjcwNjI2MjMxNjEyOTU2KQ=="
         }
     },
-    "service/diff-tester": {
+    "service/v1/diff-tester": {
         "apiVersion": "v1",
         "kind": "Service",
         "metadata": {
@@ -46,7 +46,7 @@
             "type": "ClusterIP"
         }
     },
-    "serviceaccount/diff-tester": {
+    "serviceaccount/v1/diff-tester": {
         "apiVersion": "v1",
         "kind": "ServiceAccount",
         "metadata": {
