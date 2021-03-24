@@ -713,7 +713,7 @@ gopkg.in/gorp.v1
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.3.0
 gopkg.in/yaml.v2
-# helm.sh/helm/v3 v3.5.2
+# helm.sh/helm/v3 v3.5.3
 ## explicit
 helm.sh/helm/v3/internal/experimental/registry
 helm.sh/helm/v3/internal/fileutil
@@ -976,7 +976,7 @@ k8s.io/klog/v2
 k8s.io/kube-openapi/pkg/common
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/util/proto/validation
-# k8s.io/kubectl v0.20.1
+# k8s.io/kubectl v0.20.2
 k8s.io/kubectl/pkg/cmd/util
 k8s.io/kubectl/pkg/scheme
 k8s.io/kubectl/pkg/util/interrupt
