@@ -54,7 +54,11 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 			}
 
 			for k, v := range secret.Data {
-				secret.Data[k] = []byte(hashSensitiveValue(string(v)))
+				h, err := hashSensitiveValue(string(v))
+				if err != nil {
+					return "", err
+				}
+				secret.Data[k] = []byte(h)
 			}
 
 			jsonbytes, err = json.Marshal(secret)
@@ -79,23 +83,30 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 // value feature can't reach inside a text string and would supress the entire
 // manifest if we marked it as sensitive. This allows us to redact the value
 // still being able to surface that something has changed so it appears in the diff.
-func hashSensitiveValue(v string) string {
-	hash, _ := hashstructure.Hash(v, hashstructure.FormatV2, nil)
-	return fmt.Sprintf("(sensitive value %d)", hash)
+func hashSensitiveValue(v string) (string, error) {
+	hash, err := hashstructure.Hash(v, hashstructure.FormatV2, nil)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("(sensitive value %d)", hash), nil
 }
 
 // redactSensitiveValues removes values that appear in `set_sensitive` blocks from
 // the manifest JSON
-func redactSensitiveValues(text string, d resourceGetter) string {
+func redactSensitiveValues(text string, d resourceGetter) (string, error) {
 	masked := text
 
 	for _, v := range d.Get("set_sensitive").(*schema.Set).List() {
 		vv := v.(map[string]interface{})
 
 		if sensitiveValue, ok := vv["value"].(string); ok {
-			masked = strings.ReplaceAll(masked, sensitiveValue, hashSensitiveValue(sensitiveValue))
+			h, err := hashSensitiveValue(sensitiveValue)
+			if err != nil {
+				return "", err
+			}
+			masked = strings.ReplaceAll(masked, sensitiveValue, h)
 		}
 	}
 
-	return masked
+	return masked, nil
 }

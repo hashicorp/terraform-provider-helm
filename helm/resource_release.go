@@ -792,7 +792,11 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		if err != nil {
 			return err
 		}
-		d.SetNew("manifest", redactSensitiveValues(string(jsonManifest), d))
+		manifest, err := redactSensitiveValues(string(jsonManifest), d)
+		if err != nil {
+			return err
+		}
+		d.SetNew("manifest", manifest)
 		debug("%s set manifest: %s", logID, jsonManifest)
 	}
 
@@ -833,7 +837,11 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 		if err != nil {
 			return err
 		}
-		d.Set("manifest", redactSensitiveValues(string(jsonManifest), d))
+		manifest, err := redactSensitiveValues(string(jsonManifest), d)
+		if err != nil {
+			return err
+		}
+		d.Set("manifest", manifest)
 	}
 
 	return d.Set("metadata", []map[string]interface{}{{
