@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mitchellh/hashstructure/v2"
+	"golang.org/x/crypto/sha3"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
@@ -54,10 +54,7 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 			}
 
 			for k, v := range secret.Data {
-				h, err := hashSensitiveValue(string(v))
-				if err != nil {
-					return "", err
-				}
+				h := hashSensitiveValue(string(v))
 				secret.Data[k] = []byte(h)
 			}
 
@@ -79,34 +76,29 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 }
 
 // hashSensitiveValue creates a hash of a sensitive value and returns the string
-// "(sensitive value xxxxxx)". We have to do this because Terraform's sensitive
+// "(sensitive value xxxxxxxx)". We have to do this because Terraform's sensitive
 // value feature can't reach inside a text string and would supress the entire
-// manifest if we marked it as sensitive. This allows us to redact the value
+// manifest if we marked it as sensitive. This allows us to redact the value while
 // still being able to surface that something has changed so it appears in the diff.
-func hashSensitiveValue(v string) (string, error) {
-	hash, err := hashstructure.Hash(v, hashstructure.FormatV2, nil)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("(sensitive value %d)", hash), nil
+func hashSensitiveValue(v string) string {
+	hash := make([]byte, 8)
+	sha3.ShakeSum256(hash, []byte(v))
+	return fmt.Sprintf("(sensitive value %x)", hash)
 }
 
 // redactSensitiveValues removes values that appear in `set_sensitive` blocks from
 // the manifest JSON
-func redactSensitiveValues(text string, d resourceGetter) (string, error) {
+func redactSensitiveValues(text string, d resourceGetter) string {
 	masked := text
 
 	for _, v := range d.Get("set_sensitive").(*schema.Set).List() {
 		vv := v.(map[string]interface{})
 
 		if sensitiveValue, ok := vv["value"].(string); ok {
-			h, err := hashSensitiveValue(sensitiveValue)
-			if err != nil {
-				return "", err
-			}
+			h := hashSensitiveValue(sensitiveValue)
 			masked = strings.ReplaceAll(masked, sensitiveValue, h)
 		}
 	}
 
-	return masked, nil
+	return masked
 }

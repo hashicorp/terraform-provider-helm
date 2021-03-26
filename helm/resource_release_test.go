@@ -1101,7 +1101,7 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
