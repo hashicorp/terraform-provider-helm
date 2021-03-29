@@ -26,9 +26,25 @@ The provider manages the installed [Charts](https://github.com/helm/charts) in y
 
 ## Requirements
 
--	[Terraform](https://www.terraform.io/downloads.html) v0.12.x
+-	[Terraform](https://www.terraform.io/downloads.html) v0.12.x or later
 -	[Go](https://golang.org/doc/install) v1.16.x (to build the provider plugin)
 -   [Helm](https://github.com/helm/helm/releases) v3.x.x to deploy your charts
+
+### Legacy provider versions
+
+Helm provider v0.10.x
+-	See latest `release-0.10.x` branch
+-	Terraform v0.11.x or later (at least including v0.14.x)
+-	[Helm v2.x.x](https://v2.helm.sh/)
+
+Helm provider v1.x.x
+-	See latest `release-1.x.x` branch
+-	Terraform v0.11.x or later (at least including v0.14.x)
+-	Helm v3.x.x
+
+How to upgrade from Helm v2.x.x to v3.x.x:
+-	https://helm.sh/blog/migrate-from-helm-v2-to-helm-v3/
+-	https://helm.sh/docs/topics/v2_v3_migration/
 
 ## Getting Started
 
