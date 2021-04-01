@@ -152,3 +152,9 @@ The `kubernetes` block supports:
   * `command` - (Required) Command to execute.
   * `args` - (Optional) List of arguments to pass when executing the plugin.
   * `env` - (Optional) Map of environment variables to set when executing the plugin.
+
+## Experiments
+
+The provider takes an `experiments` block that allows you enable experimental features by setting them to `true`.
+
+* `manifest` - Enable storing of the rendered manifest for `helm_release` so the full diff of what is changing can been seen in the plan.

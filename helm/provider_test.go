@@ -207,6 +207,7 @@ func testAccPreCheck(t *testing.T) {
 	http.DefaultClient.CloseIdleConnections()
 	ctx := context.TODO()
 	diags := testAccProvider.Configure(ctx, terraform.NewResourceConfigRaw(nil))
+
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
