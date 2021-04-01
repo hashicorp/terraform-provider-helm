@@ -1,4 +1,4 @@
-## 2.1.0 (Unreleased)
+## 2.1.0 (April 01, 2021)
 
 IMPROVEMENTS:
 * Add chart diff support by storing the rendered manifest (#702)
