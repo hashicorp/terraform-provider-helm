@@ -1,3 +1,13 @@
+## 2.1.0 (Unreleased)
+
+IMPROVEMENTS:
+* Add chart diff support by storing the rendered manifest (#702)
+* Update to Helm 3.5.3 (#709)
+* Docs: add link to Learn tutorial (#714)
+
+BUG FIXES:
+* Remove kubeconfig file check (#708)
+
 ## 2.0.3 (March 11, 2021)
 
 BUG FIXES:
