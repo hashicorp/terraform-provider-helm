@@ -96,6 +96,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.imported", "verify", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "timeout", "300"),
 					resource.TestCheckResourceAttr("helm_release.imported", "wait", "true"),
+					resource.TestCheckResourceAttr("helm_release.imported", "wait_for_jobs", "true"),
 					resource.TestCheckResourceAttr("helm_release.imported", "disable_webhooks", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "atomic", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "render_subchart_notes", "true"),

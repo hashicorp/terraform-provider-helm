@@ -29,7 +29,7 @@ Enter the provider directory and build the provider
 > make build
 ```
 
-Now copy the compiled binary to the Terraform's plugins folder, if is your first plugin maybe isn't present.
+Now copy the compiled binary to the Terraform plugins folder.  If this is your first plugin it may not be present.
 
 ```sh
 > mkdir -p ~/.terraform.d/plugins/
