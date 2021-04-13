@@ -426,6 +426,31 @@ func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta inter
 	return nil
 }
 
+func checkChartDependencies(d *schema.ResourceData, c *chart.Chart, path string, m *Meta) error {
+	p := getter.All(m.Settings)
+
+	if req := c.Metadata.Dependencies; req != nil {
+		err := action.CheckDependencies(c, req)
+		if err != nil {
+			if d.Get("dependency_update").(bool) {
+				man := &downloader.Manager{
+					Out:              os.Stdout,
+					ChartPath:        path,
+					Keyring:          d.Get("keyring").(string),
+					SkipUpdate:       false,
+					Getters:          p,
+					RepositoryConfig: m.Settings.RepositoryConfig,
+					RepositoryCache:  m.Settings.RepositoryCache,
+				}
+				return man.Update()
+			}
+			return err
+		}
+		return err
+	}
+	return nil
+}
+
 func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	logID := fmt.Sprintf("[resourceReleaseCreate: %s]", d.Get("name").(string))
 	debug("%s Started", logID)
@@ -452,7 +477,9 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 
 	debug("%s Preparing for installation", logID)
 
-	p := getter.All(m.Settings)
+	if err := checkChartDependencies(d, c, path, m); err != nil {
+		return diag.FromErr(err)
+	}
 
 	values, err := getValues(d)
 	if err != nil {
@@ -464,32 +491,6 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	updateDependency := d.Get("dependency_update").(bool)
-
-	if req := c.Metadata.Dependencies; req != nil {
-		// If CheckDependencies returns an error, we have unfulfilled dependencies.
-		// As of Helm 2.4.0, this is treated as a stopping condition:
-		// https://github.com/helm/helm/issues/2209
-		if err := action.CheckDependencies(c, req); err != nil {
-			if updateDependency {
-				man := &downloader.Manager{
-					Out:              os.Stdout,
-					ChartPath:        path,
-					Keyring:          d.Get("keyring").(string),
-					SkipUpdate:       false,
-					Getters:          p,
-					RepositoryConfig: m.Settings.RepositoryConfig,
-					RepositoryCache:  m.Settings.RepositoryCache,
-				}
-				if err := man.Update(); err != nil {
-					return diag.FromErr(err)
-				}
-			} else {
-				return diag.FromErr(err)
-			}
-		}
-	}
-
 	client := action.NewInstall(actionConfig)
 	client.ChartPathOptions = *cpo
 	client.ClientOnly = false
@@ -497,7 +498,7 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
 	client.Wait = d.Get("wait").(bool)
 	client.Devel = d.Get("devel").(bool)
-	client.DependencyUpdate = updateDependency
+	client.DependencyUpdate = d.Get("dependency_update").(bool)
 	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 	client.Namespace = d.Get("namespace").(string)
 	client.ReleaseName = d.Get("name").(string)
@@ -570,15 +571,13 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	c, _, err := getChart(d, m, chartName, cpo)
+	c, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	if req := c.Metadata.Dependencies; req != nil {
-		if err := action.CheckDependencies(c, req); err != nil {
-			return diag.FromErr(err)
-		}
+	if err := checkChartDependencies(d, c, path, m); err != nil {
+		return diag.FromErr(err)
 	}
 
 	client := action.NewUpgrade(actionConfig)
@@ -719,12 +718,6 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			return nil
 		} else if err != nil {
 			return fmt.Errorf("error retrieving old release for a diff: %v", err)
-		}
-
-		if req := chart.Metadata.Dependencies; req != nil {
-			if err := action.CheckDependencies(chart, req); err != nil {
-				return fmt.Errorf("error checking dependencies for a diff: %v", err)
-			}
 		}
 
 		debug("%s performing dry run", logID)

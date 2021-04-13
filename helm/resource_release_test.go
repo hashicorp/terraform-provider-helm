@@ -990,6 +990,19 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),
 				),
 			},
+			{
+				PreConfig: func() {
+					if err := removeSubcharts("umbrella-chart"); err != nil {
+						t.Fatalf("Failed to remove subcharts: %s", err)
+					}
+				},
+				Config: testAccHelmReleaseConfigDependencyUpdate(testResourceName, namespace, name, true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),
+				),
+			},
 		},
 	})
 }
@@ -1176,6 +1189,23 @@ func testAccHelmReleaseConfigDependency(resource, ns, name string, dependencyUpd
   			chart       = "./testdata/charts/umbrella-chart"
 
 			dependency_update = %t
+		}
+	`, resource, name, ns, dependencyUpdate)
+}
+
+func testAccHelmReleaseConfigDependencyUpdate(resource, ns, name string, dependencyUpdate bool) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+  			chart       = "./testdata/charts/umbrella-chart"
+
+			dependency_update = %t		
+
+			set {
+				name = "fake"
+				value = "fake"
+			}
 		}
 	`, resource, name, ns, dependencyUpdate)
 }
