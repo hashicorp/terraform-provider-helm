@@ -694,100 +694,84 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	}
 	debug("%s Release validated", logID)
 
-	// we don't need a custom diff if the release hasn't been created yet
-	oldStatus, _ := d.GetChange("status")
-	if oldStatus.(string) == "" {
-		return nil
-	}
-
-	// FIXME: make this a function so we can re-use it
-	// do dry-run upgrade to get diff
-	name := d.Get("name").(string)
-	namespace := d.Get("namespace").(string)
-
-	actionConfig, err := m.GetHelmConfiguration(namespace)
-	if err != nil {
-		return err
-	}
-
-	// check if release exists
-	_, err = getRelease(m, actionConfig, name)
-	if err == errReleaseNotFound {
-		if len(chart.Metadata.Version) > 0 {
-			return d.SetNew("version", chart.Metadata.Version)
+	if m.ExperimentEnabled("manifest") {
+		// we don't need a custom diff if the release hasn't been created yet
+		oldStatus, _ := d.GetChange("status")
+		if oldStatus.(string) == "" {
+			return nil
 		}
 
-		if m.ExperimentEnabled("manifest") {
-			d.SetNewComputed("manifest")
-		} else {
-			d.Clear("manifest")
-		}
+		name := d.Get("name").(string)
+		namespace := d.Get("namespace").(string)
 
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("error retrieving old release for a diff: %v", err)
-	}
-
-	if req := chart.Metadata.Dependencies; req != nil {
-		if err := action.CheckDependencies(chart, req); err != nil {
-			return fmt.Errorf("error checking dependencies for a diff: %v", err)
-		}
-	}
-
-	debug("%s performing dry run", logID)
-
-	client := action.NewUpgrade(actionConfig)
-	client.ChartPathOptions = *cpo
-	client.Devel = d.Get("devel").(bool)
-	client.Namespace = d.Get("namespace").(string)
-	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
-	client.Wait = d.Get("wait").(bool)
-	client.DryRun = true // do not apply changes
-	client.DisableHooks = d.Get("disable_webhooks").(bool)
-	client.Atomic = d.Get("atomic").(bool)
-	client.SubNotes = d.Get("render_subchart_notes").(bool)
-	client.Force = d.Get("force_update").(bool)
-	client.ResetValues = d.Get("reset_values").(bool)
-	client.ReuseValues = d.Get("reuse_values").(bool)
-	client.Recreate = d.Get("recreate_pods").(bool)
-	client.MaxHistory = d.Get("max_history").(int)
-	client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
-	client.Description = d.Get("description").(string)
-
-	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-		pr, err := postrender.NewExec(cmd)
-
+		actionConfig, err := m.GetHelmConfiguration(namespace)
 		if err != nil {
 			return err
 		}
 
-		client.PostRenderer = pr
-	}
-
-	values, err := getValues(d)
-	if err != nil {
-		return fmt.Errorf("error getting values for a diff: %v", err)
-	}
-
-	dry, err := client.Run(name, chart, values)
-	if err != nil && strings.Contains(err.Error(), "has no deployed releases") {
-		if len(chart.Metadata.Version) > 0 {
-			return d.SetNew("version", chart.Metadata.Version)
-		}
-		d.SetNewComputed("version")
-
-		if m.ExperimentEnabled("manifest") {
+		// check if release exists
+		_, err = getRelease(m, actionConfig, name)
+		if err == errReleaseNotFound {
+			if len(chart.Metadata.Version) > 0 {
+				return d.SetNew("version", chart.Metadata.Version)
+			}
 			d.SetNewComputed("manifest")
-		} else {
-			d.Clear("manifest")
+			return nil
+		} else if err != nil {
+			return fmt.Errorf("error retrieving old release for a diff: %v", err)
 		}
 
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("error running dry run for a diff: %v", err)
-	}
+		if req := chart.Metadata.Dependencies; req != nil {
+			if err := action.CheckDependencies(chart, req); err != nil {
+				return fmt.Errorf("error checking dependencies for a diff: %v", err)
+			}
+		}
 
-	if m.ExperimentEnabled("manifest") {
+		debug("%s performing dry run", logID)
+
+		client := action.NewUpgrade(actionConfig)
+		client.ChartPathOptions = *cpo
+		client.Devel = d.Get("devel").(bool)
+		client.Namespace = d.Get("namespace").(string)
+		client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+		client.Wait = d.Get("wait").(bool)
+		client.DryRun = true // do not apply changes
+		client.DisableHooks = d.Get("disable_webhooks").(bool)
+		client.Atomic = d.Get("atomic").(bool)
+		client.SubNotes = d.Get("render_subchart_notes").(bool)
+		client.Force = d.Get("force_update").(bool)
+		client.ResetValues = d.Get("reset_values").(bool)
+		client.ReuseValues = d.Get("reuse_values").(bool)
+		client.Recreate = d.Get("recreate_pods").(bool)
+		client.MaxHistory = d.Get("max_history").(int)
+		client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
+		client.Description = d.Get("description").(string)
+
+		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+			pr, err := postrender.NewExec(cmd)
+			if err != nil {
+				return err
+			}
+			client.PostRenderer = pr
+		}
+
+		values, err := getValues(d)
+		if err != nil {
+			return fmt.Errorf("error getting values for a diff: %v", err)
+		}
+
+		dry, err := client.Run(name, chart, values)
+		if err != nil && strings.Contains(err.Error(), "has no deployed releases") {
+			if len(chart.Metadata.Version) > 0 {
+				return d.SetNew("version", chart.Metadata.Version)
+			}
+			d.SetNewComputed("version")
+			d.SetNewComputed("manifest")
+			return nil
+		} else if err != nil {
+			return fmt.Errorf("error running dry run for a diff: %v", err)
+		}
+
 		jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
 		if err != nil {
 			return err
@@ -795,6 +779,8 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		manifest := redactSensitiveValues(string(jsonManifest), d)
 		d.SetNew("manifest", manifest)
 		debug("%s set manifest: %s", logID, jsonManifest)
+	} else {
+		d.Clear("manifest")
 	}
 
 	debug("%s Done", logID)
