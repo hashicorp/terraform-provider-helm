@@ -28,9 +28,6 @@ jobs:
         - "0.14.10"
         - "0.15.0"
     steps:
-    - uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_version: ${{ matrix.terraform_version }}
     - uses: actions/checkout@main
     - uses: engineerd/setup-kind@v0.5.0  
     - name: Acceptance Tests
