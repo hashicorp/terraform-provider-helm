@@ -1,3 +1,7 @@
+## 2.1.1 (Unreleased)
+
+* Fix dry-run happening at plan when manifest is not enabled (#724)
+
 ## 2.1.0 (April 01, 2021)
 
 IMPROVEMENTS:
