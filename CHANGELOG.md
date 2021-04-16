@@ -1,4 +1,4 @@
-## 2.1.1 (April 16, 2021)
+## 2.1.1 (Unreleased)
 
 * Fix dry-run happening at plan when manifest is not enabled (#724)
 
