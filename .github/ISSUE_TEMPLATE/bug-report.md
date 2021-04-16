@@ -14,7 +14,6 @@ Please note that this provider only supports Helm 3.-->
 Terraform version:
 Provider version:
 Kubernetes version:
-Helm version:
 ```
 
 ### Affected Resource(s)
