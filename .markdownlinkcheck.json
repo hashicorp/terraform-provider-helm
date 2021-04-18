@@ -1,0 +1,29 @@
+{
+    "ignorePatterns": [
+        {
+            "pattern": "^http(s)?:\/\/terraform.io/(.*)"
+        }
+    ],
+    "replacementPatterns": [
+        {
+            "pattern": "^(/docs/(?!providers/helm/))",
+            "replacement": "https://terraform.io$1"
+        },
+        {
+            "pattern": "^(?!http(s)?://)(.*)\\.html(#.*)?$",
+            "replacement": "$2.html.markdown$3"
+        },
+        {
+            "pattern": "^/docs/providers/helm/",
+            "replacement": "file:///github/workspace/website/docs/"
+        },
+        {
+            "pattern": "^(getting-started).html.markdown(#.*)?$",
+            "replacement": "file:///github/workspace/website/docs/guides/$1.html.md$2"
+        },
+        {
+            "pattern": "^file:///github/workspace/website/docs/guides/(.*)\\.markdown(#.*)?$",
+            "replacement": "file:///github/workspace/website/docs/guides/$1.md$2"
+        }
+    ]
+}

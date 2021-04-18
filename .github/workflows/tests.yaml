@@ -1,0 +1,37 @@
+name: "tests"
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  unit_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+    - name: Unit tests
+      env:
+        GOPATH: /home/runner/go
+      run: |
+        make test
+        make vet
+  acc_test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        terraform_version: 
+        - "0.12.30"
+        - "0.13.6"
+        - "0.14.10"
+        - "0.15.0"
+    steps:
+    - uses: actions/checkout@main
+    - uses: engineerd/setup-kind@v0.5.0  
+    - name: Acceptance Tests
+      env: 
+        TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform_version }}
+      run: |
+        KUBE_CONFIG_PATH="${HOME}/.kube/config" make testacc 

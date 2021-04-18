@@ -1,0 +1,17 @@
+# Configuration for markdownlint
+# https://github.com/DavidAnson/markdownlint#configuration
+
+default: true
+MD007:
+  indent: 2
+
+# Disabled Rules
+# https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md
+
+MD001: false
+MD004: false
+MD006: false
+MD012: false
+MD013: false
+MD014: false
+MD024: false

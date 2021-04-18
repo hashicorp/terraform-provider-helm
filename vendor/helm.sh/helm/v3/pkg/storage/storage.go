@@ -27,7 +27,7 @@ import (
 	"helm.sh/helm/v3/pkg/storage/driver"
 )
 
-// The type field of the Kubernetes storage object which stores the Helm release
+// HelmStorageType is the type field of the Kubernetes storage object which stores the Helm release
 // version. It is modified slightly replacing the '/': sh.helm/release.v1
 // Note: The version 'v1' is incremented if the release object metadata is
 // modified between major releases.
@@ -61,7 +61,10 @@ func (s *Storage) Create(rls *rspb.Release) error {
 	s.Log("creating release %q", makeKey(rls.Name, rls.Version))
 	if s.MaxHistory > 0 {
 		// Want to make space for one more release.
-		s.removeLeastRecent(rls.Name, s.MaxHistory-1)
+		if err := s.removeLeastRecent(rls.Name, s.MaxHistory-1); err != nil &&
+			!errors.Is(err, driver.ErrReleaseNotFound) {
+			return err
+		}
 	}
 	return s.Driver.Create(makeKey(rls.Name, rls.Version), rls)
 }
@@ -116,7 +119,7 @@ func (s *Storage) Deployed(name string) (*rspb.Release, error) {
 	}
 
 	if len(ls) == 0 {
-		return nil, errors.Errorf("%q has no deployed releases", name)
+		return nil, driver.NewErrNoDeployedReleases(name)
 	}
 
 	// If executed concurrently, Helm's database gets corrupted
@@ -140,7 +143,7 @@ func (s *Storage) DeployedAll(name string) ([]*rspb.Release, error) {
 		return ls, nil
 	}
 	if strings.Contains(err.Error(), "not found") {
-		return nil, errors.Errorf("%q has no deployed releases", name)
+		return nil, driver.NewErrNoDeployedReleases(name)
 	}
 	return nil, err
 }

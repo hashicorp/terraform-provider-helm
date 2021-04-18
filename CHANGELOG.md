@@ -1,22 +1,131 @@
-## 1.1.2 (Unreleased)
+## 2.1.1 (April 16, 2021)
+
+* Fix dry-run happening at plan when manifest is not enabled (#724)
+
+## 2.1.0 (April 01, 2021)
+
+IMPROVEMENTS:
+* Add chart diff support by storing the rendered manifest (#702)
+* Update to Helm 3.5.3 (#709)
+* Docs: add link to Learn tutorial (#714)
+
+BUG FIXES:
+* Remove kubeconfig file check (#708)
+
+## 2.0.3 (March 11, 2021)
+
+BUG FIXES:
+* Fix documentation for KUBE_TOKEN env var name (#684)
+* Fix destroy stage error for charts with "helm.sh/resource-policy:keep" annotation (#671)
+* Fix read function to set resource id to null when not found (#674)
+
+IMPROVEMENTS:
+* Update provider configuration docs (#673)
+
+## 2.0.2 (January 18, 2021)
+
+BUG FIXES:
+* Remove check for empty kubernetes block 
+
+## 2.0.1 (December 19, 2020)
+
+BUG FIXES:
+* Move kubernetes config check out of providerConfigure (#648)
+
+## 2.0.0 (December 19, 2020)
+
+BREAKING CHANGES:
+Please review our [upgrade guide](https://github.com/hashicorp/terraform-provider-helm/blob/master/website/docs/guides/v2-upgrade-guide.markdown).
+
+* Update Terraform SDK to v2 (#594). 
+* Remove deprecated helm_repository resource and data source (#600)
+* Remove implicit support for KUBECONFIG (#604)
+* Remove load_config_file attribute (#604)
+* Remove set_string attribute from helm_release (#608)
+
+IMPROVEMENTS:
+* Add support for multiple paths to kubeconfig files (#636)
+* Remove remote dependencies from test-fixtures (#638)
+* Set up matrix build to run acc tests against different tf versions (#637)
+
+
+## 1.3.2 (October 07, 2020)
+
+BUG FIXES:
+* Fix nil pointer crash when using Helm plugins (#598)
+
+## 1.3.1 (September 29, 2020)
+
+IMPROVEMENTS:
+* Upgrade Helm to 3.3.4 (#572)
+
+## 1.3.0 (September 02, 2020)
+
+IMPROVEMENTS:
+* Added app_version to metadata attribute block (#532)
+
+BUG FIXES:
+* Fix nil path for `dependency_update` flag (#482)
+
+## 1.2.4 (July 22, 2020)
+
+BUG FIXES:
+
+* Update go-version for CVE-2020-14039 (#548)
+
+## 1.2.3 (June 16, 2020)
+
+BUG FIXES:
+
+* Fix concurrent read/write crash (#525)
+* Fix for provider hang (#505)
+
+## 1.2.2 (June 01, 2020)
+
+BUG FIXES:
+
+* Add a lint attribute to helm_release (#514)
+
+## 1.2.1 (May 08, 2020)
+
+BUG FIXES:
+
+* Fix linter crash (#487)
+
+## 1.2.0 (May 06, 2020)
+
+IMPROVEMENTS:
+
+* Cloak sensitive values in metadata field (#480)
+* Upgrade to Helm 3.2.0
+* Deprecate helm_repository data source
+* Lint chart at plan time
+
 ## 1.1.1 (March 26, 2020)
-FIXES:
+
+BUG FIXES:
+
 * Fix chart path bug causing unwanted diff (#449)
 
 ## 1.1.0 (March 19, 2020)
+
 IMPROVEMENTS:
+
 * Add import feature for helm_release (#394)
 * Run acceptance tests in travis-ci using kind
 * Upgrade helm to version v3.1.2 (#440)
 * Add description attribute
 * Add post-rendering support
 
-FIXES:
+BUG FIXES:
+
 * Fix errors being swallowed when creating a helm_release (#406)
 * Various documentation fixes
 
 ## 1.0.0 (February 05, 2020)
+
 BREAKING CHANGES:
+
 * No longer supports helm v2 (#378)
 * Provider no longer supports the following parameters
     * host
@@ -41,7 +150,8 @@ BREAKING CHANGES:
 * Release Parameters that were renamed
     * reuse was renamed to replace to match the rename in helm v3
 
-Improvements:
+IMPROVEMENTS:
+
 * Upgrade Helm to v3.0
 * Adds the following parameters to the provider
     * plugins_path - (Optional) The path to the plugins directory. Defaults to `HELM_PLUGINS` env if it is set, otherwise uses the default path set by helm.
@@ -67,7 +177,7 @@ Improvements:
 ## 0.10.5 (Unreleased)
 ## 0.10.4 (October 28, 2019)
 
-FIXES:
+BUG FIXES:
 
 * Tiller installed version should match helm client (#365)
 
@@ -80,7 +190,7 @@ IMPROVEMENTS:
 * Allow for colon separated KUBECONFIG (#98)
 * Modernise docs
 
-FIXES:
+BUG FIXES:
 
 * Remove manual installation instructions
 * Fix loading kubeconfig when disabled (#307)
@@ -89,7 +199,7 @@ FIXES:
 
 ## 0.10.2 (August 07, 2019)
 
-FIXES:
+BUG FIXES:
 
 * Revert "Escape commas in set_string" (#310)
 
@@ -111,7 +221,7 @@ IMPROVEMENTS:
 * Update helm and tiller to 2.14.0 (#277)
 * Update terraform to 0.12.1 (#289 #290)
 
-FIXES:
+BUG FIXES:
 
 * Fix concurrency issues reading multiple repos (#272)
 * Documentation fixes (#262 #270 #276)
@@ -126,7 +236,7 @@ IMPROVEMENTS:
 * Migrate to Terraform 0.12 SDK
 * Move to Go modules for dep-management
 
-FIXES:
+BUG FIXES:
 
 * Properly handle commas in attribute values
 * Documentation fixes
@@ -156,7 +266,7 @@ IMPROVEMENTS:
 * Suppress diff of "keyring" and "devel" attributes (#193)
 * Add entries to .gitignore to roughly match the Google provider (#206)
 
-FIXES:
+BUG FIXES:
 
 * Fix when Helm provider ignores FAILED release state (#161)
 * Use `127.0.0.1` as default `localhost` (#207)

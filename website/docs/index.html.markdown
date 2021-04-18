@@ -10,65 +10,89 @@ description: |-
 
 The Helm provider is used to deploy software packages in Kubernetes. The provider needs to be configured with the proper credentials before it can be used.
 
-## Data Sources
-
-* [Data Source: helm_repository](d/repository.html)
-* [Data Source: helm_template](d/template.html)
+Try the [hands-on tutorial](https://learn.hashicorp.com/tutorials/terraform/helm-provider?in=terraform/kubernetes) on the Helm provider on the HashiCorp Learn site.
 
 ## Resources
 
 * [Resource: helm_release](r/release.html)
 
+## Data Sources
+
+* [Data Source: helm_template](d/template.html)
+
 ## Example Usage
 
 ```hcl
-resource "helm_release" "mydatabase" {
-  name  = "mydatabase"
-  chart = "stable/mariadb"
-
-  set {
-    name  = "mariadbUser"
-    value = "foo"
+provider "helm" {
+  kubernetes {
+    config_path = "~/.kube/config"
   }
+}
+
+resource "helm_release" "nginx_ingress" {
+  name       = "nginx-ingress-controller"
+
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "nginx-ingress-controller"
 
   set {
-    name  = "mariadbPassword"
-    value = "qux"
+    name  = "service.type"
+    value = "ClusterIP"
   }
 }
 ```
 
 ## Requirements
 
-- You must have a Kubernetes cluster available. We recommend version 1.11.0 or higher.
-- You should also have a local configured copy of kubectl.
+- You must have a Kubernetes cluster available. We support version 1.14.0 or higher.
 
 ## Authentication
 
-There are generally two ways to configure the Helm provider.
+The Helm provider can get its configuration in two ways:
+
+1. _Explicitly_ by supplying attributes to the provider block. This includes:
+   * [Using a kubeconfig file](#file-config)
+   * [Supplying credentials](#credentials-config)
+   * [Exec plugins](#exec-plugins)
+2. _Implicitly_ through environment variables. This includes:
+   * [Using the in-cluster config](#in-cluster-config)
+
+For a full list of supported provider authentication arguments and their corresponding environment variables, see the [argument reference](#argument-reference) below.
+
 
 ### File config
 
-The provider always first tries to load **a config file** (usually `$HOME/.kube/config`), for access kubernetes and reads all the Helm files from home (usually `$HOME/.helm`). You can also define that file with the following setting:
+The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable. A kubeconfig file may have multiple contexts. If `config_context` is not specified, the provider will use the `default` context.
 
 ```hcl
 provider "helm" {
   kubernetes {
-    config_path = "/path/to/kube_cluster.yaml"
+    config_path = "~/.kube/config"
   }
 }
 ```
 
-### Statically defined credentials
-
-The other way is **statically** define all the credentials:
+The provider also supports multiple paths in the same way that kubectl does using the `config_paths` attribute or `KUBE_CONFIG_PATHS` environment variable.
 
 ```hcl
 provider "helm" {
   kubernetes {
-    host     = "https://104.196.242.174"
-    username = "ClusterMaster"
-    password = "MindTheGap"
+    config_paths = [
+      "/path/to/config_a.yaml",
+      "/path/to/config_b.yaml"
+    ]
+  }
+}
+```
+
+### Credentials config
+
+You can also configure the host, basic auth credentials, and client certificate authentication explicitly or through environment variables.
+
+```hcl
+provider "helm" {
+  kubernetes {
+    host     = "https://cluster_endpoint:port"
 
     client_certificate     = file("~/.kube/client-cert.pem")
     client_key             = file("~/.kube/client-key.pem")
@@ -77,8 +101,29 @@ provider "helm" {
 }
 ```
 
-If you have **both** valid configuration in a config file and static configuration, the static one is used as override.
-i.e. any static field will override its counterpart loaded from the config.
+### In-cluster Config
+
+The provider uses the `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` environment variables to detect when it is running inside a cluster, so in this case you do not need to specify any attributes in the provider block if you want to connect to the local kubernetes cluster.
+
+If you want to connect to a different cluster than the one terraform is running inside, configure the provider as [above](#credentials-config).
+
+## Exec plugins
+
+Some cloud providers have short-lived authentication tokens that can expire relatively quickly. To ensure the Kubernetes provider is receiving valid credentials, an exec-based plugin can be used to fetch a new token before initializing the provider. For example, on EKS, the command `eks get-token` can be used:
+
+```hcl
+provider "helm" {
+  kubernetes {
+    host                   = var.cluster_endpoint
+    cluster_ca_certificate = base64decode(var.cluster_ca_cert)
+    exec {
+      api_version = "client.authentication.k8s.io/v1alpha1"
+      args        = ["eks", "get-token", "--cluster-name", var.cluster_name]
+      command     = "aws"
+    }
+  }
+}
+```
 
 ## Argument Reference
 
@@ -95,19 +140,25 @@ The following arguments are supported:
 
 The `kubernetes` block supports:
 
-* `config_path` - (Optional) Path to the kube config file, defaults to `~/.kube/config`. Can be sourced from `KUBE_CONFIG` or `KUBECONFIG`..
-* `host` - (Optional) The hostname (in form of URI) of Kubernetes master. Can be sourced from `KUBE_HOST`.
-* `username` - (Optional) The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_USER`.
-* `password` - (Optional) The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_PASSWORD`.
-* `token` - (Optional) The bearer token to use for authentication when accessing the Kubernetes master endpoint. Can be sourced from `KUBE_BEARER_TOKEN`.
+* `config_path` - (Optional) Path to the kube config file. Can be sourced from `KUBE_CONFIG_PATH`.
+* `config_paths` - (Optional) A list of paths to the kube config files. Can be sourced from `KUBE_CONFIG_PATHS`.
+* `host` - (Optional) The hostname (in form of URI) of the Kubernetes API. Can be sourced from `KUBE_HOST`.
+* `username` - (Optional) The username to use for HTTP basic authentication when accessing the Kubernetes API. Can be sourced from `KUBE_USER`.
+* `password` - (Optional) The password to use for HTTP basic authentication when accessing the Kubernetes API. Can be sourced from `KUBE_PASSWORD`.
+* `token` - (Optional) The bearer token to use for authentication when accessing the Kubernetes API. Can be sourced from `KUBE_TOKEN`.
 * `insecure` - (Optional) Whether server should be accessed without verifying the TLS certificate. Can be sourced from `KUBE_INSECURE`.
 * `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. Can be sourced from `KUBE_CLIENT_CERT_DATA`.
 * `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. Can be sourced from `KUBE_CLIENT_KEY_DATA`.
 * `cluster_ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. Can be sourced from `KUBE_CLUSTER_CA_CERT_DATA`.
 * `config_context` - (Optional) Context to choose from the config file. Can be sourced from `KUBE_CTX`.
-* `load_config_file` - (Optional) By default the local config (~/.kube/config) is loaded when you use this provider. This option at false disable this behaviour. Can be sourced from `KUBE_LOAD_CONFIG_FILE`.
-* `exec` - (Optional) Configuration block to use an [exec-based credential plugin] (https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins), e.g. call an external command to receive user credentials.
+* `exec` - (Optional) Configuration block to use an [exec-based credential plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins), e.g. call an external command to receive user credentials.
   * `api_version` - (Required) API version to use when decoding the ExecCredentials resource, e.g. `client.authentication.k8s.io/v1beta1`.
   * `command` - (Required) Command to execute.
   * `args` - (Optional) List of arguments to pass when executing the plugin.
   * `env` - (Optional) Map of environment variables to set when executing the plugin.
+
+## Experiments
+
+The provider takes an `experiments` block that allows you enable experimental features by setting them to `true`.
+
+* `manifest` - Enable storing of the rendered manifest for `helm_release` so the full diff of what is changing can been seen in the plan.

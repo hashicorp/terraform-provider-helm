@@ -9,16 +9,17 @@ description: |-
 # Resource: helm_release
 
 A Release is an instance of a chart running in a Kubernetes cluster.
+
 A Chart is a Helm package. It contains all of the resource definitions necessary to run an application, tool, or service inside of a Kubernetes cluster.
 
 `helm_release` describes the desired status of a chart in a kubernetes cluster.
 
-## Example Usage
+## Example Usage - Chart Repository
 
 ```hcl
 resource "helm_release" "example" {
   name       = "my-redis-release"
-  repository = "https://kubernetes-charts.storage.googleapis.com" 
+  repository = "https://charts.bitnami.com/bitnami"
   chart      = "redis"
   version    = "6.0.1"
 
@@ -36,9 +37,10 @@ resource "helm_release" "example" {
     value = "true"
   }
 
-  set_string {
+  set {
     name  = "service.annotations.prometheus\\.io/port"
     value = "9127"
+    type  = "string"
   }
 }
 ```
@@ -48,9 +50,34 @@ resource "helm_release" "example" {
 In case a Chart is not available from a repository, a path may be used:
 
 ```hcl
-resource "helm_release" "local" {
+resource "helm_release" "example" {
   name       = "my-local-chart"
   chart      = "./charts/example"
+}
+```
+
+## Example Usage - Chart URL
+
+An absolute URL to the .tgz of the Chart may also be used:
+
+```hcl
+resource "helm_release" "example" {
+  name  = "redis"
+  chart = "https://charts.bitnami.com/bitnami/redis-10.7.16.tgz"
+}
+```
+
+## Example Usage - Chart Repository configured outside of Terraform
+
+The provider also supports repositories that are added to the local machine outside of Terraform by running `helm repo add`
+
+```hcl
+
+# run this first: `helm repo add bitnami https://charts.bitnami.com/bitnami`
+
+resource "helm_release" "example" {
+  name  = "redis"
+  chart = "bitnami/redis"
 }
 ```
 
@@ -59,17 +86,17 @@ resource "helm_release" "local" {
 The following arguments are supported:
 
 * `name` - (Required) Release name.
-* `chart` - (Required) Chart name to be installed. A path may be used.
+* `chart` - (Required) Chart name to be installed. The chart name can be local path, a URL to a chart, or the name of the chart if `repository` is specified. It is also possible to use the `<repository>/<chart>` format here if you are running Terraform on a system that the repository has been added to with `helm repo add` but this is not recommended.
 * `repository` - (Optional) Repository URL where to locate the requested chart.
 * `repository_key_file` - (Optional) The repositories cert key file
 * `repository_cert_file` - (Optional) The repositories cert file
-* `repository_ca_file` - (Optional) The Repositories CA File. 
+* `repository_ca_file` - (Optional) The Repositories CA File.
 * `repository_username` - (Optional) Username for HTTP basic authentication against the repository.
 * `repository_password` - (Optional) Password for HTTP basic authentication against the repository.
 * `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
 * `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
-* `namespace` - (Optional) The namespace to install the release into. Defaults to `default`
-* `verify` - (Optional) Verify the package before installing it. Defaults to `false`
+* `namespace` - (Optional) The namespace to install the release into. Defaults to `default`.
+* `verify` - (Optional) Verify the package before installing it. Helm uses a provenance file to verify the integrity of the chart; this must be hosted alongside the chart. For more information see the [Helm Documentation](https://helm.sh/docs/topics/provenance/). Defaults to `false`.
 * `keyring` - (Optional) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`
 * `timeout` - (Optional) Time in seconds to wait for any individual kubernetes operation (like Jobs for hooks). Defaults to `300` seconds.
 * `disable_webhooks` - (Optional) Prevent hooks from running. Defauts to `false`
@@ -87,17 +114,18 @@ The following arguments are supported:
 * `values` - (Optional) List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options.
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
 * `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff.
-* `set_string` - (Optional) Value block with custom STRING values to be merged with the values yaml.
 * `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`.
 * `replace` - (Optional) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
 * `description` - (Optional) Set release description attribute (visible in the history).
 * `postrender` - (Optional) Configure a command to run after helm renders the manifest which can alter the manifest contents.
+* `lint` - (Optional) Run the helm chart linter during the plan. Defaults to `false`.
 * `create_namespace` - (Optional) Create the namespace if it does not yet exist. Defaults to `false`.
 
-The `set`, `set_sensitive` and `set_strings` blocks support:
+The `set` and `set_sensitive` blocks support:
 
 * `name` - (Required) full name of the variable to be set.
 * `value` - (Required) value of the variable to be set.
+* `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
 
 The `postrender` block supports a single attribute:
 
@@ -109,6 +137,7 @@ The `postrender` block supports a single attribute:
 In addition to the arguments listed above, the following computed attributes are
 exported:
 
+* `manifest` - The rendered manifest of the release as JSON. Enable the `manifest` experiment to use this feature.
 * `metadata` - Block status of the deployed release.
 
 The `metadata` block supports:
@@ -119,14 +148,15 @@ The `metadata` block supports:
 * `revision` - Version is an int32 which represents the version of the release.
 * `status` - Status of the release.
 * `version` - A SemVer 2 conformant version string of the chart.
+* `app_version` - The version number of the application being deployed.
 * `values` - The compounded values from `values` and `set*` attributes.
 
 ## Import
 
 A Helm Release resource can be imported using its namespace and name e.g.
 
-```
-$ terraform import helm_release.example default/example-name`
+```shell
+$ terraform import helm_release.example default/example-name
 ```
 
 ~> **NOTE:** Since the `repository` attribute is not being persisted as metadata by helm, it will not be set to any value by default. All other provider specific attributes will be set to their default values and they can be overriden after running `apply` using the resource definition configuration.

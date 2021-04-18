@@ -2,24 +2,32 @@
   <% content_for :sidebar do %>
     <div class="docs-sidebar hidden-print affix-top" role="complementary">
       <ul class="nav docs-sidenav">
-        <li<%#= sidebar_current("docs-home") %>>
+
+        <li<%= sidebar_current("docs-home") %>>
           <a href="/docs/providers/index.html">All Providers</a>
         </li>
 
         <li<%= sidebar_current("docs-helm-index") %>>
           <a href="/docs/providers/helm/index.html">Helm Provider</a>
           <ul class="nav nav-visible">
-            <li<%= sidebar_current("docs-helm-resource") %>>
-              <a href="/docs/providers/helm/r/release.html">helm_release</a>
+            <li<%= sidebar_current("docs-helm-guide-v2-upgrade") %>>
+              <a href="/docs/providers/helm/guides/v2-upgrade-guide.html">v2 Upgrade Guide</a>
             </li>
-            <li<%= sidebar_current("docs-helm-repository") %>>
-              <a href="/docs/providers/helm/d/repository.html">helm_repository</a>
+          </ul>
+        </li>
+
+        <li<%= sidebar_current("docs-helm-resource") %>>
+          <a href="#">Resources</a>
+          <ul class="nav nav-visible">
+            <li<%= sidebar_current("docs-helm-resource-release") %>>
+              <a href="/docs/providers/helm/r/release.html">helm_release</a>
             </li>
             <li<%= sidebar_current("docs-helm-template") %>>
               <a href="/docs/providers/helm/d/template.html">helm_template</a>
             </li>
           </ul>
         </li>
+
       </ul>
     </div>
   <% end %>

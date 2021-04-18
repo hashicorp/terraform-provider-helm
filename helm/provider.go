@@ -1,17 +1,22 @@
 package helm
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/helmpath"
+	"helm.sh/helm/v3/pkg/storage/driver"
 
 	// Import to initialize client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -25,10 +30,13 @@ type Meta struct {
 
 	// Used to lock some operations
 	sync.Mutex
+
+	// Experimental feature toggles
+	experiments map[string]bool
 }
 
 // Provider returns the provider schema to Terraform.
-func Provider() terraform.ResourceProvider {
+func Provider() *schema.Provider {
 	p := &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"debug": {
@@ -66,12 +74,12 @@ func Provider() terraform.ResourceProvider {
 				Optional:    true,
 				Description: "The backend storage driver. Values are: configmap, secret, memory, sql",
 				DefaultFunc: schema.EnvDefaultFunc("HELM_DRIVER", "secret"),
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+				ValidateDiagFunc: func(val interface{}, key cty.Path) (diags diag.Diagnostics) {
 					drivers := []string{
-						"configmap",
-						"secret",
-						"memory",
-						"sql",
+						strings.ToLower(driver.MemoryDriverName),
+						strings.ToLower(driver.ConfigMapsDriverName),
+						strings.ToLower(driver.SecretsDriverName),
+						strings.ToLower(driver.SQLDriverName),
 					}
 
 					v := strings.ToLower(val.(string))
@@ -81,8 +89,13 @@ func Provider() terraform.ResourceProvider {
 							return
 						}
 					}
-					errs = append(errs, fmt.Errorf("%s must be a valid storage driver", v))
-					return
+					return diag.Diagnostics{
+						{
+							Severity: diag.Error,
+							Summary:  fmt.Sprintf("Invalid storage driver: %v used for helm_driver", v),
+							Detail:   fmt.Sprintf("Helm backend storage driver must be set to one of the following values: %v", strings.Join(drivers, ", ")),
+						},
+					}
 				},
 			},
 			"kubernetes": {
@@ -92,24 +105,41 @@ func Provider() terraform.ResourceProvider {
 				Description: "Kubernetes configuration.",
 				Elem:        kubernetesResource(),
 			},
+			"experiments": {
+				Type:        schema.TypeList,
+				MaxItems:    1,
+				Optional:    true,
+				Description: "Enable and disable experimental features.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"manifest": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							DefaultFunc: func() (interface{}, error) {
+								if v := os.Getenv("TF_X_HELM_MANIFEST"); v != "" {
+									vv, err := strconv.ParseBool(v)
+									if err != nil {
+										return false, err
+									}
+									return vv, nil
+								}
+								return false, nil
+							},
+							Description: "Enable full diff by storing the rendered manifest in the state.",
+						},
+					},
+				},
+			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"helm_release":    resourceRelease(),
-			"helm_repository": resourceRepository(),
+			"helm_release": resourceRelease(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"helm_repository": dataRepository(),
-			"helm_template":   dataTemplate(),
+			"helm_template": dataTemplate(),
 		},
 	}
-	p.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
-		terraformVersion := p.TerraformVersion
-		if terraformVersion == "" {
-			// Terraform 0.12 introduced this field to the protocol
-			// We can therefore assume that if it's missing it's 0.10 or 0.11
-			terraformVersion = "0.11+compatible"
-		}
-		return providerConfigure(d, terraformVersion)
+	p.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+		return providerConfigure(d, p.TerraformVersion)
 	}
 	return p
 }
@@ -159,16 +189,18 @@ func kubernetesResource() *schema.Resource {
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLUSTER_CA_CERT_DATA", ""),
 				Description: "PEM-encoded root certificates bundle for TLS authentication.",
 			},
+			"config_paths": {
+				Type:        schema.TypeList,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				Optional:    true,
+				Description: "A list of paths to kube config files. Can be set with KUBE_CONFIG_PATHS environment variable.",
+			},
 			"config_path": {
-				Type:     schema.TypeString,
-				Optional: true,
-				DefaultFunc: schema.MultiEnvDefaultFunc(
-					[]string{
-						"KUBE_CONFIG",
-						"KUBECONFIG",
-					},
-					"~/.kube/config"),
-				Description: "Path to the kube config file, defaults to ~/.kube/config",
+				Type:          schema.TypeString,
+				Optional:      true,
+				DefaultFunc:   schema.EnvDefaultFunc("KUBE_CONFIG_PATH", nil),
+				Description:   "Path to the kube config file. Can be set with KUBE_CONFIG_PATH.",
+				ConflictsWith: []string{"kubernetes.0.config_paths"},
 			},
 			"config_context": {
 				Type:        schema.TypeString,
@@ -192,12 +224,6 @@ func kubernetesResource() *schema.Resource {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_TOKEN", ""),
 				Description: "Token to authenticate an service account",
-			},
-			"load_config_file": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_LOAD_CONFIG_FILE", true),
-				Description: "Load local kubeconfig.",
 			},
 			"exec": {
 				Type:     schema.TypeList,
@@ -231,12 +257,18 @@ func kubernetesResource() *schema.Resource {
 	}
 }
 
-func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, error) {
-	m := &Meta{data: d}
-
-	settings := &cli.EnvSettings{
-		Debug: d.Get("debug").(bool),
+func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, diag.Diagnostics) {
+	m := &Meta{
+		data: d,
+		experiments: map[string]bool{
+			"manifest": d.Get("experiments.0.manifest").(bool),
+		},
 	}
+
+	log.Println("[DEBUG] Experiments enabled:", m.GetEnabledExperiments())
+
+	settings := cli.New()
+	settings.Debug = d.Get("debug").(bool)
 
 	if v, ok := d.GetOk("plugins_path"); ok {
 		settings.PluginsDirectory = v.(string)
@@ -271,13 +303,15 @@ func k8sGetOk(d *schema.ResourceData, key string) (interface{}, bool) {
 	// For boolean attributes the zero value is Ok
 	switch value.(type) {
 	case bool:
+		// TODO: replace deprecated GetOkExists with SDK v2 equivalent
+		// https://github.com/hashicorp/terraform-plugin-sdk/pull/350
 		value, ok = d.GetOkExists(k8sPrefix + key)
 	}
 
-	// fix: DefaultFunc is not being triggerred on TypeList
-	schema := kubernetesResource().Schema[key]
-	if !ok && schema.DefaultFunc != nil {
-		value, _ = schema.DefaultFunc()
+	// fix: DefaultFunc is not being triggered on TypeList
+	s := kubernetesResource().Schema[key]
+	if !ok && s.DefaultFunc != nil {
+		value, _ = s.DefaultFunc()
 
 		switch v := value.(type) {
 		case string:
@@ -308,19 +342,38 @@ func expandStringSlice(s []interface{}) []string {
 	return result
 }
 
+// ExperimentEnabled returns true it the named experiment is enabled
+func (m *Meta) ExperimentEnabled(name string) bool {
+	return m.experiments[name]
+}
+
+// GetEnabledExperiments returns a list of the experimental features that are enabled
+func (m *Meta) GetEnabledExperiments() []string {
+	enabled := []string{}
+	for k, v := range m.experiments {
+		if v {
+			enabled = append(enabled, k)
+		}
+	}
+	return enabled
+}
+
 // GetHelmConfiguration will return a new Helm configuration
 func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, error) {
 	m.Lock()
 	defer m.Unlock()
-
+	debug("[INFO] GetHelmConfiguration start")
 	actionConfig := new(action.Configuration)
 
-	kc := &KubeConfig{ConfigData: m.data, Namespace: &namespace}
+	kc, err := newKubeConfig(m.data, &namespace)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := actionConfig.Init(kc, namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
 	}
-
+	debug("[INFO] GetHelmConfiguration success")
 	return actionConfig, nil
 }
 
