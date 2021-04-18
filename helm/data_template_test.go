@@ -4,31 +4,26 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataTemplate_basic(t *testing.T) {
-	name := fmt.Sprintf("test-basic-%s", acctest.RandString(10))
-	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
-
-	config := testAccDataHelmTemplateConfigBasic(testResourceName, namespace, name, "7.1.0")
+	name := randName("basic")
+	namespace := randName(testNamespacePrefix)
 
 	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t, "") },
+		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
-			Config: config,
+			Config: testAccDataHelmTemplateConfigBasic(testResourceName, namespace, name, "1.2.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "6"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/secrets.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/master-configmap.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/tests.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/master-svc.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/master-statefulset.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/test-runner.yaml"),
+				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "4"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/deployment.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/service.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/serviceaccount.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/tests/test-connection.yaml"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest_bundle"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "notes"),
 			),
@@ -37,23 +32,19 @@ func TestAccDataTemplate_basic(t *testing.T) {
 }
 
 func TestAccDataTemplate_templates(t *testing.T) {
-	name := fmt.Sprintf("test-templates-%s", acctest.RandString(10))
-	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
-
-	config := testAccDataHelmTemplateConfigTemplates(testResourceName, namespace, name, "7.1.0")
+	name := randName("basic")
+	namespace := randName(testNamespacePrefix)
 
 	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t, "") },
+		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
-			Config: config,
+			Config: testAccDataHelmTemplateConfigTemplates(testResourceName, namespace, name, "1.2.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "3"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/master-statefulset.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/master-svc.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/master-configmap.yaml"),
+				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "1"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/deployment.yaml"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest_bundle"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "notes"),
 			),
@@ -67,30 +58,21 @@ func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) stri
  			name        = %q
 			namespace   = %q
 			description = "Test"
-			repository  = "https://kubernetes-charts.storage.googleapis.com"
-  			chart       = "mariadb"
+			repository  = %q
+  			chart       = "test-chart"
 			version     = %q
 
 			set {
 				name = "foo"
-				value = "qux"
+				value = "bar"
 			}
 
 			set {
-				name = "qux.bar"
-				value = 1
-			}
-
-			set {
-				name = "master.persistence.enabled"
-				value = false # persistent volumes are giving non-related issues when testing
-			}
-			set {
-				name = "replication.enabled"
-				value = false
+				name = "fizz"
+				value = 1337
 			}
 		}
-	`, resource, name, ns, version)
+	`, resource, name, ns, testRepositoryURL, version)
 }
 
 func testAccDataHelmTemplateConfigTemplates(resource, ns, name, version string) string {
@@ -99,34 +81,23 @@ func testAccDataHelmTemplateConfigTemplates(resource, ns, name, version string) 
  			name        = %q
 			namespace   = %q
 			description = "Test"
-			repository  = "https://kubernetes-charts.storage.googleapis.com"
-  			chart       = "mariadb"
+			repository  = %q
+  			chart       = "test-chart"
 			version     = %q
-
-			templates = [
-				"templates/master-statefulset.yaml",
-				"templates/master-svc.yaml",
-				"templates/master-configmap.yaml",
-			]
 
 			set {
 				name = "foo"
-				value = "qux"
+				value = "bar"
 			}
 
 			set {
-				name = "qux.bar"
-				value = 1
+				name = "fizz"
+				value = 1337
 			}
 
-			set {
-				name = "master.persistence.enabled"
-				value = false # persistent volumes are giving non-related issues when testing
-			}
-			set {
-				name = "replication.enabled"
-				value = false
-			}
+			templates = [
+				"templates/deployment.yaml",
+			]
 		}
-	`, resource, name, ns, version)
+	`, resource, name, ns, testRepositoryURL, version)
 }

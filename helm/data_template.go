@@ -2,13 +2,16 @@ package helm
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"os"
 	"path/filepath"
@@ -23,11 +26,12 @@ var defaultTemplateAttributes = map[string]interface{}{
 	"validate":     false,
 	"include_crds": false,
 	"is_upgrade":   false,
+	"skip_tests":   false,
 }
 
 func dataTemplate() *schema.Resource {
 	return &schema.Resource{
-		Read: dataTemplateRead,
+		ReadContext: dataTemplateRead,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -109,6 +113,8 @@ func dataTemplate() *schema.Resource {
 						"type": {
 							Type:     schema.TypeString,
 							Optional: true,
+							// TODO: use ValidateDiagFunc once an SDK v2 version of StringInSlice exists.
+							// https://github.com/hashicorp/terraform-plugin-sdk/issues/534
 							ValidateFunc: validation.StringInSlice([]string{
 								"auto", "string",
 							}, false),
@@ -218,6 +224,12 @@ func dataTemplate() *schema.Resource {
 				Optional:    true,
 				Default:     defaultAttributes["skip_crds"],
 				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
+			},
+			"skip_tests": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     defaultAttributes["skip_tests"],
+				Description: "If set, tests will not be rendered. By default, tests are rendered",
 			},
 			"render_subchart_notes": {
 				Type:        schema.TypeBool,
@@ -333,13 +345,16 @@ func dataTemplate() *schema.Resource {
 	}
 }
 
-func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
+func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	logID := fmt.Sprintf("[dataTemplateRead: %s]", d.Get("name").(string))
+	debug("%s Started", logID)
+
 	m := meta.(*Meta)
 
 	name := d.Get("name").(string)
 	n := d.Get("namespace").(string)
 
-	apiVersions := []string{}
+	var apiVersions []string
 
 	if apiVersionsAttr, ok := d.GetOk("api_versions"); ok {
 		apiVersionsValues := apiVersionsAttr.([]interface{})
@@ -349,7 +364,7 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	templates := []string{}
+	var templates []string
 
 	if templatesAttr, ok := d.GetOk("templates"); ok {
 		templatesValues := templatesAttr.([]interface{})
@@ -359,45 +374,45 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	debug("Getting Config")
+	debug("%s Getting Config", logID)
 
 	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	cpo, chartName, err := chartPathOptions(d, m)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
-	debug("Getting chart")
 
-	chart, path, err := getChart(d, m, chartName, cpo)
+	debug("%s Getting chart", logID)
+	c, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	debug("Got Chart from Helm")
+	debug("%s Preparing for installation", logID)
 
 	p := getter.All(m.Settings)
 
 	values, err := getValues(d)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
-	validInstallableChart, err := isChartInstallable(chart)
-	if !validInstallableChart {
-		return err
+	err = isChartInstallable(c)
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	updateDependency := d.Get("dependency_update").(bool)
 
-	if req := chart.Metadata.Dependencies; req != nil {
+	if req := c.Metadata.Dependencies; req != nil {
 		// If CheckDependencies returns an error, we have unfulfilled dependencies.
 		// As of Helm 2.4.0, this is treated as a stopping condition:
 		// https://github.com/helm/helm/issues/2209
-		if err := action.CheckDependencies(chart, req); err != nil {
+		if err := action.CheckDependencies(c, req); err != nil {
 			if updateDependency {
 				man := &downloader.Manager{
 					Out:              os.Stdout,
@@ -409,10 +424,10 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 					RepositoryCache:  m.Settings.RepositoryCache,
 				}
 				if err := man.Update(); err != nil {
-					return err
+					return diag.FromErr(err)
 				}
 			} else {
-				return err
+				return diag.FromErr(err)
 			}
 		}
 	}
@@ -439,7 +454,8 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client.Description = d.Get("description").(string)
 	client.CreateNamespace = d.Get("create_namespace").(bool)
 
-	// Adapted from client configuration in src/github.com/helm/helm/cmd/helm/template.go
+	// The following source has been adapted from the source of the helm template command
+	// https://github.com/helm/helm/blob/v3.5.3/cmd/helm/template.go#L67
 	client.DryRun = true
 	// Do not set fixed release name like in helm template
 	//client.ReleaseName = "RELEASE-NAME"
@@ -448,23 +464,26 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client.APIVersions = chartutil.VersionSet(apiVersions)
 	client.IncludeCRDs = d.Get("include_crds").(bool)
 
-	debug("Rendering Chart")
+	skipTests := d.Get("skip_tests").(bool)
 
-	rel, err := client.Run(chart, values)
+	debug("%s Rendering Chart", logID)
 
-	if err != nil && rel == nil {
-		return err
-	}
+	rel, err := client.Run(c, values)
 
-	if rel == nil {
-		return fmt.Errorf("unexpected result from client.Run")
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
 	var manifests bytes.Buffer
+
 	fmt.Fprintln(&manifests, strings.TrimSpace(rel.Manifest))
 
 	if !client.DisableHooks {
 		for _, m := range rel.Hooks {
+			if skipTests && isTestHook(m) {
+				continue
+			}
+
 			fmt.Fprintf(&manifests, "---\n# Source: %s\n%s\n", m.Path, m.Manifest)
 		}
 	}
@@ -501,12 +520,15 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	if len(templates) > 0 {
 		for _, f := range templates {
 			missing := true
-
+			// Use linux-style filepath separators to unify user's input path
+			f = filepath.ToSlash(f)
 			for manifestKey, manifestName := range manifestNamesByKey {
 				// manifest.Name is rendered using linux-style filepath separators on Windows as
 				// well as macOS/linux.
 				manifestPathSplit := strings.Split(manifestName, "/")
-				manifestPath := filepath.Join(manifestPathSplit...)
+				// manifest.Path is connected using linux-style filepath separators on Windows as
+				// well as macOS/linux
+				manifestPath := strings.Join(manifestPathSplit, "/")
 
 				// if the filepath provided matches a manifest path in the
 				// chart, render that manifest
@@ -518,7 +540,7 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 			}
 
 			if missing {
-				return fmt.Errorf("could not find template %s in chart", f)
+				return diag.FromErr(fmt.Errorf("could not find template %s in chart", f))
 			}
 		}
 	} else {
@@ -546,18 +568,27 @@ func dataTemplateRead(d *schema.ResourceData, meta interface{}) error {
 
 	err = d.Set("manifests", computedManifests)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	err = d.Set("manifest_bundle", computedManifestBundle.String())
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	err = d.Set("notes", computedNotes)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	return nil
+}
+
+func isTestHook(h *release.Hook) bool {
+	for _, e := range h.Events {
+		if e == release.HookTest {
+			return true
+		}
+	}
+	return false
 }
