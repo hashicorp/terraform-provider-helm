@@ -99,7 +99,7 @@ The following arguments are supported:
 * `verify` - (Optional) Verify the package before installing it. Helm uses a provenance file to verify the integrity of the chart; this must be hosted alongside the chart. For more information see the [Helm Documentation](https://helm.sh/docs/topics/provenance/). Defaults to `false`.
 * `keyring` - (Optional) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`
 * `timeout` - (Optional) Time in seconds to wait for any individual kubernetes operation (like Jobs for hooks). Defaults to `300` seconds.
-* `disable_webhooks` - (Optional) Prevent hooks from running. Defauts to `false`
+* `disable_webhooks` - (Optional) Prevent hooks from running. Defaults to `false`.
 * `reuse_values` - (Optional) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
 * `reset_values` - (Optional) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
 * `force_update` - (Optional) Force resource update through delete/recreate if needed. Defaults to `false`.
