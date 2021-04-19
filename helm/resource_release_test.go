@@ -19,6 +19,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/helmpath"
 	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/releaseutil"
 	"helm.sh/helm/v3/pkg/repo"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -842,6 +843,41 @@ func removeRepoCache(root, name string) error {
 	return os.Remove(idx)
 }
 
+func testAccCheckHelmReleaseDependencyUpdate(namespace string, name string, expectedResources int) resource.TestCheckFunc {
+	// NOTE this is a regression test to check that a charts dependencies have not been
+	// deleted from the manifest on update.
+
+	return func(s *terraform.State) error {
+		m := testAccProvider.Meta()
+		if m == nil {
+			return fmt.Errorf("provider not properly initialized")
+		}
+
+		actionConfig, err := m.(*Meta).GetHelmConfiguration(namespace)
+		if err != nil {
+			return err
+		}
+
+		client := action.NewGet(actionConfig)
+		res, err := client.Run(name)
+
+		if res == nil {
+			return fmt.Errorf("release %q not found", name)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		resources := releaseutil.SplitManifests(res.Manifest)
+		if len(resources) != expectedResources {
+			return fmt.Errorf("expected %v resources but got %v", expectedResources, len(resources))
+		}
+
+		return nil
+	}
+}
+
 func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		m := testAccProvider.Meta()
@@ -998,6 +1034,7 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 				},
 				Config: testAccHelmReleaseConfigDependencyUpdate(testResourceName, namespace, name, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckHelmReleaseDependencyUpdate(namespace, name, 9),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),

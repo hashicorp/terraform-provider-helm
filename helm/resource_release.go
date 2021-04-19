@@ -426,7 +426,7 @@ func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta inter
 	return nil
 }
 
-func checkChartDependencies(d *schema.ResourceData, c *chart.Chart, path string, m *Meta) error {
+func checkChartDependencies(d resourceGetter, c *chart.Chart, path string, m *Meta) (bool, error) {
 	p := getter.All(m.Settings)
 
 	if req := c.Metadata.Dependencies; req != nil {
@@ -441,14 +441,17 @@ func checkChartDependencies(d *schema.ResourceData, c *chart.Chart, path string,
 					Getters:          p,
 					RepositoryConfig: m.Settings.RepositoryConfig,
 					RepositoryCache:  m.Settings.RepositoryCache,
+					Debug:            m.Settings.Debug,
 				}
-				return man.Update()
+				log.Println("[DEBUG] Downloading chart dependencies...")
+				return true, man.Update()
 			}
-			return err
+			return false, err
 		}
-		return err
+		return false, err
 	}
-	return nil
+	log.Println("[DEBUG] Chart dependencies are up to date.")
+	return false, nil
 }
 
 func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -475,12 +478,19 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	debug("%s Preparing for installation", logID)
-
-	if err := checkChartDependencies(d, c, path, m); err != nil {
+	// check and update the chart's dependencies if needed
+	updated, err := checkChartDependencies(d, c, path, m)
+	if err != nil {
 		return diag.FromErr(err)
+	} else if updated {
+		// load the chart again if its dependencies have been updated
+		c, err = loader.Load(path)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
+	debug("%s Preparing for installation", logID)
 	values, err := getValues(d)
 	if err != nil {
 		return diag.FromErr(err)
@@ -576,8 +586,16 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	if err := checkChartDependencies(d, c, path, m); err != nil {
+	// check and update the chart's dependencies if needed
+	updated, err := checkChartDependencies(d, c, path, m)
+	if err != nil {
 		return diag.FromErr(err)
+	} else if updated {
+		// load the chart again if its dependencies have been updated
+		c, err = loader.Load(path)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	client := action.NewUpgrade(actionConfig)
@@ -899,19 +917,17 @@ func getVersion(d resourceGetter, m *Meta) (version string) {
 	return
 }
 
-func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptions) (c *chart.Chart, path string, err error) {
+func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, error) {
 	//Load function blows up if accessed concurrently
 	m.Lock()
 	defer m.Unlock()
 
-	path, err = cpo.LocateChart(name, m.Settings)
-
+	path, err := cpo.LocateChart(name, m.Settings)
 	if err != nil {
 		return nil, "", err
 	}
 
-	c, err = loader.Load(path)
-
+	c, err := loader.Load(path)
 	if err != nil {
 		return nil, "", err
 	}
