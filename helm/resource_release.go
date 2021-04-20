@@ -562,12 +562,22 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 
 		debug("%s Release was created but returned an error, rolling back", logID)
 
-		if err != nil && exists {
-			resourceReleaseDelete(ctx, d, meta)
+		if err := setReleaseAttributes(d, rel, m); err != nil {
 			return diag.FromErr(err)
 		}
 
-		return nil
+		warnAndError := diag.Diagnostics{
+			{
+				Severity: diag.Warning,
+				Summary:  fmt.Sprintf("Helm created release \"%s\" but it is in a failed state. Persisting it for troubleshooting purposes.", client.ReleaseName),
+			},
+			{
+				Severity: diag.Error,
+				Summary:  err.Error(),
+			},
+		}
+
+		return warnAndError
 	}
 
 	err = setReleaseAttributes(d, rel, m)

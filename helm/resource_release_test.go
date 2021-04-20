@@ -1018,8 +1018,11 @@ func TestAccResourceRelease_FailedDeployFailsApply(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
-				Config:             failed,
-				PlanOnly:           false,
+				Config:   failed,
+				PlanOnly: false,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusFailed.String()),
+				),
 				ExpectError:        regexp.MustCompile(`namespaces "doesnt-exist" not found`),
 				ExpectNonEmptyPlan: true,
 			},
@@ -1265,7 +1268,7 @@ func testAccHelmReleaseConfigDependencyUpdate(resource, ns, name string, depende
 			namespace   = %q
   			chart       = "./testdata/charts/umbrella-chart"
 
-			dependency_update = %t		
+			dependency_update = %t
 
 			set {
 				name = "fake"
