@@ -931,7 +931,7 @@ func testAccHelmReleaseConfigPostrender(resource, ns, name, binaryPath string) s
 
 			set {
 				name = "serviceAccount.create"
-				value = false 
+				value = false
 			}
 			set {
 				name = "service.port"
@@ -994,6 +994,33 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 				Config:             broken,
 				PlanOnly:           true,
 				ExpectError:        regexp.MustCompile(`function "BAD_FUNCTION" not defined`),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func TestAccResourceRelease_FailedDeployFailsApply(t *testing.T) {
+	name := randName("test-failed-deploy-fails-apply")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	failed := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name        = %q
+		chart       = "failed-deploy"
+		repository  = %q
+	}`, name, testRepositoryURL)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config:             failed,
+				PlanOnly:           false,
+				ExpectError:        regexp.MustCompile(`namespaces "doesnt-exist" not found`),
 				ExpectNonEmptyPlan: true,
 			},
 		},

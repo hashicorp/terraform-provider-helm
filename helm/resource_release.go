@@ -560,9 +560,10 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 			return diag.FromErr(err)
 		}
 
-		debug("%s Release was created but returned an error", logID)
+		debug("%s Release was created but returned an error, rolling back", logID)
 
-		if err := setReleaseAttributes(d, rel, m); err != nil {
+		if err != nil && exists {
+			resourceReleaseDelete(ctx, d, meta)
 			return diag.FromErr(err)
 		}
 
