@@ -566,10 +566,10 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 			return diag.FromErr(err)
 		}
 
-		warnAndError := diag.Diagnostics{
+		return diag.Diagnostics{
 			{
 				Severity: diag.Warning,
-				Summary:  fmt.Sprintf("Helm created release \"%s\" but it is in a failed state. Persisting it for troubleshooting purposes.", client.ReleaseName),
+				Summary:  fmt.Sprintf("Helm release %q was created but has a failed status. Use the `helm` command to investigate the error, correct it, then run Terraform again.", client.ReleaseName),
 			},
 			{
 				Severity: diag.Error,
@@ -577,7 +577,6 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 			},
 		}
 
-		return warnAndError
 	}
 
 	err = setReleaseAttributes(d, rel, m)
