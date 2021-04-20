@@ -33,6 +33,7 @@ var defaultAttributes = map[string]interface{}{
 	"verify":                     false,
 	"timeout":                    300,
 	"wait":                       true,
+	"wait_for_jobs":              false,
 	"disable_webhooks":           false,
 	"atomic":                     false,
 	"render_subchart_notes":      true,
@@ -283,6 +284,12 @@ func resourceRelease() *schema.Resource {
 				Default:     defaultAttributes["wait"],
 				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
 			},
+			"wait_for_jobs": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     defaultAttributes["wait_for_jobs"],
+				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
+			},
 			"status": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -507,6 +514,7 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	client.DryRun = false
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
 	client.Wait = d.Get("wait").(bool)
+	client.WaitForJobs = d.Get("wait_for_jobs").(bool)
 	client.Devel = d.Get("devel").(bool)
 	client.DependencyUpdate = d.Get("dependency_update").(bool)
 	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
@@ -604,6 +612,7 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	client.Namespace = d.Get("namespace").(string)
 	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 	client.Wait = d.Get("wait").(bool)
+	client.WaitForJobs = d.Get("wait_for_jobs").(bool)
 	client.DryRun = false
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
 	client.Atomic = d.Get("atomic").(bool)
@@ -750,6 +759,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		client.DisableHooks = d.Get("disable_webhooks").(bool)
 		client.Atomic = d.Get("atomic").(bool)
 		client.SubNotes = d.Get("render_subchart_notes").(bool)
+		client.WaitForJobs = d.Get("wait_for_jobs").(bool)
 		client.Force = d.Get("force_update").(bool)
 		client.ResetValues = d.Get("reset_values").(bool)
 		client.ReuseValues = d.Get("reuse_values").(bool)
