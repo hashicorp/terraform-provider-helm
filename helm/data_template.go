@@ -8,9 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
-	"helm.sh/helm/v3/pkg/downloader"
-	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"os"
@@ -308,7 +307,7 @@ func dataTemplate() *schema.Resource {
 				Default:     defaultTemplateAttributes["is_upgrade"],
 				Description: "Set .Release.IsUpgrade instead of .Release.IsInstall",
 			},
-			"templates": {
+			"show_only": {
 				Type:        schema.TypeList,
 				Optional:    true,
 				Description: "Only show manifests rendered from the given templates",
@@ -329,7 +328,7 @@ func dataTemplate() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
-			"manifest_bundle": {
+			"manifest": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
@@ -364,13 +363,13 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		}
 	}
 
-	var templates []string
+	var showFiles []string
 
-	if templatesAttr, ok := d.GetOk("templates"); ok {
-		templatesValues := templatesAttr.([]interface{})
+	if showOnlyAttr, ok := d.GetOk("show_only"); ok {
+		showOnlyAttrValue := showOnlyAttr.([]interface{})
 
-		for _, showFile := range templatesValues {
-			templates = append(templates, showFile.(string))
+		for _, showFile := range showOnlyAttrValue {
+			showFiles = append(showFiles, showFile.(string))
 		}
 	}
 
@@ -392,9 +391,19 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diag.FromErr(err)
 	}
 
-	debug("%s Preparing for installation", logID)
+	// check and update the chart's dependencies if needed
+	updated, err := checkChartDependencies(d, c, path, m)
+	if err != nil {
+		return diag.FromErr(err)
+	} else if updated {
+		// load the chart again if its dependencies have been updated
+		c, err = loader.Load(path)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
 
-	p := getter.All(m.Settings)
+	debug("%s Preparing for installation", logID)
 
 	values, err := getValues(d)
 	if err != nil {
@@ -406,32 +415,6 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diag.FromErr(err)
 	}
 
-	updateDependency := d.Get("dependency_update").(bool)
-
-	if req := c.Metadata.Dependencies; req != nil {
-		// If CheckDependencies returns an error, we have unfulfilled dependencies.
-		// As of Helm 2.4.0, this is treated as a stopping condition:
-		// https://github.com/helm/helm/issues/2209
-		if err := action.CheckDependencies(c, req); err != nil {
-			if updateDependency {
-				man := &downloader.Manager{
-					Out:              os.Stdout,
-					ChartPath:        path,
-					Keyring:          d.Get("keyring").(string),
-					SkipUpdate:       false,
-					Getters:          p,
-					RepositoryConfig: m.Settings.RepositoryConfig,
-					RepositoryCache:  m.Settings.RepositoryCache,
-				}
-				if err := man.Update(); err != nil {
-					return diag.FromErr(err)
-				}
-			} else {
-				return diag.FromErr(err)
-			}
-		}
-	}
-
 	client := action.NewInstall(actionConfig)
 	client.ChartPathOptions = *cpo
 	client.ClientOnly = false
@@ -439,7 +422,7 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
 	client.Wait = d.Get("wait").(bool)
 	client.Devel = d.Get("devel").(bool)
-	client.DependencyUpdate = updateDependency
+	client.DependencyUpdate = d.Get("dependency_update").(bool)
 	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 	client.Namespace = d.Get("namespace").(string)
 	client.ReleaseName = d.Get("name").(string)
@@ -457,8 +440,7 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	// The following source has been adapted from the source of the helm template command
 	// https://github.com/helm/helm/blob/v3.5.3/cmd/helm/template.go#L67
 	client.DryRun = true
-	// Do not set fixed release name like in helm template
-	//client.ReleaseName = "RELEASE-NAME"
+	// NOTE Do not set fixed release name as client.ReleaseName like in helm template command
 	client.Replace = true // Skip the name check
 	client.ClientOnly = !d.Get("validate").(bool)
 	client.APIVersions = chartutil.VersionSet(apiVersions)
@@ -517,8 +499,8 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 
 	// if we have a list of files to render, then check that each of the
 	// provided files exists in the chart.
-	if len(templates) > 0 {
-		for _, f := range templates {
+	if len(showFiles) > 0 {
+		for _, f := range showFiles {
 			missing := true
 			// Use linux-style filepath separators to unify user's input path
 			f = filepath.ToSlash(f)
@@ -540,7 +522,7 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 			}
 
 			if missing {
-				return diag.FromErr(fmt.Errorf("could not find template %s in chart", f))
+				return diag.Errorf("could not find template %q in chart", f)
 			}
 		}
 	} else {
@@ -549,7 +531,7 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 
 	// Map from rendered manifests to data source output
 	computedManifests := make(map[string]string, 0)
-	computedManifestBundle := &strings.Builder{}
+	computedManifest := &strings.Builder{}
 
 	for _, manifestKey := range manifestsToRender {
 		manifest := splitManifests[manifestKey]
@@ -559,7 +541,7 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		computedManifests[manifestName] = manifest
 
 		// Manifest bundle
-		fmt.Fprintf(computedManifestBundle, "---\n%s\n", manifest)
+		fmt.Fprintf(computedManifest, "---\n%s\n", manifest)
 	}
 
 	computedNotes := rel.Info.Notes
@@ -571,7 +553,7 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("manifest_bundle", computedManifestBundle.String())
+	err = d.Set("manifest", computedManifest.String())
 	if err != nil {
 		return diag.FromErr(err)
 	}

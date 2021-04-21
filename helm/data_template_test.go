@@ -24,7 +24,7 @@ func TestAccDataTemplate_basic(t *testing.T) {
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/service.yaml"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/serviceaccount.yaml"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/tests/test-connection.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest_bundle"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "notes"),
 			),
 		}},
@@ -45,7 +45,7 @@ func TestAccDataTemplate_templates(t *testing.T) {
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "1"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/deployment.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest_bundle"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "notes"),
 			),
 		}},
@@ -95,7 +95,7 @@ func testAccDataHelmTemplateConfigTemplates(resource, ns, name, version string) 
 				value = 1337
 			}
 
-			templates = [
+			show_only = [
 				"templates/deployment.yaml",
 			]
 		}

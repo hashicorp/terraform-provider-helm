@@ -153,7 +153,7 @@ The following attributes are specific to the `helm_template` data source and not
 * `api_versions` - (Optional) List of Kubernetes api versions used for Capabilities.APIVersions.
 * `include_crds` - (Optional) Include CRDs in the templated output. Defaults to `false`.
 * `is_upgrade` - (Optional) Set .Release.IsUpgrade instead of .Release.IsInstall. Defaults to `false`.
-* `templates` - (Optional) Explicit list of chart templates to render, as Helm does with the `-s` or `--show-only` option. Paths to chart templates are relative to the root folder of the chart, e.g. `templates/deployment.yaml`. If not provided, all templates of the chart are rendered.
+* `show_only` - (Optional) Explicit list of chart templates to render, as Helm does with the `-s` or `--show-only` option. Paths to chart templates are relative to the root folder of the chart, e.g. `templates/deployment.yaml`. If not provided, all templates of the chart are rendered.
 * `validate` - (Optional) Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install. Defaults to `false`.
 
 ## Attributes Reference
@@ -161,5 +161,5 @@ The following attributes are specific to the `helm_template` data source and not
 In addition to the arguments listed above, the following computed attributes are exported:
 
 * `manifests` - Map of rendered chart templates indexed by the template name.
-* `manifest_bundle` - Concatenated rendered chart templates. This corresponds to the output of the `helm template` command.
+* `manifest` - Concatenated rendered chart templates. This corresponds to the output of the `helm template` command.
 * `notes` - Rendered notes if the chart contains a `NOTES.txt`.
