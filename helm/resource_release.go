@@ -33,6 +33,7 @@ var defaultAttributes = map[string]interface{}{
 	"verify":                     false,
 	"timeout":                    300,
 	"wait":                       true,
+	"wait_for_jobs":              false,
 	"disable_webhooks":           false,
 	"atomic":                     false,
 	"render_subchart_notes":      true,
@@ -283,6 +284,12 @@ func resourceRelease() *schema.Resource {
 				Default:     defaultAttributes["wait"],
 				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
 			},
+			"wait_for_jobs": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     defaultAttributes["wait_for_jobs"],
+				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
+			},
 			"status": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -426,6 +433,34 @@ func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta inter
 	return nil
 }
 
+func checkChartDependencies(d resourceGetter, c *chart.Chart, path string, m *Meta) (bool, error) {
+	p := getter.All(m.Settings)
+
+	if req := c.Metadata.Dependencies; req != nil {
+		err := action.CheckDependencies(c, req)
+		if err != nil {
+			if d.Get("dependency_update").(bool) {
+				man := &downloader.Manager{
+					Out:              os.Stdout,
+					ChartPath:        path,
+					Keyring:          d.Get("keyring").(string),
+					SkipUpdate:       false,
+					Getters:          p,
+					RepositoryConfig: m.Settings.RepositoryConfig,
+					RepositoryCache:  m.Settings.RepositoryCache,
+					Debug:            m.Settings.Debug,
+				}
+				log.Println("[DEBUG] Downloading chart dependencies...")
+				return true, man.Update()
+			}
+			return false, err
+		}
+		return false, err
+	}
+	log.Println("[DEBUG] Chart dependencies are up to date.")
+	return false, nil
+}
+
 func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	logID := fmt.Sprintf("[resourceReleaseCreate: %s]", d.Get("name").(string))
 	debug("%s Started", logID)
@@ -450,10 +485,19 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
+	// check and update the chart's dependencies if needed
+	updated, err := checkChartDependencies(d, c, path, m)
+	if err != nil {
+		return diag.FromErr(err)
+	} else if updated {
+		// load the chart again if its dependencies have been updated
+		c, err = loader.Load(path)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	debug("%s Preparing for installation", logID)
-
-	p := getter.All(m.Settings)
-
 	values, err := getValues(d)
 	if err != nil {
 		return diag.FromErr(err)
@@ -464,40 +508,15 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	updateDependency := d.Get("dependency_update").(bool)
-
-	if req := c.Metadata.Dependencies; req != nil {
-		// If CheckDependencies returns an error, we have unfulfilled dependencies.
-		// As of Helm 2.4.0, this is treated as a stopping condition:
-		// https://github.com/helm/helm/issues/2209
-		if err := action.CheckDependencies(c, req); err != nil {
-			if updateDependency {
-				man := &downloader.Manager{
-					Out:              os.Stdout,
-					ChartPath:        path,
-					Keyring:          d.Get("keyring").(string),
-					SkipUpdate:       false,
-					Getters:          p,
-					RepositoryConfig: m.Settings.RepositoryConfig,
-					RepositoryCache:  m.Settings.RepositoryCache,
-				}
-				if err := man.Update(); err != nil {
-					return diag.FromErr(err)
-				}
-			} else {
-				return diag.FromErr(err)
-			}
-		}
-	}
-
 	client := action.NewInstall(actionConfig)
 	client.ChartPathOptions = *cpo
 	client.ClientOnly = false
 	client.DryRun = false
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
 	client.Wait = d.Get("wait").(bool)
+	client.WaitForJobs = d.Get("wait_for_jobs").(bool)
 	client.Devel = d.Get("devel").(bool)
-	client.DependencyUpdate = updateDependency
+	client.DependencyUpdate = d.Get("dependency_update").(bool)
 	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 	client.Namespace = d.Get("namespace").(string)
 	client.ReleaseName = d.Get("name").(string)
@@ -570,13 +589,19 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	c, _, err := getChart(d, m, chartName, cpo)
+	c, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	if req := c.Metadata.Dependencies; req != nil {
-		if err := action.CheckDependencies(c, req); err != nil {
+	// check and update the chart's dependencies if needed
+	updated, err := checkChartDependencies(d, c, path, m)
+	if err != nil {
+		return diag.FromErr(err)
+	} else if updated {
+		// load the chart again if its dependencies have been updated
+		c, err = loader.Load(path)
+		if err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -587,6 +612,7 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	client.Namespace = d.Get("namespace").(string)
 	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 	client.Wait = d.Get("wait").(bool)
+	client.WaitForJobs = d.Get("wait_for_jobs").(bool)
 	client.DryRun = false
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
 	client.Atomic = d.Get("atomic").(bool)
@@ -721,12 +747,6 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			return fmt.Errorf("error retrieving old release for a diff: %v", err)
 		}
 
-		if req := chart.Metadata.Dependencies; req != nil {
-			if err := action.CheckDependencies(chart, req); err != nil {
-				return fmt.Errorf("error checking dependencies for a diff: %v", err)
-			}
-		}
-
 		debug("%s performing dry run", logID)
 
 		client := action.NewUpgrade(actionConfig)
@@ -739,6 +759,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		client.DisableHooks = d.Get("disable_webhooks").(bool)
 		client.Atomic = d.Get("atomic").(bool)
 		client.SubNotes = d.Get("render_subchart_notes").(bool)
+		client.WaitForJobs = d.Get("wait_for_jobs").(bool)
 		client.Force = d.Get("force_update").(bool)
 		client.ResetValues = d.Get("reset_values").(bool)
 		client.ReuseValues = d.Get("reuse_values").(bool)
@@ -906,19 +927,17 @@ func getVersion(d resourceGetter, m *Meta) (version string) {
 	return
 }
 
-func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptions) (c *chart.Chart, path string, err error) {
+func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, error) {
 	//Load function blows up if accessed concurrently
 	m.Lock()
 	defer m.Unlock()
 
-	path, err = cpo.LocateChart(name, m.Settings)
-
+	path, err := cpo.LocateChart(name, m.Settings)
 	if err != nil {
 		return nil, "", err
 	}
 
-	c, err = loader.Load(path)
-
+	c, err := loader.Load(path)
 	if err != nil {
 		return nil, "", err
 	}

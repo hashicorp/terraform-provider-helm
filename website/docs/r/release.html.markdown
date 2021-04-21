@@ -111,6 +111,8 @@ The following arguments are supported:
 * `render_subchart_notes` - (Optional) If set, render subchart notes along with the parent. Defaults to `true`.
 * `disable_openapi_validation` - (Optional) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false`.
 * `wait` - (Optional) Will wait until all resources are in a ready state before marking the release as successful. It will wait for as long as `timeout`. Defaults to `true`.
+* `wait_for_jobs` - (Optional) If wait is enabled, will wait until all Jobs have been completed before marking the release as successful. It will wait for as long as `timeout`.  Defaults to false.
+
 * `values` - (Optional) List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options.
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
 * `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff.

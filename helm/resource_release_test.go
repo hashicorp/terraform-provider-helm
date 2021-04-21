@@ -19,6 +19,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/helmpath"
 	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/releaseutil"
 	"helm.sh/helm/v3/pkg/repo"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -96,6 +97,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.imported", "verify", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "timeout", "300"),
 					resource.TestCheckResourceAttr("helm_release.imported", "wait", "true"),
+					resource.TestCheckResourceAttr("helm_release.imported", "wait_for_jobs", "true"),
 					resource.TestCheckResourceAttr("helm_release.imported", "disable_webhooks", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "atomic", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "render_subchart_notes", "true"),
@@ -842,6 +844,41 @@ func removeRepoCache(root, name string) error {
 	return os.Remove(idx)
 }
 
+func testAccCheckHelmReleaseDependencyUpdate(namespace string, name string, expectedResources int) resource.TestCheckFunc {
+	// NOTE this is a regression test to check that a charts dependencies have not been
+	// deleted from the manifest on update.
+
+	return func(s *terraform.State) error {
+		m := testAccProvider.Meta()
+		if m == nil {
+			return fmt.Errorf("provider not properly initialized")
+		}
+
+		actionConfig, err := m.(*Meta).GetHelmConfiguration(namespace)
+		if err != nil {
+			return err
+		}
+
+		client := action.NewGet(actionConfig)
+		res, err := client.Run(name)
+
+		if res == nil {
+			return fmt.Errorf("release %q not found", name)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		resources := releaseutil.SplitManifests(res.Manifest)
+		if len(resources) != expectedResources {
+			return fmt.Errorf("expected %v resources but got %v", expectedResources, len(resources))
+		}
+
+		return nil
+	}
+}
+
 func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		m := testAccProvider.Meta()
@@ -986,6 +1023,20 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 				Config: testAccHelmReleaseConfigDependency(testResourceName, namespace, name, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),
+				),
+			},
+			{
+				PreConfig: func() {
+					if err := removeSubcharts("umbrella-chart"); err != nil {
+						t.Fatalf("Failed to remove subcharts: %s", err)
+					}
+				},
+				Config: testAccHelmReleaseConfigDependencyUpdate(testResourceName, namespace, name, true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckHelmReleaseDependencyUpdate(namespace, name, 9),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),
 				),
@@ -1176,6 +1227,23 @@ func testAccHelmReleaseConfigDependency(resource, ns, name string, dependencyUpd
   			chart       = "./testdata/charts/umbrella-chart"
 
 			dependency_update = %t
+		}
+	`, resource, name, ns, dependencyUpdate)
+}
+
+func testAccHelmReleaseConfigDependencyUpdate(resource, ns, name string, dependencyUpdate bool) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+  			chart       = "./testdata/charts/umbrella-chart"
+
+			dependency_update = %t		
+
+			set {
+				name = "fake"
+				value = "fake"
+			}
 		}
 	`, resource, name, ns, dependencyUpdate)
 }
