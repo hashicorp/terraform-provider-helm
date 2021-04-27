@@ -1,4 +1,4 @@
-## 2.1.2 (Unreleased)
+## 2.1.2 (April 27, 2021)
 
 * Fix dependency download on resource update (#580)
 * Add support for the --wait-for-jobs option (#720)
