@@ -1,3 +1,8 @@
+## 2.1.2 (Unreleased)
+
+* Fix dependency download on resource update (#580)
+* Add support for the --wait-for-jobs option (#720)
+
 ## 2.1.1 (April 16, 2021)
 
 * Fix dry-run happening at plan when manifest is not enabled (#724)
