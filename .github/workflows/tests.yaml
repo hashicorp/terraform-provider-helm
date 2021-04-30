@@ -8,6 +8,15 @@ on:
     - main
 
 jobs:
+  get_version_matrix:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - id: get_version_matrix
+      shell: bash
+      run: scripts/get-version-matrix.sh
+    outputs:
+      version_matrix: ${{ steps.get_version_matrix.outputs.matrix }}
   unit_test:
     runs-on: ubuntu-latest
     steps:
@@ -19,14 +28,11 @@ jobs:
         make test
         make vet
   acc_test:
+    needs: get_version_matrix
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        terraform_version: 
-        - "0.12.30"
-        - "0.13.6"
-        - "0.14.10"
-        - "0.15.0"
+        terraform_version:  ${{ fromJson(needs.get_version_matrix.outputs.version_matrix) }}
     steps:
     - uses: actions/checkout@main
     - uses: engineerd/setup-kind@v0.5.0  
