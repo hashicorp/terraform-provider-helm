@@ -16,6 +16,10 @@ Try the [hands-on tutorial](https://learn.hashicorp.com/tutorials/terraform/helm
 
 * [Resource: helm_release](r/release.html)
 
+## Data Sources
+
+* [Data Source: helm_template](d/template.html)
+
 ## Example Usage
 
 ```hcl

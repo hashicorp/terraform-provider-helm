@@ -134,6 +134,9 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"helm_release": resourceRelease(),
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"helm_template": dataTemplate(),
+		},
 	}
 	p.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		return providerConfigure(d, p.TerraformVersion)
