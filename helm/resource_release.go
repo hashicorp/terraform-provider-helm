@@ -875,13 +875,35 @@ func cloakSetValues(config map[string]interface{}, d resourceGetter) {
 
 const sensitiveContentValue = "(sensitive value)"
 
+func tokenizeCloakElements(valuePath string) []string {
+	var res []string
+	beginSubstr, endSubstr := 0, 0
+
+	for idx := range valuePath {
+		if (valuePath[idx] == '.') && (idx > 0) {
+			if valuePath[idx-1] != '\\' {
+				res = append(res, valuePath[beginSubstr:endSubstr])
+				beginSubstr = endSubstr + 1
+			}
+		}
+		endSubstr++
+	}
+
+	if endSubstr-beginSubstr > 0 {
+		res = append(res, valuePath[beginSubstr:])
+	}
+
+	return res
+}
+
 func cloakSetValue(values map[string]interface{}, valuePath string) {
-	pathKeys := strings.Split(valuePath, ".")
+	pathKeys := tokenizeCloakElements(valuePath)
 	sensitiveKey := pathKeys[len(pathKeys)-1]
 	parentPathKeys := pathKeys[:len(pathKeys)-1]
 
 	m := values
 	for _, key := range parentPathKeys {
+		key = strings.ReplaceAll(key, "\\", "")
 		v, ok := m[key].(map[string]interface{})
 		if !ok {
 			return
@@ -889,6 +911,7 @@ func cloakSetValue(values map[string]interface{}, valuePath string) {
 		m = v
 	}
 
+	sensitiveKey = strings.ReplaceAll(sensitiveKey, "\\", "")
 	m[sensitiveKey] = sensitiveContentValue
 }
 
