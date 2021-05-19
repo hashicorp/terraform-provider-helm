@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
@@ -9,6 +10,7 @@ import (
 )
 
 func main() {
+	debugFlag := flag.Bool("debug", false, "Start provider in stand-alone debug mode.")
 	flag.Parse()
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(klogFlags)
@@ -16,7 +18,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	plugin.Serve(&plugin.ServeOpts{
+	serveOpts := &plugin.ServeOpts{
 		ProviderFunc: helm.Provider,
-	})
+	}
+	if debugFlag != nil && *debugFlag {
+		plugin.Debug(context.Background(), "registry.terraform.io/hashicorp/helm", serveOpts)
+	} else {
+		plugin.Serve(serveOpts)
+	}
 }
