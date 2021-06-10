@@ -1,3 +1,9 @@
+## 2.2.0 (Unreleased)
+
+* Add support for stand-alone debug mode (launch with -debug argument) (#748)
+* Add helm_template data source to render chart templates locally (#483)
+* Surface diagnostics when helm release creation fails (#727)
+
 ## 2.1.2 (April 27, 2021)
 
 * Fix dependency download on resource update (#580)
