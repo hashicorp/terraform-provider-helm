@@ -1,4 +1,4 @@
-## 2.2.0 (Unreleased)
+## 2.2.0 (June 10, 2021)
 
 * Add support for stand-alone debug mode (launch with -debug argument) (#748)
 * Add helm_template data source to render chart templates locally (#483)
