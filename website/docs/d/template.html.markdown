@@ -26,7 +26,7 @@ The following example renders all templates of the `mariadb` chart of the offici
 data "helm_template" "mariadb_instance" {
   name       = "mariadb-instance"
   namespace  = "default"
-  repository = "https://kubernetes-charts.storage.googleapis.com"
+  repository = "https://charts.helm.sh/stable"
 
   chart   = "mariadb"
   version = "7.1.0"
@@ -70,7 +70,7 @@ The following example renders only the templates `master-statefulset.yaml` and `
 data "helm_template" "mariadb_instance" {
   name       = "mariadb-instance"
   namespace  = "default"
-  repository = "https://kubernetes-charts.storage.googleapis.com"
+  repository = "https://charts.helm.sh/stable"
 
   chart   = "mariadb"
   version = "7.1.0"
