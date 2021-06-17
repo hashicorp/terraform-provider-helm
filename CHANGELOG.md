@@ -1,3 +1,7 @@
+## 2.3.0 (Unreleased)
+
+* Upgrade helm to 3.6.1
+
 ## 2.2.0 (June 10, 2021)
 
 * Add support for stand-alone debug mode (launch with -debug argument) (#748)
