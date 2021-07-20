@@ -39,5 +39,6 @@ jobs:
     - name: Acceptance Tests
       env: 
         TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform_version }}
+        TESTARGS: "-parallel 1"
       run: |
         KUBE_CONFIG_PATH="${HOME}/.kube/config" make testacc 
