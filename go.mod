@@ -4,12 +4,12 @@ go 1.16
 
 require (
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.6.1
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.7.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b
 	helm.sh/helm/v3 v3.6.2
 	k8s.io/api v0.21.0
 	k8s.io/apimachinery v0.21.0
