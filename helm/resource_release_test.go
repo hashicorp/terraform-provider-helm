@@ -1163,7 +1163,7 @@ func TestAccResourceRelease_delete_regression(t *testing.T) {
 
 func getReleaseJSONManifest(namespace, name string) (string, error) {
 	cmd := exec.Command("helm", "get", "manifest", "--namespace", namespace, name)
-	manifest, err := cmd.CombinedOutput()
+	manifest, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
