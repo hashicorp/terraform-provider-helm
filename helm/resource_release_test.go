@@ -30,7 +30,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -66,7 +66,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -152,7 +152,7 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 		resourceChecks = append(resourceChecks, releaseCheck)
 		config += releaseConfig
 	}
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -168,8 +168,6 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 }
 
 func TestAccResourceRelease_concurrent(t *testing.T) {
-	t.Parallel()
-
 	wg := sync.WaitGroup{}
 	wg.Add(3)
 	for i := 0; i < 3; i++ {
@@ -202,7 +200,7 @@ func TestAccResourceRelease_update(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -234,7 +232,7 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -258,7 +256,7 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -292,7 +290,7 @@ func TestAccResourceRelease_cloakValues(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -317,7 +315,7 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -353,7 +351,7 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{
@@ -420,7 +418,7 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 		}
 	}`, name, namespace, testRepositoryURL)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -447,7 +445,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -490,7 +488,7 @@ func TestAccResourceRelease_postrender(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -534,7 +532,7 @@ func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 		chart       = "test-chart"
 	}`, name, namespace, testRepositoryURL)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -566,7 +564,7 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 		chart       = "test-chart"
 	}`, namespace, testRepositoryURL)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -594,7 +592,7 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 		create_namespace = true
 	}`, name, namespace, testRepositoryURL)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -957,7 +955,7 @@ func TestAccResourceRelease_LintFailValues(t *testing.T) {
 		]
 	}`, namespace, testRepositoryURL)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -985,7 +983,7 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 		lint        = true
 	}`, namespace, testRepositoryURL)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -1012,7 +1010,7 @@ func TestAccResourceRelease_FailedDeployFailsApply(t *testing.T) {
 		repository  = %q
 	}`, name, testRepositoryURL)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -1040,7 +1038,7 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 		t.Fatalf("Failed to remove subcharts: %s", err)
 	}
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -1081,7 +1079,7 @@ func TestAccResourceRelease_chartURL(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	chartURL := fmt.Sprintf("%s/%s", testRepositoryURL, "test-chart-1.2.3.tgz")
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -1111,7 +1109,7 @@ func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -1133,7 +1131,7 @@ func TestAccResourceRelease_delete_regression(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
@@ -1165,7 +1163,7 @@ func TestAccResourceRelease_delete_regression(t *testing.T) {
 
 func getReleaseJSONManifest(namespace, name string) (string, error) {
 	cmd := exec.Command("helm", "get", "manifest", "--namespace", namespace, name)
-	manifest, err := cmd.CombinedOutput()
+	manifest, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}

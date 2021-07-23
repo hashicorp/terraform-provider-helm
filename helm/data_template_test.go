@@ -13,7 +13,7 @@ func TestAccDataTemplate_basic(t *testing.T) {
 
 	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
@@ -37,7 +37,7 @@ func TestAccDataTemplate_templates(t *testing.T) {
 
 	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
