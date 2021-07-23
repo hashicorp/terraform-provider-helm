@@ -35,10 +35,13 @@ jobs:
         terraform_version:  ${{ fromJson(needs.get_version_matrix.outputs.version_matrix) }}
     steps:
     - uses: actions/checkout@main
-    - uses: engineerd/setup-kind@v0.5.0  
+    - uses: debianmaster/actions-k3s@master
+      id: k3s
+      with:
+        version: v1.21.2-k3s1
     - name: Acceptance Tests
       env: 
         TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform_version }}
         TESTARGS: "-parallel 1"
       run: |
-        KUBE_CONFIG_PATH="${HOME}/.kube/config" make testacc 
+        KUBE_CONFIG_PATH="${KUBECONFIG}" make testacc 
