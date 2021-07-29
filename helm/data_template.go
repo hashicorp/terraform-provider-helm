@@ -538,7 +538,7 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		manifestName := manifestNamesByKey[manifestKey]
 
 		// Manifests
-		computedManifests[manifestName] = manifest
+		computedManifests[manifestName] = fmt.Sprintf("%s---\n%s\n", computedManifests[manifestName], manifest)
 
 		// Manifest bundle
 		fmt.Fprintf(computedManifest, "---\n%s\n", manifest)
