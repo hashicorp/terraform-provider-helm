@@ -4,6 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+	"time"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -12,12 +19,6 @@ import (
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
-	"os"
-	"path/filepath"
-	"regexp"
-	"sort"
-	"strings"
-	"time"
 )
 
 // defaultTemplateAttributes template attribute values
@@ -528,6 +529,10 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	} else {
 		manifestsToRender = manifestsKeys
 	}
+
+	// We need to sort the manifests so the order stays stable when they are
+	// concatenated back together in the computedManifests map
+	sort.Strings(manifestsToRender)
 
 	// Map from rendered manifests to data source output
 	computedManifests := make(map[string]string, 0)
