@@ -1,4 +1,4 @@
-## 2.3.0 (Unreleased)
+## 2.3.0 (August 27, 2021)
 
 * Support templates with multiple resources in helm_template data source (#772)
 * Upgrade helm to 3.6.2
