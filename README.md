@@ -15,7 +15,7 @@ Helm Provider for Terraform
 
 This is the [Helm](https://github.com/kubernetes/helm) provider for [Terraform](https://www.terraform.io/).
 
-The provider manages the installed [Charts](https://github.com/helm/charts) in your Kubernetes cluster, in the same way Helm does, through Terraform.
+This provider allows you to install and manage [Helm Charts](https://artifacthub.io/packages/search?kind=0&sort=relevance&page=1) in your Kubernetes cluster using Terraform.
 
 
 ## Contents
@@ -28,7 +28,6 @@ The provider manages the installed [Charts](https://github.com/helm/charts) in y
 
 -	[Terraform](https://www.terraform.io/downloads.html) v0.12.x
 -	[Go](https://golang.org/doc/install) v1.16.x (to build the provider plugin)
--   [Helm](https://github.com/helm/helm/releases) v3.x.x to deploy your charts
 
 ## Getting Started
 
@@ -36,7 +35,7 @@ This is a small example of how to install the nginx ingress controller chart. Pl
 information.
 
 ```hcl
-provider "helm" {
+provider helm {
   kubernetes {
     config_path = "~/.kube/config"
   }
