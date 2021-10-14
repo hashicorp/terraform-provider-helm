@@ -117,7 +117,7 @@ The following arguments are supported:
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
 * `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff.
 * `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`.
-* `replace` - (Optional) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
+* `replace` - (Optional)  Re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production. Defaults to `false`.
 * `description` - (Optional) Set release description attribute (visible in the history).
 * `postrender` - (Optional) Configure a command to run after helm renders the manifest which can alter the manifest contents.
 * `lint` - (Optional) Run the helm chart linter during the plan. Defaults to `false`.
