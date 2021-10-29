@@ -1,13 +1,9 @@
 package helm
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
-	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -17,8 +13,8 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
-	"helm.sh/helm/v3/pkg/release"
-	"helm.sh/helm/v3/pkg/releaseutil"
+
+	"github.com/hashicorp/terraform-provider-helm/helm/manifest"
 )
 
 // defaultTemplateAttributes template attribute values
@@ -335,6 +331,21 @@ func dataTemplate() *schema.Resource {
 				Computed:    true,
 				Description: "Concatenated rendered chart templates. This corresponds to the output of the `helm template` command.",
 			},
+			"crds": {
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Computed:    true,
+				Description: "Map of the charts crds.",
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
+			"crd": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "Concatenated chart crds.",
+			},
 			"notes": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -365,7 +376,6 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	}
 
 	var showFiles []string
-
 	if showOnlyAttr, ok := d.GetOk("show_only"); ok {
 		showOnlyAttrValue := showOnlyAttr.([]interface{})
 
@@ -445,137 +455,69 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	client.Replace = true // Skip the name check
 	client.ClientOnly = !d.Get("validate").(bool)
 	client.APIVersions = chartutil.VersionSet(apiVersions)
-	client.IncludeCRDs = d.Get("include_crds").(bool)
 
+	includeCrds := d.Get("include_crds").(bool)
 	skipTests := d.Get("skip_tests").(bool)
 
 	debug("%s Rendering Chart", logID)
 
 	rel, err := client.Run(c, values)
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	var manifests bytes.Buffer
+	// Collects the result of Helm template
+	templateBuilder := strings.Builder{}
 
-	fmt.Fprintln(&manifests, strings.TrimSpace(rel.Manifest))
+	// Add CRDs to manifest output if enabled
+	// The reason this is done outside of the client is due
+	// to how Helm handles multidoc yaml in the charts crds directory.
+	// This solution mankes the behavior similar to yaml from the templates
+	// directory.
+	templateCrd := manifest.CrdToManifest(c.CRDObjects())
+	if includeCrds {
+		templateBuilder.WriteString(templateCrd)
+	}
 
+	// Add hook manifests if enabled.
 	if !client.DisableHooks {
-		for _, m := range rel.Hooks {
-			if skipTests && isTestHook(m) {
-				continue
-			}
-
-			fmt.Fprintf(&manifests, "---\n# Source: %s\n%s\n", m.Path, m.Manifest)
-		}
+		templatedHook := manifest.HooksToManifest(rel.Hooks, skipTests)
+		templateBuilder.WriteString(templatedHook)
 	}
 
-	// Difference to the implementation of helm template in newTemplateCmd:
-	// Independent of templates, names of the charts templates are always resolved from the manifests
-	// to be able to populate the keys in the manifests computed attribute.
-	var manifestsToRender []string
+	// Add rendered manifests.
+	templateBuilder.WriteString(strings.TrimSpace(rel.Manifest))
 
-	splitManifests := releaseutil.SplitManifests(manifests.String())
-	manifestsKeys := make([]string, 0, len(splitManifests))
-	for k := range splitManifests {
-		manifestsKeys = append(manifestsKeys, k)
+	// Compute output for all manifests and crd manifests
+	allManifests, allManifest, err := manifest.Compute(templateBuilder.String(), showFiles)
+	if err != nil {
+		return diag.FromErr(err)
 	}
-	sort.Sort(releaseutil.BySplitManifestsOrder(manifestsKeys))
-
-	// Mapping of manifest key to manifest template name
-	manifestNamesByKey := make(map[string]string, len(manifestsKeys))
-
-	manifestNameRegex := regexp.MustCompile("# Source: [^/]+/(.+)")
-
-	for _, manifestKey := range manifestsKeys {
-		manifest := splitManifests[manifestKey]
-		submatch := manifestNameRegex.FindStringSubmatch(manifest)
-		if len(submatch) == 0 {
-			continue
-		}
-		manifestName := submatch[1]
-		manifestNamesByKey[manifestKey] = manifestName
+	crdManifests, crdManifest, err := manifest.Compute(templateCrd, []string{})
+	if err != nil {
+		return diag.FromErr(err)
 	}
-
-	// if we have a list of files to render, then check that each of the
-	// provided files exists in the chart.
-	if len(showFiles) > 0 {
-		for _, f := range showFiles {
-			missing := true
-			// Use linux-style filepath separators to unify user's input path
-			f = filepath.ToSlash(f)
-			for manifestKey, manifestName := range manifestNamesByKey {
-				// manifest.Name is rendered using linux-style filepath separators on Windows as
-				// well as macOS/linux.
-				manifestPathSplit := strings.Split(manifestName, "/")
-				// manifest.Path is connected using linux-style filepath separators on Windows as
-				// well as macOS/linux
-				manifestPath := strings.Join(manifestPathSplit, "/")
-
-				// if the filepath provided matches a manifest path in the
-				// chart, render that manifest
-				if matched, _ := filepath.Match(f, manifestPath); !matched {
-					continue
-				}
-				manifestsToRender = append(manifestsToRender, manifestKey)
-				missing = false
-			}
-
-			if missing {
-				return diag.Errorf("could not find template %q in chart", f)
-			}
-		}
-	} else {
-		manifestsToRender = manifestsKeys
-	}
-
-	// We need to sort the manifests so the order stays stable when they are
-	// concatenated back together in the computedManifests map
-	sort.Strings(manifestsToRender)
-
-	// Map from rendered manifests to data source output
-	computedManifests := make(map[string]string, 0)
-	computedManifest := &strings.Builder{}
-
-	for _, manifestKey := range manifestsToRender {
-		manifest := splitManifests[manifestKey]
-		manifestName := manifestNamesByKey[manifestKey]
-
-		// Manifests
-		computedManifests[manifestName] = fmt.Sprintf("%s---\n%s\n", computedManifests[manifestName], manifest)
-
-		// Manifest bundle
-		fmt.Fprintf(computedManifest, "---\n%s\n", manifest)
-	}
-
-	computedNotes := rel.Info.Notes
 
 	d.SetId(name)
-
-	err = d.Set("manifests", computedManifests)
+	err = d.Set("manifests", allManifests)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	err = d.Set("manifest", computedManifest.String())
+	err = d.Set("manifest", allManifest)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	err = d.Set("notes", computedNotes)
+	err = d.Set("crds", crdManifests)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
+	err = d.Set("crd", crdManifest)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("notes", rel.Info.Notes)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	return nil
-}
-
-func isTestHook(h *release.Hook) bool {
-	for _, e := range h.Events {
-		if e == release.HookTest {
-			return true
-		}
-	}
-	return false
 }

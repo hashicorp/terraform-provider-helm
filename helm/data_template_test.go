@@ -17,7 +17,7 @@ func TestAccDataTemplate_basic(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Providers: testAccProviders,
 		Steps: []resource.TestStep{{
-			Config: testAccDataHelmTemplateConfigBasic(testResourceName, namespace, name, "1.2.3"),
+			Config: testAccDataHelmTemplateConfigBasic(testResourceName, namespace, name, "1.2.3", false),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "5"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/deployment.yaml"),
@@ -82,7 +82,31 @@ data:
 	})
 }
 
-func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) string {
+func TestAccDataTemplate_crds(t *testing.T) {
+	name := randName("basic")
+	namespace := randName(testNamespacePrefix)
+
+	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{{
+			Config: testAccDataHelmTemplateConfigBasic(testResourceName, namespace, name, "1.2.3", true),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "7"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.multiple.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.single.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest"),
+				resource.TestCheckResourceAttr(datasourceAddress, "crds.%", "2"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "crds.multiple.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "crds.single.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "crd"),
+			),
+		}},
+	})
+}
+
+func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string, includeCrds bool) string {
 	return fmt.Sprintf(`
 		data "helm_template" "%s" {
  			name        = %q
@@ -91,6 +115,7 @@ func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) stri
 			repository  = %q
   			chart       = "test-chart"
 			version     = %q
+      include_crds = %t
 
 			set {
 				name = "foo"
@@ -102,7 +127,7 @@ func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) stri
 				value = 1337
 			}
 		}
-	`, resource, name, ns, testRepositoryURL, version)
+  `, resource, name, ns, testRepositoryURL, version, includeCrds)
 }
 
 func testAccDataHelmTemplateConfigTemplates(resource, ns, name, version string) string {
