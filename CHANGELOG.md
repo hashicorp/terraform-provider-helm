@@ -1,6 +1,6 @@
 ## 2.4.0 (October 4, 2021)
 
-* Upgrade helm to 3.7.0
+* Upgrade helm to 3.7.1
 
 ## 2.3.0 (August 27, 2021)
 
