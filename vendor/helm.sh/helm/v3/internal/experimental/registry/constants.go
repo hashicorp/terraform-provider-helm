@@ -21,7 +21,7 @@ const (
 	OCIScheme = "oci"
 
 	// CredentialsFileBasename is the filename for auth credentials file
-	CredentialsFileBasename = "config.json"
+	CredentialsFileBasename = "registry.json"
 
 	// ConfigMediaType is the reserved media type for the Helm chart manifest config
 	ConfigMediaType = "application/vnd.cncf.helm.config.v1+json"
@@ -31,4 +31,7 @@ const (
 
 	// ProvLayerMediaType is the reserved media type for Helm chart provenance files
 	ProvLayerMediaType = "application/vnd.cncf.helm.chart.provenance.v1.prov"
+
+	// LegacyChartLayerMediaType is the legacy reserved media type for Helm chart package content.
+	LegacyChartLayerMediaType = "application/tar+gzip"
 )

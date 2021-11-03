@@ -39,7 +39,7 @@ github.com/Masterminds/squirrel
 # github.com/Microsoft/go-winio v0.4.17
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
-# github.com/Microsoft/hcsshim v0.8.18
+# github.com/Microsoft/hcsshim v0.8.21
 github.com/Microsoft/hcsshim/osversion
 # github.com/PuerkitoBio/purell v1.1.1
 github.com/PuerkitoBio/purell
@@ -105,7 +105,7 @@ github.com/beorn7/perks/quantile
 github.com/bgentry/go-netrc/netrc
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
-# github.com/containerd/containerd v1.5.4
+# github.com/containerd/containerd v1.5.7
 github.com/containerd/containerd/archive/compression
 github.com/containerd/containerd/content
 github.com/containerd/containerd/content/local
@@ -416,7 +416,7 @@ github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
-# github.com/opencontainers/runc v1.0.0-rc93
+# github.com/opencontainers/runc v1.0.2
 github.com/opencontainers/runc/libcontainer/user
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 github.com/peterbourgon/diskv
@@ -724,7 +724,7 @@ gopkg.in/inf.v0
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 gopkg.in/yaml.v3
-# helm.sh/helm/v3 v3.7.0
+# helm.sh/helm/v3 v3.7.1
 ## explicit
 helm.sh/helm/v3/internal/experimental/registry
 helm.sh/helm/v3/internal/fileutil
