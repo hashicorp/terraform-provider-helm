@@ -628,6 +628,7 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	client.Atomic = d.Get("atomic").(bool)
 	client.SkipCRDs = d.Get("skip_crds").(bool)
 	client.SubNotes = d.Get("render_subchart_notes").(bool)
+	client.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
 	client.Force = d.Get("force_update").(bool)
 	client.ResetValues = d.Get("reset_values").(bool)
 	client.ReuseValues = d.Get("reuse_values").(bool)
@@ -674,8 +675,12 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 
 	name := d.Get("name").(string)
 
-	res, err := action.NewUninstall(actionConfig).Run(name)
+	uninstall := action.NewUninstall(actionConfig)
+	uninstall.Wait = d.Get("wait").(bool)
+	uninstall.DisableHooks = d.Get("disable_webhooks").(bool)
+	uninstall.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 
+	res, err := uninstall.Run(name)
 	if err != nil {
 		return diag.FromErr(err)
 	}
