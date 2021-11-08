@@ -1,4 +1,4 @@
-## 2.4.0 (Unreleased)
+## 2.4.0 (November 08, 2021)
 
 * Upgrade helm to 3.7.1
 
