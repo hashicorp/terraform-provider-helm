@@ -163,6 +163,7 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) (*KubeCon
 	if v, ok := k8sGetOk(configData, "exec"); ok {
 		exec := &clientcmdapi.ExecConfig{}
 		if spec, ok := v.([]interface{})[0].(map[string]interface{}); ok {
+			exec.InteractiveMode = clientcmdapi.IfAvailableExecInteractiveMode
 			exec.APIVersion = spec["api_version"].(string)
 			exec.Command = spec["command"].(string)
 			exec.Args = expandStringSlice(spec["args"].([]interface{}))
