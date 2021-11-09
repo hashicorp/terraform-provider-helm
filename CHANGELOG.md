@@ -1,4 +1,4 @@
-## 2.4.1 (Unreleased)
+## 2.4.1 (November 09, 2021)
 
 HOTFIX:
 * Fix exec plugin interactive mode regression (#798) 
