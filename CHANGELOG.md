@@ -1,3 +1,8 @@
+## 2.4.1 (Unreleased)
+
+HOTFIX:
+* Fix exec plugin interactive mode regression (#798) 
+
 ## 2.4.0 (November 08, 2021)
 
 * Upgrade helm to 3.7.1
