@@ -17,6 +17,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
+	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 )
@@ -437,6 +438,16 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	client.Replace = d.Get("replace").(bool)
 	client.Description = d.Get("description").(string)
 	client.CreateNamespace = d.Get("create_namespace").(bool)
+
+	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+		pr, err := postrender.NewExec(cmd)
+
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		client.PostRenderer = pr
+	}
 
 	// The following source has been adapted from the source of the helm template command
 	// https://github.com/helm/helm/blob/v3.5.3/cmd/helm/template.go#L67
