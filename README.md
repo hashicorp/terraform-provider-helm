@@ -5,7 +5,7 @@ Helm Provider for Terraform
 [![Go Report Card](https://goreportcard.com/badge/github.com/hashicorp/terraform-provider-helm)](https://goreportcard.com/report/github.com/hashicorp/terraform-provider-helm)
 ===========================
 <a href="https://terraform.io">
-    <img src="https://cdn.rawgit.com/hashicorp/terraform-website/master/content/source/assets/images/logo-hashicorp.svg" alt="Terraform logo" title="Terrafpr," align="right" height="50" />
+    <img src=".github/tf.png" alt="Terraform logo" title="Terraform" align="right" height="50" />
 </a>
 
 - [Documentation](https://www.terraform.io/docs/providers/helm/index.html)
