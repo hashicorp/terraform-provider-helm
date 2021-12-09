@@ -8,7 +8,7 @@ The HashiCorp Terraform Kubernetes provider team is :
 * Alex Somesan, Engineer - [@alexsomesan](https://github.com/alexsomesan)
 * John Houston, Engineer - [@jrhouston](https://github.com/jrhouston)
 * Stef Forrester, Engineer - [@dak1n1](https://github.com/dak1n1)
-* Aareet Mahadevan, Engineering Manager - [@aareet](https://github.com/aareet)
+* Brandy Jackson, Engineering Manager - [@ibrandyjackson](https://github.com/ibrandyjackson)
 
 Our collaborators are:
 * Maximo Cuadros - [@mcuadros](https://github.com/mcuadros)
