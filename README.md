@@ -35,13 +35,13 @@ This is a small example of how to install the nginx ingress controller chart. Pl
 information.
 
 ```hcl
-provider helm {
+provider "helm" {
   kubernetes {
     config_path = "~/.kube/config"
   }
 }
 
-resource helm_release nginx_ingress {
+resource "helm_release" "nginx_ingress" {
   name       = "nginx-ingress-controller"
 
   repository = "https://charts.bitnami.com/bitnami"
