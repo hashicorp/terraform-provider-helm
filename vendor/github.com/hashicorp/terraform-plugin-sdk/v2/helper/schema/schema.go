@@ -1335,12 +1335,21 @@ func (m schemaMap) diffSet(
 			switch t := schema.Elem.(type) {
 			case *Resource:
 				// This is a complex resource
+				var subKs []string
+				newRemoved := true
 				for k2, schema := range t.Schema {
 					subK := fmt.Sprintf("%s.%s.%s", k, code, k2)
 					err := m.diff(subK, schema, diff, d, true)
 					if err != nil {
 						return err
 					}
+					subKs = append(subKs, subK)
+					if !diff.Attributes[subK].NewRemoved {
+						newRemoved = false
+					}
+				}
+				for _, subK := range subKs {
+					diff.Attributes[subK].NewRemoved = newRemoved
 				}
 			case *Schema:
 				// Copy the schema so that we can set Computed/ForceNew from
