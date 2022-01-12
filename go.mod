@@ -20,7 +20,7 @@ require (
 )
 
 replace (
-	github.com/containerd/containerd => github.com/containerd/containerd v1.5.8 // https://github.com/advisories/GHSA-5j5w-g665-5m35
+	github.com/containerd/containerd => github.com/containerd/containerd v1.5.9 // https://github.com/advisories/GHSA-mvff-h3cj-wj9c
 	github.com/opencontainers/image-spec => github.com/opencontainers/image-spec v1.0.2 // https://github.com/advisories/GHSA-77vh-xpmg-72qh
 	github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3 // https://github.com/advisories/GHSA-v95c-p5hm-xq8f
 )
