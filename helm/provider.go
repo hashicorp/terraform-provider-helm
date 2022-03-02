@@ -225,6 +225,12 @@ func kubernetesResource() *schema.Resource {
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_TOKEN", ""),
 				Description: "Token to authenticate an service account",
 			},
+			"proxy_url": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "URL to the proxy to be used for all API requests",
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_PROXY_URL", ""),
+			},
 			"exec": {
 				Type:     schema.TypeList,
 				Optional: true,
