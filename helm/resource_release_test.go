@@ -571,7 +571,7 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:             broken,
-				ExpectError:        regexp.MustCompile("releaseContent: Release name is invalid"),
+				ExpectError:        regexp.MustCompile("invalid release name"),
 				ExpectNonEmptyPlan: true,
 			},
 		},
