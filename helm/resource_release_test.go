@@ -2,6 +2,7 @@ package helm
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1206,6 +1207,130 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceRelease_OCI(t *testing.T) {
+	dockerPath, err := exec.LookPath("docker")
+	if err != nil {
+		t.Skip("This test requires docker to be installed in the PATH")
+	}
+
+	name := randName("oci")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	ociRegistryPort := rand.Intn(65535-1024) + 1024
+	ociRegistryURL := fmt.Sprintf("oci://localhost:%d/helm-charts", ociRegistryPort)
+	regitryContainerName := randName("registry")
+
+	// start OCI registry
+	// TODO run this in-process instead of starting a container
+	// see here: https://pkg.go.dev/github.com/distribution/distribution/registry
+	t.Log("starting OCI registry")
+	cmd := exec.Command(dockerPath, "run",
+		"--detach",
+		"--publish", fmt.Sprintf("%d:5000", ociRegistryPort),
+		"--name", regitryContainerName,
+		"registry")
+	out, err := cmd.CombinedOutput()
+	t.Log(string(out))
+	if err != nil {
+		t.Errorf("Failed to start OCI registry: %v", err)
+		return
+	}
+	defer func() {
+		// stop OCI registry when we're done
+		t.Log("stopping OCI registry")
+		cmd := exec.Command("docker", "rm",
+			"--force", regitryContainerName)
+		out, err := cmd.CombinedOutput()
+		t.Log(string(out))
+		if err != nil {
+			t.Errorf("Failed to stop OCI registry: %v", err)
+		}
+	}()
+	t.Log("OCI registry started at", ociRegistryURL)
+
+	// package chart
+	t.Log("packaging test-chart")
+	cmd = exec.Command("helm", "package", "testdata/charts/test-chart")
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	if err != nil {
+		t.Errorf("Failed to package chart: %v", err)
+		return
+	}
+
+	// push chart to OCI registry
+	t.Log("pushing test-chart to OCI registry")
+	cmd = exec.Command("helm", "push",
+		"test-chart-1.2.3.tgz",
+		ociRegistryURL)
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	if err != nil {
+		t.Errorf("Failed to push chart: %v", err)
+		return
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfig_OCI(testResourceName, namespace, name, ociRegistryURL, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+			{
+				Config: testAccHelmReleaseConfig_OCI_updated(testResourceName, namespace, name, ociRegistryURL, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "set.0.name", "replicaCount"),
+					resource.TestCheckResourceAttr("helm_release.test", "set.0.value", "2"),
+				),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfig_OCI(resource, ns, name, repo, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+		}
+	`, resource, name, ns, repo, version)
+}
+
+func testAccHelmReleaseConfig_OCI_updated(resource, ns, name, repo, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+
+			set { 
+				name = "replicaCount"
+				value = 2
+			}
+		}
+	`, resource, name, ns, repo, version)
 }
 
 func testAccHelmReleaseConfigManifestExperimentEnabled(resource, ns, name, version string) string {

@@ -380,8 +380,9 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	client := action.NewInstall(actionConfig)
 
-	cpo, chartName, err := chartPathOptions(d, m)
+	cpo, chartName, err := chartPathOptions(d, m, &client.ChartPathOptions)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -416,7 +417,6 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diag.FromErr(err)
 	}
 
-	client := action.NewInstall(actionConfig)
 	client.ChartPathOptions = *cpo
 	client.ClientOnly = false
 	client.DryRun = true
