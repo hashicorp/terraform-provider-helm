@@ -211,6 +211,12 @@ func kubernetesResource() *schema.Resource {
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_INSECURE", false),
 				Description: "Whether server should be accessed without verifying the TLS certificate.",
 			},
+			"tls_server_name": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_TLS_SERVER_NAME", ""),
+				Description: "Server name passed to the server for SNI and is used in the client to check server certificates against.",
+			},
 			"client_certificate": {
 				Type:        schema.TypeString,
 				Optional:    true,
