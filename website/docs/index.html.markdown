@@ -147,6 +147,7 @@ The `kubernetes` block supports:
 * `password` - (Optional) The password to use for HTTP basic authentication when accessing the Kubernetes API. Can be sourced from `KUBE_PASSWORD`.
 * `token` - (Optional) The bearer token to use for authentication when accessing the Kubernetes API. Can be sourced from `KUBE_TOKEN`.
 * `insecure` - (Optional) Whether server should be accessed without verifying the TLS certificate. Can be sourced from `KUBE_INSECURE`.
+* `tls_server_name` - (Optional) Server name passed to the server for SNI and is used in the client to check server certificates against. Can be sourced from `KUBE_TLS_SERVER_NAME`.
 * `client_certificate` - (Optional) PEM-encoded client certificate for TLS authentication. Can be sourced from `KUBE_CLIENT_CERT_DATA`.
 * `client_key` - (Optional) PEM-encoded client certificate key for TLS authentication. Can be sourced from `KUBE_CLIENT_KEY_DATA`.
 * `cluster_ca_certificate` - (Optional) PEM-encoded root certificates bundle for TLS authentication. Can be sourced from `KUBE_CLUSTER_CA_CERT_DATA`.
