@@ -21,6 +21,7 @@ import (
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/postrender"
+	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
 	"sigs.k8s.io/yaml"
@@ -1141,7 +1142,7 @@ func chartPathOptions(d resourceGetter, m *Meta, cpo *action.ChartPathOptions) (
 	repository := d.Get("repository").(string)
 
 	var repositoryURL string
-	if strings.HasPrefix(repository, "oci://") {
+	if registry.IsOCI(repository) {
 		// LocateChart expects the chart name to contain the full OCI path
 		// see: https://github.com/helm/helm/blob/main/pkg/action/install.go#L678
 		u, err := url.Parse(repository)
