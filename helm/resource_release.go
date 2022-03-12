@@ -417,6 +417,10 @@ func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta inter
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	err = OCIRegistryLogin(c, d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	name := d.Get("name").(string)
 	r, err := getRelease(m, c, name)
@@ -471,6 +475,10 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 
 	debug("%s Getting helm configuration", logID)
 	actionConfig, err := m.GetHelmConfiguration(n)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = OCIRegistryLogin(actionConfig, d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -593,6 +601,10 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	err = OCIRegistryLogin(actionConfig, d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	client := action.NewUpgrade(actionConfig)
 
 	cpo, chartName, err := chartPathOptions(d, m, &client.ChartPathOptions)
@@ -671,6 +683,10 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	err = OCIRegistryLogin(actionConfig, d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	name := d.Get("name").(string)
 
@@ -707,6 +723,10 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	namespace := d.Get("namespace").(string)
 
 	actionConfig, err := m.GetHelmConfiguration(namespace)
+	if err != nil {
+		return err
+	}
+	err = OCIRegistryLogin(actionConfig, d)
 	if err != nil {
 		return err
 	}
@@ -903,6 +923,10 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	n := d.Get("namespace").(string)
 
 	c, err := m.GetHelmConfiguration(n)
+	if err != nil {
+		return false, err
+	}
+	err = OCIRegistryLogin(c, d)
 	if err != nil {
 		return false, err
 	}

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -1249,6 +1250,8 @@ func TestAccResourceRelease_OCI(t *testing.T) {
 			t.Errorf("Failed to stop OCI registry: %v", err)
 		}
 	}()
+	// wait a few seconds for the server to start
+	time.Sleep(5 * time.Second)
 	t.Log("OCI registry started at", ociRegistryURL)
 
 	// package chart
