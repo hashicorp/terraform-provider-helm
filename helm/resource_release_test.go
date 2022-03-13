@@ -1210,7 +1210,7 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 	})
 }
 
-func TestAccResourceRelease_OCI(t *testing.T) {
+func TestAccResourceRelease_OCI_repository(t *testing.T) {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
 		t.Skip("This test requires docker to be installed in the PATH")
@@ -1227,7 +1227,7 @@ func TestAccResourceRelease_OCI(t *testing.T) {
 	// start OCI registry
 	// TODO run this in-process instead of starting a container
 	// see here: https://pkg.go.dev/github.com/distribution/distribution/registry
-	t.Log("starting OCI registry")
+	t.Log("Starting OCI registry")
 	cmd := exec.Command(dockerPath, "run",
 		"--detach",
 		"--publish", fmt.Sprintf("%d:5000", ociRegistryPort),
@@ -1303,6 +1303,16 @@ func TestAccResourceRelease_OCI(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "set.0.value", "2"),
 				),
 			},
+			{
+				Config: testAccHelmReleaseConfig_OCI_chartName(testResourceName, namespace, name, fmt.Sprintf("%s/%s", ociRegistryURL, "test-chart"), "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "chart", fmt.Sprintf("%s/%s", ociRegistryURL, "test-chart")),
+				),
+			},
 		},
 	})
 }
@@ -1317,6 +1327,17 @@ func testAccHelmReleaseConfig_OCI(resource, ns, name, repo, version string) stri
 			chart       = "test-chart"
 		}
 	`, resource, name, ns, repo, version)
+}
+
+func testAccHelmReleaseConfig_OCI_chartName(resource, ns, name, chartName, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			version     = %q
+			chart       = %q
+		}
+	`, resource, name, ns, version, chartName)
 }
 
 func testAccHelmReleaseConfig_OCI_updated(resource, ns, name, repo, version string) string {
