@@ -402,22 +402,25 @@ func OCIRegistryLogin(actionConfig *action.Configuration, d dataGetter) error {
 	} else if registry.IsOCI(chartName) {
 		ociURL = chartName
 	}
-	if ociURL != "" {
-		username := d.Get("repository_username").(string)
-		password := d.Get("repository_password").(string)
-		if username != "" && password != "" {
-			u, err := url.Parse(ociURL)
-			if err != nil {
-				return fmt.Errorf("could not parse OCI registry URL: %v", err)
-			}
-			err = registryClient.Login(u.Host,
-				registry.LoginOptBasicAuth(username, password))
-			if err != nil {
-				return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
-			}
-			debug("[INFO] Logged into OCI registry")
-		}
+	if ociURL == "" {
+		return nil
 	}
+
+	username := d.Get("repository_username").(string)
+	password := d.Get("repository_password").(string)
+	if username != "" && password != "" {
+		u, err := url.Parse(ociURL)
+		if err != nil {
+			return fmt.Errorf("could not parse OCI registry URL: %v", err)
+		}
+		err = registryClient.Login(u.Host,
+			registry.LoginOptBasicAuth(username, password))
+		if err != nil {
+			return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
+		}
+		debug("[INFO] Logged into OCI registry")
+	}
+
 	return nil
 }
 
