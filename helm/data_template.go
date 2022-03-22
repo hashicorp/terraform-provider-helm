@@ -70,6 +70,11 @@ func dataTemplate() *schema.Resource {
 				Sensitive:   true,
 				Description: "Password for HTTP basic authentication",
 			},
+			"pass_credentials": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Pass credentials to all domains",
+			},
 			"chart": {
 				Type:        schema.TypeString,
 				Required:    true,
