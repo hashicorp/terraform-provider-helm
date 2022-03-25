@@ -395,7 +395,7 @@ func OCIRegistryLogin(actionConfig *action.Configuration, d dataGetter) error {
 
 	// log in to the registry if neccessary
 	repository := d.Get("repository").(string)
-	chartName := d.Get("name").(string)
+	chartName := d.Get("chart").(string)
 	var ociURL string
 	if registry.IsOCI(repository) {
 		ociURL = repository
