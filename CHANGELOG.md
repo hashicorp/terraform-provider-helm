@@ -1,3 +1,8 @@
+## 2.5.0 (March 28, 2022)
+
+* Upgrade helm dependency to v3.8.1
+* Add support for OCI registries 
+
 ## 2.4.1 (November 09, 2021)
 
 HOTFIX:
