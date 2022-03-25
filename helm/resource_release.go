@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/postrender"
+	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
 	"sigs.k8s.io/yaml"
@@ -416,6 +418,10 @@ func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta inter
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	err = OCIRegistryLogin(c, d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	name := d.Get("name").(string)
 	r, err := getRelease(m, c, name)
@@ -473,8 +479,13 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	err = OCIRegistryLogin(actionConfig, d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	client := action.NewInstall(actionConfig)
 
-	cpo, chartName, err := chartPathOptions(d, m)
+	cpo, chartName, err := chartPathOptions(d, m, &client.ChartPathOptions)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -482,7 +493,7 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	debug("%s Getting chart", logID)
 	c, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(fmt.Errorf("could not download chart: %v", err))
 	}
 
 	// check and update the chart's dependencies if needed
@@ -508,8 +519,6 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	client := action.NewInstall(actionConfig)
-	client.ChartPathOptions = *cpo
 	client.ClientOnly = false
 	client.DryRun = false
 	client.DisableHooks = d.Get("disable_webhooks").(bool)
@@ -593,8 +602,13 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	err = OCIRegistryLogin(actionConfig, d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	client := action.NewUpgrade(actionConfig)
 
-	cpo, chartName, err := chartPathOptions(d, m)
+	cpo, chartName, err := chartPathOptions(d, m, &client.ChartPathOptions)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -616,8 +630,6 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 		}
 	}
 
-	client := action.NewUpgrade(actionConfig)
-	client.ChartPathOptions = *cpo
 	client.Devel = d.Get("devel").(bool)
 	client.Namespace = d.Get("namespace").(string)
 	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
@@ -672,6 +684,10 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	err = OCIRegistryLogin(actionConfig, d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	name := d.Get("name").(string)
 
@@ -704,14 +720,26 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	debug("%s Start", logID)
 
 	m := meta.(*Meta)
+	name := d.Get("name").(string)
+	namespace := d.Get("namespace").(string)
+
+	actionConfig, err := m.GetHelmConfiguration(namespace)
+	if err != nil {
+		return err
+	}
+	err = OCIRegistryLogin(actionConfig, d)
+	if err != nil {
+		return err
+	}
+	client := action.NewUpgrade(actionConfig)
 
 	// Always set desired state to DEPLOYED
-	err := d.SetNew("status", release.StatusDeployed.String())
+	err = d.SetNew("status", release.StatusDeployed.String())
 	if err != nil {
 		return err
 	}
 
-	cpo, chartName, err := chartPathOptions(d, m)
+	cpo, chartName, err := chartPathOptions(d, m, &client.ChartPathOptions)
 	if err != nil {
 		return err
 	}
@@ -742,14 +770,6 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			return nil
 		}
 
-		name := d.Get("name").(string)
-		namespace := d.Get("namespace").(string)
-
-		actionConfig, err := m.GetHelmConfiguration(namespace)
-		if err != nil {
-			return err
-		}
-
 		// check if release exists
 		_, err = getRelease(m, actionConfig, name)
 		if err == errReleaseNotFound {
@@ -764,7 +784,6 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 
 		debug("%s performing dry run", logID)
 
-		client := action.NewUpgrade(actionConfig)
 		client.ChartPathOptions = *cpo
 		client.Devel = d.Get("devel").(bool)
 		client.Namespace = d.Get("namespace").(string)
@@ -905,6 +924,10 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	n := d.Get("namespace").(string)
 
 	c, err := m.GetHelmConfiguration(n)
+	if err != nil {
+		return false, err
+	}
+	err = OCIRegistryLogin(c, d)
 	if err != nil {
 		return false, err
 	}
@@ -1114,28 +1137,41 @@ func isChartInstallable(ch *chart.Chart) error {
 	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
-func chartPathOptions(d resourceGetter, m *Meta) (*action.ChartPathOptions, string, error) {
+func chartPathOptions(d resourceGetter, m *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, error) {
 	chartName := d.Get("chart").(string)
-
 	repository := d.Get("repository").(string)
-	repositoryURL, chartName, err := resolveChartName(repository, strings.TrimSpace(chartName))
 
-	if err != nil {
-		return nil, "", err
+	var repositoryURL string
+	if registry.IsOCI(repository) {
+		// LocateChart expects the chart name to contain the full OCI path
+		// see: https://github.com/helm/helm/blob/main/pkg/action/install.go#L678
+		u, err := url.Parse(repository)
+		if err != nil {
+			return nil, "", err
+		}
+		u.Path = path.Join(u.Path, chartName)
+		chartName = u.String()
+	} else {
+		var err error
+		repositoryURL, chartName, err = resolveChartName(repository, strings.TrimSpace(chartName))
+		if err != nil {
+			return nil, "", err
+		}
 	}
+
 	version := getVersion(d, m)
 
-	return &action.ChartPathOptions{
-		CaFile:   d.Get("repository_ca_file").(string),
-		CertFile: d.Get("repository_cert_file").(string),
-		KeyFile:  d.Get("repository_key_file").(string),
-		Keyring:  d.Get("keyring").(string),
-		RepoURL:  repositoryURL,
-		Verify:   d.Get("verify").(bool),
-		Version:  version,
-		Username: d.Get("repository_username").(string),
-		Password: d.Get("repository_password").(string),
-	}, chartName, nil
+	cpo.CaFile = d.Get("repository_ca_file").(string)
+	cpo.CertFile = d.Get("repository_cert_file").(string)
+	cpo.KeyFile = d.Get("repository_key_file").(string)
+	cpo.Keyring = d.Get("keyring").(string)
+	cpo.RepoURL = repositoryURL
+	cpo.Verify = d.Get("verify").(bool)
+	cpo.Version = version
+	cpo.Username = d.Get("repository_username").(string)
+	cpo.Password = d.Get("repository_password").(string)
+
+	return cpo, chartName, nil
 }
 
 func resourceHelmReleaseImportState(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
@@ -1196,7 +1232,7 @@ func parseImportIdentifier(id string) (string, string, error) {
 }
 
 func resourceReleaseValidate(d resourceGetter, meta interface{}, cpo *action.ChartPathOptions) error {
-	cpo, name, err := chartPathOptions(d, meta.(*Meta))
+	cpo, name, err := chartPathOptions(d, meta.(*Meta), cpo)
 	if err != nil {
 		return fmt.Errorf("malformed values: \n\t%s", err)
 	}

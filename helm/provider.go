@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/helmpath"
+	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/storage/driver"
 
 	// Import to initialize client auth plugins.
@@ -373,8 +375,53 @@ func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, er
 	if err := actionConfig.Init(kc, namespace, m.HelmDriver, debug); err != nil {
 		return nil, err
 	}
+
 	debug("[INFO] GetHelmConfiguration success")
 	return actionConfig, nil
+}
+
+// dataGetter lets us call Get on both schema.ResourceDiff and schema.ResourceData
+type dataGetter interface {
+	Get(key string) interface{}
+}
+
+// OCIRegistryLogin creates an OCI registry client and logs into the registry if needed
+func OCIRegistryLogin(actionConfig *action.Configuration, d dataGetter) error {
+	registryClient, err := registry.NewClient()
+	if err != nil {
+		return fmt.Errorf("could not create OCI registry client: %v", err)
+	}
+	actionConfig.RegistryClient = registryClient
+
+	// log in to the registry if neccessary
+	repository := d.Get("repository").(string)
+	chartName := d.Get("chart").(string)
+	var ociURL string
+	if registry.IsOCI(repository) {
+		ociURL = repository
+	} else if registry.IsOCI(chartName) {
+		ociURL = chartName
+	}
+	if ociURL == "" {
+		return nil
+	}
+
+	username := d.Get("repository_username").(string)
+	password := d.Get("repository_password").(string)
+	if username != "" && password != "" {
+		u, err := url.Parse(ociURL)
+		if err != nil {
+			return fmt.Errorf("could not parse OCI registry URL: %v", err)
+		}
+		err = registryClient.Login(u.Host,
+			registry.LoginOptBasicAuth(username, password))
+		if err != nil {
+			return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
+		}
+		debug("[INFO] Logged into OCI registry")
+	}
+
+	return nil
 }
 
 func debug(format string, a ...interface{}) {
