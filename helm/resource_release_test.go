@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -1210,15 +1211,11 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 	})
 }
 
-func TestAccResourceRelease_OCI_repository(t *testing.T) {
+func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
-		t.Skip("This test requires docker to be installed in the PATH")
+		t.Skip("Starting the OCI registry requires docker to be installed in the PATH")
 	}
-
-	name := randName("oci")
-	namespace := createRandomNamespace(t)
-	defer deleteNamespace(t, namespace)
 
 	ociRegistryPort := rand.Intn(65535-1024) + 1024
 	ociRegistryURL := fmt.Sprintf("oci://localhost:%d/helm-charts", ociRegistryPort)
@@ -1228,29 +1225,30 @@ func TestAccResourceRelease_OCI_repository(t *testing.T) {
 	// TODO run this in-process instead of starting a container
 	// see here: https://pkg.go.dev/github.com/distribution/distribution/registry
 	t.Log("Starting OCI registry")
-	cmd := exec.Command(dockerPath, "run",
+	wd, _ := os.Getwd()
+	runflags := []string{
+		"run",
 		"--detach",
 		"--publish", fmt.Sprintf("%d:5000", ociRegistryPort),
 		"--name", regitryContainerName,
-		"registry")
+	}
+	if usepassword {
+		t.Log(wd)
+		runflags = append(runflags, []string{
+			"--volume", path.Join(wd, "testdata/oci_registry/auth.htpasswd") + ":/etc/docker/registry/auth.htpasswd",
+			"--env", `REGISTRY_AUTH={htpasswd: {realm: localhost, path: /etc/docker/registry/auth.htpasswd}}`,
+		}...)
+	}
+	runflags = append(runflags, "registry")
+	cmd := exec.Command(dockerPath, runflags...)
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	if err != nil {
 		t.Errorf("Failed to start OCI registry: %v", err)
-		return
+		return "", nil
 	}
-	defer func() {
-		// stop OCI registry when we're done
-		t.Log("stopping OCI registry")
-		cmd := exec.Command("docker", "rm",
-			"--force", regitryContainerName)
-		out, err := cmd.CombinedOutput()
-		t.Log(string(out))
-		if err != nil {
-			t.Errorf("Failed to stop OCI registry: %v", err)
-		}
-	}()
 	// wait a few seconds for the server to start
+	t.Log("Waiting for registry to start...")
 	time.Sleep(5 * time.Second)
 	t.Log("OCI registry started at", ociRegistryURL)
 
@@ -1261,7 +1259,22 @@ func TestAccResourceRelease_OCI_repository(t *testing.T) {
 	t.Log(string(out))
 	if err != nil {
 		t.Errorf("Failed to package chart: %v", err)
-		return
+		return "", nil
+	}
+
+	if usepassword {
+		// log into OCI registry
+		t.Log("pushing test-chart to OCI registry")
+		cmd = exec.Command("helm", "registry", "login",
+			fmt.Sprintf("localhost:%d", ociRegistryPort),
+			"--username", "hashicorp",
+			"--password", "terraform")
+		out, err = cmd.CombinedOutput()
+		t.Log(string(out))
+		if err != nil {
+			t.Errorf("Failed to login to OCI registry: %v", err)
+			return "", nil
+		}
 	}
 
 	// push chart to OCI registry
@@ -1273,8 +1286,28 @@ func TestAccResourceRelease_OCI_repository(t *testing.T) {
 	t.Log(string(out))
 	if err != nil {
 		t.Errorf("Failed to push chart: %v", err)
-		return
+		return "", nil
 	}
+
+	return ociRegistryURL, func() {
+		t.Log("stopping OCI registry")
+		cmd := exec.Command("docker", "rm",
+			"--force", regitryContainerName)
+		out, err := cmd.CombinedOutput()
+		t.Log(string(out))
+		if err != nil {
+			t.Errorf("Failed to stop OCI registry: %v", err)
+		}
+	}
+}
+
+func TestAccResourceRelease_OCI_repository(t *testing.T) {
+	name := randName("oci")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	ociRegistryURL, shutdown := setupOCIRegistry(t, false)
+	defer shutdown()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -1317,6 +1350,38 @@ func TestAccResourceRelease_OCI_repository(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_OCI_login(t *testing.T) {
+	name := randName("oci")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	ociRegistryURL, shutdown := setupOCIRegistry(t, true)
+	defer shutdown()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfig_OCI_login_multiple(testResourceName, namespace, name, ociRegistryURL, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test1", "metadata.0.name", name+"1"),
+					resource.TestCheckResourceAttr("helm_release.test1", "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test1", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test1", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test2", "metadata.0.name", name+"2"),
+					resource.TestCheckResourceAttr("helm_release.test2", "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test2", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test2", "status", release.StatusDeployed.String()),
+				),
+			},
+		},
+	})
+}
+
 func testAccHelmReleaseConfig_OCI(resource, ns, name, repo, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
@@ -1326,6 +1391,25 @@ func testAccHelmReleaseConfig_OCI(resource, ns, name, repo, version string) stri
 			version     = %q
 			chart       = "test-chart"
 		}
+	`, resource, name, ns, repo, version)
+}
+
+func testAccHelmReleaseConfig_OCI_login_multiple(resource, ns, name, repo, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s1" {
+ 			name        = "%s1"
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+		}
+		resource "helm_release" "%[1]s2" {
+			name       = "%[2]s2"
+		   namespace   = %[3]q
+		   repository  = %[4]q
+		   version     = %[5]q
+		   chart       = "test-chart"
+	   }
 	`, resource, name, ns, repo, version)
 }
 
