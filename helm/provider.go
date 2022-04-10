@@ -385,6 +385,11 @@ type dataGetter interface {
 	Get(key string) interface{}
 }
 
+// loggedInOCIRegistries is used to make sure we log into a registry only
+// once if it is used across multiple resources concurrently
+var loggedInOCIRegistries map[string]string = map[string]string{}
+var OCILoginMutex sync.Mutex
+
 // OCIRegistryLogin creates an OCI registry client and logs into the registry if needed
 func OCIRegistryLogin(actionConfig *action.Configuration, d dataGetter) error {
 	registryClient, err := registry.NewClient()
@@ -413,11 +418,19 @@ func OCIRegistryLogin(actionConfig *action.Configuration, d dataGetter) error {
 		if err != nil {
 			return fmt.Errorf("could not parse OCI registry URL: %v", err)
 		}
+
+		OCILoginMutex.Lock()
+		defer OCILoginMutex.Unlock()
+		if _, ok := loggedInOCIRegistries[u.Host]; ok {
+			debug("[INFO] Already logged into OCI registry %q", u.Host)
+			return nil
+		}
 		err = registryClient.Login(u.Host,
 			registry.LoginOptBasicAuth(username, password))
 		if err != nil {
 			return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
 		}
+		loggedInOCIRegistries[u.Host] = ""
 		debug("[INFO] Logged into OCI registry")
 	}
 
