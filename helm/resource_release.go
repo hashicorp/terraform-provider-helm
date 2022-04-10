@@ -418,10 +418,6 @@ func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta inter
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	err = OCIRegistryLogin(c, d)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
 	name := d.Get("name").(string)
 	r, err := getRelease(m, c, name)
@@ -684,10 +680,6 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	err = OCIRegistryLogin(actionConfig, d)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
 	name := d.Get("name").(string)
 
@@ -924,10 +916,6 @@ func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, erro
 	n := d.Get("namespace").(string)
 
 	c, err := m.GetHelmConfiguration(n)
-	if err != nil {
-		return false, err
-	}
-	err = OCIRegistryLogin(c, d)
 	if err != nil {
 		return false, err
 	}
