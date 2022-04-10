@@ -1264,7 +1264,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 
 	if usepassword {
 		// log into OCI registry
-		t.Log("pushing test-chart to OCI registry")
+		t.Log("logging in to test-chart to OCI registry")
 		cmd = exec.Command("helm", "registry", "login",
 			fmt.Sprintf("localhost:%d", ociRegistryPort),
 			"--username", "hashicorp",
@@ -1366,7 +1366,7 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccHelmReleaseConfig_OCI_login_multiple(testResourceName, namespace, name, ociRegistryURL, "1.2.3"),
+				Config: testAccHelmReleaseConfig_OCI_login_multiple(testResourceName, namespace, name, ociRegistryURL, "1.2.3", "hashicorp", "terraform"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test1", "metadata.0.name", name+"1"),
 					resource.TestCheckResourceAttr("helm_release.test1", "metadata.0.namespace", namespace),
@@ -1394,7 +1394,7 @@ func testAccHelmReleaseConfig_OCI(resource, ns, name, repo, version string) stri
 	`, resource, name, ns, repo, version)
 }
 
-func testAccHelmReleaseConfig_OCI_login_multiple(resource, ns, name, repo, version string) string {
+func testAccHelmReleaseConfig_OCI_login_multiple(resource, ns, name, repo, version, username, password string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s1" {
  			name        = "%s1"
@@ -1402,6 +1402,9 @@ func testAccHelmReleaseConfig_OCI_login_multiple(resource, ns, name, repo, versi
 			repository  = %q
 			version     = %q
 			chart       = "test-chart"
+
+			repository_username = %q
+			repository_password = %q
 		}
 		resource "helm_release" "%[1]s2" {
 			name       = "%[2]s2"
@@ -1409,8 +1412,11 @@ func testAccHelmReleaseConfig_OCI_login_multiple(resource, ns, name, repo, versi
 		   repository  = %[4]q
 		   version     = %[5]q
 		   chart       = "test-chart"
+
+		   repository_username = %[6]q
+		   repository_password = %[7]q
 	   }
-	`, resource, name, ns, repo, version)
+	`, resource, name, ns, repo, version, username, password)
 }
 
 func testAccHelmReleaseConfig_OCI_chartName(resource, ns, name, chartName, version string) string {
