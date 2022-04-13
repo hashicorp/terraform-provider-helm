@@ -159,6 +159,9 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) (*KubeCon
 	if v, ok := k8sGetOk(configData, "token"); ok {
 		overrides.AuthInfo.Token = v.(string)
 	}
+	if v, ok := k8sGetOk(configData, "proxy_url"); ok {
+		overrides.ClusterInfo.ProxyURL = v.(string)
+	}
 
 	if v, ok := k8sGetOk(configData, "exec"); ok {
 		exec := &clientcmdapi.ExecConfig{}
