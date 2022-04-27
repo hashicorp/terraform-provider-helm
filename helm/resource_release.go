@@ -596,32 +596,38 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	n := d.Get("namespace").(string)
 	actionConfig, err := m.GetHelmConfiguration(n)
 	if err != nil {
+		d.Partial(true)
 		return diag.FromErr(err)
 	}
 	err = OCIRegistryLogin(actionConfig, d)
 	if err != nil {
+		d.Partial(true)
 		return diag.FromErr(err)
 	}
 	client := action.NewUpgrade(actionConfig)
 
 	cpo, chartName, err := chartPathOptions(d, m, &client.ChartPathOptions)
 	if err != nil {
+		d.Partial(true)
 		return diag.FromErr(err)
 	}
 
 	c, path, err := getChart(d, m, chartName, cpo)
 	if err != nil {
+		d.Partial(true)
 		return diag.FromErr(err)
 	}
 
 	// check and update the chart's dependencies if needed
 	updated, err := checkChartDependencies(d, c, path, m)
 	if err != nil {
+		d.Partial(true)
 		return diag.FromErr(err)
 	} else if updated {
 		// load the chart again if its dependencies have been updated
 		c, err = loader.Load(path)
 		if err != nil {
+			d.Partial(true)
 			return diag.FromErr(err)
 		}
 	}
@@ -649,6 +655,7 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 		pr, err := postrender.NewExec(cmd)
 
 		if err != nil {
+			d.Partial(true)
 			return diag.FromErr(err)
 		}
 
@@ -657,12 +664,14 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 
 	values, err := getValues(d)
 	if err != nil {
+		d.Partial(true)
 		return diag.FromErr(err)
 	}
 
 	name := d.Get("name").(string)
 	r, err := client.Run(name, c, values)
 	if err != nil {
+		d.Partial(true)
 		return diag.FromErr(err)
 	}
 
