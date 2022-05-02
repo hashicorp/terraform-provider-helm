@@ -81,6 +81,28 @@ resource "helm_release" "example" {
 }
 ```
 
+## Example Usage - Chart published in OCI registry
+
+This provider supports helm charts published in OCI registry.
+
+```hcl
+data "aws_caller_identity" "current" {}
+data "aws_ecr_authorization_token" "token" {}
+
+resource "helm_release" "simple-page" {
+  chart               = "simple-page"
+  version             = "0.1.0"
+  name                = "simple-page"
+  repository          = "oci://${data.aws_caller_identity.current.account_id}.dkr.ecr.us-west-1.amazonaws.com"
+  repository_username = data.aws_ecr_authorization_token.token.user_name
+  repository_password = data.aws_ecr_authorization_token.token.password
+
+  lifecycle {
+    ignore_changes = [repository_password]
+  }
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
