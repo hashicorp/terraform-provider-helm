@@ -173,7 +173,15 @@ func (g *S3Getter) getObject(ctx context.Context, client *s3.S3, dst, bucket, ke
 		return err
 	}
 
-	return copyReader(dst, resp.Body, 0666, g.client.umask())
+	body := resp.Body
+
+	if g.client != nil && g.client.ProgressListener != nil {
+		fn := filepath.Base(key)
+		body = g.client.ProgressListener.TrackProgress(fn, 0, *resp.ContentLength, resp.Body)
+	}
+	defer body.Close()
+
+	return copyReader(dst, body, 0666, g.client.umask())
 }
 
 func (g *S3Getter) getAWSConfig(region string, url *url.URL, creds *credentials.Credentials) *aws.Config {
@@ -261,7 +269,7 @@ func (g *S3Getter) parseUrl(u *url.URL) (region, bucket, path, version string, c
 	} else {
 		pathParts := strings.SplitN(u.Path, "/", 3)
 		if len(pathParts) != 3 {
-			err = fmt.Errorf("URL is not a valid S3 complaint URL")
+			err = fmt.Errorf("URL is not a valid S3 compliant URL")
 			return
 		}
 		bucket = pathParts[1]
