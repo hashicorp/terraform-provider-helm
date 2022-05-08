@@ -392,7 +392,7 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	err = OCIRegistryLogin(actionConfig, d)
+	err = OCIRegistryLogin(actionConfig, d, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}

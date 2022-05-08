@@ -489,7 +489,7 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	err = OCIRegistryLogin(actionConfig, d)
+	err = OCIRegistryLogin(actionConfig, d, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -622,7 +622,7 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 		d.Partial(true)
 		return diag.FromErr(err)
 	}
-	err = OCIRegistryLogin(actionConfig, d)
+	err = OCIRegistryLogin(actionConfig, d, m)
 	if err != nil {
 		d.Partial(true)
 		return diag.FromErr(err)
@@ -759,7 +759,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	if err != nil {
 		return err
 	}
-	err = OCIRegistryLogin(actionConfig, d)
+	err = OCIRegistryLogin(actionConfig, d, m)
 	if err != nil {
 		return err
 	}
