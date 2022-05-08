@@ -27,6 +27,20 @@ provider "helm" {
   kubernetes {
     config_path = "~/.kube/config"
   }
+
+  # localhost registry with password protection
+  registry {
+    url = "oci://localhost:5000"
+    username = "username"
+    password = "password"
+  }
+
+  # private registry
+  registry {
+    url = "oci://private.registry"
+    username = "username"
+    password = "password"
+  }
 }
 
 resource "helm_release" "nginx_ingress" {
@@ -137,6 +151,7 @@ The following arguments are supported:
 * `helm_driver` - (Optional) "The backend storage driver. Valid values are: `configmap`, `secret`, `memory`, `sql`. Defaults to `secret`.
   Note: Regarding the sql driver, as of helm v3.2.0 SQL support exists only for the postgres dialect. The connection string can be configured by setting the `HELM_DRIVER_SQL_CONNECTION_STRING` environment variable e.g. `HELM_DRIVER_SQL_CONNECTION_STRING=postgres://username:password@host/dbname` more info [here](https://pkg.go.dev/github.com/lib/pq).
 * `kubernetes` - Kubernetes configuration block.
+* `registry` - Private OCI registry configuration block. Can be specified multiple times.
 
 The `kubernetes` block supports:
 
@@ -156,6 +171,12 @@ The `kubernetes` block supports:
   * `command` - (Required) Command to execute.
   * `args` - (Optional) List of arguments to pass when executing the plugin.
   * `env` - (Optional) Map of environment variables to set when executing the plugin.
+
+The `registry` block has options:
+
+* `url` - (Required) url to the registry in format `oci://host:port`
+* `username` - (Required) username to registry
+* `password` - (Required) password to registry
 
 ## Experiments
 
