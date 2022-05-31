@@ -1,3 +1,7 @@
+## 2.6.0
+
+* Upgrade helm to 3.9.0
+
 ## 2.5.1 (April 11, 2022)
 
 FIX:
