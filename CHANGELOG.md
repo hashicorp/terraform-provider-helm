@@ -1,6 +1,7 @@
 ## 2.6.0
 
 * Upgrade helm to 3.9.0
+* Add args attribute in post-render block
 
 ## 2.5.1 (April 11, 2022)
 
