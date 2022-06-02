@@ -132,6 +132,8 @@ The `set` and `set_sensitive` blocks support:
 The `postrender` block supports a single attribute:
 
 * `binary_path` - (Required) relative or full path to command binary.
+* `args` - (Optional) an argument to the post-renderer (can specify multiple)
+
 
 
 ## Attributes Reference

@@ -335,6 +335,12 @@ func resourceRelease() *schema.Resource {
 							Required:    true,
 							Description: "The command binary path.",
 						},
+						"args": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Description: "an argument to the post-renderer (can specify multiple)",
+							Elem:        &schema.Schema{Type: schema.TypeString},
+						},
 					},
 				},
 			},
@@ -537,14 +543,18 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	client.CreateNamespace = d.Get("create_namespace").(bool)
 
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-		av := d.Get("postrender.0.args").([]interface{})
+		av := d.Get("postrender.0.args")
+
 		var args []string
-		for _,arg := range av {
+
+		for _, arg := range av.([]interface{}) {
+			if arg == nil {
+				continue
+			}
 			args = append(args, arg.(string))
 		}
 
 		pr, err := postrender.NewExec(cmd, args...)
-
 
 		if err != nil {
 			return diag.FromErr(err)
@@ -653,14 +663,16 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	client.Description = d.Get("description").(string)
 
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-		av := d.Get("postrender.0.args").([]interface{})
+		av := d.Get("postrender.0.args")
 		var args []string
-		for _,arg := range av {
+		for _, arg := range av.([]interface{}) {
+			if arg == nil {
+				continue
+			}
 			args = append(args, arg.(string))
 		}
 
 		pr, err := postrender.NewExec(cmd, args...)
-
 
 		if err != nil {
 			return diag.FromErr(err)
@@ -809,9 +821,12 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		client.Description = d.Get("description").(string)
 
 		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-			av := d.Get("postrender.0.args").([]interface{})
+			av := d.Get("postrender.0.args")
 			var args []string
-			for _,arg := range av {
+			for _, arg := range av.([]interface{}) {
+				if arg == nil {
+					continue
+				}
 				args = append(args, arg.(string))
 			}
 
