@@ -537,7 +537,14 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	client.CreateNamespace = d.Get("create_namespace").(bool)
 
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-		pr, err := postrender.NewExec(cmd)
+		av := d.Get("postrender.0.args").([]interface{})
+		var args []string
+		for _,arg := range av {
+			args = append(args, arg.(string))
+		}
+
+		pr, err := postrender.NewExec(cmd, args...)
+
 
 		if err != nil {
 			return diag.FromErr(err)
@@ -646,7 +653,14 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	client.Description = d.Get("description").(string)
 
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-		pr, err := postrender.NewExec(cmd)
+		av := d.Get("postrender.0.args").([]interface{})
+		var args []string
+		for _,arg := range av {
+			args = append(args, arg.(string))
+		}
+
+		pr, err := postrender.NewExec(cmd, args...)
+
 
 		if err != nil {
 			return diag.FromErr(err)
@@ -795,7 +809,14 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		client.Description = d.Get("description").(string)
 
 		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-			pr, err := postrender.NewExec(cmd)
+			av := d.Get("postrender.0.args").([]interface{})
+			var args []string
+			for _,arg := range av {
+				args = append(args, arg.(string))
+			}
+
+			pr, err := postrender.NewExec(cmd, args...)
+
 			if err != nil {
 				return err
 			}
