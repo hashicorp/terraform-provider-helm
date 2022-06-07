@@ -488,6 +488,8 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 }
 
 func TestAccResourceRelease_postrender(t *testing.T) {
+	// TODO: Add Test Fixture to return real YAML here
+
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
@@ -497,18 +499,24 @@ func TestAccResourceRelease_postrender(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "cat"),
+				Config: testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "echo"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				),
 			},
 			{
-				Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "date"),
+				Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "echo", "this will not work!", "Wrong", "Code"),
 				ExpectError: regexp.MustCompile("error validating data"),
 			},
 			{
 				Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "foobardoesnotexist"),
 				ExpectError: regexp.MustCompile("unable to find binary"),
+			},
+			{
+				Config: testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "true", "Hello", "World", "!"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
 			},
 		},
 	})
@@ -917,7 +925,7 @@ func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
 	}
 }
 
-func testAccHelmReleaseConfigPostrender(resource, ns, name, binaryPath string) string {
+func testAccHelmReleaseConfigPostrender(resource, ns, name, binaryPath string, args ...string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
  			name        = %q
@@ -928,6 +936,7 @@ func testAccHelmReleaseConfigPostrender(resource, ns, name, binaryPath string) s
 
 			postrender {
 				binary_path = %q
+				args = %s
 			}
 
 			set {
@@ -939,7 +948,7 @@ func testAccHelmReleaseConfigPostrender(resource, ns, name, binaryPath string) s
 				value = 1337
 			}
 		}
-	`, resource, name, ns, testRepositoryURL, binaryPath)
+	`, resource, name, ns, testRepositoryURL, binaryPath, fmt.Sprintf(`["%s"]`, strings.Join(args, `","`)))
 }
 
 func TestAccResourceRelease_LintFailValues(t *testing.T) {

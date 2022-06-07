@@ -129,9 +129,11 @@ The `set` and `set_sensitive` blocks support:
 * `value` - (Required) value of the variable to be set.
 * `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
 
-The `postrender` block supports a single attribute:
+The `postrender` block supports two attributes:
 
 * `binary_path` - (Required) relative or full path to command binary.
+* `args` - (Optional) a list of arguments to supply to the post-renderer.
+
 
 
 ## Attributes Reference
