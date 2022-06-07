@@ -541,7 +541,7 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	client.Replace = d.Get("replace").(bool)
 	client.Description = d.Get("description").(string)
 	client.CreateNamespace = d.Get("create_namespace").(bool)
-	
+
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
 		av := d.Get("postrender.0.args")
 		var args []string
