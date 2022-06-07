@@ -32,9 +32,6 @@ testacc: fmtcheck
 testrace: fmtcheck
 	TF_ACC= go test -race $(TEST) $(TESTARGS)
 
-compile: fmtcheck
-	@sh -c "'$(CURDIR)/scripts/compile.sh'"
-
 cover:
 	@go tool cover 2>/dev/null; if [ $$? -eq 3 ]; then \
 		go get -u golang.org/x/tools/cmd/cover; \
