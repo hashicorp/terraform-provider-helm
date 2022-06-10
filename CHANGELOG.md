@@ -2,6 +2,7 @@
 
 * Upgrade helm to 3.9.0
 * Add args attribute in post-render block
+* Add tfplugindocs for autogenerating documentation
 
 ## 2.5.1 (April 11, 2022)
 
