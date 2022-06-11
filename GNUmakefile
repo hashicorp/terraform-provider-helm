@@ -16,10 +16,31 @@ ifneq ($(origin TRAVIS_TAG), undefined)
 	VERSION := $(TRAVIS_TAG)
 endif
 
+# For changelog generation, default the last release to the last tag on
+# any branch, and this release to just be the current branch we're on.
+LAST_RELEASE?=$$(git describe --tags $$(git rev-list --tags --max-count=1))
+THIS_RELEASE?=$$(git rev-parse --abbrev-ref HEAD)
+
 default: build
 
 build: fmtcheck
 	go build -v .
+
+# expected to be invoked by make gen/changelog LAST_RELEASE=gitref THIS_RELEASE=gitref
+.PHONY: changelog-build
+changelog-build:
+	@echo "Generating changelog for $(THIS_RELEASE) from $(LAST_RELEASE)..."
+	@echo
+	@changelog-build -last-release $(LAST_RELEASE) \
+		-entries-dir .changelog/ \
+		-changelog-template .changelog/changelog.tmpl \
+		-note-template .changelog/note.tmpl \
+		-this-release $(THIS_RELEASE)
+
+.PHONY: changelog-entry
+changelog-entry:
+	@changelog-entry -pr $(PR) -dir .changelog/
+	
 
 test: fmtcheck
 	go test $(TEST) -v || exit 1
