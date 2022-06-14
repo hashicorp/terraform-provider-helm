@@ -27,8 +27,7 @@ build: fmtcheck
 	go build -v .
 
 # expected to be invoked by make gen/changelog LAST_RELEASE=gitref THIS_RELEASE=gitref
-.PHONY: changelog-build
-changelog-build:
+changelog:
 	@echo "Generating changelog for $(THIS_RELEASE) from $(LAST_RELEASE)..."
 	@echo
 	@changelog-build -last-release $(LAST_RELEASE) \
@@ -37,9 +36,8 @@ changelog-build:
 		-note-template .changelog/note.tmpl \
 		-this-release $(THIS_RELEASE)
 
-.PHONY: changelog-entry
 changelog-entry:
-	@changelog-entry -pr $(PR) -dir .changelog/
+	@changelog-entry -dir .changelog/
 	
 
 test: fmtcheck
@@ -130,4 +128,4 @@ website-lint:
 	@echo "==> Checking for broken links..."
 	@scripts/markdown-link-check.sh "$(DOCKER)" "$(DOCKER_RUN_OPTS)" "$(DOCKER_VOLUME_OPTS)" "$(PROVIDER_DIR_DOCKER)"
 
-.PHONY: build test testacc testrace cover vet fmt fmtcheck errcheck test-compile packages clean website-lint
+.PHONY: build test testacc testrace cover vet fmt fmtcheck errcheck test-compile packages clean website-lint changelog changelog-entry
