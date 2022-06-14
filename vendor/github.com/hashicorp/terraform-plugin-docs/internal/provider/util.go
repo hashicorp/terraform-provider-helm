@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 func providerShortName(n string) string {
@@ -50,6 +52,23 @@ func removeAllExt(file string) string {
 		}
 		file = strings.TrimSuffix(file, ext)
 	}
+}
+
+// resourceSchema determines whether there is a schema in the supplied schemas map which
+// has either the providerShortName or the providerShortName concatenated with the
+// templateFileName (stripped of file extension.
+func resourceSchema(schemas map[string]*tfjson.Schema, providerShortName, templateFileName string) (*tfjson.Schema, string) {
+	if schema, ok := schemas[providerShortName]; ok {
+		return schema, providerShortName
+	}
+
+	resName := providerShortName + "_" + removeAllExt(templateFileName)
+
+	if schema, ok := schemas[resName]; ok {
+		return schema, resName
+	}
+
+	return nil, ""
 }
 
 func writeFile(path string, data string) error {

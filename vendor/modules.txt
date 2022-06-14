@@ -318,7 +318,7 @@ github.com/hashicorp/terraform-exec/tfexec
 # github.com/hashicorp/terraform-json v0.14.0
 ## explicit; go 1.13
 github.com/hashicorp/terraform-json
-# github.com/hashicorp/terraform-plugin-docs v0.9.0
+# github.com/hashicorp/terraform-plugin-docs v0.10.0
 ## explicit; go 1.17
 github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 github.com/hashicorp/terraform-plugin-docs/internal/cmd
