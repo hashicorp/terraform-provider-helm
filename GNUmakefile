@@ -16,10 +16,29 @@ ifneq ($(origin TRAVIS_TAG), undefined)
 	VERSION := $(TRAVIS_TAG)
 endif
 
+# For changelog generation, default the last release to the last tag on
+# any branch, and this release to just be the current branch we're on.
+LAST_RELEASE?=$$(git describe --tags $$(git rev-list --tags --max-count=1))
+THIS_RELEASE?=$$(git rev-parse --abbrev-ref HEAD)
+
 default: build
 
 build: fmtcheck
 	go build -v .
+
+# expected to be invoked by make changelog LAST_RELEASE=gitref THIS_RELEASE=gitref
+changelog:
+	@echo "Generating changelog for $(THIS_RELEASE) from $(LAST_RELEASE)..."
+	@echo
+	@changelog-build -last-release $(LAST_RELEASE) \
+		-entries-dir .changelog/ \
+		-changelog-template .changelog/changelog.tmpl \
+		-note-template .changelog/note.tmpl \
+		-this-release $(THIS_RELEASE)
+
+changelog-entry:
+	@changelog-entry -dir .changelog/
+	
 
 test: fmtcheck
 	go test $(TEST) -v || exit 1
@@ -109,4 +128,4 @@ website-lint:
 	@echo "==> Checking for broken links..."
 	@scripts/markdown-link-check.sh "$(DOCKER)" "$(DOCKER_RUN_OPTS)" "$(DOCKER_VOLUME_OPTS)" "$(PROVIDER_DIR_DOCKER)"
 
-.PHONY: build test testacc testrace cover vet fmt fmtcheck errcheck test-compile packages clean website-lint
+.PHONY: build test testacc testrace cover vet fmt fmtcheck errcheck test-compile packages clean website-lint changelog changelog-entry
