@@ -26,7 +26,7 @@ default: build
 build: fmtcheck
 	go build -v .
 
-# expected to be invoked by make gen/changelog LAST_RELEASE=gitref THIS_RELEASE=gitref
+# expected to be invoked by make changelog LAST_RELEASE=gitref THIS_RELEASE=gitref
 changelog:
 	@echo "Generating changelog for $(THIS_RELEASE) from $(LAST_RELEASE)..."
 	@echo
