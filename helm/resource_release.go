@@ -52,6 +52,7 @@ var defaultAttributes = map[string]interface{}{
 	"replace":                    false,
 	"create_namespace":           false,
 	"lint":                       false,
+	"pass_credentials":           false,
 }
 
 func resourceRelease() *schema.Resource {
@@ -101,6 +102,12 @@ func resourceRelease() *schema.Resource {
 				Optional:    true,
 				Sensitive:   true,
 				Description: "Password for HTTP basic authentication",
+			},
+			"pass_credentials": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Pass credentials to all domains",
+				Default:     defaultAttributes["pass_credentials"],
 			},
 			"chart": {
 				Type:        schema.TypeString,
@@ -1201,7 +1208,7 @@ func chartPathOptions(d resourceGetter, m *Meta, cpo *action.ChartPathOptions) (
 	cpo.Version = version
 	cpo.Username = d.Get("repository_username").(string)
 	cpo.Password = d.Get("repository_password").(string)
-
+	cpo.PassCredentialsAll = d.Get("pass_credentials").(bool)
 	return cpo, chartName, nil
 }
 
