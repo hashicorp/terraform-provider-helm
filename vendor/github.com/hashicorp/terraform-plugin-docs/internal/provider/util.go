@@ -68,7 +68,7 @@ func resourceSchema(schemas map[string]*tfjson.Schema, providerShortName, templa
 		return schema, resName
 	}
 
-	return nil, ""
+	return nil, resName
 }
 
 func writeFile(path string, data string) error {
