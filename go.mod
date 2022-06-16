@@ -180,9 +180,3 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.13.6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 )
-
-replace (
-	github.com/containerd/containerd => github.com/containerd/containerd v1.5.10 // https://github.com/advisories/GHSA-crp2-qrr5-8pq7
-	github.com/opencontainers/image-spec => github.com/opencontainers/image-spec v1.0.2 // https://github.com/advisories/GHSA-77vh-xpmg-72qh
-	github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3 // https://github.com/advisories/GHSA-v95c-p5hm-xq8f
-)

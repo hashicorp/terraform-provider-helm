@@ -3,6 +3,7 @@ package helm
 import (
 	"fmt"
 	"math/rand"
+	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -1220,13 +1221,25 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 	})
 }
 
+func randPort() int {
+	for {
+		p := rand.Intn(65535-1024) + 1024
+		hp := fmt.Sprintf("0.0.0.0:%d", p)
+		c, err := net.DialTimeout("tcp", hp, time.Second)
+		if err != nil {
+			return p
+		}
+		c.Close()
+	}
+}
+
 func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
 		t.Skip("Starting the OCI registry requires docker to be installed in the PATH")
 	}
 
-	ociRegistryPort := rand.Intn(65535-1024) + 1024
+	ociRegistryPort := randPort()
 	ociRegistryURL := fmt.Sprintf("oci://localhost:%d/helm-charts", ociRegistryPort)
 	regitryContainerName := randName("registry")
 
