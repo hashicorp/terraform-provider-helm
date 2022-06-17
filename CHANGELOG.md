@@ -1,8 +1,13 @@
-## 2.6.0
+## 2.6.0 (June 17, 2022)
 
-* Upgrade helm to 3.9.0
-* Add args attribute in post-render block
-* Add tfplugindocs for autogenerating documentation
+IMPROVEMENTS:
+* Upgrade helm dependency to 3.9.0 (#867)
+* Add `args` attribute in `post_render` block in (#869)
+* Add `pass_credentials` attribute (#841)
+* Add `proxy_url` attribute to provider block (#843)
+
+BUG FIXES:
+* Don't persist state when update causes an error (#857)
 
 ## 2.5.1 (April 11, 2022)
 
