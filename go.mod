@@ -13,7 +13,7 @@ require (
 	helm.sh/helm/v3 v3.9.0
 	k8s.io/api v0.24.2
 	k8s.io/apimachinery v0.24.2
-	k8s.io/client-go v0.24.1
+	k8s.io/client-go v0.24.2
 	k8s.io/klog v1.0.0
 	sigs.k8s.io/yaml v1.3.0
 )
