@@ -242,6 +242,18 @@ func kubernetesResource() *schema.Resource {
 						"api_version": {
 							Type:     schema.TypeString,
 							Required: true,
+							ValidateDiagFunc: func(val interface{}, key cty.Path) (diags diag.Diagnostics) {
+								api_version := val.(string)
+
+								if api_version == "client.authentication.k8s.io/v1alpha1" {
+									return diag.Diagnostics{{
+										Severity: diag.Warning,
+										Summary:  fmt.Sprintf("v1alpha1 is not recommended, use v1beta1"),
+										Detail:   fmt.Sprintf("v1alpha1 authentication API was removed in Kubernetes 1.24, removal of alpha APIs is expected in minor version bumps of Kubernetes"),
+									}}
+								}
+								return
+							},
 						},
 						"command": {
 							Type:     schema.TypeString,
