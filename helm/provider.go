@@ -248,7 +248,7 @@ func kubernetesResource() *schema.Resource {
 								if api_version == "client.authentication.k8s.io/v1alpha1" {
 									return diag.Diagnostics{{
 										Severity: diag.Warning,
-										Summary:  fmt.Sprintf("v1alpha1 is not recommended, use v1beta1"),
+										Summary:  "v1alpha1 of the client authentication API has been removed, use v1beta1 or above",
 										Detail:  "v1alpha1 of the client authentication API is removed in Kubernetes client versions 1.24 and above. You may need to update your exec plugin to use the latest version."),
 									}}
 								}
