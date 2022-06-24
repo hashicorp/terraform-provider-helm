@@ -249,7 +249,7 @@ func kubernetesResource() *schema.Resource {
 									return diag.Diagnostics{{
 										Severity: diag.Warning,
 										Summary:  fmt.Sprintf("v1alpha1 is not recommended, use v1beta1"),
-										Detail:   fmt.Sprintf("v1alpha1 authentication API was removed in Kubernetes 1.24, removal of alpha APIs is expected in minor version bumps of Kubernetes"),
+										Detail:  "v1alpha1 of the client authentication API is removed in Kubernetes client versions 1.24 and above. You may need to update your exec plugin to use the latest version."),
 									}}
 								}
 								return
