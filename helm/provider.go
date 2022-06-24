@@ -249,7 +249,7 @@ func kubernetesResource() *schema.Resource {
 									return diag.Diagnostics{{
 										Severity: diag.Warning,
 										Summary:  "v1alpha1 of the client authentication API has been removed, use v1beta1 or above",
-										Detail:  "v1alpha1 of the client authentication API is removed in Kubernetes client versions 1.24 and above. You may need to update your exec plugin to use the latest version."),
+										Detail:   "v1alpha1 of the client authentication API is removed in Kubernetes client versions 1.24 and above. You may need to update your exec plugin to use the latest version.",
 									}}
 								}
 								return
