@@ -243,9 +243,8 @@ func kubernetesResource() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 							ValidateDiagFunc: func(val interface{}, key cty.Path) (diags diag.Diagnostics) {
-								api_version := val.(string)
-
-								if api_version == "client.authentication.k8s.io/v1alpha1" {
+								apiVersion := val.(string)
+								if apiVersion == "client.authentication.k8s.io/v1alpha1" {
 									return diag.Diagnostics{{
 										Severity: diag.Warning,
 										Summary:  "v1alpha1 of the client authentication API has been removed, use v1beta1 or above",
