@@ -1,12 +1,9 @@
-Helm Provider for Terraform
-[![Actions Status](https://github.com/hashicorp/terraform-provider-helm/workflows/tests/badge.svg)](https://github.com/hashicorp/terraform-provider-helm/actions)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/hashicorp/terraform-provider-helm?label=release)](https://github.com/hashicorp/terraform-provider-helm/releases)
-[![license](https://img.shields.io/github/license/hashicorp/terraform-provider-helm.svg)]()
-[![Go Report Card](https://goreportcard.com/badge/github.com/hashicorp/terraform-provider-helm)](https://goreportcard.com/report/github.com/hashicorp/terraform-provider-helm)
-===========================
 <a href="https://terraform.io">
-    <img src=".github/tf.png" alt="Terraform logo" title="Terraform" align="right" height="50" />
+    <img src=".github/tf.png" alt="Terraform logo" title="Terraform" align="left" height="50" />
 </a>
+
+# Helm Provider for Terraform [![Actions Status](https://github.com/hashicorp/terraform-provider-helm/workflows/tests/badge.svg)](https://github.com/hashicorp/terraform-provider-helm/actions)[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/hashicorp/terraform-provider-helm?label=release)](https://github.com/hashicorp/terraform-provider-helm/releases)[![license](https://img.shields.io/github/license/hashicorp/terraform-provider-helm.svg)]()[![Go Report Card](https://goreportcard.com/badge/github.com/hashicorp/terraform-provider-helm)](https://goreportcard.com/report/github.com/hashicorp/terraform-provider-helm)
+
 
 - [Documentation](https://www.terraform.io/docs/providers/helm/index.html)
 - [Mailing list](http://groups.google.com/group/terraform-tool)
