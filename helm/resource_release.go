@@ -795,19 +795,15 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	debug("%s Release validated", logID)
 
 	if m.ExperimentEnabled("manifest") {
-		debug("*****EXPERIMENT IS ENABLED*****")
-
-		// we don't need a custom diff if the release hasn't been created yet
 		oldStatus, _ := d.GetChange("status")
 		if oldStatus.(string) == "" {
-			// Custom Diff is needed for outputting the expected release creation when running terraform plan
-			debug("DIFF HASNT BEEN CREATED YET")
 
 			// check if release exists
 			_, err = getRelease(m, actionConfig, name)
 			if err == errReleaseNotFound {
 
 				clientInstall := action.NewInstall(actionConfig)
+
 				clientInstall.ChartPathOptions = *cpo
 				clientInstall.Devel = d.Get("devel").(bool)
 				clientInstall.Namespace = d.Get("namespace").(string)
@@ -818,35 +814,23 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 				clientInstall.Atomic = d.Get("atomic").(bool)
 				clientInstall.SubNotes = d.Get("render_subchart_notes").(bool)
 				clientInstall.WaitForJobs = d.Get("wait_for_jobs").(bool)
-				// clientInstall.Force = d.Get("force_update").(bool)
-				// clientInstall.ResetValues = d.Get("reset_values").(bool)
-				// clientInstall.ReuseValues = d.Get("reuse_values").(bool)
-				// clientInstall.Recreate = d.Get("recreate_pods").(bool)
-				// clientInstall.MaxHistory = d.Get("max_history").(int)
-				// clientInstall.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
 				clientInstall.Description = d.Get("description").(string)
 				clientInstall.ReleaseName = d.Get("name").(string)
 
 				values, _ := getValues(d)
-				debug("GOT VALUES")
-				//dry, err := client.Run(name, chart, values) //This is for upgrading the release, however we are creating the release for the first time
 				dry, err := clientInstall.Run(chart, values)
 				if err != nil && dry == nil {
 					return err
 				}
-				//d.SetNewComputed("manifest")
 
 				jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
 				if err != nil {
-					debug("ERROR YML TO JSON")
 					return err
 				}
-
-				debug("CONVERTED YAML TO JSON")
-
 				manifest := redactSensitiveValues(string(jsonManifest), d)
 				d.SetNew("manifest", manifest)
-				return nil
+
+				return d.SetNewComputed("version")
 			} else if err != nil {
 				return fmt.Errorf("error retrieving old release for a diff: %v", err)
 			}
@@ -861,7 +845,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 				return d.SetNew("version", chart.Metadata.Version)
 			}
 			d.SetNewComputed("manifest")
-			return nil
+			return d.SetNewComputed("version")
 		} else if err != nil {
 			return fmt.Errorf("error retrieving old release for a diff: %v", err)
 		}
