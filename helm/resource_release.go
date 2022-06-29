@@ -750,7 +750,6 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
 	logID := fmt.Sprintf("[resourceDiff: %s]", d.Get("name").(string))
 	debug("%s Start", logID)
-
 	m := meta.(*Meta)
 	name := d.Get("name").(string)
 	namespace := d.Get("namespace").(string)
@@ -796,9 +795,36 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	debug("%s Release validated", logID)
 
 	if m.ExperimentEnabled("manifest") {
+		debug("*****EXPERIMENT IS ENABLED*****")
 		// we don't need a custom diff if the release hasn't been created yet
 		oldStatus, _ := d.GetChange("status")
 		if oldStatus.(string) == "" {
+			// Custom Diff is needed for outputting the expected release creation when running terraform plan
+			debug("DIFF HASNT BEEN CREATED YET")
+
+			// check if release exists
+			_, err = getRelease(m, actionConfig, name)
+			if err == errReleaseNotFound {
+				clientInstall := action.NewInstall(actionConfig)
+				values, _ := getValues(d)
+				debug("GOT VALUES")
+				//dry, err := client.Run(name, chart, values) //This is for upgrading the release, however we are creating the release for the first time
+				dry, err := clientInstall.Run(chart, values)
+				//d.SetNewComputed("manifest")
+
+				jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
+				if err != nil {
+					debug("ERROR YML TO JSON")
+					return err
+				}
+
+				manifest := redactSensitiveValues(string(jsonManifest), d)
+				d.SetNew("manifest", manifest)
+				return nil
+			} else if err != nil {
+				return fmt.Errorf("error retrieving old release for a diff: %v", err)
+			}
+
 			return nil
 		}
 
