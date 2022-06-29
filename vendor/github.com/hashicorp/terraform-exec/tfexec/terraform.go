@@ -48,9 +48,14 @@ type Terraform struct {
 	skipProviderVerify bool
 	env                map[string]string
 
-	stdout  io.Writer
-	stderr  io.Writer
-	logger  printfer
+	stdout io.Writer
+	stderr io.Writer
+	logger printfer
+
+	// TF_LOG environment variable, defaults to TRACE if logPath is set.
+	log string
+
+	// TF_LOG_PATH environment variable
 	logPath string
 
 	versionLock  sync.Mutex
@@ -122,10 +127,29 @@ func (tf *Terraform) SetStderr(w io.Writer) {
 	tf.stderr = w
 }
 
+// SetLog sets the TF_LOG environment variable for Terraform CLI execution.
+// This must be combined with a call to SetLogPath to take effect.
+//
+// This is only compatible with Terraform CLI 0.15.0 or later as setting the
+// log level was unreliable in earlier versions. It will default to TRACE for
+// those earlier versions when SetLogPath is called.
+func (tf *Terraform) SetLog(log string) error {
+	err := tf.compatible(context.Background(), tf0_15_0, nil)
+	if err != nil {
+		return err
+	}
+	tf.log = log
+	return nil
+}
+
 // SetLogPath sets the TF_LOG_PATH environment variable for Terraform CLI
 // execution.
 func (tf *Terraform) SetLogPath(path string) error {
 	tf.logPath = path
+	// Prevent setting the log path without enabling logging
+	if tf.log == "" {
+		tf.log = "TRACE"
+	}
 	return nil
 }
 
