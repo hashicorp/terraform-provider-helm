@@ -1,9 +1,11 @@
 package tfexec
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -149,8 +151,7 @@ func (tf *Terraform) buildEnv(mergeEnv map[string]string) []string {
 		env[logPathEnvVar] = ""
 	} else {
 		env[logPathEnvVar] = tf.logPath
-		// Log levels other than TRACE are currently unreliable, the CLI recommends using TRACE only.
-		env[logEnvVar] = "TRACE"
+		env[logEnvVar] = tf.log
 	}
 
 	// constant automation override env vars
@@ -171,7 +172,7 @@ func (tf *Terraform) buildEnv(mergeEnv map[string]string) []string {
 }
 
 func (tf *Terraform) buildTerraformCmd(ctx context.Context, mergeEnv map[string]string, args ...string) *exec.Cmd {
-	cmd := exec.Command(tf.execPath, args...)
+	cmd := exec.CommandContext(ctx, tf.execPath, args...)
 
 	cmd.Env = tf.buildEnv(mergeEnv)
 	cmd.Dir = tf.workingDir
@@ -229,4 +230,37 @@ func mergeWriters(writers ...io.Writer) io.Writer {
 		return compact[0]
 	}
 	return io.MultiWriter(compact...)
+}
+
+func writeOutput(ctx context.Context, r io.ReadCloser, w io.Writer) error {
+	// ReadBytes will block until bytes are read, which can cause a delay in
+	// returning even if the command's context has been canceled. Use a separate
+	// goroutine to prompt ReadBytes to return on cancel
+	closeCtx, closeCancel := context.WithCancel(ctx)
+	defer closeCancel()
+	go func() {
+		select {
+		case <-ctx.Done():
+			r.Close()
+		case <-closeCtx.Done():
+			return
+		}
+	}()
+
+	buf := bufio.NewReader(r)
+	for {
+		line, err := buf.ReadBytes('\n')
+		if len(line) > 0 {
+			if _, err := w.Write(line); err != nil {
+				return err
+			}
+		}
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+
+			return err
+		}
+	}
 }
