@@ -804,18 +804,22 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 
 				clientInstall := action.NewInstall(actionConfig)
 
-				clientInstall.ChartPathOptions = *cpo
-				clientInstall.Devel = d.Get("devel").(bool)
-				clientInstall.Namespace = d.Get("namespace").(string)
-				clientInstall.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
-				clientInstall.Wait = d.Get("wait").(bool)
-				clientInstall.DryRun = true // do not apply changes
+				clientInstall.DryRun = true
 				clientInstall.DisableHooks = d.Get("disable_webhooks").(bool)
-				clientInstall.Atomic = d.Get("atomic").(bool)
-				clientInstall.SubNotes = d.Get("render_subchart_notes").(bool)
+				clientInstall.Wait = d.Get("wait").(bool)
 				clientInstall.WaitForJobs = d.Get("wait_for_jobs").(bool)
-				clientInstall.Description = d.Get("description").(string)
+				clientInstall.Devel = d.Get("devel").(bool)
+				clientInstall.DependencyUpdate = d.Get("dependency_update").(bool)
+				clientInstall.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+				clientInstall.Namespace = d.Get("namespace").(string)
 				clientInstall.ReleaseName = d.Get("name").(string)
+				clientInstall.Atomic = d.Get("atomic").(bool)
+				clientInstall.SkipCRDs = d.Get("skip_crds").(bool)
+				clientInstall.SubNotes = d.Get("render_subchart_notes").(bool)
+				clientInstall.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
+				clientInstall.Replace = d.Get("replace").(bool)
+				clientInstall.Description = d.Get("description").(string)
+				clientInstall.CreateNamespace = d.Get("create_namespace").(bool)
 
 				values, _ := getValues(d)
 				dry, err := clientInstall.Run(chart, values)
