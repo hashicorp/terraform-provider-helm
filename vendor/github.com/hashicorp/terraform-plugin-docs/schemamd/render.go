@@ -293,7 +293,9 @@ nameLoop:
 		}
 
 		for _, name := range sortedNames {
-			path := append(parents, name)
+			path := make([]string, len(parents), len(parents)+1)
+			copy(path, parents)
+			path = append(path, name)
 
 			if childBlock, ok := block.NestedBlocks[name]; ok {
 				nt, err := writeBlockType(w, path, childBlock)

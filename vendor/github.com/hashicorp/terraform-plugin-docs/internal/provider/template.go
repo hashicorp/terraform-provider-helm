@@ -32,17 +32,17 @@ type (
 func newTemplate(name, text string) (*template.Template, error) {
 	tmpl := template.New(name)
 
-	tmpl.Funcs(template.FuncMap(map[string]interface{}{
+	tmpl.Funcs(map[string]interface{}{
 		"codefile":      tmplfuncs.CodeFile,
+		"lower":         strings.ToLower,
 		"plainmarkdown": mdplain.PlainMarkdown,
 		"prefixlines":   tmplfuncs.PrefixLines,
-		"tffile": func(file string) (string, error) {
-			// TODO: omit comment handling
-			return tmplfuncs.CodeFile("terraform", file)
-		},
-		"trimspace": strings.TrimSpace,
-		"split":     strings.Split,
-	}))
+		"split":         strings.Split,
+		"tffile":        terraformCodeFile,
+		"title":         strings.ToTitle,
+		"trimspace":     strings.TrimSpace,
+		"upper":         strings.ToUpper,
+	})
 
 	var err error
 	tmpl, err = tmpl.Parse(text)
@@ -51,6 +51,11 @@ func newTemplate(name, text string) (*template.Template, error) {
 	}
 
 	return tmpl, nil
+}
+
+func terraformCodeFile(file string) (string, error) {
+	// TODO: omit comment handling
+	return tmplfuncs.CodeFile("terraform", file)
 }
 
 func renderTemplate(name string, text string, out io.Writer, data interface{}) error {
@@ -130,15 +135,10 @@ func (t providerTemplate) Render(providerName, renderedProviderName, exampleFile
 		return "", nil
 	}
 	return renderStringTemplate("providerTemplate", s, struct {
-		Type        string
-		Name        string
 		Description string
 
 		HasExample  bool
 		ExampleFile string
-
-		HasImport  bool
-		ImportFile string
 
 		ProviderName      string
 		ProviderShortName string
@@ -149,7 +149,7 @@ func (t providerTemplate) Render(providerName, renderedProviderName, exampleFile
 	}{
 		Description: schema.Block.Description,
 
-		HasExample:  exampleFile != "",
+		HasExample:  exampleFile != "" && fileExists(exampleFile),
 		ExampleFile: exampleFile,
 
 		ProviderName:      providerName,
@@ -195,10 +195,10 @@ func (t resourceTemplate) Render(name, providerName, renderedProviderName, typeN
 		Name:        name,
 		Description: schema.Block.Description,
 
-		HasExample:  exampleFile != "",
+		HasExample:  exampleFile != "" && fileExists(exampleFile),
 		ExampleFile: exampleFile,
 
-		HasImport:  importFile != "",
+		HasImport:  importFile != "" && fileExists(importFile),
 		ImportFile: importFile,
 
 		ProviderName:      providerName,
