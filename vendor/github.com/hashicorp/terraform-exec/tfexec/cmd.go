@@ -19,10 +19,12 @@ import (
 const (
 	checkpointDisableEnvVar  = "CHECKPOINT_DISABLE"
 	cliArgsEnvVar            = "TF_CLI_ARGS"
-	logEnvVar                = "TF_LOG"
 	inputEnvVar              = "TF_INPUT"
 	automationEnvVar         = "TF_IN_AUTOMATION"
+	logEnvVar                = "TF_LOG"
+	logCoreEnvVar            = "TF_LOG_CORE"
 	logPathEnvVar            = "TF_LOG_PATH"
+	logProviderEnvVar        = "TF_LOG_PROVIDER"
 	reattachEnvVar           = "TF_REATTACH_PROVIDERS"
 	appendUserAgentEnvVar    = "TF_APPEND_USER_AGENT"
 	workspaceEnvVar          = "TF_WORKSPACE"
@@ -37,8 +39,10 @@ var prohibitedEnvVars = []string{
 	cliArgsEnvVar,
 	inputEnvVar,
 	automationEnvVar,
-	logPathEnvVar,
 	logEnvVar,
+	logCoreEnvVar,
+	logPathEnvVar,
+	logProviderEnvVar,
 	reattachEnvVar,
 	appendUserAgentEnvVar,
 	workspaceEnvVar,
@@ -148,10 +152,14 @@ func (tf *Terraform) buildEnv(mergeEnv map[string]string) []string {
 	if tf.logPath == "" {
 		// so logging can't pollute our stderr output
 		env[logEnvVar] = ""
+		env[logCoreEnvVar] = ""
 		env[logPathEnvVar] = ""
+		env[logProviderEnvVar] = ""
 	} else {
-		env[logPathEnvVar] = tf.logPath
 		env[logEnvVar] = tf.log
+		env[logCoreEnvVar] = tf.logCore
+		env[logPathEnvVar] = tf.logPath
+		env[logProviderEnvVar] = tf.logProvider
 	}
 
 	// constant automation override env vars
