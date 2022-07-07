@@ -1,6 +1,7 @@
 package helm
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -53,15 +54,21 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 				return "", err
 			}
 
+			secret.StringData = make(map[string]string, len(secret.Data))
 			for k, v := range secret.Data {
 				h := hashSensitiveValue(string(v))
-				secret.Data[k] = []byte(h)
+				secret.StringData[k] = h
 			}
 
+			secret.Data = nil
+
 			jsonbytes, err = json.Marshal(secret)
+
 			if err != nil {
 				return "", err
 			}
+
+			jsonbytes = bytes.Replace(jsonbytes, []byte("stringData"), []byte("data"), 1)
 		}
 
 		m[key] = jsonbytes
@@ -94,7 +101,7 @@ func redactSensitiveValues(text string, d resourceGetter) string {
 	for _, v := range d.Get("set_sensitive").(*schema.Set).List() {
 		vv := v.(map[string]interface{})
 
-		if sensitiveValue, ok := vv["value"].(string); ok {
+		if sensitiveValue, ok := vv["value"].(string); ok && sensitiveValue != "" {
 			h := hashSensitiveValue(sensitiveValue)
 			masked = strings.ReplaceAll(masked, sensitiveValue, h)
 		}
