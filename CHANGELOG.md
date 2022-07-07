@@ -1,7 +1,3 @@
-## 2.6.1
-
-* Show Manifest when creating release
-
 ## 2.6.0 (June 17, 2022)
 
 IMPROVEMENTS:

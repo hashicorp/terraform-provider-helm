@@ -798,48 +798,58 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		oldStatus, _ := d.GetChange("status")
 		if oldStatus.(string) == "" {
 
-			// check if release exists
-			_, err = getRelease(m, actionConfig, name)
-			if err == errReleaseNotFound {
+			clientInstall := action.NewInstall(actionConfig)
 
-				clientInstall := action.NewInstall(actionConfig)
+			clientInstall.DryRun = true
+			clientInstall.DisableHooks = d.Get("disable_webhooks").(bool)
+			clientInstall.Wait = d.Get("wait").(bool)
+			clientInstall.WaitForJobs = d.Get("wait_for_jobs").(bool)
+			clientInstall.Devel = d.Get("devel").(bool)
+			clientInstall.DependencyUpdate = d.Get("dependency_update").(bool)
+			clientInstall.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+			clientInstall.Namespace = d.Get("namespace").(string)
+			clientInstall.ReleaseName = d.Get("name").(string)
+			clientInstall.Atomic = d.Get("atomic").(bool)
+			clientInstall.SkipCRDs = d.Get("skip_crds").(bool)
+			clientInstall.SubNotes = d.Get("render_subchart_notes").(bool)
+			clientInstall.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
+			clientInstall.Replace = d.Get("replace").(bool)
+			clientInstall.Description = d.Get("description").(string)
+			clientInstall.CreateNamespace = d.Get("create_namespace").(bool)
 
-				clientInstall.DryRun = true
-				clientInstall.DisableHooks = d.Get("disable_webhooks").(bool)
-				clientInstall.Wait = d.Get("wait").(bool)
-				clientInstall.WaitForJobs = d.Get("wait_for_jobs").(bool)
-				clientInstall.Devel = d.Get("devel").(bool)
-				clientInstall.DependencyUpdate = d.Get("dependency_update").(bool)
-				clientInstall.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
-				clientInstall.Namespace = d.Get("namespace").(string)
-				clientInstall.ReleaseName = d.Get("name").(string)
-				clientInstall.Atomic = d.Get("atomic").(bool)
-				clientInstall.SkipCRDs = d.Get("skip_crds").(bool)
-				clientInstall.SubNotes = d.Get("render_subchart_notes").(bool)
-				clientInstall.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
-				clientInstall.Replace = d.Get("replace").(bool)
-				clientInstall.Description = d.Get("description").(string)
-				clientInstall.CreateNamespace = d.Get("create_namespace").(bool)
-
-				values, _ := getValues(d)
-				dry, err := clientInstall.Run(chart, values)
-				if err != nil && dry == nil {
-					return err
+			if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+				av := d.Get("postrender.0.args")
+				var args []string
+				for _, arg := range av.([]interface{}) {
+					if arg == nil {
+						continue
+					}
+					args = append(args, arg.(string))
 				}
 
-				jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
+				pr, err := postrender.NewExec(cmd, args...)
+
 				if err != nil {
 					return err
 				}
-				manifest := redactSensitiveValues(string(jsonManifest), d)
-				d.SetNew("manifest", manifest)
-
-				return d.SetNewComputed("version")
-			} else if err != nil {
-				return fmt.Errorf("error retrieving old release for a diff: %v", err)
+				clientInstall.PostRenderer = pr
 			}
 
-			return nil
+			values, _ := getValues(d)
+			dry, err := clientInstall.Run(chart, values)
+			if err != nil && dry == nil {
+				return err
+			}
+
+			jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
+			if err != nil {
+				return err
+			}
+			manifest := redactSensitiveValues(string(jsonManifest), d)
+			d.SetNew("manifest", manifest)
+
+			return d.SetNewComputed("version")
+
 		}
 
 		// check if release exists
