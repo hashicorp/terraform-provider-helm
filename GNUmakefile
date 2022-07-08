@@ -37,7 +37,7 @@ changelog:
 		-this-release $(THIS_RELEASE)
 
 changelog-entry:
-	@changelog-entry -dir .changelog/
+	@changelog-entry -dir .changelog/ -pr ${PR_NUM}
 	
 
 test: fmtcheck
