@@ -301,6 +301,11 @@ func dataTemplate() *schema.Resource {
 				Description: "Kubernetes api versions used for Capabilities.APIVersions",
 				Elem:        &schema.Schema{Type: schema.TypeString},
 			},
+			"kube_version": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Kubernetes api versions used for KubeVersion",
+			},
 			"include_crds": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -366,6 +371,16 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 
 		for _, apiVersion := range apiVersionsValues {
 			apiVersions = append(apiVersions, apiVersion.(string))
+		}
+	}
+
+	var err error
+	var kubeVersion *chartutil.KubeVersion
+	kubeVersionStr := d.Get("kube_version").(string)
+	if kubeVersionStr != "" {
+		kubeVersion, err = chartutil.ParseKubeVersion(kubeVersionStr)
+		if err != nil {
+			return diag.FromErr(err)
 		}
 	}
 
@@ -455,6 +470,7 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	client.ClientOnly = !d.Get("validate").(bool)
 	client.APIVersions = chartutil.VersionSet(apiVersions)
 	client.IncludeCRDs = d.Get("include_crds").(bool)
+	client.KubeVersion = kubeVersion
 
 	skipTests := d.Get("skip_tests").(bool)
 
