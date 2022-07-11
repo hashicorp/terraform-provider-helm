@@ -448,6 +448,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 	name := randName("test-update-existing-failed")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
