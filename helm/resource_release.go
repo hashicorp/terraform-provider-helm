@@ -847,12 +847,10 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 				// same apply. We are catching this case here and marking manifest
 				// as computed to avoid breaking existing configs
 				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
-					d.SetNewComputed("manifest")
-					d.SetNewComputed("version")
 					// NOTE it would be nice to return a diagnostic here to warn the user
 					// that we can't generate the diff here because the cluster is not yet
 					// reachable but this is not supported by CustomizeDiffFunc
-					return nil
+					return d.SetNewComputed("manifest")
 				}
 				return err
 			}
@@ -862,9 +860,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 				return err
 			}
 			manifest := redactSensitiveValues(string(jsonManifest), d)
-			d.SetNew("manifest", manifest)
-			return d.SetNewComputed("version")
-
+			return d.SetNew("manifest", manifest)
 		}
 
 		// check if release exists
