@@ -750,7 +750,6 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
 	logID := fmt.Sprintf("[resourceDiff: %s]", d.Get("name").(string))
 	debug("%s Start", logID)
-
 	m := meta.(*Meta)
 	name := d.Get("name").(string)
 	namespace := d.Get("namespace").(string)
@@ -763,7 +762,6 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	if err != nil {
 		return err
 	}
-	client := action.NewUpgrade(actionConfig)
 
 	// Always set desired state to DEPLOYED
 	err = d.SetNew("status", release.StatusDeployed.String())
@@ -771,7 +769,8 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		return err
 	}
 
-	cpo, chartName, err := chartPathOptions(d, m, &client.ChartPathOptions)
+	var chartPathOpts action.ChartPathOptions
+	cpo, chartName, err := chartPathOptions(d, m, &chartPathOpts)
 	if err != nil {
 		return err
 	}
@@ -796,10 +795,72 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	debug("%s Release validated", logID)
 
 	if m.ExperimentEnabled("manifest") {
-		// we don't need a custom diff if the release hasn't been created yet
+		var postRenderer postrender.PostRenderer
+		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+			av := d.Get("postrender.0.args")
+			args := []string{}
+			for _, arg := range av.([]interface{}) {
+				if arg == nil {
+					continue
+				}
+				args = append(args, arg.(string))
+			}
+			pr, err := postrender.NewExec(cmd, args...)
+			if err != nil {
+				return err
+			}
+			postRenderer = pr
+		}
+
 		oldStatus, _ := d.GetChange("status")
 		if oldStatus.(string) == "" {
-			return nil
+			install := action.NewInstall(actionConfig)
+			install.ChartPathOptions = *cpo
+			install.DryRun = true
+			install.DisableHooks = d.Get("disable_webhooks").(bool)
+			install.Wait = d.Get("wait").(bool)
+			install.WaitForJobs = d.Get("wait_for_jobs").(bool)
+			install.Devel = d.Get("devel").(bool)
+			install.DependencyUpdate = d.Get("dependency_update").(bool)
+			install.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+			install.Namespace = d.Get("namespace").(string)
+			install.ReleaseName = d.Get("name").(string)
+			install.Atomic = d.Get("atomic").(bool)
+			install.SkipCRDs = d.Get("skip_crds").(bool)
+			install.SubNotes = d.Get("render_subchart_notes").(bool)
+			install.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
+			install.Replace = d.Get("replace").(bool)
+			install.Description = d.Get("description").(string)
+			install.CreateNamespace = d.Get("create_namespace").(bool)
+			install.PostRenderer = postRenderer
+
+			values, _ := getValues(d)
+			if err != nil {
+				return fmt.Errorf("error getting values: %v", err)
+			}
+
+			debug("%s performing dry run install", logID)
+			dry, err := install.Run(chart, values)
+			if err != nil {
+				// NOTE if the cluster is not reachable then we can't run the install
+				// this will happen if the user has their cluster creation in the
+				// same apply. We are catching this case here and marking manifest
+				// as computed to avoid breaking existing configs
+				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
+					// NOTE it would be nice to return a diagnostic here to warn the user
+					// that we can't generate the diff here because the cluster is not yet
+					// reachable but this is not supported by CustomizeDiffFunc
+					return d.SetNewComputed("manifest")
+				}
+				return err
+			}
+
+			jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
+			if err != nil {
+				return err
+			}
+			manifest := redactSensitiveValues(string(jsonManifest), d)
+			return d.SetNew("manifest", manifest)
 		}
 
 		// check if release exists
@@ -809,55 +870,38 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 				return d.SetNew("version", chart.Metadata.Version)
 			}
 			d.SetNewComputed("manifest")
-			return nil
+			return d.SetNewComputed("version")
 		} else if err != nil {
 			return fmt.Errorf("error retrieving old release for a diff: %v", err)
 		}
 
-		debug("%s performing dry run", logID)
-
-		client.ChartPathOptions = *cpo
-		client.Devel = d.Get("devel").(bool)
-		client.Namespace = d.Get("namespace").(string)
-		client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
-		client.Wait = d.Get("wait").(bool)
-		client.DryRun = true // do not apply changes
-		client.DisableHooks = d.Get("disable_webhooks").(bool)
-		client.Atomic = d.Get("atomic").(bool)
-		client.SubNotes = d.Get("render_subchart_notes").(bool)
-		client.WaitForJobs = d.Get("wait_for_jobs").(bool)
-		client.Force = d.Get("force_update").(bool)
-		client.ResetValues = d.Get("reset_values").(bool)
-		client.ReuseValues = d.Get("reuse_values").(bool)
-		client.Recreate = d.Get("recreate_pods").(bool)
-		client.MaxHistory = d.Get("max_history").(int)
-		client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
-		client.Description = d.Get("description").(string)
-
-		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-			av := d.Get("postrender.0.args")
-			var args []string
-			for _, arg := range av.([]interface{}) {
-				if arg == nil {
-					continue
-				}
-				args = append(args, arg.(string))
-			}
-
-			pr, err := postrender.NewExec(cmd, args...)
-
-			if err != nil {
-				return err
-			}
-			client.PostRenderer = pr
-		}
+		upgrade := action.NewUpgrade(actionConfig)
+		upgrade.ChartPathOptions = *cpo
+		upgrade.Devel = d.Get("devel").(bool)
+		upgrade.Namespace = d.Get("namespace").(string)
+		upgrade.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+		upgrade.Wait = d.Get("wait").(bool)
+		upgrade.DryRun = true // do not apply changes
+		upgrade.DisableHooks = d.Get("disable_webhooks").(bool)
+		upgrade.Atomic = d.Get("atomic").(bool)
+		upgrade.SubNotes = d.Get("render_subchart_notes").(bool)
+		upgrade.WaitForJobs = d.Get("wait_for_jobs").(bool)
+		upgrade.Force = d.Get("force_update").(bool)
+		upgrade.ResetValues = d.Get("reset_values").(bool)
+		upgrade.ReuseValues = d.Get("reuse_values").(bool)
+		upgrade.Recreate = d.Get("recreate_pods").(bool)
+		upgrade.MaxHistory = d.Get("max_history").(int)
+		upgrade.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
+		upgrade.Description = d.Get("description").(string)
+		upgrade.PostRenderer = postRenderer
 
 		values, err := getValues(d)
 		if err != nil {
 			return fmt.Errorf("error getting values for a diff: %v", err)
 		}
 
-		dry, err := client.Run(name, chart, values)
+		debug("%s performing dry run upgrade", logID)
+		dry, err := upgrade.Run(name, chart, values)
 		if err != nil && strings.Contains(err.Error(), "has no deployed releases") {
 			if len(chart.Metadata.Version) > 0 {
 				return d.SetNew("version", chart.Metadata.Version)
