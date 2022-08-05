@@ -124,7 +124,7 @@ The following arguments are supported:
 * `repository_username` - (Optional) Username for HTTP basic authentication against the repository.
 * `repository_password` - (Optional) Password for HTTP basic authentication against the repository.
 * `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
-* `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
+* `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed. `helm_release` will not automatically grab the latest release, version must explicitly upgraded when upgrading an installed chart.
 * `namespace` - (Optional) The namespace to install the release into. Defaults to `default`.
 * `verify` - (Optional) Verify the package before installing it. Helm uses a provenance file to verify the integrity of the chart; this must be hosted alongside the chart. For more information see the [Helm Documentation](https://helm.sh/docs/topics/provenance/). Defaults to `false`.
 * `keyring` - (Optional) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`
