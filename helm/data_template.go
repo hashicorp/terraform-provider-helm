@@ -70,6 +70,11 @@ func dataTemplate() *schema.Resource {
 				Sensitive:   true,
 				Description: "Password for HTTP basic authentication",
 			},
+			"repository_password_env": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Name of an environment variable that holds the password for HTTP basic authentication",
+			},
 			"pass_credentials": {
 				Type:        schema.TypeBool,
 				Optional:    true,

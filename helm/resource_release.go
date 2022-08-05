@@ -103,6 +103,11 @@ func resourceRelease() *schema.Resource {
 				Sensitive:   true,
 				Description: "Password for HTTP basic authentication",
 			},
+			"repository_password_env": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Name of an environment variable that holds the password for HTTP basic authentication against the reposotory",
+			},
 			"pass_credentials": {
 				Type:        schema.TypeBool,
 				Optional:    true,

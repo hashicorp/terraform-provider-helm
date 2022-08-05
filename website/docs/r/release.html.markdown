@@ -93,6 +93,7 @@ The following arguments are supported:
 * `repository_ca_file` - (Optional) The Repositories CA File.
 * `repository_username` - (Optional) Username for HTTP basic authentication against the repository.
 * `repository_password` - (Optional) Password for HTTP basic authentication against the repository.
+* `repository_password_env` - (Optional) Name of an environment variable that holds the password for HTTP basic authentication against the reposotory.
 * `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
 * `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
 * `namespace` - (Optional) The namespace to install the release into. Defaults to `default`.

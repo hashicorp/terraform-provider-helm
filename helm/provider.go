@@ -430,6 +430,12 @@ func OCIRegistryLogin(actionConfig *action.Configuration, d dataGetter) error {
 
 	username := d.Get("repository_username").(string)
 	password := d.Get("repository_password").(string)
+	passwordEnv := d.Get("repository_password_env").(string)
+
+	if passwordEnv != "" && password == "" {
+		password = os.Getenv(passwordEnv)
+	}
+
 	if username != "" && password != "" {
 		u, err := url.Parse(ociURL)
 		if err != nil {
