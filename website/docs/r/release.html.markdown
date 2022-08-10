@@ -45,6 +45,12 @@ resource "helm_release" "example" {
 }
 ```
 
+> When using the `helm_release` resource in Terraform Cloud with Remote Runners you may receive a `chart, version, not found in repository` error.
+>
+>> Error: could not download chart: chart "jetstack/cert-manager" version "v0.14.3" not found in https://charts.jetstack.io repository
+>
+> The recommended way to resolve this is to use the [Chart URL](#chart-url) approach documented lower in this page.
+
 ## Example Usage - Local Chart
 
 In case a Chart is not available from a repository, a path may be used:
@@ -56,7 +62,7 @@ resource "helm_release" "example" {
 }
 ```
 
-## Example Usage - Chart URL
+## <a id="chart-url"></a>Example Usage - Chart URL
 
 An absolute URL to the .tgz of the Chart may also be used:
 
