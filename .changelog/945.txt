@@ -1,0 +1,3 @@
+```release-note:note
+Upgrade Helm to v3.9.4
+```
