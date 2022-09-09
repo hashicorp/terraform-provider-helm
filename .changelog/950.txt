@@ -1,0 +1,3 @@
+```release-note:bug
+Crash: Fix `show_only` crash when string is empty
+```
