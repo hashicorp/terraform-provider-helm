@@ -4,6 +4,9 @@ metadata:
   name: {{ include "umbrella-chart.fullname" . }}
   labels:
     {{- include "umbrella-chart.labels" . | nindent 4 }}
+    {{- /* The dependency-bar label template is included here to
+    test dependency updating. */}}
+    {{- include "dependency-bar.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:

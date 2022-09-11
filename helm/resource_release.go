@@ -776,11 +776,23 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	}
 
 	// Get Chart metadata, if we fail - we're done
-	chart, _, err := getChart(d, meta.(*Meta), chartName, cpo)
+	chart, path, err := getChart(d, meta.(*Meta), chartName, cpo)
 	if err != nil {
 		return nil
 	}
 	debug("%s Got chart", logID)
+
+	// check and update the chart's dependencies if needed
+	updated, err := checkChartDependencies(d, chart, path, m)
+	if err != nil {
+		return err
+	} else if updated {
+		// load the chart again if its dependencies have been updated
+		chart, err = loader.Load(path)
+		if err != nil {
+			return err
+		}
+	}
 
 	// Validates the resource configuration, the values, the chart itself, and
 	// the combination of both.
