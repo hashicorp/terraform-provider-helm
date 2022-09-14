@@ -375,8 +375,8 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 		showOnlyAttrValue := showOnlyAttr.([]interface{})
 
 		for _, showFile := range showOnlyAttrValue {
-			if showFile != nil {
-				showFiles = append(showFiles, showFile.(string))
+			if s, ok := showFile.(string); ok {
+				showFiles = append(showFiles, s)
 			}
 		}
 	}
