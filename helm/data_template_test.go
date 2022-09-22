@@ -82,34 +82,10 @@ data:
 	})
 }
 
-func TestAccDataTemplate_emptyShowOnly(t *testing.T) {
-	name := randName("basic")
-	namespace := randName(testNamespacePrefix)
-
-	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
-		Steps: []resource.TestStep{{
-			Config: testAccDataHelmTemplateConfigEmptyShowOnly(testResourceName, namespace, name, "1.2.3"),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "5"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/deployment.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/service.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/serviceaccount.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/configmaps.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/tests/test-connection.yaml"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest"),
-				resource.TestCheckResourceAttrSet(datasourceAddress, "notes"),
-			),
-		}},
-	})
-}
-
 func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		data "helm_template" "%s" {
+			show_only	= [""]
  			name        = %q
 			namespace   = %q
 			description = "Test"
@@ -152,31 +128,8 @@ func testAccDataHelmTemplateConfigTemplates(resource, ns, name, version string) 
 
 			show_only = [
 				"templates/configmaps.yaml",
+				""
 			]
-		}
-	`, resource, name, ns, testRepositoryURL, version)
-}
-
-func testAccDataHelmTemplateConfigEmptyShowOnly(resource, ns, name, version string) string {
-	return fmt.Sprintf(`
-		data "helm_template" "%s" {
-			show_only	= [""]
- 			name        = %q
-			namespace   = %q
-			description = "Test"
-			repository  = %q
-  			chart       = "test-chart"
-			version     = %q
-
-			set {
-				name = "foo"
-				value = "bar"
-			}
-
-			set {
-				name = "fizz"
-				value = 1337
-			}
 		}
 	`, resource, name, ns, testRepositoryURL, version)
 }
