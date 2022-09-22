@@ -2,8 +2,6 @@ package helm
 
 import (
 	"fmt"
-	"math/rand"
-	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -1234,26 +1232,17 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 	})
 }
 
-func randPort() int {
-	for {
-		p := rand.Intn(65535-1024) + 1024
-		hp := fmt.Sprintf("0.0.0.0:%d", p)
-		c, err := net.DialTimeout("tcp", hp, time.Second)
-		if err != nil {
-			return p
-		}
-		c.Close()
-	}
-}
-
 func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
 		t.Skip("Starting the OCI registry requires docker to be installed in the PATH")
 	}
 
-	ociRegistryPort := randPort()
-	ociRegistryURL := fmt.Sprintf("oci://localhost:%d/helm-charts", ociRegistryPort)
+	helmPath, err := exec.LookPath("helm")
+	if err != nil {
+		t.Skip("Starting the OCI registry requires helm to be installed in the PATH")
+	}
+
 	regitryContainerName := randName("registry")
 
 	// start OCI registry
@@ -1264,7 +1253,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	runflags := []string{
 		"run",
 		"--detach",
-		"--publish", fmt.Sprintf("%d:5000", ociRegistryPort),
+		"--publish", "5000",
 		"--name", regitryContainerName,
 	}
 	if usepassword {
@@ -1285,11 +1274,25 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	// wait a few seconds for the server to start
 	t.Log("Waiting for registry to start...")
 	time.Sleep(5 * time.Second)
+
+	// grab the randomly chosen port
+	cmd = exec.Command(dockerPath, "port", regitryContainerName)
+	out, err = cmd.CombinedOutput()
+	t.Log(string(out))
+	if err != nil {
+		t.Errorf("Failed to get port for OCI registry: %v", err)
+		return "", nil
+	}
+
+	portOutput := strings.Split(string(out), "\n")[0]
+	ociRegistryPort := strings.TrimSpace(strings.Split(strings.Split(portOutput, " -> ")[1], ":")[1])
+	ociRegistryURL := fmt.Sprintf("oci://localhost:%s/helm-charts", ociRegistryPort)
+
 	t.Log("OCI registry started at", ociRegistryURL)
 
 	// package chart
 	t.Log("packaging test-chart")
-	cmd = exec.Command("helm", "package", "testdata/charts/test-chart")
+	cmd = exec.Command(helmPath, "package", "testdata/charts/test-chart")
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	if err != nil {
@@ -1300,8 +1303,8 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	if usepassword {
 		// log into OCI registry
 		t.Log("logging in to test-chart to OCI registry")
-		cmd = exec.Command("helm", "registry", "login",
-			fmt.Sprintf("localhost:%d", ociRegistryPort),
+		cmd = exec.Command(helmPath, "registry", "login",
+			fmt.Sprintf("localhost:%s", ociRegistryPort),
 			"--username", "hashicorp",
 			"--password", "terraform")
 		out, err = cmd.CombinedOutput()
@@ -1314,7 +1317,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 
 	// push chart to OCI registry
 	t.Log("pushing test-chart to OCI registry")
-	cmd = exec.Command("helm", "push",
+	cmd = exec.Command(helmPath, "push",
 		"test-chart-1.2.3.tgz",
 		ociRegistryURL)
 	out, err = cmd.CombinedOutput()
@@ -1326,7 +1329,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 
 	return ociRegistryURL, func() {
 		t.Log("stopping OCI registry")
-		cmd := exec.Command("docker", "rm",
+		cmd := exec.Command(dockerPath, "rm",
 			"--force", regitryContainerName)
 		out, err := cmd.CombinedOutput()
 		t.Log(string(out))
