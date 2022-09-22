@@ -85,6 +85,7 @@ data:
 func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		data "helm_template" "%s" {
+			show_only	= [""]
  			name        = %q
 			namespace   = %q
 			description = "Test"
@@ -127,6 +128,7 @@ func testAccDataHelmTemplateConfigTemplates(resource, ns, name, version string) 
 
 			show_only = [
 				"templates/configmaps.yaml",
+				""
 			]
 		}
 	`, resource, name, ns, testRepositoryURL, version)
