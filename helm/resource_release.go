@@ -862,6 +862,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 					// NOTE it would be nice to return a diagnostic here to warn the user
 					// that we can't generate the diff here because the cluster is not yet
 					// reachable but this is not supported by CustomizeDiffFunc
+					debug(`cluster was unreachable at create time, marking "manifest" as computed`)
 					return d.SetNewComputed("manifest")
 				}
 				return err
