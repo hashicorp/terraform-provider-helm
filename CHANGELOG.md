@@ -1,3 +1,15 @@
+## 2.7.0 (September 28, 2022)
+
+FEATURES:
+
+* Update helm package to 3.9.4 (#945)
+* Show Manifest when creating release [[GH-903](https://github.com/hashicorp/terraform-provider-helm/issues/903)]
+
+BUG FIXES:
+
+* Do dependency update in resourceDiff #771 (#855)
+* Crash: Fix `show_only` crash when string is empty [[GH-950](https://github.com/hashicorp/terraform-provider-helm/issues/950)]
+
 ## 2.6.0 (June 17, 2022)
 
 IMPROVEMENTS:
