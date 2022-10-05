@@ -846,7 +846,11 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			install.CreateNamespace = d.Get("create_namespace").(bool)
 			install.PostRenderer = postRenderer
 
-			values, _ := getValues(d)
+			// if !valuesWhollyKnown(d) {
+			// 	d.SetNewComputed("manifest")
+			// 	return d.SetNewComputed("version")
+			// }
+			values, err := getValues(d)
 			if err != nil {
 				return fmt.Errorf("error getting values: %v", err)
 			}
@@ -1368,4 +1372,20 @@ func resultToError(r *action.LintResult) error {
 	}
 
 	return fmt.Errorf("malformed chart or values: \n\t%s", strings.Join(messages, "\n\t"))
+}
+
+func valuesWhollyKnown(d *schema.ResourceDiff) bool {
+	rawPlan := d.GetRawPlan()
+
+	if !rawPlan.GetAttr("values").IsWhollyKnown() {
+		return false
+	}
+	if !rawPlan.GetAttr("set").IsWhollyKnown() {
+		return false
+	}
+	if !rawPlan.GetAttr("set_sensitive").IsWhollyKnown() {
+		return false
+	}
+
+	return true
 }
