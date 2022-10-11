@@ -1232,6 +1232,33 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
+	name := "example"
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		Providers: testAccProviders,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"random": {
+				Source: "hashicorp/random",
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			// NOTE this is a regression test to apply a configuration which supplies
+			// unknown values to the release at plan time, we simply want to test here
+			// that applying the config doesn't produce an inconsistent final plan error
+			{
+				Config: testAccHelmReleaseConfigManifestUnknownValues(testResourceName, namespace, name, "1.2.3"),
+			},
+		},
+	})
+}
+
 func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
@@ -1498,6 +1525,40 @@ func testAccHelmReleaseConfigManifestExperimentEnabled(resource, ns, name, versi
 			repository  = %q
 			version     = %q
 			chart       = "test-chart"
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccHelmReleaseConfigManifestUnknownValues(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments {
+				manifest = true
+			}
+		}
+		resource "random_string" "random_label" {
+			length           = 16
+			special          = false
+		}
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+			set {
+				name  = "podAnnotations.random"
+				value = random_string.random_label.result
+			}
+			set_sensitive {
+				name  = "podAnnotations.sensitive"
+				value = random_string.random_label.result
+			}
+			values = [<<EOT
+podAnnotations:
+  test: ${random_string.random_label.result}
+			EOT
+			]
 		}
 	`, resource, name, ns, testRepositoryURL, version)
 }

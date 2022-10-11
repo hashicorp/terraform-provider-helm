@@ -1,0 +1,3 @@
+```release-note:bug
+Crash Fix: Fix Unknown Value in Manifest Diff
+```

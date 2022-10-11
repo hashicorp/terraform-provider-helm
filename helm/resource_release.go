@@ -807,6 +807,17 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	debug("%s Release validated", logID)
 
 	if m.ExperimentEnabled("manifest") {
+		// NOTE we need to check that the values supplied to the release are
+		// fully known at plan time otherwise we can't supply them to the
+		// action to perform a dry run
+		if !valuesKnown(d) {
+			// NOTE it would be nice to surface a warning diagnostic here
+			// but this is not possible with the SDK
+			debug("not all values are known, skipping dry run to render manifest")
+			d.SetNewComputed("manifest")
+			return d.SetNewComputed("version")
+		}
+
 		var postRenderer postrender.PostRenderer
 		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
 			av := d.Get("postrender.0.args")
@@ -846,7 +857,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			install.CreateNamespace = d.Get("create_namespace").(bool)
 			install.PostRenderer = postRenderer
 
-			values, _ := getValues(d)
+			values, err := getValues(d)
 			if err != nil {
 				return fmt.Errorf("error getting values: %v", err)
 			}
@@ -1368,4 +1379,20 @@ func resultToError(r *action.LintResult) error {
 	}
 
 	return fmt.Errorf("malformed chart or values: \n\t%s", strings.Join(messages, "\n\t"))
+}
+
+// valuesKnown returns true if all of the values supplied to the release are known at plan time
+func valuesKnown(d *schema.ResourceDiff) bool {
+	rawPlan := d.GetRawPlan()
+	checkAttributes := []string{
+		"values",
+		"set",
+		"set_sensitive",
+	}
+	for _, attr := range checkAttributes {
+		if !rawPlan.GetAttr(attr).IsWhollyKnown() {
+			return false
+		}
+	}
+	return true
 }
