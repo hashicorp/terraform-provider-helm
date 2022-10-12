@@ -1,3 +1,9 @@
+## 2.7.1 (October 12, 2022)
+
+BUG FIXES:
+
+* Crash Fix: Fix Unknown Value in Manifest Diff [[GH-966](https://github.com/hashicorp/terraform-provider-helm/issues/966)]
+
 ## 2.7.0 (September 28, 2022)
 
 FEATURES:
