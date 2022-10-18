@@ -152,6 +152,7 @@ func resourceRelease() *schema.Resource {
 						"type": {
 							Type:     schema.TypeString,
 							Optional: true,
+							Default:  "",
 							// TODO: use ValidateDiagFunc once an SDK v2 version of StringInSlice exists.
 							// https://github.com/hashicorp/terraform-plugin-sdk/issues/534
 							ValidateFunc: validation.StringInSlice([]string{

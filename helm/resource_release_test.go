@@ -486,6 +486,61 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_updateSetValue(t *testing.T) {
+	name := randName("test-update-set-value")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	// Ensure that 'set' 'type' arguments don't disappear when updating a 'set' 'value' argument.
+	// use  checkResourceAttrExists rather than testCheckResourceAttrSet as the latter also checks if the value is not ""
+	// and the default for 'type' is an empty string when not explicitly set.
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigSet(
+					testResourceName, namespace, name, "1.2.3", "initial",
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkResourceAttrExists("helm_release.test", "set.0.type"),
+					checkResourceAttrExists("helm_release.test", "set.1.type"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseConfigSet(
+					testResourceName, namespace, name, "1.2.3", "updated",
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkResourceAttrExists("helm_release.test", "set.0.type"),
+					checkResourceAttrExists("helm_release.test", "set.1.type"),
+				),
+			},
+		},
+	})
+}
+
+func checkResourceAttrExists(name, key string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		ms := s.RootModule()
+		rs, ok := ms.Resources[name]
+		if !ok {
+			return fmt.Errorf("Not found: %s in %s", name, ms.Path)
+		}
+
+		is := rs.Primary
+		if is == nil {
+			return fmt.Errorf("No primary instance: %s in %s", name, ms.Path)
+		}
+
+		if _, ok := is.Attributes[key]; ok {
+			return nil
+		}
+		return fmt.Errorf("%s: Attribute '%s' expected to be set", name, key)
+	}
+}
+
 func TestAccResourceRelease_postrender(t *testing.T) {
 	// TODO: Add Test Fixture to return real YAML here
 
@@ -672,6 +727,29 @@ func testAccHelmReleaseConfigSensitiveValue(resource, ns, name, chart, version s
 			  }
 		}
 	`, resource, name, ns, testRepositoryURL, chart, version, key, value)
+}
+
+func testAccHelmReleaseConfigSet(resource, ns, name, version, setValue string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+  			chart       = "test-chart"
+			version     = %q
+
+			set {
+				name = "foo"
+				value = %q
+			}
+
+			set {
+				name = "fizz"
+				value = 1337
+			}
+		}
+	`, resource, name, ns, testRepositoryURL, version, setValue)
 }
 
 func TestGetValues(t *testing.T) {
