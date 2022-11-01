@@ -120,6 +120,7 @@ The following arguments are supported:
 * `replace` - (Optional)  Re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production. Defaults to `false`.
 * `description` - (Optional) Set release description attribute (visible in the history).
 * `postrender` - (Optional) Configure a command to run after helm renders the manifest which can alter the manifest contents.
+* `pass_credentials` - (Optional) Pass credentials to all domains. Defaults to `false`.
 * `lint` - (Optional) Run the helm chart linter during the plan. Defaults to `false`.
 * `create_namespace` - (Optional) Create the namespace if it does not yet exist. Defaults to `false`.
 
