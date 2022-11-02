@@ -408,6 +408,42 @@ func resourceRelease() *schema.Resource {
 				},
 			},
 		},
+		SchemaVersion: 0,
+		StateUpgraders: []schema.StateUpgrader{
+			{
+				Type: resourceReleaseUpgrader().CoreConfigSchema().ImpliedType(),
+				Upgrade: func(ctx context.Context, rawState map[string]any, meta any) (map[string]any, error) {
+					if rawState["pass_credentials"] == nil {
+						rawState["pass_credentials"] = false
+					}
+					if rawState["wait_for_jobs"] == nil {
+						rawState["wait_for_jobs"] = false
+					}
+
+					return rawState, nil
+				},
+				Version: 1,
+			},
+		},
+	}
+}
+
+func resourceReleaseUpgrader() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"pass_credentials": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Pass credentials to all domains",
+				Default:     defaultAttributes["pass_credentials"],
+			},
+			"wait_for_jobs": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     defaultAttributes["wait_for_jobs"],
+				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
+			},
+		},
 	}
 }
 
