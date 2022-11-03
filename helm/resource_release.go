@@ -408,7 +408,7 @@ func resourceRelease() *schema.Resource {
 				},
 			},
 		},
-		SchemaVersion: 0,
+		SchemaVersion: 1,
 		StateUpgraders: []schema.StateUpgrader{
 			{
 				Type: resourceReleaseUpgrader().CoreConfigSchema().ImpliedType(),
@@ -422,7 +422,7 @@ func resourceRelease() *schema.Resource {
 
 					return rawState, nil
 				},
-				Version: 1,
+				Version: 0,
 			},
 		},
 	}

@@ -59,6 +59,17 @@ func TestAccResourceRelease_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
 				),
 			},
+			{
+				Config: testAccHelmReleaseConfigBasicStateMigrator(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
+					resource.TestCheckResourceAttr("helm_release.test", "pass_credentials", "false"),
+					resource.TestCheckResourceAttr("helm_release.test", "wait_for_jobs", "false"),
+				),
+			},
 		},
 	})
 }
@@ -100,6 +111,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.imported", "timeout", "300"),
 					resource.TestCheckResourceAttr("helm_release.imported", "wait", "true"),
 					resource.TestCheckResourceAttr("helm_release.imported", "wait_for_jobs", "true"),
+					resource.TestCheckResourceAttr("helm_release.imported", "pass_credentials", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "disable_webhooks", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "atomic", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "render_subchart_notes", "true"),
@@ -692,6 +704,21 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 				name = "fizz"
 				value = 1337
 			}
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccHelmReleaseConfigBasicStateMigrator(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+  			chart       = "test-chart"
+			version     = %q
+			pass_credentials = null
+			wait_for_jobs = null
 		}
 	`, resource, name, ns, testRepositoryURL, version)
 }
