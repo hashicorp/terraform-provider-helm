@@ -2,6 +2,7 @@ package helm
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -82,6 +83,47 @@ data:
 	})
 }
 
+func TestAccDataTemplate_kubeVersion(t *testing.T) {
+	name := randName("kube-version")
+	namespace := randName(testNamespacePrefix)
+
+	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
+
+	// No kube version set, will fail as v1.20.0.
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{{
+			Config:      testAccDataHelmTemplateKubeVersionNoVersionSet(testResourceName, namespace, name, "1.2.3"),
+			ExpectError: regexp.MustCompile("chart requires kubeVersion.*"),
+		}},
+	})
+
+	// Kube Version set but for a to low version.
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{{
+			Config:      testAccDataHelmTemplateKubeVersion(testResourceName, namespace, name, "1.2.3", "1.18.0"),
+			ExpectError: regexp.MustCompile("chart requires kubeVersion.*"),
+		}},
+	})
+
+	// Kube Version set and above the min version.
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{{
+			Config: testAccDataHelmTemplateKubeVersion(testResourceName, namespace, name, "1.2.3", "1.22.0"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "1"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/deployment.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest"),
+			),
+		}},
+	})
+}
+
 func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		data "helm_template" "%s" {
@@ -130,6 +172,33 @@ func testAccDataHelmTemplateConfigTemplates(resource, ns, name, version string) 
 				"templates/configmaps.yaml",
 				""
 			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccDataHelmTemplateKubeVersion(resource, ns, name, version, kubeVersion string) string {
+	return fmt.Sprintf(`
+		data "helm_template" "%s" {
+ 			name         = %q
+			namespace    = %q
+			description  = "Test"
+			repository   = %q
+  			chart        = "kube-version"
+			version      = %q
+			kube_version = %q
+		}
+	`, resource, name, ns, testRepositoryURL, version, kubeVersion)
+}
+
+func testAccDataHelmTemplateKubeVersionNoVersionSet(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		data "helm_template" "%s" {
+ 			name         = %q
+			namespace    = %q
+			description  = "Test"
+			repository   = %q
+  			chart        = "kube-version"
+			version      = %q
 		}
 	`, resource, name, ns, testRepositoryURL, version)
 }
