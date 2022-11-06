@@ -109,6 +109,16 @@ func TestAccDataTemplate_kubeVersion(t *testing.T) {
 		}},
 	})
 
+	// Kube Version set but not parsable.
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{{
+			Config:      testAccDataHelmTemplateKubeVersion(testResourceName, namespace, name, "1.2.3", "abcdef"),
+			ExpectError: regexp.MustCompile(`couldn't parse string "abcdef" into kube-version`),
+		}},
+	})
+
 	// Kube Version set and above the min version.
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
