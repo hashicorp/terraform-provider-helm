@@ -1,11 +1,13 @@
 package helm
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -57,17 +59,6 @@ func TestAccResourceRelease_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
-				),
-			},
-			{
-				Config: testAccHelmReleaseConfigBasicStateMigrator(testResourceName, namespace, name, "1.2.3"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
-					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
-					resource.TestCheckResourceAttr("helm_release.test", "pass_credentials", "false"),
-					resource.TestCheckResourceAttr("helm_release.test", "wait_for_jobs", "false"),
 				),
 			},
 		},
@@ -708,21 +699,6 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	`, resource, name, ns, testRepositoryURL, version)
 }
 
-func testAccHelmReleaseConfigBasicStateMigrator(resource, ns, name, version string) string {
-	return fmt.Sprintf(`
-		resource "helm_release" "%s" {
- 			name        = %q
-			namespace   = %q
-			description = "Test"
-			repository  = %q
-  			chart       = "test-chart"
-			version     = %q
-			pass_credentials = null
-			wait_for_jobs = null
-		}
-	`, resource, name, ns, testRepositoryURL, version)
-}
-
 func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, values []string) string {
 	vals := make([]string, len(values))
 	for i, v := range values {
@@ -1355,7 +1331,7 @@ func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			// NOTE this is a regression test to apply a configuration which supplies
-			// unknown values to the release at plan time, we simply want to test here
+			// unknown values to the release at plan time, we simply expected to test here
 			// that applying the config doesn't produce an inconsistent final plan error
 			{
 				Config: testAccHelmReleaseConfigManifestUnknownValues(testResourceName, namespace, name, "1.2.3"),
@@ -1745,4 +1721,29 @@ func removeSubcharts(chartName string) error {
 		return errors.Wrapf(err, "can't remove charts directory %s", chartsPath)
 	}
 	return os.RemoveAll(chartsPath)
+}
+
+func TestResourceExampleInstanceStateUpgradeV0(t *testing.T) {
+	expected := map[string]any{
+		"wait_for_jobs":    false,
+		"pass_credentials": false,
+	}
+	states := []map[string]any{
+		{
+			"wait_for_jobs":    nil,
+			"pass_credentials": nil,
+		},
+		{},
+	}
+
+	for _, state := range states {
+		actual, err := resourceReleaseStateUpgradeV0(context.Background(), state, nil)
+		if err != nil {
+			t.Fatalf("error migrating state: %s", err)
+		}
+
+		if !reflect.DeepEqual(expected, actual) {
+			t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", expected, actual)
+		}
+	}
 }

@@ -411,21 +411,22 @@ func resourceRelease() *schema.Resource {
 		SchemaVersion: 1,
 		StateUpgraders: []schema.StateUpgrader{
 			{
-				Type: resourceReleaseUpgrader().CoreConfigSchema().ImpliedType(),
-				Upgrade: func(ctx context.Context, rawState map[string]any, meta any) (map[string]any, error) {
-					if rawState["pass_credentials"] == nil {
-						rawState["pass_credentials"] = false
-					}
-					if rawState["wait_for_jobs"] == nil {
-						rawState["wait_for_jobs"] = false
-					}
-
-					return rawState, nil
-				},
+				Type:    resourceReleaseUpgrader().CoreConfigSchema().ImpliedType(),
+				Upgrade: resourceReleaseStateUpgradeV0,
 				Version: 0,
 			},
 		},
 	}
+}
+
+func resourceReleaseStateUpgradeV0(ctx context.Context, rawState map[string]any, meta any) (map[string]any, error) {
+	if rawState["pass_credentials"] == nil {
+		rawState["pass_credentials"] = false
+	}
+	if rawState["wait_for_jobs"] == nil {
+		rawState["wait_for_jobs"] = false
+	}
+	return rawState, nil
 }
 
 func resourceReleaseUpgrader() *schema.Resource {
