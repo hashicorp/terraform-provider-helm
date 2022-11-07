@@ -22,9 +22,9 @@ jobs:
     steps:
     - uses: actions/checkout@main
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
-        go-version: 1.17
+        go-version-file: go.mod
     - name: Unit tests
       env:
         GOPATH: /home/runner/go
@@ -40,9 +40,9 @@ jobs:
     steps:
     - uses: actions/checkout@main
     - name: Set up Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
-        go-version: 1.17
+        go-version-file: go.mod
     - uses: debianmaster/actions-k3s@master
       id: k3s
       with:
