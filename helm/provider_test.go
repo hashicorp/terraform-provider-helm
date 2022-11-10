@@ -35,15 +35,32 @@ var (
 	accTest           bool
 	testRepositoryURL string
 
-	testAccProviders map[string]*schema.Provider
-	testAccProvider  *schema.Provider
-	client           kubernetes.Interface = nil
+	// provider for basic tests
+	helmTestAccProviders map[string]*schema.Provider
+	helmTestAccProvider  *schema.Provider
+	// provider with manifest enabled
+	manifestTestAccProviders map[string]*schema.Provider
+	manifestTestAccProvider  *schema.Provider
+	// provider with OCI registry block
+	registryTestAccProviders map[string]*schema.Provider
+	registryTestAccProvider  *schema.Provider
+	client                   kubernetes.Interface = nil
 )
 
 func TestMain(m *testing.M) {
-	testAccProvider = Provider()
-	testAccProviders = map[string]*schema.Provider{
-		"helm": testAccProvider,
+	helmTestAccProvider = Provider()
+	helmTestAccProviders = map[string]*schema.Provider{
+		"helm": helmTestAccProvider,
+	}
+
+	manifestTestAccProvider = Provider()
+	manifestTestAccProviders = map[string]*schema.Provider{
+		"helm": manifestTestAccProvider,
+	}
+
+	registryTestAccProvider = Provider()
+	registryTestAccProviders = map[string]*schema.Provider{
+		"helm": registryTestAccProvider,
 	}
 
 	home, err := ioutil.TempDir(os.TempDir(), "helm")
@@ -206,11 +223,35 @@ func testAccPreCheck(t *testing.T) {
 	}
 	http.DefaultClient.CloseIdleConnections()
 	ctx := context.TODO()
-	diags := testAccProvider.Configure(ctx, terraform.NewResourceConfigRaw(nil))
 
+	// diags := helmTestAccProvider.Configure(ctx, terraform.NewResourceConfigRaw(nil))
+	// if diags.HasError() {
+	// 	t.Fatal(diags)
+	// }
+
+	manifestConfig := map[string]interface{}{
+		"experiments": []interface{}{
+			map[string]interface{}{
+				"manifest": true,
+			},
+		},
+	}
+	diags := manifestTestAccProvider.Configure(ctx, terraform.NewResourceConfigRaw(manifestConfig))
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
+
+	// registryConfig := map[string]interface{}{
+	// 	"registry": map[string]interface{}{
+	// 		"url":      "fefef",
+	// 		"username": "fefef",
+	// 		"password": "fefe",
+	// 	},
+	// }
+	// diags = registryTestAccProvider.Configure(ctx, terraform.NewResourceConfigRaw(registryConfig))
+	// if diags.HasError() {
+	// 	t.Fatal(diags)
+	// }
 }
 
 func createKubernetesClient() (kubernetes.Interface, error) {

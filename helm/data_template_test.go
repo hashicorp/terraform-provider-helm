@@ -15,7 +15,7 @@ func TestAccDataTemplate_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		Providers: manifestTestAccProviders,
 		Steps: []resource.TestStep{{
 			Config: testAccDataHelmTemplateConfigBasic(testResourceName, namespace, name, "1.2.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -69,7 +69,7 @@ data:
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		Providers: manifestTestAccProviders,
 		Steps: []resource.TestStep{{
 			Config: testAccDataHelmTemplateConfigTemplates(testResourceName, namespace, name, "1.2.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
