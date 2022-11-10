@@ -76,8 +76,6 @@ func (wd *WorkingDir) GetHelper() *Helper {
 // Destroy to establish the configuration. Any previously-set configuration is
 // discarded and any saved plan is cleared.
 func (wd *WorkingDir) SetConfig(ctx context.Context, cfg string) error {
-	logging.HelperResourceTrace(ctx, "Setting Terraform configuration", map[string]any{logging.KeyTestTerraformConfiguration: cfg})
-
 	outFilename := filepath.Join(wd.baseDir, ConfigFileName)
 	rmFilename := filepath.Join(wd.baseDir, ConfigFileNameJSON)
 	bCfg := []byte(cfg)
@@ -176,29 +174,11 @@ func (wd *WorkingDir) planFilename() string {
 func (wd *WorkingDir) CreatePlan(ctx context.Context) error {
 	logging.HelperResourceTrace(ctx, "Calling Terraform CLI plan command")
 
-	hasChanges, err := wd.tf.Plan(context.Background(), tfexec.Reattach(wd.reattachInfo), tfexec.Refresh(false), tfexec.Out(PlanFileName))
+	_, err := wd.tf.Plan(context.Background(), tfexec.Reattach(wd.reattachInfo), tfexec.Refresh(false), tfexec.Out(PlanFileName))
 
 	logging.HelperResourceTrace(ctx, "Called Terraform CLI plan command")
 
-	if err != nil {
-		return err
-	}
-
-	if !hasChanges {
-		logging.HelperResourceTrace(ctx, "Created plan with no changes")
-
-		return nil
-	}
-
-	stdout, err := wd.SavedPlanRawStdout(ctx)
-
-	if err != nil {
-		return fmt.Errorf("error retrieving formatted plan output: %w", err)
-	}
-
-	logging.HelperResourceTrace(ctx, "Created plan with changes", map[string]any{logging.KeyTestTerraformPlan: stdout})
-
-	return nil
+	return err
 }
 
 // CreateDestroyPlan runs "terraform plan -destroy" to create a saved plan
@@ -206,29 +186,11 @@ func (wd *WorkingDir) CreatePlan(ctx context.Context) error {
 func (wd *WorkingDir) CreateDestroyPlan(ctx context.Context) error {
 	logging.HelperResourceTrace(ctx, "Calling Terraform CLI plan -destroy command")
 
-	hasChanges, err := wd.tf.Plan(context.Background(), tfexec.Reattach(wd.reattachInfo), tfexec.Refresh(false), tfexec.Out(PlanFileName), tfexec.Destroy(true))
+	_, err := wd.tf.Plan(context.Background(), tfexec.Reattach(wd.reattachInfo), tfexec.Refresh(false), tfexec.Out(PlanFileName), tfexec.Destroy(true))
 
 	logging.HelperResourceTrace(ctx, "Called Terraform CLI plan -destroy command")
 
-	if err != nil {
-		return err
-	}
-
-	if !hasChanges {
-		logging.HelperResourceTrace(ctx, "Created destroy plan with no changes")
-
-		return nil
-	}
-
-	stdout, err := wd.SavedPlanRawStdout(ctx)
-
-	if err != nil {
-		return fmt.Errorf("error retrieving formatted plan output: %w", err)
-	}
-
-	logging.HelperResourceTrace(ctx, "Created destroy plan with changes", map[string]any{logging.KeyTestTerraformPlan: stdout})
-
-	return nil
+	return err
 }
 
 // Apply runs "terraform apply". If CreatePlan has previously completed

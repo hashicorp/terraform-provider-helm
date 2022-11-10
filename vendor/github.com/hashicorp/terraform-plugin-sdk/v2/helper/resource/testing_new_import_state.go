@@ -158,27 +158,20 @@ func testStepNewImportState(ctx context.Context, t testing.T, helper *plugintest
 	if step.ImportStateVerify {
 		logging.HelperResourceTrace(ctx, "Using TestStep ImportStateVerify")
 
-		// Ensure that we do not match against data sources as they
-		// cannot be imported and are not what we want to verify.
-		// Mode is not present in ResourceState so we use the
-		// stringified ResourceStateKey for comparison.
-		newResources := make(map[string]*terraform.ResourceState)
-		for k, v := range importState.RootModule().Resources {
-			if !strings.HasPrefix(k, "data.") {
-				newResources[k] = v
-			}
-		}
-		oldResources := make(map[string]*terraform.ResourceState)
-		for k, v := range state.RootModule().Resources {
-			if !strings.HasPrefix(k, "data.") {
-				oldResources[k] = v
-			}
-		}
+		newResources := importState.RootModule().Resources
+		oldResources := state.RootModule().Resources
 
 		for _, r := range newResources {
 			// Find the existing resource
 			var oldR *terraform.ResourceState
-			for _, r2 := range oldResources {
+			for r2Key, r2 := range oldResources {
+				// Ensure that we do not match against data sources as they
+				// cannot be imported and are not what we want to verify.
+				// Mode is not present in ResourceState so we use the
+				// stringified ResourceStateKey for comparison.
+				if strings.HasPrefix(r2Key, "data.") {
+					continue
+				}
 
 				if r2.Primary != nil && r2.Primary.ID == r.Primary.ID && r2.Type == r.Type && r2.Provider == r.Provider {
 					oldR = r2
