@@ -94,7 +94,7 @@ The following arguments are supported:
 * `repository_username` - (Optional) Username for HTTP basic authentication against the repository.
 * `repository_password` - (Optional) Password for HTTP basic authentication against the repository.
 * `devel` - (Optional) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If version is set, this is ignored.
-* `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed.
+* `version` - (Optional) Specify the exact chart version to install. If this is not specified, the latest version is installed. `helm_release` will not automatically grab the latest release, version must explicitly upgraded when upgrading an installed chart.
 * `namespace` - (Optional) The namespace to install the release into. Defaults to `default`.
 * `verify` - (Optional) Verify the package before installing it. Helm uses a provenance file to verify the integrity of the chart; this must be hosted alongside the chart. For more information see the [Helm Documentation](https://helm.sh/docs/topics/provenance/). Defaults to `false`.
 * `keyring` - (Optional) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`
@@ -129,6 +129,15 @@ The `set` and `set_sensitive` blocks support:
 * `name` - (Required) full name of the variable to be set.
 * `value` - (Required) value of the variable to be set.
 * `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
+
+Since Terraform Utilizes HCL as well as Helm using the Helm Template Language, it's necessary to  escape certain characters twice in order for it to be parsed. `name` should also be the path that leads to the desired value, where `value` is the desired value that will be set.
+
+```hcl
+set {
+    name  = "grafana.ingress.annotations\\.alb\\.ingress\\.kubernetes\\.io/group\\.name"
+    value = "shared-ingress"
+}
+```
 
 The `postrender` block supports two attributes:
 
