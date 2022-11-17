@@ -75,7 +75,7 @@ data "helm_template" "mariadb_instance" {
   chart   = "mariadb"
   version = "7.1.0"
 
-  templates = [
+  show_only = [
     "templates/master-statefulset.yaml",
     "templates/master-svc.yaml",
   ]
