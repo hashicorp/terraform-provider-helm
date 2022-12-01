@@ -155,6 +155,7 @@ The following attributes are specific to the `helm_template` data source and not
 * `is_upgrade` - (Optional) Set .Release.IsUpgrade instead of .Release.IsInstall. Defaults to `false`.
 * `show_only` - (Optional) Explicit list of chart templates to render, as Helm does with the `-s` or `--show-only` option. Paths to chart templates are relative to the root folder of the chart, e.g. `templates/deployment.yaml`. If not provided, all templates of the chart are rendered.
 * `validate` - (Optional) Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install. Defaults to `false`.
+* `kube_version` - (Optional) Kubernetes version used for Capabilities.KubeVersion.
 
 ## Attributes Reference
 
