@@ -1509,7 +1509,7 @@ func TestAccResourceRelease_OCI_registry_login(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccHelmReleaseConfig_OCI_login_provider(testResourceName, namespace, name, ociRegistryURL, "1.2.3", "hashicorp", "terraform"),
+				Config: testAccHelmReleaseConfig_OCI_login_provider(os.Getenv("KUBE_CONFIG_PATH"), testResourceName, namespace, name, ociRegistryURL, "1.2.3", "hashicorp", "terraform"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
@@ -1521,11 +1521,11 @@ func TestAccResourceRelease_OCI_registry_login(t *testing.T) {
 	})
 }
 
-func testAccHelmReleaseConfig_OCI_login_provider(resource, ns, name, repo, version, username, password string) string {
+func testAccHelmReleaseConfig_OCI_login_provider(kubeconfig, resource, ns, name, repo, version, username, password string) string {
 	return fmt.Sprintf(`
 		provider "helm" {
 			kubernetes {
-				config_path = "~/.kube/config"
+				config_path = %q
 			}
 			registry {
 		  		url      = %q
@@ -1537,9 +1537,9 @@ func testAccHelmReleaseConfig_OCI_login_provider(resource, ns, name, repo, versi
  			name        = "%s"
 			namespace   = %q
 			version     = %q
-			repository  = %[1]q
+			repository  = %[2]q
 			chart       = "test-chart"
-		}`, repo, username, password, resource, name, ns, version)
+		}`, kubeconfig, repo, username, password, resource, name, ns, version)
 }
 
 func TestAccResourceRelease_OCI_login(t *testing.T) {
