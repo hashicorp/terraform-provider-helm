@@ -1,0 +1,12 @@
+{
+  "data": {
+    "type": "registry-provider-version-platforms",
+    "attributes": {
+      "os": "${OS}",
+      "arch": "amd64",
+      "shasum": "${SHASUM}",
+      "filename": "${FILENAME}"
+    }
+  }
+}
+

@@ -1,0 +1,11 @@
+{
+  "data": {
+    "type": "registry-providers",
+    "attributes": {
+      "name": "helm",
+      "namespace": "fastly",
+      "registry-name": "private"
+    }
+  }
+}
+
