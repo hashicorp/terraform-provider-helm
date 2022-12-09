@@ -100,6 +100,9 @@ func dataTemplate() *schema.Resource {
 				Optional:    true,
 				Description: "List of values in raw yaml format to pass to helm.",
 				Elem:        &schema.Schema{Type: schema.TypeString},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return strings.Replace(old, "\r\n", "\n", -1) == strings.Replace(new, "\r\n", "\n", -1)
+				},
 			},
 			"set": {
 				Type:        schema.TypeSet,
