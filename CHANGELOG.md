@@ -1,3 +1,14 @@
+## 2.8.0 (December 13, 2022)
+
+FEATURES:
+
+* Add support for configuring OCI registries inside provider block [[GH-862](https://github.com/hashicorp/terraform-provider-helm/issues/862)]
+* Add support for setting kube version on helm_template data source [[GH-994](https://github.com/hashicorp/terraform-provider-helm/issues/994)]
+
+BUG FIXES:
+
+* Fix larger diff than expected when updating helm_release "set" block value [[GH-915](https://github.com/hashicorp/terraform-provider-helm/issues/915)]
+
 ## 2.7.1 (October 12, 2022)
 
 BUG FIXES:
