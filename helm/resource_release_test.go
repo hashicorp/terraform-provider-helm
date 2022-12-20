@@ -1574,6 +1574,42 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_diffReleaseValuesAndDesiredValues(t *testing.T) {
+	name := randName("diff-values")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+			{
+				PreConfig: func() {
+					// update the release values outside of terraform
+					cmd := exec.Command("helm", "upgrade", "--namespace", namespace, name, filepath.Join(testChartsPath, "test-chart"), "--set", "foo=baz")
+					out, err := cmd.CombinedOutput()
+					t.Log(string(out))
+					if err != nil {
+						t.Fatal(err)
+					}
+				},
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", "{\"fizz\":1337,\"foo\":\"bar\"}"),
+				),
+			},
+		},
+	})
+}
+
 func testAccHelmReleaseConfig_OCI(resource, ns, name, repo, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
