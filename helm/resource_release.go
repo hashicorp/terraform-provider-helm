@@ -953,10 +953,18 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 
 	// Set desired version from the Chart metadata if available
 	if len(chart.Metadata.Version) > 0 {
-		return d.SetNew("version", chart.Metadata.Version)
+		err := d.SetNew("version", chart.Metadata.Version)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := d.SetNewComputed("version")
+		if err != nil {
+			return err
+		}
 	}
 
-	return d.SetNewComputed("version")
+	return nil
 }
 
 func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta interface{}) error {
