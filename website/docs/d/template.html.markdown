@@ -20,7 +20,7 @@ For further details on the `helm template` command, refer to the [Helm documenta
 
 ### Render all chart templates
 
-The following example renders all templates of the `mariadb` chart of the official Helm stable repository. Concatenated manifests are exposed as output variable `mariadb_instance_manifest_bundle`.
+The following example renders all templates of the `mariadb` chart of the official Helm stable repository. Concatenated manifests are exposed as output variable `mariadb_instance_manifest`.
 
 ```hcl
 data "helm_template" "mariadb_instance" {
@@ -49,8 +49,8 @@ resource "local_file" "mariadb_manifests" {
   content  = each.value
 }
 
-output "mariadb_instance_manifest_bundle" {
-  value = data.helm_template.mariadb_instance.manifest_bundle
+output "mariadb_instance_manifest" {
+  value = data.helm_template.mariadb_instance.manifest
 }
 
 output "mariadb_instance_manifests" {
@@ -98,8 +98,8 @@ resource "local_file" "mariadb_manifests" {
   content  = each.value
 }
 
-output "mariadb_instance_manifest_bundle" {
-  value = data.helm_template.mariadb_instance.manifest_bundle
+output "mariadb_instance_manifest" {
+  value = data.helm_template.mariadb_instance.manifest
 }
 
 output "mariadb_instance_manifests" {
