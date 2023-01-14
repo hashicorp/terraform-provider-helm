@@ -1,0 +1,3 @@
+```release-note:bug
+Crash: Add StateMigrator for pass_credentials and wait_for_jobs (Inconsistent Plan)
+```
