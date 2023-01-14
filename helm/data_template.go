@@ -346,6 +346,11 @@ func dataTemplate() *schema.Resource {
 				Computed:    true,
 				Description: "Rendered notes if the chart contains a `NOTES.txt`.",
 			},
+			"kube_version": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Kubernetes version used for Capabilities.KubeVersion",
+			},
 		},
 	}
 }
@@ -387,7 +392,7 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	err = OCIRegistryLogin(actionConfig, d)
+	err = OCIRegistryLogin(actionConfig, d, m)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -448,6 +453,14 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	client.Replace = d.Get("replace").(bool)
 	client.Description = d.Get("description").(string)
 	client.CreateNamespace = d.Get("create_namespace").(bool)
+
+	if ver := d.Get("kube_version").(string); ver != "" {
+		parsedVer, err := chartutil.ParseKubeVersion(ver)
+		if err != nil {
+			return diag.FromErr(fmt.Errorf("couldn't parse string %q into kube-version", ver))
+		}
+		client.KubeVersion = parsedVer
+	}
 
 	// The following source has been adapted from the source of the helm template command
 	// https://github.com/helm/helm/blob/v3.5.3/cmd/helm/template.go#L67

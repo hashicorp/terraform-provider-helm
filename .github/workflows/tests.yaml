@@ -7,6 +7,9 @@ on:
     branches:
     - main
 
+env:
+  KUBECONFIG: ${{ github.workspace }}/.kube/config
+
 jobs:
   get_version_matrix:
     runs-on: ubuntu-latest
@@ -43,15 +46,14 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version-file: go.mod
-    - uses: debianmaster/actions-k3s@master
-      id: k3s
+    - uses: helm/kind-action@v1.4.0
+      id: kind
       with:
-        version: v1.21.2-k3s1
+        wait: 2m
     - name: Acceptance Tests
-      env: 
+      env:
+        KUBE_CONFIG_PATH: ${{ env.KUBECONFIG }}
         TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform_version }}
         TESTARGS: "-parallel 1"
       run: |
-        KUBE_CONFIG_PATH="${KUBECONFIG}" make testacc 
-
-
+        make testacc
