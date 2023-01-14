@@ -73,15 +73,15 @@ Provider supports grabbing charts from an OCI repository:
 
 ```hcl
 resource "helm_release" "example" {
- 			name        = "testchart"
-			namespace   = "helm_registry"
-			repository  = "oci://localhost:62908/helm-charts"
-			version     = "1.2.3"
-			chart       = "test-chart"
+ 	name        = "testchart"
+	namespace   = "helm_registry"
+	repository  = "oci://localhost:62908/helm-charts"
+	version     = "1.2.3"
+	chart       = "test-chart"
 
-			repository_username = "hashicorp"
-			repository_password = "terraform"
-		}
+	repository_username = "hashicorp"
+	repository_password = "terraform"
+}
 ```
 
 ## Example Usage - Chart Repository configured outside of Terraform
