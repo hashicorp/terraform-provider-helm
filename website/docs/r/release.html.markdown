@@ -95,6 +95,66 @@ resource "helm_release" "example" {
 }
 ```
 
+## Example Usage - Chart Repository configured using GCS/S3
+
+The provider also supports helm plugins such as GCS and S3 that add S3/GCS helm repositories by using `helm plugin install`
+
+```hcl
+
+# Install GCS plugin
+`helm plugin install https://github.com/hayorov/helm-gcs.git`
+
+# Run follow commands to setup GCS repository
+
+# Init a new repository:
+#   helm gcs init gs://bucket/path
+
+# Add your repository to Helm:
+#   helm repo add repo-name gs://bucket/path
+
+# Push a chart to your repository:
+#   helm gcs push chart.tar.gz repo-name
+
+# Update Helm cache:
+#   helm repo update
+
+# Get your chart:
+
+resource "helm_release" "GCS" {
+  name        = "GCS"
+  repository  = "gcs://tf-test-helm-repo/charts"
+  chart       = "chart"
+}
+```
+
+```hcl
+
+# Install AWS S3 plugin
+`helm plugin install https://github.com/hypnoglow/helm-s3.git`
+
+# Run follow commands to setup S3 repository
+
+# Init a new repository:
+#   helm s3 init s3://my-helm-charts/stable/myapp
+
+# Add your repository to Helm:
+#   helm repo add stable-myapp s3://my-helm-charts/stable/myapp/
+
+# Push a chart to your repository:
+#   helm s3 push chart.tar.gz repo-name
+
+# Update Helm cache:
+#   helm repo update
+
+# Get your chart:
+
+resource "helm_release" "S3" {
+  name        = "S3"
+  repository  = "s3://tf-test-helm-repo/charts"
+  chart       = "chart"
+}
+```
+
 ## Example Usage - Chart Repository configured outside of Terraform
 
 The provider also supports repositories that are added to the local machine outside of Terraform by running `helm repo add`

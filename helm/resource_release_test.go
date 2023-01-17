@@ -1,11 +1,13 @@
 package helm
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -100,6 +102,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.imported", "timeout", "300"),
 					resource.TestCheckResourceAttr("helm_release.imported", "wait", "true"),
 					resource.TestCheckResourceAttr("helm_release.imported", "wait_for_jobs", "true"),
+					resource.TestCheckResourceAttr("helm_release.imported", "pass_credentials", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "disable_webhooks", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "atomic", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "render_subchart_notes", "true"),
@@ -1328,7 +1331,7 @@ func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			// NOTE this is a regression test to apply a configuration which supplies
-			// unknown values to the release at plan time, we simply want to test here
+			// unknown values to the release at plan time, we simply expected to test here
 			// that applying the config doesn't produce an inconsistent final plan error
 			{
 				Config: testAccHelmReleaseConfigManifestUnknownValues(testResourceName, namespace, name, "1.2.3"),
@@ -1767,4 +1770,29 @@ func removeSubcharts(chartName string) error {
 		return errors.Wrapf(err, "can't remove charts directory %s", chartsPath)
 	}
 	return os.RemoveAll(chartsPath)
+}
+
+func TestResourceExampleInstanceStateUpgradeV0(t *testing.T) {
+	expected := map[string]any{
+		"wait_for_jobs":    false,
+		"pass_credentials": false,
+	}
+	states := []map[string]any{
+		{
+			"wait_for_jobs":    nil,
+			"pass_credentials": nil,
+		},
+		{},
+	}
+
+	for _, state := range states {
+		actual, err := resourceReleaseStateUpgradeV0(context.Background(), state, nil)
+		if err != nil {
+			t.Fatalf("error migrating state: %s", err)
+		}
+
+		if !reflect.DeepEqual(expected, actual) {
+			t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", expected, actual)
+		}
+	}
 }
