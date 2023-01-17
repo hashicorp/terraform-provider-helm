@@ -67,6 +67,34 @@ resource "helm_release" "example" {
 }
 ```
 
+## Example Usage - Chart Repository configured from OCI Registry
+
+Provider supports grabbing charts from an OCI repository:
+
+```hcl
+
+provider "helm" {
+  kubernetes {
+    config_path = "~/.kube/config"
+  }
+
+  # localhost registry with password protection
+  registry {
+    url = "oci://localhost:5000"
+    username = "username"
+    password = "password"
+  }
+}
+
+resource "helm_release" "example" {
+  name        = "testchart"
+  namespace   = "helm_registry"
+  repository  = "oci://localhost:5000/helm-charts"
+  version     = "1.2.3"
+  chart       = "test-chart"
+}
+```
+
 ## Example Usage - Chart Repository configured using GCS/S3
 
 The provider also supports helm plugins such as GCS and S3 that add S3/GCS helm repositories by using `helm plugin install`
