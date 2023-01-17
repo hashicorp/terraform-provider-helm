@@ -93,8 +93,9 @@ The provider also supports helm plugins such as GCS and S3 that add S3/GCS helm 
 # Get your chart:
 
 resource "helm_release" "GCS" {
-  name                 = "GCS"
-  chart                = "path/chart"
+  name        = "GCS"
+  repository  = "gcs://tf-test-helm-repo/charts"
+  chart       = "chart"
 }
 ```
 
@@ -119,9 +120,10 @@ resource "helm_release" "GCS" {
 
 # Get your chart:
 
-resource "helm_release" "GCS" {
-  name                 = "GCS"
-  chart                = "path/chart"
+resource "helm_release" "S3" {
+  name        = "S3"
+  repository  = "s3://tf-test-helm-repo/charts"
+  chart       = "chart"
 }
 ```
 
