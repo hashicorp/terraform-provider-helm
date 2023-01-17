@@ -87,11 +87,11 @@ provider "helm" {
 }
 
 resource "helm_release" "example" {
- 	name        = "testchart"
-	namespace   = "helm_registry"
-	repository  = "oci://localhost:5000/helm-charts"
-	version     = "1.2.3"
-	chart       = "test-chart"
+  name        = "testchart"
+  namespace   = "helm_registry"
+  repository  = "oci://localhost:5000/helm-charts"
+  version     = "1.2.3"
+  chart       = "test-chart"
 }
 ```
 
