@@ -346,7 +346,10 @@ func providerConfigure(d *schema.ResourceData, terraformVersion string) (interfa
 		m.HelmDriver = v.(string)
 	}
 
-	if registryClient, err := registry.NewClient(); err == nil {
+	opts := []registry.ClientOption{
+		registry.ClientOptCredentialsFile(settings.RegistryConfig),
+	}
+	if registryClient, err := registry.NewClient(opts...); err == nil {
 		m.RegistryClient = registryClient
 		for _, r := range d.Get("registry").([]interface{}) {
 			if v, ok := r.(map[string]interface{}); ok {
