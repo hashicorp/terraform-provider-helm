@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,6 +23,8 @@ import (
 
 	// Import to initialize client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 )
 
 // Meta is the meta information structure for the provider
@@ -229,7 +232,7 @@ func kubernetesResource() *schema.Resource {
 			"config_path": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				DefaultFunc:   schema.EnvDefaultFunc("KUBE_CONFIG_PATH", nil),
+				DefaultFunc:   schema.MultiEnvDefaultFunc([]string{"KUBE_CONFIG_PATH", "KUBECONFIG"}, getDefaultKubeConfigPath()),
 				Description:   "Path to the kube config file. Can be set with KUBE_CONFIG_PATH.",
 				ConflictsWith: []string{"kubernetes.0.config_paths"},
 			},
@@ -501,4 +504,12 @@ func OCIRegistryPerformLogin(registryClient *registry.Client, ociURL string, use
 
 func debug(format string, a ...interface{}) {
 	log.Printf("[DEBUG] %s", fmt.Sprintf(format, a...))
+}
+
+func getDefaultKubeConfigPath() string {
+	return filepath.Join(
+		homedir.HomeDir(),
+		clientcmd.RecommendedHomeDir,
+		clientcmd.RecommendedFileName,
+	)
 }
