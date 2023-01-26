@@ -76,7 +76,7 @@ For a full list of supported provider authentication arguments and their corresp
 
 ### File config
 
-The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable. A kubeconfig file may have multiple contexts. If `config_context` is not specified, the provider will use the `default` context.
+The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` or `KUBECONFIG` environment variables. A kubeconfig file may have multiple contexts. If `config_context` is not specified, the provider will use the `default` context.
 
 ```hcl
 provider "helm" {
@@ -155,7 +155,7 @@ The following arguments are supported:
 
 The `kubernetes` block supports:
 
-* `config_path` - (Optional) Path to the kube config file. Can be sourced from `KUBE_CONFIG_PATH`.
+* `config_path` - (Optional) Path to the kube config file. Can be sourced from `KUBE_CONFIG_PATH` (or `KUBECONFIG`).
 * `config_paths` - (Optional) A list of paths to the kube config files. Can be sourced from `KUBE_CONFIG_PATHS`.
 * `host` - (Optional) The hostname (in form of URI) of the Kubernetes API. Can be sourced from `KUBE_HOST`.
 * `username` - (Optional) The username to use for HTTP basic authentication when accessing the Kubernetes API. Can be sourced from `KUBE_USER`.
