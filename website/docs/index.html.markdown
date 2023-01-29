@@ -150,6 +150,7 @@ The following arguments are supported:
 * `repository_cache` - (Optional) The path to the file containing cached repository indexes. Defaults to `HELM_REPOSITORY_CACHE` env if it is set, otherwise uses the default path set by helm.
 * `helm_driver` - (Optional) "The backend storage driver. Valid values are: `configmap`, `secret`, `memory`, `sql`. Defaults to `secret`.
   Note: Regarding the sql driver, as of helm v3.2.0 SQL support exists only for the postgres dialect. The connection string can be configured by setting the `HELM_DRIVER_SQL_CONNECTION_STRING` environment variable e.g. `HELM_DRIVER_SQL_CONNECTION_STRING=postgres://username:password@host/dbname` more info [here](https://pkg.go.dev/github.com/lib/pq).
+* `burst_limit` - (Optional) The helm burst limit to use. Set this value higher if your cluster has many CRDs. Default: `100`
 * `kubernetes` - Kubernetes configuration block.
 * `registry` - Private OCI registry configuration block. Can be specified multiple times.
 
