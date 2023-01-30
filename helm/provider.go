@@ -101,6 +101,12 @@ func Provider() *schema.Provider {
 					}
 				},
 			},
+			"burst_limit": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     100,
+				Description: "Helm burst limit. Increase this if you have a cluster with many CRDs",
+			},
 			"kubernetes": {
 				Type:        schema.TypeList,
 				MaxItems:    1,
