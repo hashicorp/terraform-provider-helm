@@ -246,7 +246,7 @@ github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-multierror v1.1.1
 ## explicit; go 1.13
 github.com/hashicorp/go-multierror
-# github.com/hashicorp/go-plugin v1.4.4
+# github.com/hashicorp/go-plugin v1.4.6
 ## explicit; go 1.17
 github.com/hashicorp/go-plugin
 github.com/hashicorp/go-plugin/internal/plugin
@@ -272,7 +272,7 @@ github.com/hashicorp/hc-install/internal/version
 github.com/hashicorp/hc-install/product
 github.com/hashicorp/hc-install/releases
 github.com/hashicorp/hc-install/src
-# github.com/hashicorp/hcl/v2 v2.14.1
+# github.com/hashicorp/hcl/v2 v2.15.0
 ## explicit; go 1.18
 github.com/hashicorp/hcl/v2
 github.com/hashicorp/hcl/v2/ext/customdecode
@@ -295,7 +295,7 @@ github.com/hashicorp/terraform-plugin-docs/internal/mdplain
 github.com/hashicorp/terraform-plugin-docs/internal/provider
 github.com/hashicorp/terraform-plugin-docs/internal/tmplfuncs
 github.com/hashicorp/terraform-plugin-docs/schemamd
-# github.com/hashicorp/terraform-plugin-go v0.14.0
+# github.com/hashicorp/terraform-plugin-go v0.14.1
 ## explicit; go 1.18
 github.com/hashicorp/terraform-plugin-go/internal/logging
 github.com/hashicorp/terraform-plugin-go/tfprotov5
@@ -320,7 +320,7 @@ github.com/hashicorp/terraform-plugin-log/internal/hclogutils
 github.com/hashicorp/terraform-plugin-log/internal/logging
 github.com/hashicorp/terraform-plugin-log/tflog
 github.com/hashicorp/terraform-plugin-log/tfsdklog
-# github.com/hashicorp/terraform-plugin-sdk/v2 v2.22.0
+# github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
 ## explicit; go 1.18
 github.com/hashicorp/terraform-plugin-sdk/v2/diag
 github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest
@@ -550,7 +550,7 @@ github.com/xeipuuv/gojsonschema
 # github.com/xlab/treeprint v1.1.0
 ## explicit; go 1.13
 github.com/xlab/treeprint
-# github.com/zclconf/go-cty v1.11.0
+# github.com/zclconf/go-cty v1.12.1
 ## explicit; go 1.18
 github.com/zclconf/go-cty/cty
 github.com/zclconf/go-cty/cty/convert
@@ -654,7 +654,7 @@ google.golang.org/appengine/urlfetch
 # google.golang.org/genproto v0.0.0-20220502173005-c8bf987b8c21
 ## explicit; go 1.15
 google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.49.0
+# google.golang.org/grpc v1.50.1
 ## explicit; go 1.17
 google.golang.org/grpc
 google.golang.org/grpc/attributes
