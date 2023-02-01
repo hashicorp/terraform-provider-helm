@@ -6,7 +6,7 @@ jobs:
   Move_Labeled_Issue_On_Project_Board:
     runs-on: ubuntu-latest
     steps:
-    - uses: aareet/move-labeled-or-milestoned-issue@v2.0
+    - uses: aareet/move-labeled-or-milestoned-issue@v2.1
       with:
         action-token: "${{ secrets.GITHUB_TOKEN }}"
         project-url: "https://github.com/orgs/hashicorp/projects/189"
