@@ -33,6 +33,115 @@ func TestAccDataTemplate_basic(t *testing.T) {
 	})
 }
 
+func TestAccDataTemplate_crds(t *testing.T) {
+	name := randName("basic")
+	namespace := randName(testNamespacePrefix)
+
+	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:  func() { testAccPreCheck(t) },
+		Providers: testAccProviders,
+		Steps: []resource.TestStep{{
+			Config: testAccDataHelmTemplateCRDs(testResourceName, namespace, name, "1.2.3"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "8"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/deployment.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/service.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/serviceaccount.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/configmaps.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/tests/test-connection.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "notes"),
+				resource.TestCheckResourceAttr(datasourceAddress, "crds.0", `---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  # name must match the spec fields below, and be in the form: <plural>.<group>
+  name: apples.stable.example.com
+spec:
+  # group name to use for REST API: /apis/<group>/<version>
+  group: stable.example.com
+  # list of versions supported by this CustomResourceDefinition
+  versions:
+    - name: v1
+      # Each version can be enabled/disabled by Served flag.
+      served: true
+      # One and only one version must be marked as the storage version.
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                cronSpec:
+                  type: string
+                image:
+                  type: string
+                replicas:
+                  type: integer
+  # either Namespaced or Cluster
+  scope: Namespaced
+  names:
+    # plural name to be used in the URL: /apis/<group>/<version>/<plural>
+    plural: apples
+    # singular name to be used as an alias on the CLI and for display
+    singular: apple
+    # kind is normally the CamelCased singular type. Your resource manifests use this.
+    kind: Apple
+    # shortNames allow shorter string to match your resource on the CLI
+    shortNames:
+    - ap
+`),
+				resource.TestCheckResourceAttr(datasourceAddress, "crds.1", `---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  # name must match the spec fields below, and be in the form: <plural>.<group>
+  name: oranges.stable.example.com
+spec:
+  # group name to use for REST API: /apis/<group>/<version>
+  group: stable.example.com
+  # list of versions supported by this CustomResourceDefinition
+  versions:
+    - name: v1
+      # Each version can be enabled/disabled by Served flag.
+      served: true
+      # One and only one version must be marked as the storage version.
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                cronSpec:
+                  type: string
+                image:
+                  type: string
+                replicas:
+                  type: integer
+  # either Namespaced or Cluster
+  scope: Namespaced
+  names:
+    # plural name to be used in the URL: /apis/<group>/<version>/<plural>
+    plural: oranges
+    # singular name to be used as an alias on the CLI and for display
+    singular: orange
+    # kind is normally the CamelCased singular type. Your resource manifests use this.
+    kind: Orange
+    # shortNames allow shorter string to match your resource on the CLI
+    shortNames:
+    - or
+`),
+			),
+		}},
+	})
+}
+
 func TestAccDataTemplate_templates(t *testing.T) {
 	name := randName("basic")
 	namespace := randName(testNamespacePrefix)
@@ -208,6 +317,20 @@ func testAccDataHelmTemplateKubeVersionNoVersionSet(resource, ns, name, version 
 			description  = "Test"
 			repository   = %q
   			chart        = "kube-version"
+			version      = %q
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccDataHelmTemplateCRDs(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		data "helm_template" "%s" {
+ 			name         = %q
+			namespace    = %q
+			description  = "Test"
+			repository   = %q
+  			chart        = "crds-chart"
+			include_crds = true
 			version      = %q
 		}
 	`, resource, name, ns, testRepositoryURL, version)

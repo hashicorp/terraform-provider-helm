@@ -162,5 +162,6 @@ The following attributes are specific to the `helm_template` data source and not
 In addition to the arguments listed above, the following computed attributes are exported:
 
 * `manifests` - Map of rendered chart templates indexed by the template name.
+* `crds` - List of CRDs in the chart. Is empty unless `include_crds` is set to `true`.
 * `manifest` - Concatenated rendered chart templates. This corresponds to the output of the `helm template` command.
 * `notes` - Rendered notes if the chart contains a `NOTES.txt`.
