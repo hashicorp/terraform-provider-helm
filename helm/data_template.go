@@ -334,6 +334,15 @@ func dataTemplate() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"crds": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Computed:    true,
+				Description: "List of rendered CRDs from the chart.",
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"manifest": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -507,6 +516,11 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	}
 	sort.Sort(releaseutil.BySplitManifestsOrder(manifestsKeys))
 
+	var chartCRDs []string
+	for _, crd := range rel.Chart.CRDObjects() {
+		chartCRDs = append(chartCRDs, string(crd.File.Data))
+	}
+
 	// Mapping of manifest key to manifest template name
 	manifestNamesByKey := make(map[string]string, len(manifestsKeys))
 
@@ -576,6 +590,11 @@ func dataTemplateRead(ctx context.Context, d *schema.ResourceData, meta interfac
 	computedNotes := rel.Info.Notes
 
 	d.SetId(name)
+
+	err = d.Set("crds", chartCRDs)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	err = d.Set("manifests", computedManifests)
 	if err != nil {
