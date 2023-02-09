@@ -58,6 +58,8 @@ resource "helm_release" "nginx_ingress" {
 
 ## Requirements
 
+~> NOTE: The provider does not use the `KUBECONFIG` environment variable by default. See the attribute reference below for the environment variables that map to provider block attributes.
+
 - You must have a Kubernetes cluster available. We support version 1.14.0 or higher.
 
 ## Authentication
