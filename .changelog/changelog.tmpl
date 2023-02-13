@@ -61,3 +61,11 @@ DEPENDENCIES:
 * {{ template "note" . }}
 {{ end -}}
 {{- end -}}
+
+{{- if .NotesByType.notes }}
+NOTES:
+
+{{range .NotesByType.notes -}}
+* {{ template "note" . }}
+{{ end -}}
+{{- end -}}
