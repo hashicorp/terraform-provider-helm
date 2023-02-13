@@ -54,18 +54,18 @@ DOCS:
 {{ end -}}
 {{- end -}}
 
-{{- if .NotesByType.dependencies }}
+{{- if .NotesByType.dependency }}
 DEPENDENCIES:
 
-{{range .NotesByType.dependencies -}}
+{{range .NotesByType.dependency -}}
 * {{ template "note" . }}
 {{ end -}}
 {{- end -}}
 
-{{- if .NotesByType.notes }}
+{{- if .NotesByType.note }}
 NOTES:
 
-{{range .NotesByType.notes -}}
+{{range .NotesByType.note -}}
 * {{ template "note" . }}
 {{ end -}}
 {{- end -}}
