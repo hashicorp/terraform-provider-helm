@@ -1,0 +1,3 @@
+```release-note:doc
+`resource/helm_release`: Add usage examples for `GCS` and `S3` plugins.
+```

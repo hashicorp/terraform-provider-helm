@@ -1,3 +1,7 @@
 ```release-note:enhancement
-Add `crds` attribute to helm_template data source
+`data_source/helm_template`: Add a new attribute `crds` which when `include_crds` is set to `true` will be populated with a list of the manifests from the `crds/` folder of the chart.
+```
+
+```release-note:doc
+`data_source/helm_template`: Add a new attribute `crds`
 ```
