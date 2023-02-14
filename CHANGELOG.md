@@ -1,3 +1,40 @@
+## 2.9.0 (February 14, 2023)
+
+FEATURES:
+
+* `provider`: Add a new attribute `burst_limit` for client-side throttling limit configuration. [[GH-1012](https://github.com/hashicorp/terraform-provider-helm/issues/1012)]
+
+ENHANCEMENT:
+
+* `data_source/helm_template`: Add a new attribute `crds` which when `include_crds` is set to `true` will be populated with a list of the manifests from the `crds/` folder of the chart. [[GH-1050](https://github.com/hashicorp/terraform-provider-helm/issues/1050)]
+
+BUG FIXES:
+
+* `resource/helm_release`: Fix an issue when the provider crashes with the error message `Provider produced inconsistent final plan` after upgrading from `v2.5.1` to `v2.6.0` and higher. That happened due to changes in the provider schema and the introduction of a new attribute `pass_credentials` that was not properly handled. [[GH-982](https://github.com/hashicorp/terraform-provider-helm/issues/982)]
+
+DOCS:
+
+* `data_source/helm_template`: Add a new attribute `crds` [[GH-1050](https://github.com/hashicorp/terraform-provider-helm/issues/1050)]
+* `data_source/helm_template`: Correct some errors in examples. [[GH-1027](https://github.com/hashicorp/terraform-provider-helm/issues/1027)]
+* `provider`: Add a new attribute `burst_limit`. [[GH-1012](https://github.com/hashicorp/terraform-provider-helm/issues/1012)]
+* `provider`: Add a note regarding the `KUBECONFIG` environment variable. [[GH-1051](https://github.com/hashicorp/terraform-provider-helm/issues/1051)]
+* `resource/helm_release`: Add usage example for `OCI` repositories. [[GH-1030](https://github.com/hashicorp/terraform-provider-helm/issues/1030)]
+* `resource/helm_release`: Add usage examples for `GCS` and `S3` plugins. [[GH-1026](https://github.com/hashicorp/terraform-provider-helm/issues/1026)]
+
+DEPENDENCIES:
+
+* Bump `github.com/containerd/containerd` from `1.6.6` to `1.6.12` [[GH-1029](https://github.com/hashicorp/terraform-provider-helm/issues/1029)]
+* Bump `golang.org/x/crypto` from `0.5.0` to `0.6.0` [[GH-1055](https://github.com/hashicorp/terraform-provider-helm/issues/1055)]
+* Bump `helm.sh/helm/v3` from `3.9.4` to `3.11.1` [[GH-1036](https://github.com/hashicorp/terraform-provider-helm/issues/1036)] [[GH-1054](https://github.com/hashicorp/terraform-provider-helm/issues/1054)]
+* Bump `k8s.io/client-go` from `0.24.2` to `0.26.1` [[GH-1037](https://github.com/hashicorp/terraform-provider-helm/issues/1037)]
+
+NOTES:
+
+* `provider`: `kubernetes.exec.api_version` no longer supports `client.authentication.k8s.io/v1alpha1`. Please, switch to `client.authentication.k8s.io/v1beta1` or `client.authentication.k8s.io/v1`. [[GH-1037](https://github.com/hashicorp/terraform-provider-helm/issues/1037)]
+
+## Community Contributors :raised_hands:
+- @loafoe made their contribution in https://github.com/hashicorp/terraform-provider-helm/pull/1012
+
 ## 2.8.0 (December 13, 2022)
 
 FEATURES:
