@@ -1,3 +1,3 @@
 ```release-note:bug
-`resource/helm_release`: Fix an issue when the provider crashes with the error message `Provider produced inconsistent final plan`.
+`resource/helm_release`: Fix an issue when the provider crashes with the error message `Provider produced inconsistent final plan` after upgrading from `v2.5.1` to `v2.6.0` and higher. That happened due to changes in the provider schema and the introduction of a new attribute `pass_credentials` that was not properly handled.
 ```
