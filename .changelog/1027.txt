@@ -1,0 +1,3 @@
+```release-note:doc
+`data_source/helm_template`: Correct some errors in examples.
+```

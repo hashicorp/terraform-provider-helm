@@ -1,0 +1,7 @@
+```release-note:dependency
+Bump `k8s.io/client-go` from `0.24.2` to `0.26.1`
+```
+
+```release-note:note
+`provider`: `kubernetes.exec.api_version` no longer supports `client.authentication.k8s.io/v1alpha1`. Please, switch to `client.authentication.k8s.io/v1beta1` or `client.authentication.k8s.io/v1`.
+```

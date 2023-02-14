@@ -1,0 +1,7 @@
+```release-note:feature
+`provider`: Add a new attribute `burst_limit` for client-side throttling limit configuration.
+```
+
+```release-note:doc
+`provider`: Add a new attribute `burst_limit`.
+```

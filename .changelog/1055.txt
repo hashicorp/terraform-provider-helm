@@ -1,3 +1,3 @@
-```release-note:dependencies
+```release-note:dependency
 Bump `golang.org/x/crypto` from `0.5.0` to `0.6.0`
 ```
