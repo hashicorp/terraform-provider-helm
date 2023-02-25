@@ -162,6 +162,31 @@ func resourceRelease() *schema.Resource {
 					},
 				},
 			},
+			"set_list": {
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Description: "Custom sensitive values to be merged with the values.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeList,
+							Required: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"auto", "string",
+							}, false),
+						},
+					},
+				},
+			},
 			"set_sensitive": {
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -1176,6 +1201,13 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 		}
 	}
 
+	for _, raw := range d.Get("set_list").(*schema.Set).List() {
+		set_list := raw.(map[string]interface{})
+		if err := getListValue(base, set_list); err != nil {
+			return nil, err
+		}
+	}
+
 	for _, raw := range d.Get("set_sensitive").(*schema.Set).List() {
 		set := raw.(map[string]interface{})
 		if err := getValue(base, set); err != nil {
@@ -1186,10 +1218,39 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 	return base, logValues(base, d)
 }
 
+func getListValue(base, set map[string]interface{}) error {
+	name := set["name"].(string)
+	listValue := set["value"].(string) // this is going to be a list
+	//valueType := set["type"].(string)
+	if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, listValue), base); err != nil {
+		return fmt.Errorf("failed parsing key %q with value %s, %s", name, listValue, err)
+	}
+	// switch valueType {
+	// case "auto", "":
+	// 	if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+	// 		return fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
+	// 	}
+	// case "string":
+	// 	if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+	// 		return fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
+	// 	}
+	// default:
+	// 	return fmt.Errorf("unexpected type: %s", valueType)
+	// }
+
+	return nil
+}
+
 func getValue(base, set map[string]interface{}) error {
 	name := set["name"].(string)
 	value := set["value"].(string)
 	valueType := set["type"].(string)
+
+	// image=busybox
+	//
+	// map[string]string{
+	//	"image": []interface{"busybox"}
+	// }
 
 	switch valueType {
 	case "auto", "":
@@ -1426,6 +1487,7 @@ func valuesKnown(d *schema.ResourceDiff) bool {
 		"values",
 		"set",
 		"set_sensitive",
+		"set_list",
 	}
 	for _, attr := range checkAttributes {
 		if !rawPlan.GetAttr(attr).IsWhollyKnown() {
