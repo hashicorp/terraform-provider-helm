@@ -1252,12 +1252,6 @@ func getValue(base, set map[string]interface{}) error {
 	value := set["value"].(string)
 	valueType := set["type"].(string)
 
-	// image=busybox
-	//
-	// map[string]string{
-	//	"image": []interface{"busybox"}
-	// }
-
 	switch valueType {
 	case "auto", "":
 		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
