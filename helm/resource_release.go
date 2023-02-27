@@ -1221,7 +1221,8 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 func getListValue(base, set map[string]interface{}) error {
 	name := set["name"].(string)
 	listValue := set["value"].([]interface{}) // this is going to be a list
-	//valueType := set["type"].(string)
+	valueType := set["type"].(string)
+
 	var listString string
 	for i, val := range listValue {
 		listString += val.(string)
@@ -1230,21 +1231,18 @@ func getListValue(base, set map[string]interface{}) error {
 		}
 	}
 
-	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
-		return fmt.Errorf("failed parsing key %q with value %s, %s", name, listValue, err)
+	switch valueType {
+	case "auto", "":
+		if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
+			return fmt.Errorf("failed parsing key %q with value %s, %s", name, listString, err)
+		}
+	case "string":
+		if err := strvals.ParseIntoString(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
+			return fmt.Errorf("failed parsing key %q with value %s, %s", name, listString, err)
+		}
+	default:
+		return fmt.Errorf("unexpected type: %s", valueType)
 	}
-	// switch valueType {
-	// case "auto", "":
-	// 	if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-	// 		return fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
-	// 	}
-	// case "string":
-	// 	if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-	// 		return fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
-	// 	}
-	// default:
-	// 	return fmt.Errorf("unexpected type: %s", valueType)
-	// }
 
 	return nil
 }
