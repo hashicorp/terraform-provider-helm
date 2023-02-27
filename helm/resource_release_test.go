@@ -817,6 +817,27 @@ func TestGetValuesString(t *testing.T) {
 	}
 }
 
+func TestGetListValues(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	err := d.Set("set_list", []interface{}{
+		map[string]interface{}{"name": "foo", "value": []string{"1", "2", "3"}, "type": "string"},
+	})
+	if err != nil {
+		t.Fatalf("error setting values: %s", err)
+		return
+	}
+
+	values, err := getValues(d)
+	if err != nil {
+		t.Fatalf("error getValues: %s", err)
+		return
+	}
+
+	if len(values["foo"].([]interface{})) != 3 {
+		t.Fatalf("error merging values, expected length of 3, got %v", len(values["foo"].([]interface{})))
+	}
+}
+
 func TestCloakSetValues(t *testing.T) {
 	d := resourceRelease().Data(nil)
 	err := d.Set("set_sensitive", []interface{}{
@@ -1795,4 +1816,19 @@ func TestResourceExampleInstanceStateUpgradeV0(t *testing.T) {
 			t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", expected, actual)
 		}
 	}
+}
+
+func testAccHelmReleaseSetListValues(resource, ns, name string) string {
+	return fmt.Sprintf(`
+resource "helm_release" "%s" {
+	 name        = %q
+	namespace   = %q
+	  chart       = "./testdata/charts/umbrella-chart"
+
+	set_list {
+		name = "test"
+		value = [1, 2, 3]
+	}
+}
+`, resource, name, ns)
 }
