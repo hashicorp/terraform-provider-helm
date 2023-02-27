@@ -1,0 +1,3 @@
+```release-note:feature
+`helm/resource_release.go`: Add `set_list` attribute
+```
