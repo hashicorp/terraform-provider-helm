@@ -203,6 +203,7 @@ The following arguments are supported:
 
 * `values` - (Optional) List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options.
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
+* `set_list` - (Optional) Value block with list of custom values to be merged with the values yaml.
 * `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff.
 * `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`.
 * `replace` - (Optional)  Re-use the given name, only if that name is a deleted release which remains in the history. This is unsafe in production. Defaults to `false`.
@@ -212,7 +213,7 @@ The following arguments are supported:
 * `lint` - (Optional) Run the helm chart linter during the plan. Defaults to `false`.
 * `create_namespace` - (Optional) Create the namespace if it does not yet exist. Defaults to `false`.
 
-The `set` and `set_sensitive` blocks support:
+The `set`, `set_list`, and `set_sensitive` blocks support:
 
 * `name` - (Required) full name of the variable to be set.
 * `value` - (Required) value of the variable to be set.
@@ -224,6 +225,13 @@ Since Terraform Utilizes HCL as well as Helm using the Helm Template Language, i
 set {
     name  = "grafana.ingress.annotations\\.alb\\.ingress\\.kubernetes\\.io/group\\.name"
     value = "shared-ingress"
+}
+```
+
+```hcl
+set_list {
+    name  = "hashicorp"
+    value = ["terraform", "nomad", "vault"]
 }
 ```
 
