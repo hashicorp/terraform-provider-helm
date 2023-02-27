@@ -1220,9 +1220,17 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 
 func getListValue(base, set map[string]interface{}) error {
 	name := set["name"].(string)
-	listValue := set["value"].(string) // this is going to be a list
+	listValue := set["value"].([]interface{}) // this is going to be a list
 	//valueType := set["type"].(string)
-	if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, listValue), base); err != nil {
+	var listString string
+	for i, val := range listValue {
+		listString += val.(string)
+		if i != len(listValue)-1 {
+			listString += ","
+		}
+	}
+
+	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
 		return fmt.Errorf("failed parsing key %q with value %s, %s", name, listValue, err)
 	}
 	// switch valueType {
