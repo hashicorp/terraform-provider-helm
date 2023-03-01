@@ -30,7 +30,7 @@ func (cmd *validateCmd) Help() string {
 		}
 	})
 
-	strBuilder.WriteString(fmt.Sprintf("\nUsage: tfplugindocs validate [<args>]\n\n"))
+	strBuilder.WriteString("\nUsage: tfplugindocs validate [<args>]\n\n")
 	cmd.Flags().VisitAll(func(f *flag.Flag) {
 		if f.DefValue != "" {
 			strBuilder.WriteString(fmt.Sprintf("    --%s <ARG> %s%s%s  (default: %q)\n",

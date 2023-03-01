@@ -42,7 +42,7 @@ func (cmd *generateCmd) Help() string {
 		}
 	})
 
-	strBuilder.WriteString(fmt.Sprintf("\nUsage: tfplugindocs generate [<args>]\n\n"))
+	strBuilder.WriteString("\nUsage: tfplugindocs generate [<args>]\n\n")
 	cmd.Flags().VisitAll(func(f *flag.Flag) {
 		if f.DefValue != "" {
 			strBuilder.WriteString(fmt.Sprintf("    --%s <ARG> %s%s%s  (default: %q)\n",
