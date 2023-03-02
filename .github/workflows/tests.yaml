@@ -38,6 +38,9 @@ jobs:
     needs: get_version_matrix
     runs-on: ubuntu-latest
     strategy:
+      # Don't cancel all in-progress and queued jobs in the matrix if any job in the matrix fails.
+      # That will be helpful to catch any issues related to a particular Terraform version.
+      fail-fast: false
       matrix:
         terraform_version:  ${{ fromJson(needs.get_version_matrix.outputs.version_matrix) }}
     steps:
