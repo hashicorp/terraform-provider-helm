@@ -140,6 +140,7 @@ The following arguments are supported:
 * `wait` - (Optional) Will wait until all resources are in a ready state before marking the release as successful. It will wait for as long as `timeout`. Defaults to `true`.
 * `values` - (Optional) List of values in raw yaml to pass to helm. Values will be merged, in order, as Helm does with multiple `-f` options.
 * `set` - (Optional) Value block with custom values to be merged with the values yaml.
+* `set_list` - (Optional) Value block with list of custom values to be merged with the values yaml.
 * `set_sensitive` - (Optional) Value block with custom sensitive values to be merged with the values yaml that won't be exposed in the plan's diff.
 * `set_string` - (Optional) Value block with custom STRING values to be merged with the values yaml.
 * `dependency_update` - (Optional) Runs helm dependency update before installing the chart. Defaults to `false`.
