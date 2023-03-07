@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 
 function get_latest_version() { 
     curl -s https://api.github.com/repos/hashicorp/terraform/git/refs/tags | \
