@@ -163,7 +163,7 @@ func resourceRelease() *schema.Resource {
 				},
 			},
 			"set_list": {
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Optional:    true,
 				Description: "Custom sensitive values to be merged with the values.",
 				Elem: &schema.Resource{
@@ -1201,7 +1201,7 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 		}
 	}
 
-	for _, raw := range d.Get("set_list").(*schema.Set).List() {
+	for _, raw := range d.Get("set_list").([]interface{}) {
 		set_list := raw.(map[string]interface{})
 		if err := getListValue(base, set_list); err != nil {
 			return nil, err

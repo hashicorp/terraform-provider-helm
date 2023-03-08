@@ -128,7 +128,7 @@ func dataTemplate() *schema.Resource {
 				},
 			},
 			"set_list": {
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Optional:    true,
 				Description: "Custom sensitive values to be merged with the values.",
 				Elem: &schema.Resource{
