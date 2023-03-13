@@ -397,8 +397,12 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigRepositoryURL(testResourceName, namespace, name),
@@ -1422,7 +1426,11 @@ func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers: testAccProviders,
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"random": {
 				Source: "hashicorp/random",
