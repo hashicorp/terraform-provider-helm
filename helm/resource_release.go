@@ -1223,13 +1223,12 @@ func getListValue(base, set map[string]interface{}) error {
 	listValue := set["value"].([]interface{}) // this is going to be a list
 	valueType := set["type"].(string)
 
-	var listString string
-	for i, val := range listValue {
-		listString += val.(string)
-		if i != len(listValue)-1 {
-			listString += ","
-		}
+	listStringArray := make([]string, len(listValue))
+
+	for i, s := range listValue {
+		listStringArray[i] = s.(string)
 	}
+	listString := strings.Join(listStringArray, ",")
 
 	switch valueType {
 	case "auto", "":

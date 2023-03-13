@@ -1823,10 +1823,10 @@ func testAccHelmReleaseSetListValues(resource, ns, name string) string {
 resource "helm_release" "%s" {
 	 name        = %q
 	namespace   = %q
-	  chart       = "./testdata/charts/umbrella-chart"
+	  chart       = "./testdata/charts/test-chart-v2"
 
 	set_list {
-		name = "test"
+		name = "set_list_test"
 		value = [1, 2, 3]
 	}
 }

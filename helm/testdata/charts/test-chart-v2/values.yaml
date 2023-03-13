@@ -77,3 +77,5 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+set_list_test: []

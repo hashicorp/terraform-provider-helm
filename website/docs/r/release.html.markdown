@@ -223,15 +223,15 @@ Since Terraform Utilizes HCL as well as Helm using the Helm Template Language, i
 
 ```hcl
 set {
-    name  = "grafana.ingress.annotations\\.alb\\.ingress\\.kubernetes\\.io/group\\.name"
-    value = "shared-ingress"
+  name  = "grafana.ingress.annotations\\.alb\\.ingress\\.kubernetes\\.io/group\\.name"
+  value = "shared-ingress"
 }
 ```
 
 ```hcl
 set_list {
-    name  = "hashicorp"
-    value = ["terraform", "nomad", "vault"]
+  name  = "hashicorp"
+  value = ["terraform", "nomad", "vault"]
 }
 ```
 
