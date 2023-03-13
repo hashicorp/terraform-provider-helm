@@ -3,7 +3,6 @@ package provider
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -78,7 +77,7 @@ func writeFile(path string, data string) error {
 		return fmt.Errorf("unable to make dir %q: %w", dir, err)
 	}
 
-	err = ioutil.WriteFile(path, []byte(data), 0644)
+	err = os.WriteFile(path, []byte(data), 0644)
 	if err != nil {
 		return fmt.Errorf("unable to write file %q: %w", path, err)
 	}
@@ -90,7 +89,7 @@ func runCmd(cmd *exec.Cmd) ([]byte, error) {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("error executing %q, %v", cmd.Path, cmd.Args)
-		log.Printf(string(output))
+		log.Print(string(output))
 		return nil, fmt.Errorf("error executing %q: %w", cmd.Path, err)
 	}
 	return output, nil

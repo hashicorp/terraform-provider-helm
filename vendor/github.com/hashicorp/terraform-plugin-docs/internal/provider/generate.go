@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -128,7 +127,7 @@ func (g *generator) Generate(ctx context.Context) error {
 
 	switch {
 	case g.websiteTmpDir == "":
-		g.websiteTmpDir, err = ioutil.TempDir("", "tfws")
+		g.websiteTmpDir, err = os.MkdirTemp("", "tfws")
 		if err != nil {
 			return err
 		}
@@ -249,7 +248,7 @@ func (g *generator) renderMissingResourceDoc(providerName, name, typeName string
 	fallbackTmplPath = filepath.Join(g.websiteTmpDir, g.websiteSourceDir, fallbackTmplPath)
 	if fileExists(fallbackTmplPath) {
 		g.infof("resource %q fallback template exists", name)
-		tmplData, err := ioutil.ReadFile(fallbackTmplPath)
+		tmplData, err := os.ReadFile(fallbackTmplPath)
 		if err != nil {
 			return fmt.Errorf("unable to read file %q: %w", fallbackTmplPath, err)
 		}
@@ -377,7 +376,7 @@ func (g *generator) renderStaticWebsite(providerName string, providerSchema *tfj
 
 	g.infof("rendering templated website to static markdown")
 
-	err = filepath.Walk(g.websiteTmpDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(g.websiteTmpDir, func(path string, info os.FileInfo, _ error) error {
 		if info.IsDir() {
 			// skip directories
 			return nil
@@ -410,7 +409,7 @@ func (g *generator) renderStaticWebsite(providerName string, providerSchema *tfj
 
 		renderedPath = strings.TrimSuffix(renderedPath, ext)
 
-		tmplData, err := ioutil.ReadFile(path)
+		tmplData, err := os.ReadFile(path)
 		if err != nil {
 			return fmt.Errorf("unable to read file %q: %w", rel, err)
 		}
@@ -492,7 +491,7 @@ func (g *generator) terraformProviderSchema(ctx context.Context, providerName st
 
 	shortName := providerShortName(providerName)
 
-	tmpDir, err := ioutil.TempDir("", "tfws")
+	tmpDir, err := os.MkdirTemp("", "tfws")
 	if err != nil {
 		return nil, err
 	}

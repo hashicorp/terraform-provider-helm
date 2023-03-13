@@ -130,13 +130,9 @@ func (options *Text) Emphasis(out *bytes.Buffer, text []byte) {
 	out.Write(text)
 }
 
-func (options *Text) Image(out *bytes.Buffer, link []byte, title []byte, alt []byte) {
-	return
-}
+func (options *Text) Image(out *bytes.Buffer, link []byte, title []byte, alt []byte) {}
 
-func (options *Text) LineBreak(out *bytes.Buffer) {
-	return
-}
+func (options *Text) LineBreak(out *bytes.Buffer) {}
 
 func (options *Text) Link(out *bytes.Buffer, link []byte, title []byte, content []byte) {
 	out.Write(content)
@@ -144,12 +140,9 @@ func (options *Text) Link(out *bytes.Buffer, link []byte, title []byte, content 
 		out.WriteString(" ")
 		out.Write(link)
 	}
-	return
 }
 
-func (options *Text) RawHtmlTag(out *bytes.Buffer, text []byte) {
-	return
-}
+func (options *Text) RawHtmlTag(out *bytes.Buffer, text []byte) {}
 
 func (options *Text) TripleEmphasis(out *bytes.Buffer, text []byte) {
 	out.Write(text)
@@ -159,9 +152,7 @@ func (options *Text) StrikeThrough(out *bytes.Buffer, text []byte) {
 	out.Write(text)
 }
 
-func (options *Text) FootnoteRef(out *bytes.Buffer, ref []byte, id int) {
-	return
-}
+func (options *Text) FootnoteRef(out *bytes.Buffer, ref []byte, id int) {}
 
 func (options *Text) Entity(out *bytes.Buffer, entity []byte) {
 	out.Write(entity)
@@ -171,25 +162,15 @@ func (options *Text) NormalText(out *bytes.Buffer, text []byte) {
 	out.Write(text)
 }
 
-func (options *Text) Smartypants(out *bytes.Buffer, text []byte) {
-	return
-}
+func (options *Text) Smartypants(out *bytes.Buffer, text []byte) {}
 
-func (options *Text) DocumentHeader(out *bytes.Buffer) {
-	return
-}
+func (options *Text) DocumentHeader(out *bytes.Buffer) {}
 
-func (options *Text) DocumentFooter(out *bytes.Buffer) {
-	return
-}
+func (options *Text) DocumentFooter(out *bytes.Buffer) {}
 
-func (options *Text) TocHeader(text []byte, level int) {
-	return
-}
+func (options *Text) TocHeader(text []byte, level int) {}
 
-func (options *Text) TocFinalize() {
-	return
-}
+func (options *Text) TocFinalize() {}
 
 func doubleSpace(out *bytes.Buffer) {
 	if out.Len() > 0 {

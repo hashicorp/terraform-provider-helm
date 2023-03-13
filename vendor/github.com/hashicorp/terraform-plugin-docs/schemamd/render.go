@@ -12,11 +12,12 @@ import (
 
 // Render writes a Markdown formatted Schema definition to the specified writer.
 // A Schema contains a Version and the root Block, for example:
-// "aws_accessanalyzer_analyzer": {
-//   "block": {
-//   },
-// 	 "version": 0
-// },
+//
+//	"aws_accessanalyzer_analyzer": {
+//	  "block": {
+//	  },
+//		 "version": 0
+//	},
 func Render(schema *tfjson.Schema, w io.Writer) error {
 	_, err := io.WriteString(w, "## Schema\n\n")
 	if err != nil {
@@ -178,26 +179,27 @@ func writeRootBlock(w io.Writer, block *tfjson.SchemaBlock) error {
 // * Description(Kind)
 // * Deprecated flag
 // For example:
-// "block": {
-//   "attributes": {
-//     "certificate_arn": {
-// 	     "description_kind": "plain",
-// 	     "required": true,
-// 	     "type": "string"
-//     }
-// 	 },
-// 	 "block_types": {
-//     "timeouts": {
-// 	     "block": {
-// 		   "attributes": {
-// 		   },
-// 		   "description_kind": "plain"
-// 	     },
-// 	     "nesting_mode": "single"
-//     }
-// 	 },
-// 	 "description_kind": "plain"
-// },
+//
+//	"block": {
+//	  "attributes": {
+//	    "certificate_arn": {
+//		     "description_kind": "plain",
+//		     "required": true,
+//		     "type": "string"
+//	    }
+//		 },
+//		 "block_types": {
+//	    "timeouts": {
+//		     "block": {
+//			   "attributes": {
+//			   },
+//			   "description_kind": "plain"
+//		     },
+//		     "nesting_mode": "single"
+//	    }
+//		 },
+//		 "description_kind": "plain"
+//	},
 func writeBlockChildren(w io.Writer, parents []string, block *tfjson.SchemaBlock, root bool) error {
 	names := []string{}
 	for n := range block.Attributes {
@@ -475,36 +477,55 @@ func writeObjectChildren(w io.Writer, parents []string, ty cty.Type, group group
 }
 
 func writeNestedAttributeChildren(w io.Writer, parents []string, nestedAttributes *tfjson.SchemaNestedAttributeType, group groupFilter) error {
-	_, err := io.WriteString(w, group.nestedTitle+"\n\n")
-	if err != nil {
-		return err
-	}
-
 	sortedNames := []string{}
 	for n := range nestedAttributes.Attributes {
 		sortedNames = append(sortedNames, n)
 	}
 	sort.Strings(sortedNames)
-	nestedTypes := []nestedType{}
 
+	groups := map[int][]string{}
 	for _, name := range sortedNames {
 		att := nestedAttributes.Attributes[name]
-		path := append(parents, name)
 
-		nt, err := writeAttribute(w, path, att, group)
-		if err != nil {
-			return fmt.Errorf("unable to render attribute %q: %w", name, err)
+		for i, gf := range groupFilters {
+			if gf.filterAttribute(att) {
+				groups[i] = append(groups[i], name)
+			}
+		}
+	}
+
+	nestedTypes := []nestedType{}
+
+	for i, gf := range groupFilters {
+		names, ok := groups[i]
+		if !ok || len(names) == 0 {
+			continue
 		}
 
-		nestedTypes = append(nestedTypes, nt...)
+		_, err := io.WriteString(w, gf.nestedTitle+"\n\n")
+		if err != nil {
+			return err
+		}
+
+		for _, name := range names {
+			att := nestedAttributes.Attributes[name]
+			path := append(parents, name)
+
+			nt, err := writeAttribute(w, path, att, group)
+			if err != nil {
+				return fmt.Errorf("unable to render attribute %q: %w", name, err)
+			}
+
+			nestedTypes = append(nestedTypes, nt...)
+		}
+
+		_, err = io.WriteString(w, "\n")
+		if err != nil {
+			return err
+		}
 	}
 
-	_, err = io.WriteString(w, "\n")
-	if err != nil {
-		return err
-	}
-
-	err = writeNestedTypes(w, nestedTypes)
+	err := writeNestedTypes(w, nestedTypes)
 	if err != nil {
 		return err
 	}

@@ -7,6 +7,9 @@ import (
 	"strings"
 	"text/template"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	tfjson "github.com/hashicorp/terraform-json"
 
 	"github.com/hashicorp/terraform-plugin-docs/internal/mdplain"
@@ -31,6 +34,7 @@ type (
 
 func newTemplate(name, text string) (*template.Template, error) {
 	tmpl := template.New(name)
+	titleCaser := cases.Title(language.Und)
 
 	tmpl.Funcs(map[string]interface{}{
 		"codefile":      tmplfuncs.CodeFile,
@@ -39,7 +43,7 @@ func newTemplate(name, text string) (*template.Template, error) {
 		"prefixlines":   tmplfuncs.PrefixLines,
 		"split":         strings.Split,
 		"tffile":        terraformCodeFile,
-		"title":         strings.ToTitle,
+		"title":         titleCaser.String,
 		"trimspace":     strings.TrimSpace,
 		"upper":         strings.ToUpper,
 	})

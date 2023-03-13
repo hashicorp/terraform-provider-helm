@@ -2,7 +2,6 @@ package tmplfuncs
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,7 +20,7 @@ func CodeFile(format, file string) (string, error) {
 	}
 
 	fullPath := filepath.Join(wd, file)
-	content, err := ioutil.ReadFile(fullPath)
+	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		return "", fmt.Errorf("unable to read content from %q: %w", file, err)
 	}
