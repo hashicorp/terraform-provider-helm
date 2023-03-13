@@ -20,6 +20,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/pkg/errors"
 
@@ -38,8 +39,12 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -74,8 +79,12 @@ func TestAccResourceRelease_import(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -161,8 +170,12 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 		config += releaseConfig
 	}
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -184,8 +197,12 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 			namespace := createRandomNamespace(t)
 			defer deleteNamespace(t, namespace)
 			resource.Test(t, resource.TestCase{
-				PreCheck:     func() { testAccPreCheck(t) },
-				Providers:    testAccProviders,
+				PreCheck: func() { testAccPreCheck(t) },
+				ProviderFactories: map[string]func() (*schema.Provider, error){
+					"helm": func() (*schema.Provider, error) {
+						return Provider(), nil
+					},
+				},
 				CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 				Steps: []resource.TestStep{
 					{
@@ -209,8 +226,12 @@ func TestAccResourceRelease_update(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -241,8 +262,12 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -265,8 +290,12 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -299,8 +328,12 @@ func TestAccResourceRelease_cloakValues(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -324,8 +357,12 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -427,8 +464,12 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	}`, name, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -454,8 +495,12 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -501,8 +546,12 @@ func TestAccResourceRelease_updateSetValue(t *testing.T) {
 	// use  checkResourceAttrExists rather than testCheckResourceAttrSet as the latter also checks if the value is not ""
 	// and the default for 'type' is an empty string when not explicitly set.
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -554,8 +603,12 @@ func TestAccResourceRelease_postrender(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -604,8 +657,12 @@ func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 	}`, name, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -636,8 +693,12 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 	}`, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -664,8 +725,12 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 	}`, name, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1051,8 +1116,12 @@ func TestAccResourceRelease_LintFailValues(t *testing.T) {
 	}`, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1079,8 +1148,12 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 	}`, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1106,8 +1179,12 @@ func TestAccResourceRelease_FailedDeployFailsApply(t *testing.T) {
 	}`, name, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1134,8 +1211,12 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1188,8 +1269,12 @@ func TestAccResourceRelease_chartURL(t *testing.T) {
 
 	chartURL := fmt.Sprintf("%s/%s", testRepositoryURL, "test-chart-1.2.3.tgz")
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1218,8 +1303,12 @@ func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1240,8 +1329,12 @@ func TestAccResourceRelease_delete_regression(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1292,7 +1385,11 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers:    testAccProviders,
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1462,7 +1559,11 @@ func TestAccResourceRelease_OCI_repository(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers:    testAccProviders,
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1511,7 +1612,11 @@ func TestAccResourceRelease_OCI_registry_login(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers:    testAccProviders,
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
@@ -1560,7 +1665,11 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		Providers:    testAccProviders,
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
