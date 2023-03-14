@@ -1361,6 +1361,62 @@ func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_set_list_chart(t *testing.T) {
+	name := randName("helm-setlist-chart")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseSetListValues(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.2", "3"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRelease_update_set_list_chart(t *testing.T) {
+	name := randName("helm-setlist-chart")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseSetListValues(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.2", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.#", "3"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseUpdateSetListValues(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.#", "2"),
+				),
+			},
+		},
+	})
+}
+
 func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
@@ -1828,6 +1884,21 @@ resource "helm_release" "%s" {
 	set_list {
 		name = "set_list_test"
 		value = [1, 2, 3]
+	}
+}
+`, resource, name, ns)
+}
+
+func testAccHelmReleaseUpdateSetListValues(resource, ns, name string) string {
+	return fmt.Sprintf(`
+resource "helm_release" "%s" {
+	 name        = %q
+	namespace   = %q
+	  chart       = "./testdata/charts/test-chart-v2"
+
+	set_list {
+		name = "set_list_test"
+		value = [2, 1]
 	}
 }
 `, resource, name, ns)
