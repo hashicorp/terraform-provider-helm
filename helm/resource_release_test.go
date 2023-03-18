@@ -819,8 +819,9 @@ func TestGetValuesString(t *testing.T) {
 
 func TestGetListValues(t *testing.T) {
 	d := resourceRelease().Data(nil)
+	testValue := []string{"1", "2", "3"}
 	err := d.Set("set_list", []interface{}{
-		map[string]interface{}{"name": "foo", "value": []string{"1", "2", "3"}, "type": "string"},
+		map[string]interface{}{"name": "foo", "value": testValue},
 	})
 	if err != nil {
 		t.Fatalf("error setting values: %s", err)
@@ -833,8 +834,11 @@ func TestGetListValues(t *testing.T) {
 		return
 	}
 
-	if len(values["foo"].([]interface{})) != 3 {
-		t.Fatalf("error merging values, expected length of 3, got %v", len(values["foo"].([]interface{})))
+	for i, v := range testValue {
+		val, _ := strconv.ParseInt(v, 10, 64)
+		if values["foo"].([]interface{})[i] != val {
+			t.Fatalf("error merging values, expected value of %v, got %v", v, values["foo"].([]interface{})[i])
+		}
 	}
 }
 
@@ -1876,30 +1880,30 @@ func TestResourceExampleInstanceStateUpgradeV0(t *testing.T) {
 
 func testAccHelmReleaseSetListValues(resource, ns, name string) string {
 	return fmt.Sprintf(`
-resource "helm_release" "%s" {
-	 name        = %q
-	namespace   = %q
-	  chart       = "./testdata/charts/test-chart-v2"
+		resource "helm_release" "%s" {
+	 		name        = %q
+			namespace   = %q
+	  		chart       = "./testdata/charts/test-chart-v2"
 
-	set_list {
-		name = "set_list_test"
-		value = [1, 2, 3]
-	}
-}
+			set_list {
+				name = "set_list_test"
+				value = [1, 2, 3]
+			}
+		}
 `, resource, name, ns)
 }
 
 func testAccHelmReleaseUpdateSetListValues(resource, ns, name string) string {
 	return fmt.Sprintf(`
-resource "helm_release" "%s" {
-	 name        = %q
-	namespace   = %q
-	  chart       = "./testdata/charts/test-chart-v2"
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+	  		chart       = "./testdata/charts/test-chart-v2"
 
-	set_list {
-		name = "set_list_test"
-		value = [2, 1]
-	}
-}
+			set_list {
+				name = "set_list_test"
+				value = [2, 1]
+			}
+		}
 `, resource, name, ns)
 }

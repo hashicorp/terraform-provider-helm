@@ -177,13 +177,6 @@ func resourceRelease() *schema.Resource {
 							Required: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
-						"type": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ValidateFunc: validation.StringInSlice([]string{
-								"auto", "string",
-							}, false),
-						},
 					},
 				},
 			},
@@ -1221,7 +1214,6 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 func getListValue(base, set map[string]interface{}) error {
 	name := set["name"].(string)
 	listValue := set["value"].([]interface{}) // this is going to be a list
-	valueType := set["type"].(string)
 
 	listStringArray := make([]string, len(listValue))
 
@@ -1229,18 +1221,8 @@ func getListValue(base, set map[string]interface{}) error {
 		listStringArray[i] = s.(string)
 	}
 	listString := strings.Join(listStringArray, ",")
-
-	switch valueType {
-	case "auto", "":
-		if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
-			return fmt.Errorf("failed parsing key %q with value %s, %s", name, listString, err)
-		}
-	case "string":
-		if err := strvals.ParseIntoString(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
-			return fmt.Errorf("failed parsing key %q with value %s, %s", name, listString, err)
-		}
-	default:
-		return fmt.Errorf("unexpected type: %s", valueType)
+	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
+		return fmt.Errorf("failed parsing key %q with value %s, %s", name, listString, err)
 	}
 
 	return nil
