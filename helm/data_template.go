@@ -130,6 +130,24 @@ func dataTemplate() *schema.Resource {
 					},
 				},
 			},
+			"set_list": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "Custom sensitive values to be merged with the values.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeList,
+							Required: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
 			"set_sensitive": {
 				Type:        schema.TypeSet,
 				Optional:    true,

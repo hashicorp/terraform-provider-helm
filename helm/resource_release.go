@@ -165,6 +165,24 @@ func resourceRelease() *schema.Resource {
 					},
 				},
 			},
+			"set_list": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "Custom sensitive values to be merged with the values.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeList,
+							Required: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+					},
+				},
+			},
 			"set_sensitive": {
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -1179,6 +1197,13 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 		}
 	}
 
+	for _, raw := range d.Get("set_list").([]interface{}) {
+		set_list := raw.(map[string]interface{})
+		if err := getListValue(base, set_list); err != nil {
+			return nil, err
+		}
+	}
+
 	for _, raw := range d.Get("set_sensitive").(*schema.Set).List() {
 		set := raw.(map[string]interface{})
 		if err := getValue(base, set); err != nil {
@@ -1187,6 +1212,23 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 	}
 
 	return base, logValues(base, d)
+}
+
+func getListValue(base, set map[string]interface{}) error {
+	name := set["name"].(string)
+	listValue := set["value"].([]interface{}) // this is going to be a list
+
+	listStringArray := make([]string, len(listValue))
+
+	for i, s := range listValue {
+		listStringArray[i] = s.(string)
+	}
+	listString := strings.Join(listStringArray, ",")
+	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
+		return fmt.Errorf("failed parsing key %q with value %s, %s", name, listString, err)
+	}
+
+	return nil
 }
 
 func getValue(base, set map[string]interface{}) error {
@@ -1429,6 +1471,7 @@ func valuesKnown(d *schema.ResourceDiff) bool {
 		"values",
 		"set",
 		"set_sensitive",
+		"set_list",
 	}
 	for _, attr := range checkAttributes {
 		if !rawPlan.GetAttr(attr).IsWhollyKnown() {

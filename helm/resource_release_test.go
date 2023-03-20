@@ -889,6 +889,31 @@ func TestGetValuesString(t *testing.T) {
 	}
 }
 
+func TestGetListValues(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	testValue := []string{"1", "2", "3"}
+	err := d.Set("set_list", []interface{}{
+		map[string]interface{}{"name": "foo", "value": testValue},
+	})
+	if err != nil {
+		t.Fatalf("error setting values: %s", err)
+		return
+	}
+
+	values, err := getValues(d)
+	if err != nil {
+		t.Fatalf("error getValues: %s", err)
+		return
+	}
+
+	for i, v := range testValue {
+		val, _ := strconv.ParseInt(v, 10, 64)
+		if values["foo"].([]interface{})[i] != val {
+			t.Fatalf("error merging values, expected value of %v, got %v", v, values["foo"].([]interface{})[i])
+		}
+	}
+}
+
 func TestCloakSetValues(t *testing.T) {
 	d := resourceRelease().Data(nil)
 	err := d.Set("set_sensitive", []interface{}{
@@ -1448,6 +1473,62 @@ func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_set_list_chart(t *testing.T) {
+	name := randName("helm-setlist-chart")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseSetListValues(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.2", "3"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRelease_update_set_list_chart(t *testing.T) {
+	name := randName("helm-setlist-chart")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseSetListValues(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.2", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.#", "3"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseUpdateSetListValues(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.#", "2"),
+				),
+			},
+		},
+	})
+}
+
 func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
@@ -1915,4 +1996,34 @@ func TestResourceExampleInstanceStateUpgradeV0(t *testing.T) {
 			t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", expected, actual)
 		}
 	}
+}
+
+func testAccHelmReleaseSetListValues(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+	 		name        = %q
+			namespace   = %q
+	  		chart       = "./testdata/charts/test-chart-v2"
+
+			set_list {
+				name = "set_list_test"
+				value = [1, 2, 3]
+			}
+		}
+`, resource, name, ns)
+}
+
+func testAccHelmReleaseUpdateSetListValues(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+	  		chart       = "./testdata/charts/test-chart-v2"
+
+			set_list {
+				name = "set_list_test"
+				value = [2, 1]
+			}
+		}
+`, resource, name, ns)
 }
