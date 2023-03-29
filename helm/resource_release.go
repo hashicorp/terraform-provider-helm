@@ -828,6 +828,14 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		return err
 	}
 
+	// Always recompute metadata if a new revision is going to be created
+	recomputeMetadataFields := []string{
+		"chart", "repository", "version", "set", "set_sensitive", "values",
+	}
+	if d.HasChanges(recomputeMetadataFields...) {
+		d.SetNewComputed("metadata")
+	}
+
 	var chartPathOpts action.ChartPathOptions
 	cpo, chartName, err := chartPathOptions(d, m, &chartPathOpts)
 	if err != nil {
