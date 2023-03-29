@@ -1041,13 +1041,9 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 	}
 
 	cloakSetValues(r.Config, d)
-	var values []byte
-	if len(r.Config) != 0 {
-		var err error
-		values, err = json.Marshal(r.Config)
-		if err != nil {
-			return err
-		}
+	values, err := json.Marshal(r.Config)
+	if err != nil {
+		return err
 	}
 
 	m := meta.(*Meta)
