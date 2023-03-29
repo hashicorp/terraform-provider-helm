@@ -1,0 +1,3 @@
+```release-note:bug
+`helm/resource_release.go`: Always recompute metadata when a release is updated
+```
