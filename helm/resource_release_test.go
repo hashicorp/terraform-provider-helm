@@ -1778,7 +1778,7 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 	})
 }
 
-func TestAccResourceRelease_computedMetadata(t *testing.T) {
+func TestAccResourceRelease_recomputeMetadata(t *testing.T) {
 	name := randName("basic")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -1804,14 +1804,17 @@ func TestAccResourceRelease_computedMetadata(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.1.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "set.%", "0"),
 				),
 			},
 			{
 				Config: testAccHelmReleaseRecomputeMetadataSet(testResourceName, namespace, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.1.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "set.0.name", "test"),
+					resource.TestCheckResourceAttr("helm_release.test", "set.0.value", "test"),
 				),
 			},
 		},
@@ -2073,9 +2076,7 @@ func testAccHelmReleaseRecomputeMetadata(resource, ns, name string) string {
 		resource "helm_release" "%s" {
 			name        = %q
 			namespace   = %q
-			repository          = "https://helm.github.io/examples"
-  chart               = "hello-world"
-  version             = "0.1.0"
+			chart       = "./testdata/charts/test-chart-v2"
 		}
 
 		resource "local_file" "example" {
@@ -2090,10 +2091,8 @@ func testAccHelmReleaseRecomputeMetadataSet(resource, ns, name string) string {
 		resource "helm_release" "%s" {
 			name        = %q
 			namespace   = %q
-			repository          = "https://helm.github.io/examples"
-  chart               = "hello-world"
-  version             = "0.1.0"
-			
+  			chart       = "./testdata/charts/test-chart-v2"
+
 			set {
 				name  = "test"
 				value = "test"
@@ -2103,6 +2102,6 @@ func testAccHelmReleaseRecomputeMetadataSet(resource, ns, name string) string {
 		resource "local_file" "example" {
 			content  = yamlencode(helm_release.test.metadata)
 			filename = "${path.module}/foo.bar"
-		  }
+		}
 `, resource, name, ns)
 }
