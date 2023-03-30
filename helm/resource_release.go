@@ -1041,9 +1041,13 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 	}
 
 	cloakSetValues(r.Config, d)
-	values, err := json.Marshal(r.Config)
-	if err != nil {
-		return err
+	values := "{}"
+	if r.Config != nil {
+		v, err := json.Marshal(r.Config)
+		if err != nil {
+			return err
+		}
+		values = string(v)
 	}
 
 	m := meta.(*Meta)
@@ -1063,7 +1067,7 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 		"chart":       r.Chart.Metadata.Name,
 		"version":     r.Chart.Metadata.Version,
 		"app_version": r.Chart.Metadata.AppVersion,
-		"values":      string(values),
+		"values":      values,
 	}})
 }
 
