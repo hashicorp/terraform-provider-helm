@@ -1011,10 +1011,45 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 
 	// Set desired version from the Chart metadata if available
 	if len(chart.Metadata.Version) > 0 {
-		return d.SetNew("version", chart.Metadata.Version)
+		err := d.SetNew("version", chart.Metadata.Version)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := d.SetNewComputed("version")
+		if err != nil {
+			return err
+		}
 	}
 
-	return d.SetNewComputed("version")
+	desiredValues, err := getValues(d)
+	if err != nil {
+		return err
+	}
+	cloakSetValues(desiredValues, d)
+	desiredValuesJson, err := json.Marshal(desiredValues)
+	if err != nil {
+		return err
+	}
+	desiredValuesJsonString := string(desiredValuesJson)
+
+	if desiredValuesJsonString != d.Get("metadata.0.values").(string) &&
+		!(desiredValuesJsonString == "{}" && d.Get("metadata.0.values").(string) == "null") {
+		err = d.SetNew("metadata", []map[string]interface{}{{
+			"name":        d.Get("metadata.0.name"),
+			"revision":    d.Get("metadata.0.revision").(int),
+			"namespace":   d.Get("metadata.0.namespace"),
+			"chart":       d.Get("metadata.0.chart"),
+			"version":     d.Get("metadata.0.version"),
+			"app_version": d.Get("metadata.0.app_version"),
+			"values":      desiredValuesJsonString,
+		}})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta interface{}) error {
