@@ -1817,6 +1817,10 @@ func TestAccResourceRelease_recomputeMetadata(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "set.0.value", "test"),
 				),
 			},
+			{
+				Config:   testAccHelmReleaseRecomputeMetadataSet(testResourceName, namespace, name),
+				PlanOnly: true,
+			},
 		},
 	})
 }
