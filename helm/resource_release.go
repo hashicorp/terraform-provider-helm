@@ -830,7 +830,13 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 
 	// Always recompute metadata if a new revision is going to be created
 	recomputeMetadataFields := []string{
-		"chart", "repository", "version", "set", "set_sensitive", "values",
+		"chart",
+		"repository",
+		"version",
+		"values",
+		"set",
+		"set_sensitive",
+		"set_list",
 	}
 	if d.HasChanges(recomputeMetadataFields...) {
 		d.SetNewComputed("metadata")
