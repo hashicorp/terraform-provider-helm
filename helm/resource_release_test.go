@@ -1778,6 +1778,53 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_recomputeMetadata(t *testing.T) {
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"local": {
+				Source: "hashicorp/local",
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseRecomputeMetadata(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "set.%", "0"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseRecomputeMetadataSet(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "set.0.name", "test"),
+					resource.TestCheckResourceAttr("helm_release.test", "set.0.value", "test"),
+				),
+			},
+			{
+				Config:   testAccHelmReleaseRecomputeMetadataSet(testResourceName, namespace, name),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func testAccHelmReleaseConfig_OCI(resource, ns, name, repo, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
@@ -2024,6 +2071,41 @@ func testAccHelmReleaseUpdateSetListValues(resource, ns, name string) string {
 				name = "set_list_test"
 				value = [2, 1]
 			}
+		}
+`, resource, name, ns)
+}
+
+func testAccHelmReleaseRecomputeMetadata(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			chart       = "./testdata/charts/test-chart-v2"
+		}
+
+		resource "local_file" "example" {
+			content  = yamlencode(helm_release.test.metadata)
+			filename = "${path.module}/foo.bar"
+		}
+`, resource, name, ns)
+}
+
+func testAccHelmReleaseRecomputeMetadataSet(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+  			chart       = "./testdata/charts/test-chart-v2"
+
+			set {
+				name  = "test"
+				value = "test"
+			}
+		}
+
+		resource "local_file" "example" {
+			content  = yamlencode(helm_release.test.metadata)
+			filename = "${path.module}/foo.bar"
 		}
 `, resource, name, ns)
 }

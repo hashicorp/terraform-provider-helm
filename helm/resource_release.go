@@ -828,6 +828,20 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		return err
 	}
 
+	// Always recompute metadata if a new revision is going to be created
+	recomputeMetadataFields := []string{
+		"chart",
+		"repository",
+		"version",
+		"values",
+		"set",
+		"set_sensitive",
+		"set_list",
+	}
+	if d.HasChanges(recomputeMetadataFields...) {
+		d.SetNewComputed("metadata")
+	}
+
 	var chartPathOpts action.ChartPathOptions
 	cpo, chartName, err := chartPathOptions(d, m, &chartPathOpts)
 	if err != nil {
@@ -1033,9 +1047,13 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 	}
 
 	cloakSetValues(r.Config, d)
-	values, err := json.Marshal(r.Config)
-	if err != nil {
-		return err
+	values := "{}"
+	if r.Config != nil {
+		v, err := json.Marshal(r.Config)
+		if err != nil {
+			return err
+		}
+		values = string(v)
 	}
 
 	m := meta.(*Meta)
@@ -1055,7 +1073,7 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 		"chart":       r.Chart.Metadata.Name,
 		"version":     r.Chart.Metadata.Version,
 		"app_version": r.Chart.Metadata.AppVersion,
-		"values":      string(values),
+		"values":      values,
 	}})
 }
 
