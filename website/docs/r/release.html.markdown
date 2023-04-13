@@ -249,6 +249,7 @@ exported:
 
 * `manifest` - The rendered manifest of the release as JSON. Enable the `manifest` experiment to use this feature.
 * `metadata` - Block status of the deployed release.
+* `status` - Status of the release.
 
 The `metadata` block supports:
 
@@ -256,7 +257,6 @@ The `metadata` block supports:
 * `name` - Name is the name of the release.
 * `namespace` - Namespace is the kubernetes namespace of the release.
 * `revision` - Version is an int32 which represents the version of the release.
-* `status` - Status of the release.
 * `version` - A SemVer 2 conformant version string of the chart.
 * `app_version` - The version number of the application being deployed.
 * `values` - The compounded values from `values` and `set*` attributes.
