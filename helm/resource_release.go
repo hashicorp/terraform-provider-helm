@@ -27,6 +27,9 @@ import (
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 )
 
@@ -551,6 +554,11 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	name := d.Get("name").(string)
+	if err := checkExistingResources(name); err != nil {
+		return diag.FromErr(err)
+	}
+
 	client := action.NewInstall(actionConfig)
 
 	cpo, chartName, err := chartPathOptions(d, m, &client.ChartPathOptions)
@@ -1497,4 +1505,34 @@ func valuesKnown(d *schema.ResourceDiff) bool {
 		}
 	}
 	return true
+}
+
+func checkExistingResources(releaseName string) error {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return err
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+
+	labelSelector := fmt.Sprintf("app.kubernetes.io/managed-by=Helm,app.kubernetes.io/instance=%s", releaseName)
+	namespaces, err := clientset.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, ns := range namespaces.Items {
+		deployments, err := clientset.AppsV1().Deployments(ns.Name).List(context.Background(), metav1.ListOptions{LabelSelector: labelSelector})
+		if err != nil {
+			return err
+		}
+		if len(deployments.Items) > 0 {
+			return fmt.Errorf("existing Kubernetes resources found for release '%s'", releaseName)
+		}
+	}
+
+	return nil
 }
