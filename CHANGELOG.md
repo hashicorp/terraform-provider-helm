@@ -1,3 +1,17 @@
+## 2.10.0 (May 30, 2023)
+
+FEATURES:
+
+* `helm_release`: Add `set_list` attribute [[GH-1071](https://github.com/hashicorp/terraform-provider-helm/issues/1071)]
+
+BUG FIXES:
+
+* `helm_release`: Always recompute metadata when a release is updated [[GH-1097](https://github.com/hashicorp/terraform-provider-helm/issues/1097)]
+
+DEPENDENCIES:
+
+* Bump `helm.sh/helm/v3` from `3.11.2` to `3.12.0` [[GH-1143](https://github.com/hashicorp/terraform-provider-helm/issues/1143)]
+
 ## 2.9.0 (February 14, 2023)
 
 FEATURES:
