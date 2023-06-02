@@ -136,6 +136,35 @@ func TestAccResourceRelease_import(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_inconsistentVersionRegression(t *testing.T) {
+	// NOTE this is a regression test, see: https://github.com/hashicorp/terraform-provider-helm/issues/1150
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "version", "1.2.3"),
+				),
+			},
+			{
+				Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_multiple_releases(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
