@@ -1,0 +1,3 @@
+```release-note:bug
+`helm/resource_release.go`: Fix: only recompute metadata if version actually changes 
+```
