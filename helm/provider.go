@@ -143,7 +143,7 @@ func Provider() *schema.Provider {
 								}
 								return false, nil
 							},
-							Description: "Enable full diff by storing the rendered manifest in the state.",
+							Description: "Enable full diff by storing the rendered manifest in the state. This has similar limitations as when using helm install --dry-run. See https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#install-a-crd-declaration-before-using-the-resource",
 						},
 					},
 				},
