@@ -130,7 +130,7 @@ resource "helm_release" "GCS" {
 ```hcl
 
 # Install AWS S3 plugin
-`helm plugin install https://github.com/hypnoglow/helm-s3.git`
+# `helm plugin install https://github.com/hypnoglow/helm-s3.git`
 
 # Run follow commands to setup S3 repository
 
