@@ -102,7 +102,7 @@ The provider also supports helm plugins such as GCS and S3 that add S3/GCS helm 
 ```hcl
 
 # Install GCS plugin
-`helm plugin install https://github.com/hayorov/helm-gcs.git`
+# `helm plugin install https://github.com/hayorov/helm-gcs.git`
 
 # Run follow commands to setup GCS repository
 
