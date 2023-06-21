@@ -131,6 +131,9 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) (*KubeCon
 	if v, ok := k8sGetOk(configData, "insecure"); ok {
 		overrides.ClusterInfo.InsecureSkipTLSVerify = v.(bool)
 	}
+	if v, ok := k8sGetOk(configData, "tls_server_name"); ok {
+		overrides.ClusterInfo.TLSServerName = v.(string)
+	}
 	if v, ok := k8sGetOk(configData, "cluster_ca_certificate"); ok {
 		overrides.ClusterInfo.CertificateAuthorityData = bytes.NewBufferString(v.(string)).Bytes()
 	}
