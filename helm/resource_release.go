@@ -840,7 +840,6 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	recomputeMetadataFields := []string{
 		"chart",
 		"repository",
-		"version",
 		"values",
 		"set",
 		"set_sensitive",
@@ -848,6 +847,17 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	}
 	if d.HasChanges(recomputeMetadataFields...) {
 		d.SetNewComputed("metadata")
+	}
+	if d.HasChange("version") {
+		// only recompute metadata if the version actually changes
+		// chart versioning is not consistent and some will add
+		// a `v` prefix to the chart version after installation
+		old, new := d.GetChange("version")
+		oldVersion := strings.TrimPrefix(old.(string), "v")
+		newVersion := strings.TrimPrefix(new.(string), "v")
+		if oldVersion != newVersion {
+			d.SetNewComputed("metadata")
+		}
 	}
 
 	var chartPathOpts action.ChartPathOptions

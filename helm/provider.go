@@ -143,7 +143,7 @@ func Provider() *schema.Provider {
 								}
 								return false, nil
 							},
-							Description: "Enable full diff by storing the rendered manifest in the state.",
+							Description: "Enable full diff by storing the rendered manifest in the state. This has similar limitations as when using helm install --dry-run. See https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#install-a-crd-declaration-before-using-the-resource",
 						},
 					},
 				},
@@ -173,12 +173,12 @@ func registryResource() *schema.Resource {
 			"username": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint.",
+				Description: "The username to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
 			},
 			"password": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint.",
+				Description: "The password to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
 			},
 		},
 	}
@@ -210,6 +210,12 @@ func kubernetesResource() *schema.Resource {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KUBE_INSECURE", false),
 				Description: "Whether server should be accessed without verifying the TLS certificate.",
+			},
+			"tls_server_name": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KUBE_TLS_SERVER_NAME", ""),
+				Description: "Server name passed to the server for SNI and is used in the client to check server certificates against.",
 			},
 			"client_certificate": {
 				Type:        schema.TypeString,

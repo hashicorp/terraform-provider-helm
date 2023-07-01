@@ -122,7 +122,7 @@ The provider also supports helm plugins such as GCS and S3 that add S3/GCS helm 
 
 resource "helm_release" "GCS" {
   name        = "GCS"
-  repository  = "gcs://tf-test-helm-repo/charts"
+  repository  = "gs://tf-test-helm-repo/charts"
   chart       = "chart"
 }
 ```
