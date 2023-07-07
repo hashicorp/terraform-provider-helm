@@ -840,15 +840,19 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	if d.HasChanges(recomputeMetadataFields...) {
 		d.SetNewComputed("metadata")
 	}
-	if d.HasChange("version") {
-		// only recompute metadata if the version actually changes
-		// chart versioning is not consistent and some will add
-		// a `v` prefix to the chart version after installation
-		old, new := d.GetChange("version")
-		oldVersion := strings.TrimPrefix(old.(string), "v")
-		newVersion := strings.TrimPrefix(new.(string), "v")
-		if oldVersion != newVersion {
-			d.SetNewComputed("metadata")
+	_, err = url.ParseRequestURI(d.Get("repository").(string))
+	if err == nil {
+
+		if d.HasChange("version") {
+			// only recompute metadata if the version actually changes
+			// chart versioning is not consistent and some will add
+			// a `v` prefix to the chart version after installation
+			old, new := d.GetChange("version")
+			oldVersion := strings.TrimPrefix(old.(string), "v")
+			newVersion := strings.TrimPrefix(new.(string), "v")
+			if oldVersion != newVersion {
+				d.SetNewComputed("metadata")
+			}
 		}
 	}
 
@@ -1010,7 +1014,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		debug("%s performing dry run upgrade", logID)
 		dry, err := upgrade.Run(name, chart, values)
 		if err != nil && strings.Contains(err.Error(), "has no deployed releases") {
-			if len(chart.Metadata.Version) > 0 {
+			if len(chart.Metadata.Version) > 0 && cpo.Version != "" {
 				return d.SetNew("version", chart.Metadata.Version)
 			}
 			d.SetNewComputed("version")
@@ -1384,7 +1388,10 @@ func chartPathOptions(d resourceGetter, m *Meta, cpo *action.ChartPathOptions) (
 	cpo.Keyring = d.Get("keyring").(string)
 	cpo.RepoURL = repositoryURL
 	cpo.Verify = d.Get("verify").(bool)
-	cpo.Version = version
+	_, err := url.ParseRequestURI(cpo.RepoURL)
+	if err == nil {
+		cpo.Version = version
+	}
 	cpo.Username = d.Get("repository_username").(string)
 	cpo.Password = d.Get("repository_password").(string)
 	cpo.PassCredentialsAll = d.Get("pass_credentials").(bool)
