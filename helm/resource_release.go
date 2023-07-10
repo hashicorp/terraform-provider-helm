@@ -840,8 +840,8 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	if d.HasChanges(recomputeMetadataFields...) {
 		d.SetNewComputed("metadata")
 	}
-	_, err = url.ParseRequestURI(d.Get("repository").(string))
-	if err == nil {
+	_, err = os.Stat(d.Get("chart").(string))
+	if os.IsNotExist(err) {
 
 		if d.HasChange("version") {
 			// only recompute metadata if the version actually changes
@@ -1388,8 +1388,8 @@ func chartPathOptions(d resourceGetter, m *Meta, cpo *action.ChartPathOptions) (
 	cpo.Keyring = d.Get("keyring").(string)
 	cpo.RepoURL = repositoryURL
 	cpo.Verify = d.Get("verify").(bool)
-	_, err := url.ParseRequestURI(cpo.RepoURL)
-	if err == nil || cpo.RepoURL == "" {
+	_, err := os.Stat(chartName)
+	if os.IsNotExist(err) || cpo.RepoURL == "" {
 		cpo.Version = version
 	}
 	cpo.Username = d.Get("repository_username").(string)
