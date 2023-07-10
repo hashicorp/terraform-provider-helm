@@ -1389,7 +1389,7 @@ func chartPathOptions(d resourceGetter, m *Meta, cpo *action.ChartPathOptions) (
 	cpo.RepoURL = repositoryURL
 	cpo.Verify = d.Get("verify").(bool)
 	_, err := url.ParseRequestURI(cpo.RepoURL)
-	if err == nil {
+	if err == nil || cpo.RepoURL == "" {
 		cpo.Version = version
 	}
 	cpo.Username = d.Get("repository_username").(string)
