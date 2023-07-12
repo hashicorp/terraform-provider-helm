@@ -1080,23 +1080,23 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 		manifest := redactSensitiveValues(string(jsonManifest), d)
 		d.Set("manifest", manifest)
 
-    n := d.Get("namespace").(string)
-    actionConfig, err := m.GetHelmConfiguration(n)
-    if err != nil {
-      return err
-    }
+		n := d.Get("namespace").(string)
+		actionConfig, err := m.GetHelmConfiguration(n)
+		if err != nil {
+			return err
+		}
 
-    resources := action.NewStatus(actionConfig)
-    resources.ShowResources = true
-    rr, err := resources.Run(r.Name)
-    if err != nil {
-      return err
-    }
-    jsonResources, err := json.Marshal(rr.Info.Resources)
-    if err != nil {
-      return err
-    }
-    d.Set("resources", string(jsonResources))
+		resources := action.NewStatus(actionConfig)
+		resources.ShowResources = true
+		rr, err := resources.Run(r.Name)
+		if err != nil {
+			return err
+		}
+		jsonResources, err := json.Marshal(rr.Info.Resources)
+		if err != nil {
+			return err
+		}
+		d.Set("resources", string(jsonResources))
 	}
 
 	return d.Set("metadata", []map[string]interface{}{{
