@@ -1,3 +1,9 @@
+## 2.10.1 (Jun 5, 2023)
+
+HOTFIX:
+
+* `helm_release`: Fix: Only recompute metadata if version actually changes. [[GH-1150](https://github.com/hashicorp/terraform-provider-helm/issues/1150)]
+
 ## 2.10.0 (May 30, 2023)
 
 FEATURES:
