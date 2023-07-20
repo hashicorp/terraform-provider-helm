@@ -31,7 +31,7 @@ jobs:
         if: github.event.action == 'opened'
         id: set-ticket-labels
         run: |
-          LABELS="[\"${{github.event.repository.name}}\""
+          LABELS="[\"${{github.event.repository.name}}\", "
           if [[ "${{ contains(github.event.issue.labels.*.name, 'type/bug') }}" == "true" ]]; then LABELS+="\"type/bug\", "; fi
           if [[ "${{ contains(github.event.issue.labels.*.name, 'type/enhancement') }}" == "true" ]]; then LABELS+="\"type/enhancement\", "; fi
           if [[ "${{ contains(github.event.issue.labels.*.name, 'type/docs') }}" == "true" ]]; then LABELS+="\"type/docs\", "; fi
