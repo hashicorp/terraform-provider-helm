@@ -29,7 +29,7 @@ jobs:
         if: github.event.action == 'opened'
         id: set-ticket-labels
         run: |
-          LABELS="["
+          LABELS="[\"${{github.event.repository.name}}\""
           if [[ "${{ contains(github.event.issue.labels.*.name, 'type/bug') }}" == "true" ]]; then LABELS+="\"type/bug\", "; fi
           if [[ "${{ contains(github.event.issue.labels.*.name, 'type/enhancement') }}" == "true" ]]; then LABELS+="\"type/enhancement\", "; fi
           if [[ ${#LABELS} != 1 ]]; then LABELS=${LABELS::-2}"]"; else LABELS+="]"; fi
@@ -64,9 +64,8 @@ jobs:
           description: "${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created in GitHub by ${{ github.actor }}._"
           # customfield_10089 is "Issue Link", customfield_10371 is "Source" (use JIRA API to retrieve)
           extraFields: '{ "customfield_10089": "${{ github.event.pull_request.html_url }}",
-                          "customfield_10371": { "value": "GitHub" },            
-                          "customfield_10535": [{ "value": "Service Mesh" }],
-                          "components": [{ "name": "${{ github.event.repository.name }}" }],
+                          "customfield_10371": { "value": "GitHub" },
+                          "customfield_10091": {"value": "TF-HybridCloud"},            
                           "labels": ${{ steps.set-ticket-labels.outputs.LABELS }} }'
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
@@ -83,7 +82,6 @@ jobs:
           summary: "${{ github.event.repository.name }} [${{ steps.set-ticket-type.outputs.TYPE }} #${{ github.event.pull_request.number }}]: ${{ github.event.pull_request.title }}"
           description: "GitHub URL: ${{ github.event.issue.html_url || github.event.pull_request.html_url }}\n\n${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created in GitHub by ${{ github.actor }}._"
           # customfield_10089 is "Issue Link", customfield_10371 is "Source" (use JIRA API to retrieve)
-          extraFields: '{ "components": [{ "name": "${{ github.event.repository.name }}" }] }'
 
       - name: Search
         if: github.event.action != 'opened'
