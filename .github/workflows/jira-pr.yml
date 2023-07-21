@@ -65,7 +65,7 @@ jobs:
           # customfield_10089 is "Issue Link", customfield_10371 is "Source" (use JIRA API to retrieve)
           extraFields: '{ "customfield_10089": "${{ github.event.pull_request.html_url }}",
                           "customfield_10371": { "value": "GitHub" },
-                          "customfield_10091": {"value": "TF-HybridCloud"},            
+                          "customfield_10091": {"value": "[\"TF-HybridCloud\"]"},            
                           "labels": ${{ steps.set-ticket-labels.outputs.LABELS }} }'
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
