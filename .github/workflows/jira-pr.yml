@@ -34,26 +34,9 @@ jobs:
           if [[ "${{ contains(github.event.issue.labels.*.name, 'type/enhancement') }}" == "true" ]]; then LABELS+="\"type/enhancement\", "; fi
           if [[ ${#LABELS} != 1 ]]; then LABELS=${LABELS::-2}"]"; else LABELS+="]"; fi
           echo "LABELS=${LABELS}" >> $GITHUB_OUTPUT
-          
-      - name: Check if team member
-        if: github.event.action == 'opened' 
-        id: is-team-member
-        run: |
-          TEAM=terraform-ecosystem
-          ROLE="$(hub api orgs/hashicorp/teams/${TEAM}/memberships/${{ github.actor }} | jq -r '.role | select(.!=null)')"
-          if [[ -n ${ROLE} ]]; then
-            echo "Actor ${{ github.actor }} is a ${TEAM} team member"
-            echo "MESSAGE=true" >> $GITHUB_OUTPUT
-          elif [[  "${{ contains(github.actor, 'dependabot') }}" == "true" ]]; then
-            echo "Actor ${{ github.actor }} is a ${TEAM} team member"
-            echo "MESSAGE=true" >> $GITHUB_OUTPUT 
-          else
-            echo "Actor ${{ github.actor }} is NOT a ${TEAM} team member"
-            echo "MESSAGE=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Create ticket if an issue is filed, or if PR not by a team member is opened
-        if: ( github.event.action == 'opened' && steps.is-team-member.outputs.MESSAGE == 'false' )
+        if: ( github.event.action == 'opened')
         uses: tomhjp/gh-action-jira-create@3ed1789cad3521292e591a7cfa703215ec1348bf # v0.2.1
         with:
           project: TFECO
