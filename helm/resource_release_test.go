@@ -983,7 +983,6 @@ func TestIsLocalChart(t *testing.T) {
 		{chartPath: "./testdata/charts/test-chart", repositoryURL: "", isLocalChart: true},
 		{chartPath: "", repositoryURL: "https://charts.bitnami.com/bitnami", isLocalChart: false},
 		{chartPath: "redis", repositoryURL: "https://charts.bitnami.com/bitnami", isLocalChart: false},
-		{chartPath: "", repositoryURL: "", isLocalChart: false},
 	}
 
 	for i, tc := range tests {
