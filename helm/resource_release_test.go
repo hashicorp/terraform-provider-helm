@@ -777,6 +777,61 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_LocalVersion(t *testing.T) {
+	name := randName("create-namespace")
+	namespace := randName("helm-created-namespace")
+	defer deleteNamespace(t, namespace)
+
+	// this test insures that the version is not changed when using a local chart
+
+	config1 := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name             = %q
+		namespace        = %q
+		repository       = %q
+		chart            = "test-chart"
+		create_namespace = true
+	}`, name, namespace, testRepositoryURL)
+
+	config2 := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name             = %q
+		namespace        = %q
+		repository       = %q
+		version 		 = "1.0.0"
+		chart            = "test-chart"
+		create_namespace = true
+	}`, name, namespace, testRepositoryURL)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: config1,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					checkResourceAttrExists("helm_release.test.version", "1.2.3"),
+				),
+			},
+			{
+				Config: config2,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					checkResourceAttrExists("helm_release.test.version", "1.2.3"),
+				),
+			},
+		},
+	})
+}
+
 func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
@@ -916,6 +971,29 @@ func TestGetValuesString(t *testing.T) {
 	if values["foo"] != "42" {
 		t.Fatalf("error merging values, expected %q, got %s", "42", values["foo"])
 	}
+}
+
+func TestIsLocalChart(t *testing.T) {
+
+	type test struct {
+		chartPath     string
+		repositoryURL string
+		isLocalChart  bool
+	}
+
+	tests := []test{
+		{chartPath: "./testdata/charts/test-chart", repositoryURL: "", isLocalChart: true},
+		{chartPath: "", repositoryURL: "https://charts.bitnami.com/bitnami", isLocalChart: false},
+		{chartPath: "redis", repositoryURL: "https://charts.bitnami.com/bitnami", isLocalChart: false},
+	}
+
+	for i, tc := range tests {
+		if result := isLocalChart(tc.chartPath, tc.repositoryURL); result != tc.isLocalChart {
+			t.Fatalf("[%v] error in isLocalChart; expected %v, got %v", i, tc.isLocalChart, result)
+		}
+	}
+
+	return
 }
 
 func TestGetListValues(t *testing.T) {
