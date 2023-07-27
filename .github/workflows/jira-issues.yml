@@ -3,7 +3,7 @@
 
 on:
   issues:
-    types: [opened, closed, deleted, reopened]
+    types: [opened, closed, deleted, reopened, edited]
   issue_comment:
     types: [created]
   workflow_dispatch:
@@ -32,9 +32,27 @@ jobs:
         id: set-ticket-labels
         run: |
           LABELS="[\"${{github.event.repository.name}}\", "
-          if [[ "${{ contains(github.event.issue.labels.*.name, 'type/bug') }}" == "true" ]]; then LABELS+="\"type/bug\", "; fi
-          if [[ "${{ contains(github.event.issue.labels.*.name, 'type/enhancement') }}" == "true" ]]; then LABELS+="\"type/enhancement\", "; fi
-          if [[ "${{ contains(github.event.issue.labels.*.name, 'type/docs') }}" == "true" ]]; then LABELS+="\"type/docs\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'bug') }}" == "true" ]]; then LABELS+="\"bug\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'enhancement') }}" == "true" ]]; then LABELS+="\"enhancement\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'documentation') }}" == "true" ]]; then LABELS+="\"documentation\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'needs-investigation') }}" == "true" ]]; then LABELS+="\"needs-investigation\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'question') }}" == "true" ]]; then LABELS+="\"question\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'size/XS') }}" == "true" ]]; then LABELS+="\"size/XS\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'size/S') }}" == "true" ]]; then LABELS+="\"size/S\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'size/M') }}" == "true" ]]; then LABELS+="\"size/M\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'size/L') }}" == "true" ]]; then LABELS+="\"size/L\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'size/XL') }}" == "true" ]]; then LABELS+="\"size/XL\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'size/XXL') }}" == "true" ]]; then LABELS+="\"size/XXL\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'acknowledged') }}" == "true" ]]; then LABELS+="\"acknowledged\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'help wanted') }}" == "true" ]]; then LABELS+="\"help wanted\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'upstream-helm') }}" == "true" ]]; then LABELS+="\"upstream-helm\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'upstream-terraform') }}" == "true" ]]; then LABELS+="\"upstream-terraform\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'progressive apply') }}" == "true" ]]; then LABELS+="\"progressive apply\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'pr/changelog') }}" == "true" ]]; then LABELS+="\"pr/changelog\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'crash') }}" == "true" ]]; then LABELS+="\"crash\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'breaking-change') }}" == "true" ]]; then LABELS+="\"breaking-change\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'provider') }}" == "true" ]]; then LABELS+="\"provider\", "; fi
+          if [[ "${{ contains(github.event.issue.labels.*.name, 'stale') }}" == "true" ]]; then LABELS+="\"stale\", "; fi
           if [[ ${#LABELS} != 1 ]]; then LABELS=${LABELS::-2}"]"; else LABELS+="]"; fi
           echo "LABELS=${LABELS}" >> $GITHUB_OUTPUT
 
