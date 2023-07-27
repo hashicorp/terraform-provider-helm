@@ -788,20 +788,18 @@ func TestAccResourceRelease_LocalVersion(t *testing.T) {
 	resource "helm_release" "test" {
 		name             = %q
 		namespace        = %q
-		repository       = %q
-		chart            = "test-chart"
+		chart            = "testdata/charts/test-chart"
 		create_namespace = true
-	}`, name, namespace, testRepositoryURL)
+	}`, name, namespace)
 
 	config2 := fmt.Sprintf(`
 	resource "helm_release" "test" {
 		name             = %q
 		namespace        = %q
-		repository       = %q
 		version 		 = "1.0.0"
-		chart            = "test-chart"
+		chart            = "testdata/charts/test-chart"
 		create_namespace = true
-	}`, name, namespace, testRepositoryURL)
+	}`, name, namespace)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { testAccPreCheck(t) },
@@ -817,7 +815,7 @@ func TestAccResourceRelease_LocalVersion(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					checkResourceAttrExists("helm_release.test.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
 				),
 			},
 			{
@@ -825,7 +823,7 @@ func TestAccResourceRelease_LocalVersion(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					checkResourceAttrExists("helm_release.test.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
 				),
 			},
 		},
@@ -985,6 +983,7 @@ func TestIsLocalChart(t *testing.T) {
 		{chartPath: "./testdata/charts/test-chart", repositoryURL: "", isLocalChart: true},
 		{chartPath: "", repositoryURL: "https://charts.bitnami.com/bitnami", isLocalChart: false},
 		{chartPath: "redis", repositoryURL: "https://charts.bitnami.com/bitnami", isLocalChart: false},
+		{chartPath: "", repositoryURL: "", isLocalChart: false},
 	}
 
 	for i, tc := range tests {
