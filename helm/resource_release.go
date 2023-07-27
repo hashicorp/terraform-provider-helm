@@ -841,7 +841,9 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		d.SetNewComputed("metadata")
 	}
 	_, err = os.Stat(d.Get("chart").(string))
-	if os.IsNotExist(err) {
+	_, err1 := os.Stat(d.Get("repository").(string))
+	_, err2 := url.ParseRequestURI(d.Get("chart").(string))
+	if os.IsNotExist(err) && os.IsNotExist(err1) && err2 != nil {
 
 		if d.HasChange("version") {
 			// only recompute metadata if the version actually changes
@@ -1389,7 +1391,9 @@ func chartPathOptions(d resourceGetter, m *Meta, cpo *action.ChartPathOptions) (
 	cpo.RepoURL = repositoryURL
 	cpo.Verify = d.Get("verify").(bool)
 	_, err := os.Stat(chartName)
-	if os.IsNotExist(err) || cpo.RepoURL == "" {
+	_, err1 := os.Stat(cpo.RepoURL)
+	_, err2 := url.ParseRequestURI(d.Get("chart").(string))
+	if os.IsNotExist(err) && os.IsNotExist(err1) && err2 != nil {
 		cpo.Version = version
 	}
 	cpo.Username = d.Get("repository_username").(string)
