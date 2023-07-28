@@ -3,7 +3,7 @@
 
 on:
   pull_request_target:
-    types: [opened, closed, reopened]
+    types: [opened, closed, reopened, edited]
   workflow_dispatch:
 
 name: Jira Community PR Sync
@@ -23,30 +23,49 @@ jobs:
       - name: Set ticket type
         id: set-ticket-type
         run: |
-          echo "TYPE=GH Issue" >> $GITHUB_OUTPUT
+          echo "TYPE=PR" >> $GITHUB_OUTPUT
           
       - name: Set ticket labels
         if: github.event.action == 'opened'
         id: set-ticket-labels
         run: |
           LABELS="[\"${{github.event.repository.name}}\", "
-          if [[ "${{ contains(github.event.issue.labels.*.name, 'type/bug') }}" == "true" ]]; then LABELS+="\"type/bug\", "; fi
-          if [[ "${{ contains(github.event.issue.labels.*.name, 'type/enhancement') }}" == "true" ]]; then LABELS+="\"type/enhancement\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'bug') }}" == "true" ]]; then LABELS+="\"bug\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'enhancement') }}" == "true" ]]; then LABELS+="\"enhancement\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'documentation') }}" == "true" ]]; then LABELS+="\"documentation\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'needs-investigation') }}" == "true" ]]; then LABELS+="\"needs-investigation\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'question') }}" == "true" ]]; then LABELS+="\"question\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'size/XS') }}" == "true" ]]; then LABELS+="\"size/XS\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'size/S') }}" == "true" ]]; then LABELS+="\"size/S\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'size/M') }}" == "true" ]]; then LABELS+="\"size/M\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'size/L') }}" == "true" ]]; then LABELS+="\"size/L\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'size/XL') }}" == "true" ]]; then LABELS+="\"size/XL\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'size/XXL') }}" == "true" ]]; then LABELS+="\"size/XXL\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'acknowledged') }}" == "true" ]]; then LABELS+="\"acknowledged\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'help wanted') }}" == "true" ]]; then LABELS+="\"help wanted\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'upstream-helm') }}" == "true" ]]; then LABELS+="\"upstream-helm\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'upstream-terraform') }}" == "true" ]]; then LABELS+="\"upstream-terraform\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'progressive apply') }}" == "true" ]]; then LABELS+="\"progressive apply\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'pr/changelog') }}" == "true" ]]; then LABELS+="\"pr/changelog\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'crash') }}" == "true" ]]; then LABELS+="\"crash\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'breaking-change') }}" == "true" ]]; then LABELS+="\"breaking-change\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'provider') }}" == "true" ]]; then LABELS+="\"provider\", "; fi
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'stale') }}" == "true" ]]; then LABELS+="\"stale\", "; fi
           if [[ ${#LABELS} != 1 ]]; then LABELS=${LABELS::-2}"]"; else LABELS+="]"; fi
           echo "LABELS=${LABELS}" >> $GITHUB_OUTPUT
 
-      - name: Create ticket if an issue is filed, or if PR not by a team member is opened
+      - name: Create ticket if a PR is opened
         if: ( github.event.action == 'opened')
         uses: tomhjp/gh-action-jira-create@3ed1789cad3521292e591a7cfa703215ec1348bf # v0.2.1
         with:
           project: TFECO
           issuetype: "${{ steps.set-ticket-type.outputs.TYPE }}"
-          summary: "${{ github.event.repository.name }} [${{ steps.set-ticket-type.outputs.TYPE }} #${{ github.event.pull_request.number }}]: ${{ github.event.pull_request.title }}"
-          description: "${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created in GitHub by ${{ github.actor }}._"
+          summary: "${{ github.event.pull_request.title }}:[${{ steps.set-ticket-type.outputs.TYPE }}-${{ github.event.pull_request.number }}] ${{ github.event.repository.name }}"
+          description: "${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created in GitHub by ${{ github.actor }}._\n\n${{ github.event.pull_request.html_url }}"
           # customfield_10089 is "Issue Link", customfield_10371 is "Source" (use JIRA API to retrieve)
           extraFields: '{ "customfield_10089": "${{ github.event.pull_request.html_url }}",
                           "customfield_10371": { "value": "GitHub" },
-                          "customfield_10091": ["TF-HybridCloud"],            
+                          "customfield_10091": ["TF-HybridCloud"],
                           "labels": ${{ steps.set-ticket-labels.outputs.LABELS }} }'
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
@@ -68,14 +87,14 @@ jobs:
           issue: ${{ steps.search.outputs.issue }}
           comment: "${{ github.actor }} ${{ github.event.review.state || 'commented' }}:\n\n${{ github.event.comment.body || github.event.review.body }}\n\n${{ github.event.comment.html_url || github.event.review.html_url }}"
 
-      - name: Close ticket
-        if: ( github.event.action == 'closed' || github.event.action == 'deleted' ) && steps.search.outputs.issue
+      - name: Close PR
+        if: ( github.event.action == 'closed' || github.event.action == 'deleted' || github.event.pull_request.merged == true) && steps.search.outputs.issue
         uses: atlassian/gajira-transition@38fc9cd61b03d6a53dd35fcccda172fe04b36de3 # v3
         with:
           issue: ${{ steps.search.outputs.issue }}
           transition: "Closed"
 
-      - name: Reopen ticket
+      - name: Reopen PR
         if: github.event.action == 'reopened' && steps.search.outputs.issue
         uses: atlassian/gajira-transition@38fc9cd61b03d6a53dd35fcccda172fe04b36de3 # v3
         with:
