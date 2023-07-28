@@ -61,11 +61,11 @@ jobs:
           project: TFECO
           issuetype: "${{ steps.set-ticket-type.outputs.TYPE }}"
           summary: "${{ github.event.pull_request.title }}:[${{ steps.set-ticket-type.outputs.TYPE }}-${{ github.event.pull_request.number }}] ${{ github.event.repository.name }}"
-          description: "${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created in GitHub by ${{ github.actor }}._"
+          description: "${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created in GitHub by ${{ github.actor }}._\n\n${{ github.event.pull_request.html_url }}"
           # customfield_10089 is "Issue Link", customfield_10371 is "Source" (use JIRA API to retrieve)
           extraFields: '{ "customfield_10089": "${{ github.event.pull_request.html_url }}",
                           "customfield_10371": { "value": "GitHub" },
-                          "customfield_10091": ["TF-HybridCloud"],            
+                          "customfield_10091": ["TF-HybridCloud"],
                           "labels": ${{ steps.set-ticket-labels.outputs.LABELS }} }'
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}

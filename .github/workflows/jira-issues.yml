@@ -63,7 +63,7 @@ jobs:
           project: TFECO
           issuetype: "${{ steps.set-ticket-type.outputs.TYPE }}"
           summary: "${{ github.event.issue.title }}:[${{ steps.set-ticket-type.outputs.TYPE }} ${{ github.event.issue.number }}] ${{ github.event.repository.name }}"
-          description: "${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created in GitHub by ${{ github.actor }}._"
+          description: "${{ github.event.issue.body || github.event.pull_request.body }}\n\n_Created in GitHub by ${{ github.actor }}._\n\n${{ github.event.issue.html_url || github.event.pull_request.html_url }}"
           # customfield_10089 is "Issue Link", customfield_10371 is "Source" (use JIRA API to retrieve)
           extraFields: '{ "customfield_10089": "${{ github.event.issue.html_url || github.event.pull_request.html_url }}",
                           "customfield_10371": { "value": "GitHub" },
