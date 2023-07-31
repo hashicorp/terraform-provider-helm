@@ -840,7 +840,8 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	if d.HasChanges(recomputeMetadataFields...) {
 		d.SetNewComputed("metadata")
 	}
-	if !isLocalChart(d.Get("chart").(string), d.Get("repository").(string)) {
+	repo := d.Get("repository").(string)
+	if !isLocalChart(d.Get("chart").(string), repo) || registry.IsOCI(repo) {
 		if d.HasChange("version") {
 			// only recompute metadata if the version actually changes
 			// chart versioning is not consistent and some will add
@@ -1386,7 +1387,7 @@ func chartPathOptions(d resourceGetter, m *Meta, cpo *action.ChartPathOptions) (
 	cpo.Keyring = d.Get("keyring").(string)
 	cpo.RepoURL = repositoryURL
 	cpo.Verify = d.Get("verify").(bool)
-	if !isLocalChart(chartName, cpo.RepoURL) {
+	if !isLocalChart(chartName, cpo.RepoURL) || registry.IsOCI(repository) {
 		cpo.Version = version
 	}
 	cpo.Username = d.Get("repository_username").(string)
