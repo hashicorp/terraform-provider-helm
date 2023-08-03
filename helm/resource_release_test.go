@@ -987,11 +987,9 @@ func TestIsLocalChart(t *testing.T) {
 
 	for i, tc := range tests {
 		if result := isLocalChart(tc.chartPath, tc.repositoryURL); result != tc.isLocalChart {
-			t.Fatalf("[%v] error in isLocalChart; expected %v, got %v", i, tc.isLocalChart, result)
+			t.Fatalf("[%v] error in isLocalChart; expected isLocalChart(%q, %q) == %v, got %v", i, tc.chartPath, tc.repositoryURL, tc.isLocalChart, result)
 		}
 	}
-
-	return
 }
 
 func TestGetListValues(t *testing.T) {
