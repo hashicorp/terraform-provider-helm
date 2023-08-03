@@ -840,8 +840,8 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	if d.HasChanges(recomputeMetadataFields...) {
 		d.SetNewComputed("metadata")
 	}
-	repo := d.Get("repository").(string)
-	if !isLocalChart(d.Get("chart").(string), repo) || registry.IsOCI(repo) {
+
+	if !isLocalChart(d.Get("chart").(string), d.Get("repository").(string)) {
 		if d.HasChange("version") {
 			// only recompute metadata if the version actually changes
 			// chart versioning is not consistent and some will add
@@ -1387,7 +1387,7 @@ func chartPathOptions(d resourceGetter, m *Meta, cpo *action.ChartPathOptions) (
 	cpo.Keyring = d.Get("keyring").(string)
 	cpo.RepoURL = repositoryURL
 	cpo.Verify = d.Get("verify").(bool)
-	if !isLocalChart(chartName, cpo.RepoURL) || registry.IsOCI(repository) {
+	if !isLocalChart(chartName, cpo.RepoURL) {
 		cpo.Version = version
 	}
 	cpo.Username = d.Get("repository_username").(string)
@@ -1515,11 +1515,14 @@ func valuesKnown(d *schema.ResourceDiff) bool {
 }
 
 func isLocalChart(chart string, repo string) bool {
-	_, err := os.Stat(chart)
-	_, err1 := os.Stat(repo)
-	_, err2 := url.ParseRequestURI(chart)
-	if os.IsNotExist(err) && os.IsNotExist(err1) && err2 != nil {
-		return false
+	_, urlerr := url.ParseRequestURI(chart)
+
+	if _, err := os.Stat(chart); err == nil || urlerr == nil {
+		return true
 	}
-	return true
+	if _, err := os.Stat(repo); err == nil {
+		return true
+	}
+
+	return false
 }
