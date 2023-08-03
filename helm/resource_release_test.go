@@ -971,23 +971,34 @@ func TestGetValuesString(t *testing.T) {
 	}
 }
 
-func TestIsLocalChart(t *testing.T) {
+func TestUseChartVersion(t *testing.T) {
 
 	type test struct {
-		chartPath     string
-		repositoryURL string
-		isLocalChart  bool
+		chartPath       string
+		repositoryURL   string
+		useChartVersion bool
 	}
 
 	tests := []test{
-		{chartPath: "./testdata/charts/test-chart", repositoryURL: "", isLocalChart: true},
-		{chartPath: "", repositoryURL: "https://charts.bitnami.com/bitnami", isLocalChart: false},
-		{chartPath: "redis", repositoryURL: "https://charts.bitnami.com/bitnami", isLocalChart: false},
+		// when chart is a local directory
+		{chartPath: "./testdata/charts/test-chart", repositoryURL: "", useChartVersion: true},
+		// when the repo is a local directory
+		{chartPath: "testchart", repositoryURL: "./testdata/charts", useChartVersion: true},
+		// when the repo is a repository URL
+		{chartPath: "", repositoryURL: "https://charts.bitnami.com/bitnami", useChartVersion: false},
+		// when chartPath is chart name and repo is repository URL
+		{chartPath: "redis", repositoryURL: "https://charts.bitnami.com/bitnami", useChartVersion: false},
+		// when the chart is a URL to an .tgz file
+		{chartPath: "https://charts.bitnami.com/bitnami/redis-10.7.16.tgz", repositoryURL: "", useChartVersion: true},
+		// when the repo is an OCI registry
+		{chartPath: "redis", repositoryURL: "oci://registry-1.docker.io/bitnamicharts", useChartVersion: false},
+		// when the chart is a URL to an OCI registry
+		{chartPath: "oci://registry-1.docker.io/bitnamicharts/redis", repositoryURL: "", useChartVersion: true},
 	}
 
 	for i, tc := range tests {
-		if result := isLocalChart(tc.chartPath, tc.repositoryURL); result != tc.isLocalChart {
-			t.Fatalf("[%v] error in isLocalChart; expected isLocalChart(%q, %q) == %v, got %v", i, tc.chartPath, tc.repositoryURL, tc.isLocalChart, result)
+		if result := useChartVersion(tc.chartPath, tc.repositoryURL); result != tc.useChartVersion {
+			t.Fatalf("[%v] error in isLocalChart; expected isLocalChart(%q, %q) == %v, got %v", i, tc.chartPath, tc.repositoryURL, tc.useChartVersion, result)
 		}
 	}
 }
