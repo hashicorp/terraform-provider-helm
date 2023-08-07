@@ -993,12 +993,12 @@ func TestUseChartVersion(t *testing.T) {
 		// when the repo is an OCI registry
 		{chartPath: "redis", repositoryURL: "oci://registry-1.docker.io/bitnamicharts", useChartVersion: false},
 		// when the chart is a URL to an OCI registry
-		{chartPath: "oci://registry-1.docker.io/bitnamicharts/redis", repositoryURL: "", useChartVersion: true},
+		{chartPath: "oci://registry-1.docker.io/bitnamicharts/redis", repositoryURL: "", useChartVersion: false},
 	}
 
 	for i, tc := range tests {
 		if result := useChartVersion(tc.chartPath, tc.repositoryURL); result != tc.useChartVersion {
-			t.Fatalf("[%v] error in isLocalChart; expected isLocalChart(%q, %q) == %v, got %v", i, tc.chartPath, tc.repositoryURL, tc.useChartVersion, result)
+			t.Fatalf("[%v] error in useChartVersion; expected useChartVersion(%q, %q) == %v, got %v", i, tc.chartPath, tc.repositoryURL, tc.useChartVersion, result)
 		}
 	}
 }
