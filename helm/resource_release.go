@@ -1171,7 +1171,9 @@ func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptio
 	url, err := http.Get(name)
 	if err == nil {
 		contentType := url.Header.Get("Content-Type")
+
 		if contentType != "binary/octet-stream" && contentType != "application/x-gzip" {
+			panic(contentType)
 			return nil, "", fmt.Errorf("Not an absolute URL to the .tgz of the Chart")
 		}
 	}
