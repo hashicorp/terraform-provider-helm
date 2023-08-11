@@ -990,6 +990,8 @@ func TestUseChartVersion(t *testing.T) {
 		{chartPath: "redis", repositoryURL: "https://charts.bitnami.com/bitnami", useChartVersion: false},
 		// when the chart is a URL to an .tgz file
 		{chartPath: "https://charts.bitnami.com/bitnami/redis-10.7.16.tgz", repositoryURL: "", useChartVersion: true},
+		// when user supplies full URL chart link as chartPath
+		{chartPath: "https://charts.bitnami.com/bitnami/redis", repositoryURL: "", useChartVersion: false},
 		// when the repo is an OCI registry
 		{chartPath: "redis", repositoryURL: "oci://registry-1.docker.io/bitnamicharts", useChartVersion: false},
 		// when the chart is a URL to an OCI registry

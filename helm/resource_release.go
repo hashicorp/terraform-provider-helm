@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -1516,8 +1517,9 @@ func valuesKnown(d *schema.ResourceDiff) bool {
 
 func useChartVersion(chart string, repo string) bool {
 	// checks if chart is a URL or OCI registry
-	if _, urlerr := url.ParseRequestURI(chart); urlerr == nil && !registry.IsOCI(chart) {
-		return true
+
+	if url, err := http.Get(chart); err == nil && !registry.IsOCI(chart) {
+		return url.Header.Get("Content-Type") == "binary/octet-stream"
 	}
 	// checks if chart is a local chart
 	if _, err := os.Stat(chart); err == nil {
