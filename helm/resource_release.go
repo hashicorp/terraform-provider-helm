@@ -70,10 +70,11 @@ func resourceRelease() *schema.Resource {
 		CustomizeDiff: resourceDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "Release name.",
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringLenBetween(1, 53),
+				Description:  "Release name.",
 			},
 			"repository": {
 				Type:        schema.TypeString,
