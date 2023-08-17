@@ -74,7 +74,7 @@ func resourceRelease() *schema.Resource {
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: validation.StringLenBetween(1, 53),
-				Description:  "Release name.",
+				Description:  "Release name. The length must not be longer than 53 characters.",
 			},
 			"repository": {
 				Type:        schema.TypeString,
