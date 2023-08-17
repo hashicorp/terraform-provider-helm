@@ -609,6 +609,28 @@ func TestAccResourceRelease_updateSetValue(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_validation(t *testing.T) {
+	invalidName := "this-helm-release-name-is-longer-than-53-characters-long"
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccHelmReleaseConfigBasic(testResourceName, namespace, invalidName, "1.2.3"),
+				ExpectError: regexp.MustCompile("expected length of name to be in the range.*"),
+			},
+		},
+	})
+}
+
 func checkResourceAttrExists(name, key string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		ms := s.RootModule()

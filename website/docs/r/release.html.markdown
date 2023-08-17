@@ -173,7 +173,7 @@ resource "helm_release" "example" {
 
 The following arguments are supported:
 
-* `name` - (Required) Release name.
+* `name` - (Required) Release name. The length must not be longer than 53 characters.
 * `chart` - (Required) Chart name to be installed. The chart name can be local path, a URL to a chart, or the name of the chart if `repository` is specified. It is also possible to use the `<repository>/<chart>` format here if you are running Terraform on a system that the repository has been added to with `helm repo add` but this is not recommended.
 * `repository` - (Optional) Repository URL where to locate the requested chart.
 * `repository_key_file` - (Optional) The repositories cert key file
