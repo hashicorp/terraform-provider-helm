@@ -974,9 +974,6 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		// check if release exists
 		_, err = getRelease(m, actionConfig, name)
 		if err == errReleaseNotFound {
-			if len(chart.Metadata.Version) > 0 {
-				return d.SetNew("version", chart.Metadata.Version)
-			}
 			d.SetNewComputed("manifest")
 			return d.SetNewComputed("version")
 		} else if err != nil {
@@ -1011,9 +1008,6 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		debug("%s performing dry run upgrade", logID)
 		dry, err := upgrade.Run(name, chart, values)
 		if err != nil && strings.Contains(err.Error(), "has no deployed releases") {
-			if len(chart.Metadata.Version) > 0 {
-				return d.SetNew("version", chart.Metadata.Version)
-			}
 			d.SetNewComputed("version")
 			d.SetNewComputed("manifest")
 			return nil
@@ -1032,14 +1026,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		d.Clear("manifest")
 	}
 
-	debug("%s Done", logID)
-
-	// Set desired version from the Chart metadata if available
-	if len(chart.Metadata.Version) > 0 {
-		return d.SetNew("version", chart.Metadata.Version)
-	}
-
-	return d.SetNewComputed("version")
+	return nil
 }
 
 func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta interface{}) error {
