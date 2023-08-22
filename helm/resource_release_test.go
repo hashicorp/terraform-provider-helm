@@ -1541,6 +1541,7 @@ func TestAccResourceRelease_set_list_chart(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "2"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.2", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.3", ""),
 				),
 			},
 		},
@@ -1564,7 +1565,8 @@ func TestAccResourceRelease_update_set_list_chart(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "2"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.2", "3"),
-					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.#", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.3", ""),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.#", "4"),
 				),
 			},
 			{
@@ -2104,8 +2106,13 @@ func testAccHelmReleaseSetListValues(resource, ns, name string) string {
 	  		chart       = "./testdata/charts/test-chart-v2"
 
 			set_list {
+				name = "nil_check"
+				value = [""]
+			}
+
+			set_list {
 				name = "set_list_test"
-				value = [1, 2, 3]
+				value = [1, 2, 3, ""]
 			}
 		}
 `, resource, name, ns)
