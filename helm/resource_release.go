@@ -1246,11 +1246,12 @@ func getValues(d resourceGetter) (map[string]interface{}, error) {
 func getListValue(base, set map[string]interface{}) error {
 	name := set["name"].(string)
 	listValue := set["value"].([]interface{}) // this is going to be a list
+	listStringArray := make([]string, 0)
 
-	listStringArray := make([]string, len(listValue))
-
-	for i, s := range listValue {
-		listStringArray[i] = s.(string)
+	for _, s := range listValue {
+		if s, ok := s.(string); ok && len(s) > 0 {
+			listStringArray = append(listStringArray, s)
+		}
 	}
 	listString := strings.Join(listStringArray, ",")
 	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
