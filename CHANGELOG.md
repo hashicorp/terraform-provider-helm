@@ -1,3 +1,15 @@
+## 2.11.0 (Aug 24, 2023)
+
+ENHANCEMENT:
+
+* `kubernetes/provider.go`: Add `tls_server_name` kubernetes provider options. [[GH-839](https://github.com/hashicorp/terraform-provider-helm/issues/839)]
+* `resource/helm_release`: add `name` field validation to be limited to 53 characters. [[GH-1228](https://github.com/hashicorp/terraform-provider-helm/issues/1228)]
+
+BUG FIXES:
+
+* `helm/resource_release.go`: Fix: version conflicts when using local chart [[GH-1176](https://github.com/hashicorp/terraform-provider-helm/issues/1176)]
+* `resource/helm_release`: Add nil check for `set_list.value` to prevent provider ChartPathOptions [[GH-1231](https://github.com/hashicorp/terraform-provider-helm/issues/1231)]
+
 ## 2.10.1 (Jun 5, 2023)
 
 HOTFIX:
