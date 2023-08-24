@@ -799,6 +799,59 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_LocalVersion(t *testing.T) {
+	name := randName("create-namespace")
+	namespace := randName("helm-created-namespace")
+	defer deleteNamespace(t, namespace)
+
+	// this test insures that the version is not changed when using a local chart
+
+	config1 := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name             = %q
+		namespace        = %q
+		chart            = "testdata/charts/test-chart"
+		create_namespace = true
+	}`, name, namespace)
+
+	config2 := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name             = %q
+		namespace        = %q
+		version 		 = "1.0.0"
+		chart            = "testdata/charts/test-chart"
+		create_namespace = true
+	}`, name, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: config1,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+				),
+			},
+			{
+				Config: config2,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+				),
+			},
+		},
+	})
+}
+
 func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
@@ -937,6 +990,38 @@ func TestGetValuesString(t *testing.T) {
 
 	if values["foo"] != "42" {
 		t.Fatalf("error merging values, expected %q, got %s", "42", values["foo"])
+	}
+}
+
+func TestUseChartVersion(t *testing.T) {
+
+	type test struct {
+		chartPath       string
+		repositoryURL   string
+		useChartVersion bool
+	}
+
+	tests := []test{
+		// when chart is a local directory
+		{chartPath: "./testdata/charts/test-chart", repositoryURL: "", useChartVersion: true},
+		// when the repo is a local directory
+		{chartPath: "testchart", repositoryURL: "./testdata/charts", useChartVersion: true},
+		// when the repo is a repository URL
+		{chartPath: "", repositoryURL: "https://charts.bitnami.com/bitnami", useChartVersion: false},
+		// when chartPath is chart name and repo is repository URL
+		{chartPath: "redis", repositoryURL: "https://charts.bitnami.com/bitnami", useChartVersion: false},
+		// when the chart is a URL to an .tgz file, any other url link that is not a .tgz file will not reach useChartVersion
+		{chartPath: "https://charts.bitnami.com/bitnami/redis-10.7.16.tgz", repositoryURL: "", useChartVersion: true},
+		// when the repo is an OCI registry
+		{chartPath: "redis", repositoryURL: "oci://registry-1.docker.io/bitnamicharts", useChartVersion: false},
+		// when the chart is a URL to an OCI registry
+		{chartPath: "oci://registry-1.docker.io/bitnamicharts/redis", repositoryURL: "", useChartVersion: false},
+	}
+
+	for i, tc := range tests {
+		if result := useChartVersion(tc.chartPath, tc.repositoryURL); result != tc.useChartVersion {
+			t.Fatalf("[%v] error in useChartVersion; expected useChartVersion(%q, %q) == %v, got %v", i, tc.chartPath, tc.repositoryURL, tc.useChartVersion, result)
+		}
 	}
 }
 
