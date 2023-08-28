@@ -1,0 +1,3 @@
+```release-note:enhancement
+resource/helm_release: add `upgrade` map attribute to enable idempotent release installation, addressing components of [GH-425](https://github.com/hashicorp/terraform-provider-helm/issues/425)
+```
