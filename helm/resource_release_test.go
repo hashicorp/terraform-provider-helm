@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -54,6 +55,89 @@ func TestAccResourceRelease_basic(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
 			),
+		}},
+	})
+}
+
+// "upgrade" without a previously installed release with --install (effectively equivalent to the previous test)
+func TestAccResourceRelease_upgrade_with_install_coldstart(t *testing.T) {
+	name := fmt.Sprintf("test-basic-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigWithUpgradeStrategy(testResourceName, namespace, name, "7.1.0", true, true),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "mariadb"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigWithUpgradeStrategy(testResourceName, namespace, name, "7.1.0", true, true),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "7.1.0"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
+			),
+		}},
+	})
+}
+
+// "upgrade" install wherein we pretend that someone else (e.g. a CI/CD system) has done the first install
+func TestAccResourceRelease_upgrade_with_install_warmstart(t *testing.T) {
+	name := fmt.Sprintf("test-basic-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	// preinstall the first revision of our chart directly via the helm CLI
+	args := []string{"install", "-n", namespace, "--create-namespace", name, "./test-fixtures/charts/basic-chart"}
+	cmd := exec.Command("helm", args...)
+	_, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("could not preinstall helm chart: %v", err)
+	}
+
+	// upgrade-install on top of the existing release, creating a new revision
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(namespace, name),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "0.1.0"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+			)}},
+	})
+}
+
+// "upgrade" without a previously installed release without --install (will fail because nothing to upgrade)
+func TestAccResourceRelease_upgrade_without_install(t *testing.T) {
+	name := fmt.Sprintf("test-basic-%s", acctest.RandString(10))
+	namespace := fmt.Sprintf("%s-%s", testNamespace, acctest.RandString(10))
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t, namespace) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config:             testAccHelmReleaseConfigWithUpgradeStrategy(testResourceName, namespace, name, "7.1.0", true, false),
+			ExpectError:        regexp.MustCompile("upgrade strategy enabled, but chart not already installed and install=false"),
+			ExpectNonEmptyPlan: true,
 		}},
 	})
 }
@@ -764,6 +848,64 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 			}
 		}
 	`, resource, name, ns, version)
+}
+
+func testAccHelmReleaseConfigWithUpgradeStrategy(resource, ns, name, version string, enabled, install bool) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = "https://charts.helm.sh/stable"
+  			chart       = "mariadb"
+			version     = %q
+
+			upgrade = {
+				enable = %t
+				install = %t
+			}
+
+			set {
+				name = "foo"
+				value = "qux"
+			}
+
+			set {
+				name = "qux.bar"
+				value = 1
+			}
+
+			set {
+				name = "master.persistence.enabled"
+				value = false # persistent volumes are giving non-related issues when testing
+			}
+			set {
+				name = "replication.enabled"
+				value = false
+			}
+		}
+	`, resource, name, ns, version, enabled, install)
+}
+
+func testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(ns, name string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "test" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+  			chart       = "./test-fixtures/charts/basic-chart"
+			version     = "0.1.0"
+
+			upgrade = {
+				enable = true
+				install = false
+			}
+			set {
+				name  = "foo"
+				value = "bar"
+			}
+		}
+	`, name, ns)
 }
 
 func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, values []string) string {

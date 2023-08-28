@@ -3,6 +3,7 @@ package helm
 import (
 	"encoding/json"
 	"fmt"
+	"helm.sh/helm/v3/pkg/storage/driver"
 	"log"
 	"net/url"
 	"os"
@@ -47,6 +48,10 @@ var defaultAttributes = map[string]interface{}{
 	"replace":                    false,
 	"create_namespace":           false,
 	"lint":                       false,
+	"upgrade": map[string]bool{
+		"enable":  false,
+		"install": false,
+	},
 }
 
 func resourceRelease() *schema.Resource {
@@ -391,6 +396,15 @@ func resourceRelease() *schema.Resource {
 					},
 				},
 			},
+			"upgrade": {
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Default:     defaultAttributes["upgrade"],
+				Description: "Configure 'upgrade' strategy for installing charts.  WARNING: this may not be suitable for production use, and if set causes the `replace` and `create_namespace` attributes to be ignored.",
+				Elem: &schema.Schema{
+					Type: schema.TypeBool,
+				},
+			},
 		},
 	}
 }
@@ -483,63 +497,115 @@ func resourceReleaseCreate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	client := action.NewInstall(actionConfig)
-	client.ChartPathOptions = *cpo
-	client.ClientOnly = false
-	client.DryRun = false
-	client.DisableHooks = d.Get("disable_webhooks").(bool)
-	client.Wait = d.Get("wait").(bool)
-	client.Devel = d.Get("devel").(bool)
-	client.DependencyUpdate = updateDependency
-	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
-	client.Namespace = d.Get("namespace").(string)
-	client.ReleaseName = d.Get("name").(string)
-	client.GenerateName = false
-	client.NameTemplate = ""
-	client.OutputDir = ""
-	client.Atomic = d.Get("atomic").(bool)
-	client.SkipCRDs = d.Get("skip_crds").(bool)
-	client.SubNotes = d.Get("render_subchart_notes").(bool)
-	client.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
-	client.Replace = d.Get("replace").(bool)
-	client.Description = d.Get("description").(string)
-	client.CreateNamespace = d.Get("create_namespace").(bool)
+	var rel *release.Release
 
-	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-		pr, err := postrender.NewExec(cmd)
+	releaseName := d.Get("name").(string)
+	var installIfNoReleaseToUpgrade bool
+	var releaseAlreadyExists bool
 
-		if err != nil {
-			return err
-		}
+	upgradeStrategy := d.Get("upgrade").(map[string]interface{})
+	enableUpgradeStrategy, ok := upgradeStrategy["enable"].(bool)
 
-		client.PostRenderer = pr
+	if ok && enableUpgradeStrategy {
+		installIfNoReleaseToUpgrade, _ = upgradeStrategy["install"].(bool)
 	}
 
-	debug("%s Installing chart", logId)
+	if enableUpgradeStrategy {
+		// Check to see if there is already a release installed.
+		histClient := action.NewHistory(actionConfig)
+		histClient.Max = 1
+		if _, err := histClient.Run(releaseName); err == driver.ErrReleaseNotFound {
+			debug("%s Chart %s is not yet installed", logId, chartName)
+		} else if err != nil {
+			return err
+		} else {
+			releaseAlreadyExists = true
+			debug("%s Chart %s is installed as release %s", logId, chartName, releaseName)
+		}
+	}
 
-	rel, err := client.Run(chart, values)
+	if enableUpgradeStrategy && releaseAlreadyExists {
+		debug("%s Upgrading chart", logId)
 
+		upgradeClient := action.NewUpgrade(actionConfig)
+		upgradeClient.ChartPathOptions = *cpo
+		upgradeClient.DryRun = false
+		upgradeClient.DisableHooks = d.Get("disable_webhooks").(bool)
+		upgradeClient.Wait = d.Get("wait").(bool)
+		upgradeClient.Devel = d.Get("devel").(bool)
+		upgradeClient.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+		upgradeClient.Namespace = d.Get("namespace").(string)
+		upgradeClient.Atomic = d.Get("atomic").(bool)
+		upgradeClient.SkipCRDs = d.Get("skip_crds").(bool)
+		upgradeClient.SubNotes = d.Get("render_subchart_notes").(bool)
+		upgradeClient.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
+		upgradeClient.Description = d.Get("description").(string)
+
+		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+			pr, err := postrender.NewExec(cmd)
+			if err != nil {
+				return err
+			}
+			upgradeClient.PostRenderer = pr
+		}
+
+		debug("%s Upgrading chart", logId)
+		rel, err = upgradeClient.Run(releaseName, chart, values)
+	} else if (enableUpgradeStrategy && installIfNoReleaseToUpgrade && !releaseAlreadyExists) || !enableUpgradeStrategy {
+		instClient := action.NewInstall(actionConfig)
+		instClient.Replace = d.Get("replace").(bool)
+
+		instClient.ChartPathOptions = *cpo
+		instClient.ClientOnly = false
+		instClient.DryRun = false
+		instClient.DisableHooks = d.Get("disable_webhooks").(bool)
+		instClient.Wait = d.Get("wait").(bool)
+		instClient.Devel = d.Get("devel").(bool)
+		instClient.DependencyUpdate = updateDependency
+		instClient.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+		instClient.Namespace = d.Get("namespace").(string)
+		instClient.ReleaseName = d.Get("name").(string)
+		instClient.GenerateName = false
+		instClient.NameTemplate = ""
+		instClient.OutputDir = ""
+		instClient.Atomic = d.Get("atomic").(bool)
+		instClient.SkipCRDs = d.Get("skip_crds").(bool)
+		instClient.SubNotes = d.Get("render_subchart_notes").(bool)
+		instClient.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
+		instClient.Description = d.Get("description").(string)
+		instClient.CreateNamespace = d.Get("create_namespace").(bool)
+
+		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+			pr, err := postrender.NewExec(cmd)
+			if err != nil {
+				return err
+			}
+			instClient.PostRenderer = pr
+		}
+
+		debug("%s Installing chart", logId)
+		rel, err = instClient.Run(chart, values)
+	} else if enableUpgradeStrategy && !installIfNoReleaseToUpgrade && !releaseAlreadyExists {
+		return fmt.Errorf(
+			"upgrade strategy enabled, but chart not already installed and install=false chartName=%v releaseName=%v enableUpgradeStrategy=%t installIfNoReleaseToUpgrade=%t releaseAlreadyExists=%t",
+			chartName, releaseName, enableUpgradeStrategy, installIfNoReleaseToUpgrade, releaseAlreadyExists)
+	}
 	if err != nil && rel == nil {
 		return err
 	}
 
 	if err != nil && rel != nil {
 		exists, existsErr := resourceReleaseExists(d, meta)
-
 		if existsErr != nil {
 			return existsErr
 		}
-
 		if !exists {
 			return err
 		}
-
 		debug("%s Release was created but returned an error", logId)
-
 		if err := setIDAndMetadataFromRelease(d, rel); err != nil {
 			return err
 		}
-
 		return err
 	}
 
