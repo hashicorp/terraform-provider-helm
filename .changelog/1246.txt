@@ -1,0 +1,4 @@
+```release-note:bug
+`helm_release`: Fix perpetual diff when version attribute is an empty string
+```
+
