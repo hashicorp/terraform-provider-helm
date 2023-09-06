@@ -79,6 +79,7 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
+	resourceName := "helm_release.test"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { testAccPreCheck(t) },
 		ProviderFactories: map[string]func() (*schema.Provider, error){
@@ -91,13 +92,13 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 			{
 				Config: testAccHelmReleaseConfigEmptyVersion(testResourceName, namespace, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
-					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.app_version", "1.19.5"),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.name", name),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr(resourceName, "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.app_version", "1.19.5"),
 				),
 			},
 		},
