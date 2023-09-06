@@ -73,6 +73,38 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	})
 }
 
+// NOTE this is a regression test for: https://github.com/hashicorp/terraform-provider-helm/issues/1236
+func TestAccResourceRelease_emptyVersion(t *testing.T) {
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resourceName := "helm_release.test"
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigEmptyVersion(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.name", name),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr(resourceName, "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.app_version", "1.19.5"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_import(t *testing.T) {
 	name := randName("import")
 	namespace := createRandomNamespace(t)
@@ -873,6 +905,18 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 			}
 		}
 	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccHelmReleaseConfigEmptyVersion(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			repository  = %q
+  			chart       = "test-chart"
+			version     = ""
+		}
+	`, resource, name, ns, testRepositoryURL)
 }
 
 func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, values []string) string {
