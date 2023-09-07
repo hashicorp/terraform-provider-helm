@@ -3,13 +3,17 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"helm.sh/helm/pkg/storage/driver"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -135,18 +139,39 @@ func (p *helmProvider) Schema(ctx context.Context, _ provider.SchemaRequest, res
 		},
 
 		Attributes: map[string]schema.Attribute{
-			"host": schema.StringAttribute{
-				Description: "URI for HashiCups API. May also be provided via HASHICUPS_HOST environment variable.",
+			"debug": schema.BoolAttribute{
 				Optional:    true,
+				Description: "Debug indicates whether or not Helm is running in Debug mode.",
 			},
-			"username": schema.StringAttribute{
-				Description: "Username for HashiCups API. May also be provided via HASHICUPS_USERNAME environment variable.",
+			"plugins_path": schema.StringAttribute{
 				Optional:    true,
+				Description: "The path to the helm plugins directory",
 			},
-			"password": schema.StringAttribute{
-				Description: "Password for HashiCups API. May also be provided via HASHICUPS_PASSWORD environment variable.",
+			"registry_config_path": schema.StringAttribute{
 				Optional:    true,
-				Sensitive:   true,
+				Description: "The path to the registry config file",
+			},
+			"repository_config_path": schema.StringAttribute{
+				Optional:    true,
+				Description: "The path to the file containing repository names and URLs",
+			},
+			"repository_cache": schema.StringAttribute{
+				Optional:    true,
+				Description: "The path to the file containing cached repository indexes",
+			},
+			"helm_driver": schema.StringAttribute{
+				Optional:    true,
+				Description: "The backend storage driver. Values are: configmap, secret, memory, sql",
+				Validators: []validator.String{stringvalidator.AtLeastOneOf(path.Expressions{
+					path.MatchRoot(strings.ToLower(driver.MemoryDriverName)),
+					path.MatchRoot(strings.ToLower(driver.ConfigMapsDriverName)),
+					path.MatchRoot(strings.ToLower(driver.SecretsDriverName)),
+					path.MatchRoot(strings.ToLower(driver.SQLDriverName))}),
+				},
+			},
+			"burst_limit": schema.Int64Attribute{
+				Optional:    true,
+				Description: "Helm burst limit. Increase this if you have a cluster with many CRDs",
 			},
 		},
 	}
