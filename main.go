@@ -6,30 +6,34 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
-	"github.com/hashicorp/terraform-provider-helm/helm"
-	"k8s.io/klog"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	provider "github.com/hashicorp/terraform-provider-helm/helm"
 )
 
 // Generate docs for website
 //go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 
 func main() {
-	debugFlag := flag.Bool("debug", false, "Start provider in stand-alone debug mode.")
+	var debug bool
+
+	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
-	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
-	klog.InitFlags(klogFlags)
-	err := klogFlags.Set("logtostderr", "false")
+
+	opts := providerserver.ServeOpts{
+		// NOTE: This is not a typical Terraform Registry provider address,
+		// such as registry.terraform.io/hashicorp/hashicups. This specific
+		// provider address is used in these tutorials in conjunction with a
+		// specific Terraform CLI configuration for manual development testing
+		// of this provider.
+		Address: "registry.terraform.io/hashicorp/helm",
+		Debug:   debug,
+	}
+
+	err := providerserver.Serve(context.Background(), provider.New("3.0.0"), opts)
+
 	if err != nil {
-		panic(err)
-	}
-	serveOpts := &plugin.ServeOpts{
-		ProviderFunc: helm.Provider,
-	}
-	if debugFlag != nil && *debugFlag {
-		plugin.Debug(context.Background(), "registry.terraform.io/hashicorp/helm", serveOpts)
-	} else {
-		plugin.Serve(serveOpts)
+		log.Fatal(err.Error())
 	}
 }
