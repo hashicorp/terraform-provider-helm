@@ -136,8 +136,35 @@ func (p *helmProvider) Schema(ctx context.Context, _ provider.SchemaRequest, res
 					},
 				},
 			},
+			"registry": schema.ListNestedBlock{
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"url": schema.StringAttribute{
+							Required:    true,
+							Description: "OCI URL in form of oci://host:port or oci://host",
+						},
+						"username": schema.StringAttribute{
+							Required:    true,
+							Description: "The username to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
+						},
+						"password": schema.StringAttribute{
+							Required:    true,
+							Description: "The password to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
+						},
+					},
+				},
+			},
+			"experiments": schema.ListNestedBlock{
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"manifest": schema.BoolAttribute{
+							Optional:    true,
+							Description: "Enable full diff by storing the rendered manifest in the state. This has similar limitations as when using helm install --dry-run. See https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#install-a-crd-declaration-before-using-the-resource",
+						},
+					},
+				},
+			},e
 		},
-
 		Attributes: map[string]schema.Attribute{
 			"debug": schema.BoolAttribute{
 				Optional:    true,
