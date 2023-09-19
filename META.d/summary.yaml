@@ -1,0 +1,14 @@
+---
+
+schema: 1.1
+
+partition: hcp
+category: terraform
+
+summary:
+  owner: team-tf-hybrid-cloud
+  description: |
+    This Helm provider for Terraform allows you to install and manage Helm Charts in your Kubernetes cluster using Terraform.
+
+  visibility: external
+  auth_methods: |
