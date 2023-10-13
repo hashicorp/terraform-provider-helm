@@ -73,6 +73,38 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	})
 }
 
+// NOTE this is a regression test for: https://github.com/hashicorp/terraform-provider-helm/issues/1236
+func TestAccResourceRelease_emptyVersion(t *testing.T) {
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resourceName := "helm_release.test"
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigEmptyVersion(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.name", name),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr(resourceName, "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr(resourceName, "metadata.0.app_version", "1.19.5"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_import(t *testing.T) {
 	name := randName("import")
 	namespace := createRandomNamespace(t)
@@ -609,6 +641,28 @@ func TestAccResourceRelease_updateSetValue(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_validation(t *testing.T) {
+	invalidName := "this-helm-release-name-is-longer-than-53-characters-long"
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccHelmReleaseConfigBasic(testResourceName, namespace, invalidName, "1.2.3"),
+				ExpectError: regexp.MustCompile("expected length of name to be in the range.*"),
+			},
+		},
+	})
+}
+
 func checkResourceAttrExists(name, key string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		ms := s.RootModule()
@@ -777,6 +831,59 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_LocalVersion(t *testing.T) {
+	name := randName("create-namespace")
+	namespace := randName("helm-created-namespace")
+	defer deleteNamespace(t, namespace)
+
+	// this test insures that the version is not changed when using a local chart
+
+	config1 := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name             = %q
+		namespace        = %q
+		chart            = "testdata/charts/test-chart"
+		create_namespace = true
+	}`, name, namespace)
+
+	config2 := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name             = %q
+		namespace        = %q
+		version 		 = "1.0.0"
+		chart            = "testdata/charts/test-chart"
+		create_namespace = true
+	}`, name, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: config1,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+				),
+			},
+			{
+				Config: config2,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+				),
+			},
+		},
+	})
+}
+
 func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
@@ -798,6 +905,18 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 			}
 		}
 	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccHelmReleaseConfigEmptyVersion(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			repository  = %q
+  			chart       = "test-chart"
+			version     = ""
+		}
+	`, resource, name, ns, testRepositoryURL)
 }
 
 func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, values []string) string {
@@ -915,6 +1034,38 @@ func TestGetValuesString(t *testing.T) {
 
 	if values["foo"] != "42" {
 		t.Fatalf("error merging values, expected %q, got %s", "42", values["foo"])
+	}
+}
+
+func TestUseChartVersion(t *testing.T) {
+
+	type test struct {
+		chartPath       string
+		repositoryURL   string
+		useChartVersion bool
+	}
+
+	tests := []test{
+		// when chart is a local directory
+		{chartPath: "./testdata/charts/test-chart", repositoryURL: "", useChartVersion: true},
+		// when the repo is a local directory
+		{chartPath: "testchart", repositoryURL: "./testdata/charts", useChartVersion: true},
+		// when the repo is a repository URL
+		{chartPath: "", repositoryURL: "https://charts.bitnami.com/bitnami", useChartVersion: false},
+		// when chartPath is chart name and repo is repository URL
+		{chartPath: "redis", repositoryURL: "https://charts.bitnami.com/bitnami", useChartVersion: false},
+		// when the chart is a URL to an .tgz file, any other url link that is not a .tgz file will not reach useChartVersion
+		{chartPath: "https://charts.bitnami.com/bitnami/redis-10.7.16.tgz", repositoryURL: "", useChartVersion: true},
+		// when the repo is an OCI registry
+		{chartPath: "redis", repositoryURL: "oci://registry-1.docker.io/bitnamicharts", useChartVersion: false},
+		// when the chart is a URL to an OCI registry
+		{chartPath: "oci://registry-1.docker.io/bitnamicharts/redis", repositoryURL: "", useChartVersion: false},
+	}
+
+	for i, tc := range tests {
+		if result := useChartVersion(tc.chartPath, tc.repositoryURL); result != tc.useChartVersion {
+			t.Fatalf("[%v] error in useChartVersion; expected useChartVersion(%q, %q) == %v, got %v", i, tc.chartPath, tc.repositoryURL, tc.useChartVersion, result)
+		}
 	}
 }
 
@@ -1516,9 +1667,13 @@ func TestAccResourceRelease_set_list_chart(t *testing.T) {
 				Config: testAccHelmReleaseSetListValues(testResourceName, namespace, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
-					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "1"),
-					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "2"),
-					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.2", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", ""),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.0", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.1", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.2", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.3", ""),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.#", "4"),
 				),
 			},
 		},
@@ -1539,10 +1694,12 @@ func TestAccResourceRelease_update_set_list_chart(t *testing.T) {
 				Config: testAccHelmReleaseSetListValues(testResourceName, namespace, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
-					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "1"),
-					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "2"),
-					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.2", "3"),
-					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.#", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", ""),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.0", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.1", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.2", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.3", ""),
+					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.#", "4"),
 				),
 			},
 			{
@@ -2082,8 +2239,13 @@ func testAccHelmReleaseSetListValues(resource, ns, name string) string {
 	  		chart       = "./testdata/charts/test-chart-v2"
 
 			set_list {
+				name = "nil_check"
+				value = [""]
+			}
+
+			set_list {
 				name = "set_list_test"
-				value = [1, 2, 3]
+				value = [1, 2, 3, ""]
 			}
 		}
 `, resource, name, ns)

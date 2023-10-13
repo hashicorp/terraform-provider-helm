@@ -1,0 +1,3 @@
+```release-note:enhancement
+`resource/helm_release`: add `name` field validation to be limited to 53 characters.
+```

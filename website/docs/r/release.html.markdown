@@ -173,7 +173,7 @@ resource "helm_release" "example" {
 
 The following arguments are supported:
 
-* `name` - (Required) Release name.
+* `name` - (Required) Release name. The length must not be longer than 53 characters.
 * `chart` - (Required) Chart name to be installed. The chart name can be local path, a URL to a chart, or the name of the chart if `repository` is specified. It is also possible to use the `<repository>/<chart>` format here if you are running Terraform on a system that the repository has been added to with `helm repo add` but this is not recommended.
 * `repository` - (Optional) Repository URL where to locate the requested chart.
 * `repository_key_file` - (Optional) The repositories cert key file
@@ -219,11 +219,11 @@ The `set`, `set_list`, and `set_sensitive` blocks support:
 * `value` - (Required) value of the variable to be set.
 * `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
 
-Since Terraform Utilizes HCL as well as Helm using the Helm Template Language, it's necessary to  escape certain characters twice in order for it to be parsed. `name` should also be the path that leads to the desired value, where `value` is the desired value that will be set.
+Since Terraform Utilizes HCL as well as Helm using the Helm Template Language, it's necessary to  escape the `{}`, `[]`, `.`, and `,` characters twice in order for it to be parsed. `name` should also be set to the `value path`, and `value` is the desired value that will be set.
 
 ```hcl
 set {
-  name  = "grafana.ingress.annotations\\.alb\\.ingress\\.kubernetes\\.io/group\\.name"
+  name  = "grafana.ingress.annotations.alb\\.ingress\\.kubernetes\\.io/group\\.name"
   value = "shared-ingress"
 }
 ```
@@ -235,12 +235,24 @@ set_list {
 }
 ```
 
+```hcl
+controller:
+  pod:
+    annotations:
+      status.kubernetes.io/restart-on-failure: {"timeout": "30s"}
+```
+
+```hcl
+set {
+    name  = "controller.pod.annotations.status\\.kubernetes\\.io/restart-on-failure"
+    value = "\\{\"timeout\": \"30s\"\\}"
+}
+```
+
 The `postrender` block supports two attributes:
 
 * `binary_path` - (Required) relative or full path to command binary.
 * `args` - (Optional) a list of arguments to supply to the post-renderer.
-
-
 
 ## Attributes Reference
 
