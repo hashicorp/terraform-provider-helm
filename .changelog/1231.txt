@@ -1,0 +1,3 @@
+```release-note:bug
+`resource/helm_release`: Add nil check for `set_list.value` to prevent provider ChartPathOptions
+```
