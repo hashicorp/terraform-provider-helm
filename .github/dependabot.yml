@@ -3,12 +3,16 @@ updates:
   - package-ecosystem: "gomod" 
     directory: "/" 
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "sunday"
     commit-message:
       prefix: "🌱"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    # DependaBot does not open a pull request to update the version of GH actions, only security updates.
+    # TSCCR is responsible for opening a pull request to update the version of GH actions.
+    open-pull-requests-limit: 0
     commit-message:
       prefix: "🤖"
