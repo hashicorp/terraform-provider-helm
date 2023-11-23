@@ -1,3 +1,13 @@
+## 2.12.0 (Nov 27, 2023)
+
+BUG FIXES:
+
+* `helm_release`: Fix perpetual diff when version attribute is an empty string [[GH-1246](https://github.com/hashicorp/terraform-provider-helm/issues/1246)]
+
+DEPENDENCIES:
+
+* Bump `helm.sh/helm/v3` from `3.12.0` to `3.13.1` 
+
 ## 2.11.0 (Aug 24, 2023)
 
 ENHANCEMENT:
