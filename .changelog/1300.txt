@@ -1,0 +1,39 @@
+```release-note:dependency
+Bump Golang from `1.20` to `1.21`.
+```
+
+```release-note:dependency
+Bump helm.sh/helm/v3 from `v3.13.1` to `v3.13.2`.
+```
+
+```release-note:dependency
+Bump github.com/hashicorp/go-cty from `v1.4.1-0.20200414143053-d3edf31b6320` to `v1.4.1-0.20200723130312-85980079f637`.
+```
+
+```release-note:dependency
+Bump github.com/hashicorp/terraform-plugin-docs from `v0.14.1` to `v0.16.0`.
+```
+
+```release-note:dependency
+Bump github.com/hashicorp/terraform-plugin-sdk/v2 from `v2.26.1` to `v2.30.0`.
+```
+
+```release-note:dependency
+Bump golang.org/x/crypto from `v0.14.0` to `v0.16.0`.
+```
+
+```release-note:dependency
+Bump k8s.io/api from `v0.28.3` to `v0.28.4`.
+```
+
+```release-note:dependency
+Bump k8s.io/apimachinery from `v0.28.3` to `v0.28.4`.
+```
+
+```release-note:dependency
+Bump k8s.io/client-go from `v0.28.3` to `v0.28.4`.
+```
+
+```release-note:dependency
+Bump sigs.k8s.io/yaml from `v1.3.0` to `v1.4.0`.
+```
