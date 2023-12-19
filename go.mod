@@ -9,7 +9,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/crypto v0.16.0
+	golang.org/x/crypto v0.17.0
 	helm.sh/helm/v3 v3.13.2
 	k8s.io/api v0.28.4
 	k8s.io/apimachinery v0.28.4
