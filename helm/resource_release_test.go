@@ -1138,6 +1138,35 @@ func TestCloakSetValuesNested(t *testing.T) {
 	}
 }
 
+func TestCloakSetValuesNestedWithArray(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	err := d.Set("set_sensitive", []interface{}{
+		map[string]interface{}{"name": "foo.qux[0].bar", "value": "42"},
+	})
+	if err != nil {
+		t.Fatalf("error setting values: %v", err)
+	}
+
+	barMap := map[string]interface{}{
+		"bar": "bar",
+	}
+
+	qux := []interface{}{
+		barMap,
+	}
+
+	values := map[string]interface{}{
+		"foo": map[string]interface{}{
+			"qux": qux,
+		},
+	}
+
+	cloakSetValues(values, d)
+	if barMap["bar"] != sensitiveContentValue {
+		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, barMap["bar"])
+	}
+}
+
 func TestCloakSetValuesNotMatching(t *testing.T) {
 	d := resourceRelease().Data(nil)
 	err := d.Set("set_sensitive", []interface{}{

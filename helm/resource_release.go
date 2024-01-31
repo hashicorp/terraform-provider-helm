@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1101,20 +1102,49 @@ func cloakSetValues(config map[string]interface{}, d resourceGetter) {
 const sensitiveContentValue = "(sensitive value)"
 
 func cloakSetValue(values map[string]interface{}, valuePath string) {
-	pathKeys := strings.Split(valuePath, ".")
-	sensitiveKey := pathKeys[len(pathKeys)-1]
-	parentPathKeys := pathKeys[:len(pathKeys)-1]
+	pathKeys := tokenizePath(valuePath)
 
-	m := values
-	for _, key := range parentPathKeys {
-		v, ok := m[key].(map[string]interface{})
-		if !ok {
+	var current interface{} = values
+	for i, key := range pathKeys {
+		// If we're at the last key, set the value
+		if i == len(pathKeys)-1 {
+			switch node := current.(type) {
+			case map[string]interface{}:
+				node[key] = sensitiveContentValue
+			}
 			return
 		}
-		m = v
-	}
 
-	m[sensitiveKey] = sensitiveContentValue
+		// Else iterate to the next token
+		switch node := current.(type) {
+		case map[string]interface{}:
+			current = node[key]
+		case []interface{}:
+			if index, err := strconv.Atoi(strings.Trim(key, "[]")); err == nil && index < len(node) {
+				current = node[index]
+			} else {
+				return // Invalid index or non-array type
+			}
+		default:
+			return // Non-handled type
+		}
+	}
+}
+
+func tokenizePath(valuePath string) []string {
+	var pathKeys []string
+	path := strings.Split(valuePath, ".")
+	for _, p := range path {
+		bracketIndex := strings.Index(p, "[")
+		if bracketIndex != -1 {
+			// Extract array index
+			pathKeys = append(pathKeys, p[:bracketIndex])
+			pathKeys = append(pathKeys, p[bracketIndex:])
+		} else {
+			pathKeys = append(pathKeys, p)
+		}
+	}
+	return pathKeys
 }
 
 func resourceReleaseExists(d *schema.ResourceData, meta interface{}) (bool, error) {
