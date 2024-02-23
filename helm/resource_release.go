@@ -927,6 +927,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			install := action.NewInstall(actionConfig)
 			install.ChartPathOptions = *cpo
 			install.DryRun = true
+			install.DryRunOption = "server"
 			install.DisableHooks = d.Get("disable_webhooks").(bool)
 			install.Wait = d.Get("wait").(bool)
 			install.WaitForJobs = d.Get("wait_for_jobs").(bool)
@@ -993,6 +994,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		upgrade.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 		upgrade.Wait = d.Get("wait").(bool)
 		upgrade.DryRun = true // do not apply changes
+		upgrade.DryRunOption = "server"
 		upgrade.DisableHooks = d.Get("disable_webhooks").(bool)
 		upgrade.Atomic = d.Get("atomic").(bool)
 		upgrade.SubNotes = d.Get("render_subchart_notes").(bool)
