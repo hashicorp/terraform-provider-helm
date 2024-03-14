@@ -856,8 +856,9 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		}
 	}
 
-	var chartPathOpts action.ChartPathOptions
-	cpo, chartName, err := chartPathOptions(d, m, &chartPathOpts)
+	client := action.NewInstall(actionConfig)
+
+	cpo, chartName, err := chartPathOptions(d, m, &client.ChartPathOptions)
 	if err != nil {
 		return err
 	}
@@ -865,7 +866,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	// Get Chart metadata, if we fail - we're done
 	chart, path, err := getChart(d, meta.(*Meta), chartName, cpo)
 	if err != nil {
-		return nil
+		return err
 	}
 	debug("%s Got chart", logID)
 
