@@ -1116,14 +1116,14 @@ func TestCloakSetValues(t *testing.T) {
 func TestCloakSetValuesNested(t *testing.T) {
 	d := resourceRelease().Data(nil)
 	err := d.Set("set_sensitive", []interface{}{
-		map[string]interface{}{"name": "foo.qux.bar", "value": "42"},
+		map[string]interface{}{"name": "foo.qux.bar\\.nested", "value": "42"},
 	})
 	if err != nil {
 		t.Fatalf("error setting values: %v", err)
 	}
 
 	qux := map[string]interface{}{
-		"bar": "bar",
+		"bar.nested": "bar",
 	}
 
 	values := map[string]interface{}{
@@ -1133,8 +1133,8 @@ func TestCloakSetValuesNested(t *testing.T) {
 	}
 
 	cloakSetValues(values, d)
-	if qux["bar"] != sensitiveContentValue {
-		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, qux["bar"])
+	if qux["bar.nested"] != sensitiveContentValue {
+		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, qux["bar.nested"])
 	}
 }
 
