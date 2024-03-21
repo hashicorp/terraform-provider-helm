@@ -1,0 +1,3 @@
+```release-note:feature
+Create resources attribute for helm_release
+```
