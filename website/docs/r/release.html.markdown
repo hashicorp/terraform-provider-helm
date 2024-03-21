@@ -212,6 +212,7 @@ The following arguments are supported:
 * `pass_credentials` - (Optional) Pass credentials to all domains. Defaults to `false`.
 * `lint` - (Optional) Run the helm chart linter during the plan. Defaults to `false`.
 * `create_namespace` - (Optional) Create the namespace if it does not yet exist. Defaults to `false`.
+* `upgrade` - (Optional) Enable "upgrade mode" -- the structure of this block is documented below.
 
 The `set`, `set_list`, and `set_sensitive` blocks support:
 
@@ -254,6 +255,11 @@ The `postrender` block supports two attributes:
 * `binary_path` - (Required) relative or full path to command binary.
 * `args` - (Optional) a list of arguments to supply to the post-renderer.
 
+The `upgrade` block supports:
+
+* `enable`  - (Required) if set to `true`, use the "upgrade" strategy to install the chart. See [upgrade mode](#upgrade_mode) below for details.
+* `install` - (Optional) if set to `true`, install the release even if there is no existing release to upgrade.
+
 ## Attributes Reference
 
 In addition to the arguments listed above, the following computed attributes are
@@ -272,6 +278,31 @@ The `metadata` block supports:
 * `version` - A SemVer 2 conformant version string of the chart.
 * `app_version` - The version number of the application being deployed.
 * `values` - The compounded values from `values` and `set*` attributes.
+
+## Upgrade Mode
+
+When using the Helm CLI directly, it is possible (and fairly common) to use `helm upgrade --install` to
+_idempotently_ install a release.  For example, `helm upgrade --install mariadb charts/mariadb --verson 7.1.0`
+will check to see if there is already a release called `mariadb`: if there is, ensure that it is set to version
+7.1.0, and if there is not, install that version from scratch. (See the documentation for the
+[helm upgrade](https://helm.sh/docs/helm/helm_upgrade) command for more details.)
+
+Emulating this behavior in the `helm_release` resource might be desirable if, for example, the initial installation
+of a chart is handled out-of-band by a CI/CD system and you want to subsequently add the release to terraform without
+having to manually import the release into terraform state each time. But the mechanics of this approach are subtly
+different from the defaults and you can easily produce unexpected or undesirable results if you are not careful:
+using this approach in production is not necessarily recommended!
+
+If upgrade mode is enabled by setting `enable` to `true` in the `upgrade` block, the provider will first check to see
+if a release with the given name already exists.  If that release exists, it will attempt to upgrade the release to
+the state defined in the resource, using the same strategy as the [helm upgrade](https://helm.sh/docs/helm/helm_upgrade)
+command.  In this case, the `generate_name`, `name_template` and `replace` attributes of the resource (if set) are
+ignored, as those attributes are not supported by helm's "upgrade" behavior.
+
+If the release does _not_ exist, the behavior is controlled by the setting of the `install` attribute.  If `install`
+is `false` or unset, the apply stage will fail: the provider cannot upgrade a non-existent release.  If `install`
+is set to `true`, the provider will perform a from-scratch installation of the chart.  In this case, all resource
+attributes are honored.
 
 ## Import
 
