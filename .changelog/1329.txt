@@ -1,0 +1,3 @@
+```release-note:doc
+`docs`: Use templatefile() instead of "template_file" provider in GKE example.
+```
