@@ -1,3 +1,13 @@
+## 2.13.0 (Apr 4, 2024)
+
+BUG FIXES:
+
+* `provider`: Fix manifest diff rendering for OCI charts. [[GH-1326](https://github.com/hashicorp/terraform-provider-helm/issues/1326)]
+
+DOCS:
+
+* `docs`: Use templatefile() instead of "template_file" provider in GKE example. [[GH-1329](https://github.com/hashicorp/terraform-provider-helm/issues/1329)]
+
 ## 2.12.1 (Nov 30, 2023)
 
 DEPENDENCIES:
