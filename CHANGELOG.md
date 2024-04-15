@@ -1,3 +1,9 @@
+## 2.13.1 (Apr 15, 2024)
+
+HOTFIX:
+
+* `helm_release`: Fix regression causing errors at plan time. 
+
 ## 2.13.0 (Apr 4, 2024)
 
 BUG FIXES:
