@@ -620,7 +620,6 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		}
 
 		pr, err := postrender.NewExec(cmd, args...)
-
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -744,7 +743,6 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 		}
 
 		pr, err := postrender.NewExec(cmd, args...)
-
 		if err != nil {
 			d.Partial(true)
 			return diag.FromErr(err)
@@ -866,7 +864,8 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	// Get Chart metadata, if we fail - we're done
 	chart, path, err := getChart(d, meta.(*Meta), chartName, cpo)
 	if err != nil {
-		return err
+		debug("resourceDiff: getChart failed: %v", err)
+		return nil
 	}
 	debug("%s Got chart", logID)
 
@@ -1164,7 +1163,7 @@ func getVersion(d resourceGetter, m *Meta) (version string) {
 }
 
 func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, error) {
-	//Load function blows up if accessed concurrently
+	// Load function blows up if accessed concurrently
 	m.Lock()
 	defer m.Unlock()
 
