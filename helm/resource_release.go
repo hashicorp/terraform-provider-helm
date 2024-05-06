@@ -1166,18 +1166,32 @@ func getChart(d resourceGetter, m *Meta, name string, cpo *action.ChartPathOptio
 	// Load function blows up if accessed concurrently
 	m.Lock()
 	defer m.Unlock()
+	defer switchToTempDir(name)
 
 	path, err := cpo.LocateChart(name, m.Settings)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("failed to locate chart: %s", err)
 	}
 
 	c, err := loader.Load(path)
 	if err != nil {
-		return nil, "", err
+		return nil, "", fmt.Errorf("failed to load chart from path '%s': %s", path, err)
 	}
 
 	return c, path, nil
+}
+
+func switchToTempDir(name string) func() {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return func() {}
+	}
+	t, err := os.MkdirTemp(os.TempDir(), name)
+	if err != nil {
+		return func() {}
+	}
+	os.Chdir(t)
+	return func() { os.Chdir(cwd) }
 }
 
 // Merges source and destination map, preferring values from the source map
