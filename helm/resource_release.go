@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -26,7 +27,9 @@ import (
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/storage/driver"
 	"helm.sh/helm/v3/pkg/strvals"
+	utilValidation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 )
 
@@ -347,6 +350,15 @@ func resourceRelease() *schema.Resource {
 					return new == ""
 				},
 			},
+			"labels": {
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Description: "Labels that would be added to release metadata",
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				ValidateFunc: validateLabels,
+			},
 			"create_namespace": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -609,6 +621,12 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	client.Description = d.Get("description").(string)
 	client.CreateNamespace = d.Get("create_namespace").(bool)
 
+	labels := map[string]string{}
+	for k, v := range d.Get("labels").(map[string]interface{}) {
+		labels[k] = v.(string)
+	}
+	client.Labels = labels
+
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
 		av := d.Get("postrender.0.args")
 		var args []string
@@ -731,6 +749,21 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	client.MaxHistory = d.Get("max_history").(int)
 	client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
 	client.Description = d.Get("description").(string)
+
+	labels := map[string]string{}
+	oldLabels, newLabels := d.GetChange("labels")
+	for k := range oldLabels.(map[string]interface{}) {
+		if _, ok := newLabels.(map[string]interface{})[k]; !ok {
+			// https://github.com/helm/helm/blob/691f313442d84112c3c9b700e156eef7509f6614/pkg/action/upgrade.go#L630
+			labels[k] = "null"
+		}
+	}
+
+	for k, v := range newLabels.(map[string]interface{}) {
+		labels[k] = v.(string)
+	}
+
+	client.Labels = labels
 
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
 		av := d.Get("postrender.0.args")
@@ -1006,6 +1039,12 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		upgrade.Description = d.Get("description").(string)
 		upgrade.PostRenderer = postRenderer
 
+		labels := map[string]string{}
+		for k, v := range d.Get("labels").(map[string]interface{}) {
+			labels[k] = v.(string)
+		}
+		upgrade.Labels = labels
+
 		values, err := getValues(d)
 		if err != nil {
 			return fmt.Errorf("error getting values for a diff: %v", err)
@@ -1068,6 +1107,19 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 			return err
 		}
 		values = string(v)
+	}
+
+	labels := map[string]string{}
+	systemLabels := driver.GetSystemLabels()
+	for k, v := range r.Labels {
+		if slices.Contains(systemLabels, k) {
+			continue
+		}
+		labels[k] = v
+	}
+
+	if err := d.Set("labels", labels); err != nil {
+		return err
 	}
 
 	m := meta.(*Meta)
@@ -1532,4 +1584,28 @@ func useChartVersion(chart string, repo string) bool {
 	}
 
 	return false
+}
+
+// See https://github.com/hashicorp/terraform-provider-kubernetes/blob/72041db21b89255594e74f66eeb4f362405b898a/kubernetes/validators.go#L89
+func validateLabels(value interface{}, key string) (ws []string, es []error) {
+	systemLabels := driver.GetSystemLabels()
+	m := value.(map[string]interface{})
+	for k, v := range m {
+		for _, msg := range utilValidation.IsQualifiedName(k) {
+			es = append(es, fmt.Errorf("%s (%q) %s", key, k, msg))
+		}
+		val, isString := v.(string)
+		if !isString {
+			es = append(es, fmt.Errorf("%s.%s (%#v): Expected value to be string", key, k, v))
+			return
+		}
+		for _, msg := range utilValidation.IsValidLabelValue(val) {
+			es = append(es, fmt.Errorf("%s (%q) %s", key, val, msg))
+		}
+
+		if slices.Contains(systemLabels, k) {
+			es = append(es, fmt.Errorf("%s (%q) is a system reserved label and cannot be set", key, k))
+		}
+	}
+	return
 }
