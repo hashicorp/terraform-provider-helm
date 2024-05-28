@@ -1,3 +1,11 @@
+## 2.13.2 (May 8, 2024)
+
+DEPENDENCIES:
+
+* Bump github.com/docker/docker from 24.0.7 to 24.0.9
+* Bump golang.org/x/net from 0.21.0 to 0.23.0
+* Bundle license file with TF provider release artifacts
+
 ## 2.13.1 (Apr 15, 2024)
 
 HOTFIX:
