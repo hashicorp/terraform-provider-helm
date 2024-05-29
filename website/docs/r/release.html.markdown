@@ -102,7 +102,7 @@ The provider also supports helm plugins such as GCS and S3 that add S3/GCS helm 
 ```hcl
 
 # Install GCS plugin
-`helm plugin install https://github.com/hayorov/helm-gcs.git`
+# `helm plugin install https://github.com/hayorov/helm-gcs.git`
 
 # Run follow commands to setup GCS repository
 
@@ -130,7 +130,7 @@ resource "helm_release" "GCS" {
 ```hcl
 
 # Install AWS S3 plugin
-`helm plugin install https://github.com/hypnoglow/helm-s3.git`
+# `helm plugin install https://github.com/hypnoglow/helm-s3.git`
 
 # Run follow commands to setup S3 repository
 
