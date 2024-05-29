@@ -1,10 +1,13 @@
 ---
-layout: "helm"
 page_title: "Provider: Helm"
 sidebar_current: "docs-helm-index"
 description: |-
   The Helm provider is used to deploy software packages in Kubernetes. The provider needs to be configured with the proper credentials before it can be used.
 ---
+
+{{/* This template serves as a starting point for documentation generation, and can be customized with hardcoded values and/or doc gen templates.
+
+For example, the {{ .SchemaMarkdown }} template can be used to replace manual schema documentation if descriptions of schema attributes are added in the provider source code. */ -}}
 
 # Helm Provider
 
@@ -22,39 +25,7 @@ Try the [hands-on tutorial](https://learn.hashicorp.com/tutorials/terraform/helm
 
 ## Example Usage
 
-```hcl
-provider "helm" {
-  kubernetes {
-    config_path = "~/.kube/config"
-  }
-
-  # localhost registry with password protection
-  registry {
-    url = "oci://localhost:5000"
-    username = "username"
-    password = "password"
-  }
-
-  # private registry
-  registry {
-    url = "oci://private.registry"
-    username = "username"
-    password = "password"
-  }
-}
-
-resource "helm_release" "nginx_ingress" {
-  name       = "nginx-ingress-controller"
-
-  repository = "https://charts.bitnami.com/bitnami"
-  chart      = "nginx-ingress-controller"
-
-  set {
-    name  = "service.type"
-    value = "ClusterIP"
-  }
-}
-```
+{{tffile "examples/example_1.tf"}}
 
 ## Requirements
 
@@ -66,56 +37,30 @@ resource "helm_release" "nginx_ingress" {
 
 The Helm provider can get its configuration in two ways:
 
-1. _Explicitly_ by supplying attributes to the provider block. This includes:
+1. *Explicitly* by supplying attributes to the provider block. This includes:
    * [Using a kubeconfig file](#file-config)
    * [Supplying credentials](#credentials-config)
    * [Exec plugins](#exec-plugins)
-2. _Implicitly_ through environment variables. This includes:
+2. *Implicitly* through environment variables. This includes:
    * [Using the in-cluster config](#in-cluster-config)
 
 For a full list of supported provider authentication arguments and their corresponding environment variables, see the [argument reference](#argument-reference) below.
-
 
 ### File config
 
 The easiest way is to supply a path to your kubeconfig file using the `config_path` attribute or using the `KUBE_CONFIG_PATH` environment variable. A kubeconfig file may have multiple contexts. If `config_context` is not specified, the provider will use the `default` context.
 
-```hcl
-provider "helm" {
-  kubernetes {
-    config_path = "~/.kube/config"
-  }
-}
-```
+{{tffile "examples/example_2.tf"}}
 
 The provider also supports multiple paths in the same way that kubectl does using the `config_paths` attribute or `KUBE_CONFIG_PATHS` environment variable.
 
-```hcl
-provider "helm" {
-  kubernetes {
-    config_paths = [
-      "/path/to/config_a.yaml",
-      "/path/to/config_b.yaml"
-    ]
-  }
-}
-```
+{{tffile "examples/example_3.tf"}}
 
 ### Credentials config
 
 You can also configure the host, basic auth credentials, and client certificate authentication explicitly or through environment variables.
 
-```hcl
-provider "helm" {
-  kubernetes {
-    host     = "https://cluster_endpoint:port"
-
-    client_certificate     = file("~/.kube/client-cert.pem")
-    client_key             = file("~/.kube/client-key.pem")
-    cluster_ca_certificate = file("~/.kube/cluster-ca-cert.pem")
-  }
-}
-```
+{{tffile "examples/example_4.tf"}}
 
 ### In-cluster Config
 
@@ -127,19 +72,11 @@ If you want to connect to a different cluster than the one terraform is running 
 
 Some cloud providers have short-lived authentication tokens that can expire relatively quickly. To ensure the Kubernetes provider is receiving valid credentials, an exec-based plugin can be used to fetch a new token before initializing the provider. For example, on EKS, the command `eks get-token` can be used:
 
-```hcl
-provider "helm" {
-  kubernetes {
-    host                   = var.cluster_endpoint
-    cluster_ca_certificate = base64decode(var.cluster_ca_cert)
-    exec {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      args        = ["eks", "get-token", "--cluster-name", var.cluster_name]
-      command     = "aws"
-    }
-  }
-}
-```
+{{tffile "examples/example_5.tf"}}
+
+For example, to [authenticate with GKE](https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/using_gke_with_terraform#using-the-kubernetes-and-helm-providers), the `gke-cloud-auth-plugin` can be used:
+
+{{tffile "examples/example_6.tf"}}
 
 ## Argument Reference
 
@@ -150,8 +87,7 @@ The following arguments are supported:
 * `registry_config_path` - (Optional) The path to the registry config file. Defaults to `HELM_REGISTRY_CONFIG` env if it is set, otherwise uses the default path set by helm.
 * `repository_config_path` - (Optional) The path to the file containing repository names and URLs. Defaults to `HELM_REPOSITORY_CONFIG` env if it is set, otherwise uses the default path set by helm.
 * `repository_cache` - (Optional) The path to the file containing cached repository indexes. Defaults to `HELM_REPOSITORY_CACHE` env if it is set, otherwise uses the default path set by helm.
-* `helm_driver` - (Optional) "The backend storage driver. Valid values are: `configmap`, `secret`, `memory`, `sql`. Defaults to `secret`.
-  Note: Regarding the sql driver, as of helm v3.2.0 SQL support exists only for the postgres dialect. The connection string can be configured by setting the `HELM_DRIVER_SQL_CONNECTION_STRING` environment variable e.g. `HELM_DRIVER_SQL_CONNECTION_STRING=postgres://username:password@host/dbname` more info [here](https://pkg.go.dev/github.com/lib/pq).
+* `helm_driver` - (Optional) "The backend storage driver. Valid values are: `configmap`, `secret`, `memory`, `sql`. Defaults to `secret`. Note: Regarding the sql driver, as of helm v3.2.0 SQL support exists only for the postgres dialect. The connection string can be configured by setting the `HELM_DRIVER_SQL_CONNECTION_STRING` environment variable e.g. `HELM_DRIVER_SQL_CONNECTION_STRING=postgres://username:password@host/dbname` more info [here](https://pkg.go.dev/github.com/lib/pq).
 * `burst_limit` - (Optional) The helm burst limit to use. Set this value higher if your cluster has many CRDs. Default: `100`
 * `kubernetes` - Kubernetes configuration block.
 * `registry` - Private OCI registry configuration block. Can be specified multiple times.
