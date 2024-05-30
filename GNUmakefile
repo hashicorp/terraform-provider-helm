@@ -122,7 +122,7 @@ PROVIDER_DIR_DOCKER := $(abspath $(lastword $(dir $(MAKEFILE_LIST))))
 website-lint:
 	@echo "==> Checking website against linters..."
 	@echo "==> Running markdownlint-cli using DOCKER='$(DOCKER)', DOCKER_RUN_OPTS='$(DOCKER_RUN_OPTS)' and DOCKER_VOLUME_OPTS='$(DOCKER_VOLUME_OPTS)'"
-	@$(DOCKER) run --rm $(DOCKER_RUN_OPTS) -v $(PROVIDER_DIR_DOCKER):/workspace:$(DOCKER_VOLUME_OPTS) -w /workspace 06kellyjac/markdownlint-cli ./website \
+	@$(DOCKER) run --rm $(DOCKER_RUN_OPTS) -v $(PROVIDER_DIR_DOCKER):/workspace:$(DOCKER_VOLUME_OPTS) -w /workspace 06kellyjac/markdownlint-cli ./docs \
 		&& (echo; echo "PASS - website markdown files pass linting"; echo ) \
 		|| (echo; echo "FAIL - issues found in website markdown files"; echo ; exit 1)
 	@echo "==> Checking for broken links..."
