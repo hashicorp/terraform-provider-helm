@@ -18,7 +18,7 @@
             "replacement": "file:///github/workspace/docs/"
         },
         {
-            "pattern": "^(getting-started).html.markdown(#.*)?$",
+            "pattern": "^(getting-started).md.markdown(#.*)?$",
             "replacement": "file:///github/workspace/docs/guides/$1.html.md$2"
         },
         {
