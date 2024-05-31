@@ -2,7 +2,7 @@ name: website
 on:
   push:
     paths:
-      - "website/**"
+      - "docs/**"
   pull_request:
     branches:
       - main
