@@ -123,7 +123,10 @@ Read-Only:
 - `chart` (String)
 - `name` (String)
 - `namespace` (String)
-- `revision` (Number)
+- `first_deployed` (Number) timestamp when the release was first deployed
+- `last_deployed` (Number) timestamp when the release was last deployed
+- `revision` (Number) version of the release last deployed
+- `notes` (String) rendered templates/NOTES.txt if available
 - `values` (String)
 - `version` (String)
 
