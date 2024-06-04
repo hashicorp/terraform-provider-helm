@@ -58,6 +58,9 @@ func TestAccResourceRelease_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.app_version", "1.19.5"),
+					resource.TestMatchResourceAttr("helm_release.test", "metadata.0.first_deployed", regexp.MustCompile("[0-9]+")),
+					resource.TestMatchResourceAttr("helm_release.test", "metadata.0.last_deployed", regexp.MustCompile("[0-9]+")),
+					resource.TestMatchResourceAttr("helm_release.test", "metadata.0.notes", regexp.MustCompile(`^1. Get the application URL by running these commands:\n  export POD_NAME=.*`)),
 				),
 			},
 			{
@@ -99,6 +102,9 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "metadata.0.chart", "test-chart"),
 					resource.TestCheckResourceAttr(resourceName, "metadata.0.version", "2.0.0"),
 					resource.TestCheckResourceAttr(resourceName, "metadata.0.app_version", "1.19.5"),
+					resource.TestMatchResourceAttr("helm_release.test", "metadata.0.first_deployed", regexp.MustCompile("[0-9]+")),
+					resource.TestMatchResourceAttr("helm_release.test", "metadata.0.last_deployed", regexp.MustCompile("[0-9]+")),
+					resource.TestMatchResourceAttr("helm_release.test", "metadata.0.notes", regexp.MustCompile(`^1. Get the application URL by running these commands:\n  export POD_NAME=.*`)),
 				),
 			},
 		},
@@ -1504,7 +1510,7 @@ func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	// add the repository with `helm repo add`
-	cmd := exec.Command("helm", "repo", "add", "hashicorp-test", testRepositoryURL)
+	cmd := exec.Command("helm", "--kubeconfig", os.Getenv("KUBE_CONFIG_PATH"), "repo", "add", "hashicorp-test", testRepositoryURL)
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	if err != nil {
@@ -1555,7 +1561,7 @@ func TestAccResourceRelease_delete_regression(t *testing.T) {
 			{
 				PreConfig: func() {
 					// delete the release outside of terraform
-					cmd := exec.Command("helm", "delete", "--namespace", namespace, name)
+					cmd := exec.Command("helm", "--kubeconfig", os.Getenv("KUBE_CONFIG_PATH"), "delete", "--namespace", namespace, name)
 					out, err := cmd.CombinedOutput()
 					t.Log(string(out))
 					if err != nil {
@@ -1572,7 +1578,7 @@ func TestAccResourceRelease_delete_regression(t *testing.T) {
 }
 
 func getReleaseJSONManifest(namespace, name string) (string, error) {
-	cmd := exec.Command("helm", "get", "manifest", "--namespace", namespace, name)
+	cmd := exec.Command("helm", "--kubeconfig", os.Getenv("KUBE_CONFIG_PATH"), "get", "manifest", "--namespace", namespace, name)
 	manifest, err := cmd.Output()
 	if err != nil {
 		return "", err

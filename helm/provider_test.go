@@ -138,7 +138,7 @@ func buildChartRepository() {
 
 	// package all the charts
 	for _, c := range charts {
-		cmd := exec.Command("helm", "package", "-u",
+		cmd := exec.Command("helm", "--kubeconfig", os.Getenv("KUBE_CONFIG_PATH"), "package", "-u",
 			filepath.Join(testChartsPath, c.Name()),
 			"-d", testRepositoryDir)
 		out, err := cmd.CombinedOutput()
@@ -151,7 +151,7 @@ func buildChartRepository() {
 	}
 
 	// build the repository index
-	cmd := exec.Command("helm", "repo", "index", testRepositoryDir)
+	cmd := exec.Command("helm", "--kubeconfig", os.Getenv("KUBE_CONFIG_PATH"), "repo", "index", testRepositoryDir)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println(string(out))
