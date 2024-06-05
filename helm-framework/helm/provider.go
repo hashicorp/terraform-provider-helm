@@ -41,6 +41,7 @@ import (
 
 	//"helm.sh/helm/v3/pkg/helmpath"
 
+	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/storage/driver"
@@ -640,4 +641,30 @@ func OCIRegistryPerformLogin(ctx context.Context, registryClient *registry.Clien
 	// Just logging the successful login
 	tflog.Info(ctx, fmt.Sprintf("Logged into OCI registry %q", u.Host))
 	return nil
+}
+
+// GetHelmConfiguration retrieves the Helm configuration for a given namespace
+func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, error) {
+	m.Lock()
+	defer m.Unlock()
+	tflog.Info(context.Background(), "[INFO] GetHelmConfiguration start")
+	//Creating an instance of action.Configuration
+	actionConfig := new(action.Configuration)
+	//Calling newKubeConfig to creare a k8s config object
+	kc, err := m.newKubeConfig(&namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	// initalizing action.Configuration object
+	// Using an anonymous function for logging, the DebugLog parameter in action.Confg init method, so i need a function with the correct type signature.
+	if err := actionConfig.Init(kc, namespace, m.HelmDriver, func(format string, v ...interface{}) {
+		tflog.Info(context.Background(), fmt.Sprintf(format, v...))
+	}); err != nil {
+		return nil, err
+	}
+
+	tflog.Info(context.Background(), "[INFO] GetHelmConfiguration success")
+	// returning the initializing action.Configuration object
+	return actionConfig, nil
 }
