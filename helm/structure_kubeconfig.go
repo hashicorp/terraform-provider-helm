@@ -83,6 +83,7 @@ func newKubeConfig(configData *schema.ResourceData, namespace *string) (*KubeCon
 		for _, p := range v.([]interface{}) {
 			configPaths = append(configPaths, p.(string))
 		}
+		// Dont worry for now
 	} else if v := os.Getenv("KUBE_CONFIG_PATHS"); v != "" {
 		// NOTE we have to do this here because the schema
 		// does not yet allow you to set a default for a TypeList
