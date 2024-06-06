@@ -1,13 +1,14 @@
 package helm
 
 import (
-	"log"
+	"context"
 	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/mitchellh/go-homedir"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -63,27 +64,18 @@ func (k *KubeConfig) ToRawKubeConfigLoader() clientcmd.ClientConfig {
 }
 
 // Generates a k8s client config, based on providers settings and namespace, which this config will be used to interact with the k8s cluster
-func (m *Meta) newKubeConfig(namespace *string) (*KubeConfig, error) {
-	//Used to specify customer settings for k8s client config
+func (m *Meta) newKubeConfig(ctx context.Context, namespace string) (*KubeConfig, error) {
 	overrides := &clientcmd.ConfigOverrides{}
-	//Used to load the k8s config files
 	loader := &clientcmd.ClientConfigLoadingRules{}
-	// Holds paths to k8s config files
 	configPaths := []string{}
-
-	//If config path is set, we will use it
 	if v := m.Data.Kubernetes.ConfigPath.ValueString(); v != "" {
 		configPaths = []string{v}
-		//If config paths is set, we append all paths to config paths
 	} else if !m.Data.Kubernetes.ConfigPaths.IsNull() {
-		for _, p := range m.Data.Kubernetes.ConfigPaths.Elements() {
-			configPaths = append(configPaths, p.(types.String).ValueString())
-		}
-		//if KUBE_CONFIG_PATHS is set, we split into indvidual paths
+		configPaths = expandStringSlice(m.Data.Kubernetes.ConfigPaths.Elements())
 	} else if v := os.Getenv("KUBE_CONFIG_PATHS"); v != "" {
 		configPaths = filepath.SplitList(v)
 	}
-	//If there are any config paths, we expand them to their full path
+
 	if len(configPaths) > 0 {
 		expandedPaths := []string{}
 		for _, p := range configPaths {
@@ -91,44 +83,27 @@ func (m *Meta) newKubeConfig(namespace *string) (*KubeConfig, error) {
 			if err != nil {
 				return nil, err
 			}
-			log.Printf("[DEBUG] Using kubeconfig: %s", path)
+			tflog.Debug(ctx, "Using kubeconfig", map[string]interface{}{
+				"path": path,
+			})
 			expandedPaths = append(expandedPaths, path)
 		}
-		// If there's only one path, we set it as the explicit path
 		if len(expandedPaths) == 1 {
 			loader.ExplicitPath = expandedPaths[0]
-			// If there is not, we set the precedence for the paths to be used by thr loaded
 		} else {
 			loader.Precedence = expandedPaths
 		}
-		// If ConfigContext is set, we overred the current context
-		if ctx := m.Data.Kubernetes.ConfigContext.ValueString(); ctx != "" {
-			overrides.CurrentContext = ctx
-			log.Printf("[DEBUG] Using custom current context: %q", overrides.CurrentContext)
-		}
-		// If ConfigContextAuthInfo is set, we override the auth info
-		if authInfo := m.Data.Kubernetes.ConfigContextAuthInfo.ValueString(); authInfo != "" {
-			overrides.Context.AuthInfo = authInfo
-		}
-		//If ConfigContextCluster is set, we override the cluster
-		if cluster := m.Data.Kubernetes.ConfigContextCluster.ValueString(); cluster != "" {
-			overrides.Context.Cluster = cluster
-		}
-		log.Printf("[DEBUG] Using overridden context: %#v", overrides.Context)
+
+		overrides.CurrentContext = m.Data.Kubernetes.ConfigContext.ValueString()
+		overrides.Context.AuthInfo = m.Data.Kubernetes.ConfigContextAuthInfo.ValueString()
+		overrides.Context.Cluster = m.Data.Kubernetes.ConfigContextCluster.ValueString()
+
 	}
-	//Checking whether or not to override the tls releated settings
-	if v := m.Data.Kubernetes.Insecure.ValueBool(); v {
-		overrides.ClusterInfo.InsecureSkipTLSVerify = v
-	}
-	if v := m.Data.Kubernetes.TlsServerName.ValueString(); v != "" {
-		overrides.ClusterInfo.TLSServerName = v
-	}
-	if v := m.Data.Kubernetes.ClusterCaCertificate.ValueString(); v != "" {
-		overrides.ClusterInfo.CertificateAuthorityData = []byte(v)
-	}
-	if v := m.Data.Kubernetes.ClientCertificate.ValueString(); v != "" {
-		overrides.AuthInfo.ClientCertificateData = []byte(v)
-	}
+	overrides.ClusterInfo.InsecureSkipTLSVerify = m.Data.Kubernetes.Insecure.ValueBool()
+	overrides.ClusterInfo.TLSServerName = m.Data.Kubernetes.TlsServerName.ValueString()
+	overrides.ClusterInfo.CertificateAuthorityData = []byte(m.Data.Kubernetes.ClusterCaCertificate.ValueString())
+	overrides.AuthInfo.ClientCertificateData = []byte(m.Data.Kubernetes.ClientCertificate.ValueString())
+
 	//Sets the k8s api server urls, in considerations to the TLS settings
 	if v := m.Data.Kubernetes.Host.ValueString(); v != "" {
 		hasCA := len(overrides.ClusterInfo.CertificateAuthorityData) != 0
@@ -140,24 +115,12 @@ func (m *Meta) newKubeConfig(namespace *string) (*KubeConfig, error) {
 		}
 		overrides.ClusterInfo.Server = host.String()
 	}
-	//Checking whether or not to override auth details such as "username, pw, ClientKey, and token"
-	if v := m.Data.Kubernetes.Username.ValueString(); v != "" {
-		overrides.AuthInfo.Username = v
-	}
-	if v := m.Data.Kubernetes.Password.ValueString(); v != "" {
-		overrides.AuthInfo.Password = v
-	}
-	if v := m.Data.Kubernetes.ClientKey.ValueString(); v != "" {
-		overrides.AuthInfo.ClientKeyData = []byte(v)
-	}
-	if v := m.Data.Kubernetes.Token.ValueString(); v != "" {
-		overrides.AuthInfo.Token = v
-	}
-	if v := m.Data.Kubernetes.ProxyUrl.ValueString(); v != "" {
-		overrides.ClusterDefaults.ProxyURL = v
-	}
-	//calling the func to get their values before passing them
-	// If Exec settings are provided by the user, we create an ExecConfig, which will be used for command authentication
+	overrides.AuthInfo.Username = m.Data.Kubernetes.Username.ValueString()
+	overrides.AuthInfo.Password = m.Data.Kubernetes.Password.ValueString()
+	overrides.AuthInfo.ClientKeyData = []byte(m.Data.Kubernetes.ClientKey.ValueString())
+	overrides.AuthInfo.Token = m.Data.Kubernetes.Token.ValueString()
+	overrides.ClusterDefaults.ProxyURL = m.Data.Kubernetes.ProxyUrl.ValueString()
+
 	if v := m.Data.Kubernetes.Exec; v != nil {
 		args := v.Args.Elements()
 		env := v.Env.Elements()
@@ -172,20 +135,18 @@ func (m *Meta) newKubeConfig(namespace *string) (*KubeConfig, error) {
 		}
 		overrides.AuthInfo.Exec = exec
 	}
-	//Sets the namespace to the provided value, if the value is not provided it will be default
 	overrides.Context.Namespace = "default"
-	if namespace != nil {
-		overrides.Context.Namespace = *namespace
+	if namespace != "" {
+		overrides.Context.Namespace = namespace
 	}
 	// Creating the k8s client config, using the loaded and overrides.
 	burstLimit := int(m.Data.BurstLimit.ValueInt64())
 	client := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
 	if client == nil {
-		log.Printf("[ERROR] Failed to initialize kubernetes config")
+		tflog.Error(ctx, "Failed to initialize kubernetes config")
 		return nil, nil
 	}
-	log.Printf("[INFO] Successfully initialized kubernetes config")
-	// Returning KubeConfig objkect, setting the burst limit for api req
+	tflog.Info(ctx, "Successfully initialized kubernetes config")
 	return &KubeConfig{ClientConfig: client, Burst: burstLimit}, nil
 }
 
