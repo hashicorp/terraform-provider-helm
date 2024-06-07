@@ -156,8 +156,13 @@ func Provider() *schema.Provider {
 			"helm_template": dataTemplate(),
 		},
 	}
-	p.ConfigureContextFunc = func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		return providerConfigure(d, p.TerraformVersion)
+	p.ConfigureProvider = func(ctx context.Context, req schema.ConfigureProviderRequest, res *schema.ConfigureProviderResponse) {
+		if req.DeferralAllowed && !req.ResourceData.GetRawConfig().IsWhollyKnown() {
+			res.Deferred = &schema.Deferred{
+				Reason: schema.DeferredReasonProviderConfigUnknown,
+			}
+		}
+		res.Meta, res.Diagnostics = providerConfigure(req.ResourceData, p.TerraformVersion)
 	}
 	return p
 }
