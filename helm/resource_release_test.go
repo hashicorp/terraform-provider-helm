@@ -58,6 +58,7 @@ func TestAccResourceRelease_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.app_version", "1.19.5"),
+					resource.TestCheckResourceAttr("helm_release.test", "labels.foo", "bar"),
 				),
 			},
 			{
@@ -68,6 +69,36 @@ func TestAccResourceRelease_basic(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRelease_validationLabels(t *testing.T) {
+	name := randName("validation-labels")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccHelmReleaseConfigBasicWithLabel(testResourceName, namespace, name, "1.2.3", "version", `"1.2.3"`),
+				ExpectError: regexp.MustCompile(`.*labels \("version"\) is a system reserved label and cannot be set.*`),
+			},
+			{
+				Config:      testAccHelmReleaseConfigBasicWithLabel(testResourceName, namespace, name, "1.2.3", "foo", `{ foo = "bar" }`),
+				ExpectError: regexp.MustCompile(`.*Inappropriate value for attribute "labels": element "foo": string required.*`),
+			},
+			{
+				Config:      testAccHelmReleaseConfigBasicWithLabel(testResourceName, namespace, name, "1.2.3", "&&&", `"bar"`),
+				ExpectError: regexp.MustCompile(`.*labels \("&&&"\) name part must consist of alphanumeric characters.*`),
 			},
 		},
 	})
@@ -139,6 +170,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.imported", "metadata.0.version", "1.2.0"),
 					resource.TestCheckResourceAttr("helm_release.imported", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.imported", "description", "Test"),
+					resource.TestCheckResourceAttr("helm_release.imported", "labels.foo", "bar"),
 					resource.TestCheckNoResourceAttr("helm_release.imported", "repository"),
 
 					// Default values
@@ -302,15 +334,28 @@ func TestAccResourceRelease_update(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "labels.foo", "bar"),
 				),
 			},
 			{
-				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "2.0.0"),
+				Config: testAccHelmReleaseConfigBasicWithLabel(testResourceName, namespace, name, "2.0.0", "foo", `"baz"`),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "version", "2.0.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "labels.foo", "baz"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseConfigBasicWithLabel(testResourceName, namespace, name, "2.0.0", "bar", `"foo"`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "version", "2.0.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "labels.bar", "foo"),
+					resource.TestCheckNoResourceAttr("helm_release.test", "labels.foo"),
 				),
 			},
 		},
@@ -894,6 +939,10 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
   			chart       = "test-chart"
 			version     = %q
 
+			labels = {
+				"foo" = "bar"
+			}
+
 			set {
 				name = "foo"
 				value = "bar"
@@ -905,6 +954,33 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 			}
 		}
 	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccHelmReleaseConfigBasicWithLabel(resource, ns, name, version, labelKey string, labelValue any) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+			chart       = "test-chart"
+			version     = %q
+
+			labels = {
+				"%s" = %v
+			}
+
+			set {
+				name = "foo"
+				value = "bar"
+			}
+
+			set {
+				name = "fizz"
+				value = 1337
+			}
+		}
+	`, resource, name, ns, testRepositoryURL, version, labelKey, labelValue)
 }
 
 func testAccHelmReleaseConfigEmptyVersion(resource, ns, name string) string {
