@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/hashicorp/terraform-provider-helm/helm"
+	"github.com/hashicorp/terraform-provider-helm/helm-framework/helm"
 	"k8s.io/klog"
 )
 

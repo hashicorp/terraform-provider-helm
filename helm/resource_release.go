@@ -470,6 +470,7 @@ func resourceReleaseUpgrader() *schema.Resource {
 	}
 }
 
+// TODO
 func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	exists, err := resourceReleaseExists(d, meta)
 	if err != nil {

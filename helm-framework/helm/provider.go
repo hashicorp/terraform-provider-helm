@@ -41,6 +41,7 @@ import (
 
 	//"helm.sh/helm/v3/pkg/helmpath"
 
+	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/storage/driver"
@@ -640,4 +641,25 @@ func OCIRegistryPerformLogin(ctx context.Context, registryClient *registry.Clien
 	// Just logging the successful login
 	tflog.Info(ctx, fmt.Sprintf("Logged into OCI registry %q", u.Host))
 	return nil
+}
+
+// GetHelmConfiguration retrieves the Helm configuration for a given namespace
+func (m *Meta) GetHelmConfiguration(ctx context.Context, namespace string) (*action.Configuration, error) {
+	m.Lock()
+	defer m.Unlock()
+	tflog.Info(context.Background(), "[INFO] GetHelmConfiguration start")
+	actionConfig := new(action.Configuration)
+	kc, err := m.newKubeConfig(ctx, namespace)
+	if err != nil {
+		return nil, err
+	}
+	if err := actionConfig.Init(kc, namespace, m.HelmDriver, func(format string, v ...interface{}) {
+		tflog.Info(context.Background(), fmt.Sprintf(format, v...))
+	}); err != nil {
+		return nil, err
+	}
+
+	tflog.Info(context.Background(), "[INFO] GetHelmConfiguration success")
+	// returning the initializing action.Configuration object
+	return actionConfig, nil
 }
