@@ -421,6 +421,21 @@ func resourceRelease() *schema.Resource {
 							Computed:    true,
 							Description: "The version number of the application being deployed.",
 						},
+						"first_deployed": {
+							Type:        schema.TypeInt,
+							Computed:    true,
+							Description: "FirstDeployed is an int32 which represents timestamp when the release was first deployed.",
+						},
+						"last_deployed": {
+							Type:        schema.TypeInt,
+							Computed:    true,
+							Description: "LastDeployed is an int32 which represents timestamp when the release was last deployed.",
+						},
+						"notes": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Contains the rendered templates/NOTES.txt if available",
+						},
 						"values": {
 							Type:        schema.TypeString,
 							Computed:    true,
@@ -1081,13 +1096,16 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 	}
 
 	return d.Set("metadata", []map[string]interface{}{{
-		"name":        r.Name,
-		"revision":    r.Version,
-		"namespace":   r.Namespace,
-		"chart":       r.Chart.Metadata.Name,
-		"version":     r.Chart.Metadata.Version,
-		"app_version": r.Chart.Metadata.AppVersion,
-		"values":      values,
+		"name":           r.Name,
+		"revision":       r.Version,
+		"namespace":      r.Namespace,
+		"chart":          r.Chart.Metadata.Name,
+		"version":        r.Chart.Metadata.Version,
+		"app_version":    r.Chart.Metadata.AppVersion,
+		"first_deployed": r.Info.FirstDeployed.Time.Unix(),
+		"last_deployed":  r.Info.LastDeployed.Time.Unix(),
+		"notes":          r.Info.Notes,
+		"values":         values,
 	}})
 }
 
