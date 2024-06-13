@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -35,10 +36,12 @@ func NewDataTemplate() datasource.DataSource {
 	return &DataTemplate{}
 }
 
+// DataTemplate represents the data source for rendering Helm chart templates
 type DataTemplate struct {
 	meta *Meta
 }
 
+// DataTemplateModel holds the attributes for configuring the Helm chart templates
 type DataTemplateModel struct {
 	Name                     types.String        `tfsdk:"name"`
 	Repository               types.String        `tfsdk:"repository"`
@@ -61,7 +64,7 @@ type DataTemplateModel struct {
 	Keyring                  types.String        `tfsdk:"keyring"`
 	Timeout                  types.Int64         `tfsdk:"timeout"`
 	DisableWebhooks          types.Bool          `tfsdk:"disable_webhooks"`
-	ReuseValues              types.Bool          `tfsdk:"reise_values"`
+	ReuseValues              types.Bool          `tfsdk:"reuse_values"`
 	ResetValues              types.Bool          `tfsdk:"reset_values"`
 	Atomic                   types.Bool          `tfsdk:"atomic"`
 	SkipCrds                 types.Bool          `tfsdk:"skip_crds"`
@@ -74,44 +77,53 @@ type DataTemplateModel struct {
 	Description              types.String        `tfsdk:"description"`
 	CreateNamespace          types.Bool          `tfsdk:"create_namespace"`
 	Postrender               []Postrender        `tfsdk:"postrender"`
-	ApiVersions              []types.String      `tfsdk:"api_versions"`
-	IncludeCrds              types.Bool          `tfsdk:"include_crds"`
-	IsUpgrade                types.Bool          `tfsdk:"is_upgrade"`
-	ShowOnly                 []types.String      `tfsdk:"show_only"`
-	Validate                 types.Bool          `tfsdk:"validate"`
-	Manifests                map[string]string   `tfsdk:"manifests"`
-	CRDs                     []types.String      `tfsdk:"crds"`
-	Manifest                 types.String        `tfsdk:"manifest"`
-	Notes                    types.String        `tfsdk:"notes"`
-	KubeVersion              types.String        `tfsdk:"kube_version"`
+	//TODO
+	ApiVersions []types.String    `tfsdk:"api_versions"`
+	IncludeCrds types.Bool        `tfsdk:"include_crds"`
+	IsUpgrade   types.Bool        `tfsdk:"is_upgrade"`
+	ShowOnly    []types.String    `tfsdk:"show_only"`
+	Validate    types.Bool        `tfsdk:"validate"`
+	Manifests   map[string]string `tfsdk:"manifests"`
+	CRDs        []types.String    `tfsdk:"crds"`
+	Manifest    types.String      `tfsdk:"manifest"`
+	Notes       types.String      `tfsdk:"notes"`
+	KubeVersion types.String      `tfsdk:"kube_version"`
 }
 
+// SetValue represents the custom value to be merged with the Helm chart values
 type SetValue struct {
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
 	Type  types.String `tfsdk:"type"`
 }
 
+// SetListValue represents a custom list value to be merged with the Helm chart values.
+// This type is used to specify lists of values that should be passed to the Helm chart during deployment.
 type SetListValue struct {
 	Name  types.String   `tfsdk:"name"`
 	Value []types.String `tfsdk:"value"`
 }
 
+// SetSensitiveValue represents a custom sensitive value to be merged with the Helm chart values.
 type SetSensitiveValue struct {
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
 	Type  types.String `tfsdk:"type"`
 }
 
+// SetStringValue represents a custom string value to be merged with the Helm chart values.
 type SetStringValue struct {
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
 }
 
+// Postrender represents the configuration for post-rendering commands.
+// This type is used to specify commands that should be run after the Helm chart has been rendered
 type Postrender struct {
 	BinaryPath types.String `tfsdk:"binary_path"`
 }
 
+// Configure assigns the provider data to the DataTemplate struct.
 func (d *DataTemplate) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData != nil {
 		//Casting the provider data to the HelmProvider type assigning it to the provider field in data template struct
@@ -119,9 +131,11 @@ func (d *DataTemplate) Configure(ctx context.Context, req datasource.ConfigureRe
 	}
 }
 
+// Metadata is a placeholder for defining metadata about the data source.
 func (d *DataTemplate) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 }
 
+// Schema defines the schema for the data source attributes.
 func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Data source to render Helm chart templates.",
@@ -170,8 +184,6 @@ func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 			"devel": schema.BoolAttribute{
 				Optional:    true,
 				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored",
-				//Currently looking into this, it is a big talking point in the migration for other engineers
-				//DiffSuppressFunc
 			},
 			"values": schema.ListAttribute{
 				Optional:    true,
@@ -234,8 +246,6 @@ func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 					},
 				},
 			},
-			//looking into this
-			//DEPRECIATED
 			"set_string": schema.SetNestedAttribute{
 				Description: "Custom string values to be merged with the values.",
 				Optional:    true,
@@ -259,9 +269,7 @@ func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Description: "Verify the package before installing it.",
 			},
 			"keyring": schema.StringAttribute{
-				Optional: true,
-				//Currently looking into this, it is a big talking point in the migration for other engineers
-				//DiffSuppressFunc
+				Optional:    true,
 				Description: "Location of public keys used for verification. Used only if `verify` is true",
 			},
 			"timeout": schema.Int64Attribute{
@@ -313,9 +321,7 @@ func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Description: "Re-use the given name, even if that name is already used. This is unsafe in production",
 			},
 			"description": schema.StringAttribute{
-				Optional: true,
-				//Currently looking into this, it is a big talking point in the migration for other engineers
-				//DiffSuppressFunc
+				Optional:    true,
 				Description: "Add a custom description",
 			},
 			"create_namespace": schema.BoolAttribute{
@@ -406,6 +412,82 @@ func (d *DataTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		return
 	}
 
+	//setting default values to false is attributes are not provided in the config
+	if state.Description.IsNull() || state.Description.ValueString() == "" {
+		state.Description = types.StringValue("")
+	}
+	if state.Devel.IsNull() || state.Devel.IsUnknown() {
+		if !state.Version.IsNull() && state.Version.ValueString() != "" {
+			// Version is set, suppress devel change
+			state.Devel = types.BoolValue(false)
+		}
+	}
+	if state.Keyring.IsNull() || state.Keyring.IsUnknown() {
+		if !state.Verify.IsNull() && state.Verify.ValueBool() {
+			state.Keyring = types.StringValue(os.ExpandEnv("$HOME/.gnupg/pubring.gpg"))
+		} else {
+			state.Keyring = types.StringValue("")
+		}
+	}
+	if !state.IncludeCrds.IsNull() || state.IncludeCrds.IsUnknown() {
+		state.IncludeCrds = types.BoolValue(false)
+	}
+	if state.IsUpgrade.IsNull() || state.IsUpgrade.IsUnknown() {
+		state.IsUpgrade = types.BoolValue(false)
+	}
+	if state.DisableWebhooks.IsNull() || state.DisableWebhooks.IsUnknown() {
+		state.DisableWebhooks = types.BoolValue(false)
+	}
+	if state.ReuseValues.IsNull() || state.ReuseValues.IsUnknown() {
+		state.ReuseValues = types.BoolValue(false)
+	}
+	if state.ResetValues.IsNull() || state.ResetValues.IsUnknown() {
+		state.ResetValues = types.BoolValue(false)
+	}
+	if state.Atomic.IsNull() || state.Atomic.IsUnknown() {
+		state.Atomic = types.BoolValue(false)
+	}
+	if state.SkipCrds.IsNull() || state.SkipCrds.IsUnknown() {
+		state.SkipCrds = types.BoolValue(false)
+	}
+	if state.SkipTests.IsNull() || state.SkipTests.IsUnknown() {
+		state.SkipTests = types.BoolValue(false)
+	}
+	if state.RenderSubchartNotes.IsNull() || state.RenderSubchartNotes.IsUnknown() {
+		state.RenderSubchartNotes = types.BoolValue(false)
+	}
+	if state.DisableOpenAPIValidation.IsNull() || state.DisableOpenAPIValidation.IsUnknown() {
+		state.DisableOpenAPIValidation = types.BoolValue(false)
+	}
+	if state.Wait.IsNull() || state.Wait.IsUnknown() {
+		state.Wait = types.BoolValue(false)
+	}
+	if state.DependencyUpdate.IsNull() || state.DependencyUpdate.IsUnknown() {
+		state.DependencyUpdate = types.BoolValue(false)
+	}
+	if state.Replace.IsNull() || state.Replace.IsUnknown() {
+		state.Replace = types.BoolValue(false)
+	}
+	if state.CreateNamespace.IsNull() || state.CreateNamespace.IsUnknown() {
+		state.CreateNamespace = types.BoolValue(false)
+	}
+	if state.Validate.IsNull() || state.Validate.IsUnknown() {
+		state.Validate = types.BoolValue(false)
+	}
+	if state.Verify.IsNull() || state.Verify.IsUnknown() {
+		state.Verify = types.BoolValue(false)
+	}
+	if state.Timeout.IsNull() || state.Timeout.IsUnknown() {
+		state.Timeout = types.Int64Value(300)
+	}
+	if state.Namespace.IsNull() || state.Namespace.IsUnknown() {
+		defaultNamespace := os.Getenv("HELM_NAMESPACE")
+		if defaultNamespace == "" {
+			defaultNamespace = "default"
+		}
+		state.Namespace = types.StringValue(defaultNamespace)
+	}
+
 	m := d.meta
 
 	actionConfig, err := m.GetHelmConfiguration(ctx, state.Namespace.ValueString())
@@ -416,13 +498,9 @@ func (d *DataTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		)
 		return
 	}
-
-	err = OCIRegistryPerformLogin(ctx, m.RegistryClient, state.Repository.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error logging into OCI Registry",
-			fmt.Sprintf("Error logging into OCI Registry: %s", err),
-		)
+	diags := OCIRegistryLogin(ctx, actionConfig, actionConfig.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+	if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
 		return
 	}
 
@@ -611,7 +689,6 @@ func getTemplateValues(ctx context.Context, model *DataTemplateModel) (map[strin
 	return base, logDataValues(ctx, base, model)
 }
 
-// For the type SetSensitiveValue
 func getDataSensitiveValue(base map[string]interface{}, set SetSensitiveValue) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -666,7 +743,6 @@ func getDataValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
 func logDataValues(ctx context.Context, values map[string]interface{}, model *DataTemplateModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Copy array to avoid changing values by the cloak function.
 	asJSON, err := json.Marshal(values)
 	if err != nil {
 		diags.AddError("Error marshaling values to JSON", fmt.Sprintf("Failed to marshal values to JSON: %s", err))
