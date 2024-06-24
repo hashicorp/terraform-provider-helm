@@ -56,6 +56,7 @@ var defaultAttributes = map[string]interface{}{
 	"create_namespace":           false,
 	"lint":                       false,
 	"pass_credentials":           false,
+	"insecure_skip_tls_verify":   false,
 }
 
 func resourceRelease() *schema.Resource {
@@ -347,6 +348,12 @@ func resourceRelease() *schema.Resource {
 					return new == ""
 				},
 			},
+			"insecure_skip_tls_verify": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     defaultAttributes["insecure_skip_tls_verify"],
+				Description: "Skip tls certificate checks for the repository",
+			},
 			"create_namespace": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -623,6 +630,7 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	client.Replace = d.Get("replace").(bool)
 	client.Description = d.Get("description").(string)
 	client.CreateNamespace = d.Get("create_namespace").(bool)
+	client.InsecureSkipTLSverify = d.Get("insecure_skip_tls_verify").(bool)
 
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
 		av := d.Get("postrender.0.args")
@@ -746,6 +754,7 @@ func resourceReleaseUpdate(ctx context.Context, d *schema.ResourceData, meta int
 	client.MaxHistory = d.Get("max_history").(int)
 	client.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
 	client.Description = d.Get("description").(string)
+	client.InsecureSkipTLSverify = d.Get("insecure_skip_tls_verify").(bool)
 
 	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
 		av := d.Get("postrender.0.args")
@@ -957,6 +966,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			install.Replace = d.Get("replace").(bool)
 			install.Description = d.Get("description").(string)
 			install.CreateNamespace = d.Get("create_namespace").(bool)
+			install.InsecureSkipTLSverify = d.Get("insecure_skip_tls_verify").(bool)
 			install.PostRenderer = postRenderer
 
 			values, err := getValues(d)
@@ -1019,6 +1029,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		upgrade.MaxHistory = d.Get("max_history").(int)
 		upgrade.CleanupOnFail = d.Get("cleanup_on_fail").(bool)
 		upgrade.Description = d.Get("description").(string)
+		upgrade.InsecureSkipTLSverify = d.Get("insecure_skip_tls_verify").(bool)
 		upgrade.PostRenderer = postRenderer
 
 		values, err := getValues(d)
