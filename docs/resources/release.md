@@ -22,43 +22,43 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 
 ### Optional
 
-- `atomic` (Boolean) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used
-- `cleanup_on_fail` (Boolean) Allow deletion of new resources created in this upgrade when upgrade fails
-- `create_namespace` (Boolean) Create the namespace if it does not exist
-- `dependency_update` (Boolean) Run helm dependency update before installing the chart
+- `atomic` (Boolean) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to `false`.
+- `cleanup_on_fail` (Boolean) Allow deletion of new resources created in this upgrade when upgrade fails. Defaults to `false`.
+- `create_namespace` (Boolean) Create the namespace if it does not exist. Defaults to `false`.
+- `dependency_update` (Boolean) Run helm dependency update before installing the chart. Defaults to `false`.
 - `description` (String) Add a custom description
 - `devel` (Boolean) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored
 - `disable_crd_hooks` (Boolean) Prevent CRD hooks from, running, but run other hooks.  See helm install --no-crd-hook
-- `disable_openapi_validation` (Boolean) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema
-- `disable_webhooks` (Boolean) Prevent hooks from running.
-- `force_update` (Boolean) Force resource update through delete/recreate if needed.
-- `keyring` (String) Location of public keys used for verification. Used only if `verify` is true
-- `lint` (Boolean) Run helm lint when planning
-- `max_history` (Number) Limit the maximum number of revisions saved per release. Use 0 for no limit
-- `namespace` (String) Namespace to install the release into.
-- `pass_credentials` (Boolean) Pass credentials to all domains
+- `disable_openapi_validation` (Boolean) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false`.
+- `disable_webhooks` (Boolean) Prevent hooks from running.Defaults to `false`.
+- `force_update` (Boolean) Force resource update through delete/recreate if needed. Defaults to `false`.
+- `keyring` (String) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`.
+- `lint` (Boolean) Run helm lint when planning. Defaults to `false`.
+- `max_history` (Number) Limit the maximum number of revisions saved per release. Use 0 for no limit. Defaults to 0 (no limit).
+- `namespace` (String) Namespace to install the release into. Defaults to `default`.
+- `pass_credentials` (Boolean) Pass credentials to all domains. Defaults to `false`.
 - `postrender` (Block List, Max: 1) Postrender command configuration. (see [below for nested schema](#nestedblock--postrender))
-- `recreate_pods` (Boolean) Perform pods restart during upgrade/rollback
-- `render_subchart_notes` (Boolean) If set, render subchart notes along with the parent
-- `replace` (Boolean) Re-use the given name, even if that name is already used. This is unsafe in production
+- `recreate_pods` (Boolean) Perform pods restart during upgrade/rollback. Defaults to `false`.
+- `render_subchart_notes` (Boolean) If set, render subchart notes along with the parent. Defaults to `true`.
+- `replace` (Boolean) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
 - `repository` (String) Repository where to locate the requested chart. If is a URL the chart is installed without installing the repository.
 - `repository_ca_file` (String) The Repositories CA File
 - `repository_cert_file` (String) The repositories cert file
 - `repository_key_file` (String) The repositories cert key file
 - `repository_password` (String, Sensitive) Password for HTTP basic authentication
 - `repository_username` (String) Username for HTTP basic authentication
-- `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart
-- `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored
+- `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
+- `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
 - `set` (Block Set) Custom values to be merged with the values. (see [below for nested schema](#nestedblock--set))
 - `set_list` (Block List) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
 - `set_sensitive` (Block Set) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_sensitive))
-- `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present
-- `timeout` (Number) Time in seconds to wait for any individual kubernetes operation.
+- `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
+- `timeout` (Number) Time in seconds to wait for any individual kubernetes operation. Defaults to 300 seconds.
 - `values` (List of String) List of values in raw yaml format to pass to helm.
-- `verify` (Boolean) Verify the package before installing it.
+- `verify` (Boolean) Verify the package before installing it.Defaults to `false`.
 - `version` (String) Specify the exact chart version to install. If this is not specified, the latest version is installed.
-- `wait` (Boolean) Will wait until all resources are in a ready state before marking the release as successful.
-- `wait_for_jobs` (Boolean) If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.
+- `wait` (Boolean) Will wait until all resources are in a ready state before marking the release as successful. Defaults to `true`.
+- `wait_for_jobs` (Boolean) If wait is enabled, will wait until all Jobs have been completed before marking the release as successful. Defaults to `false``.
 
 ### Read-Only
 
@@ -121,14 +121,15 @@ Read-Only:
 
 - `app_version` (String)
 - `chart` (String)
+- `first_deployed` (Number)
+- `last_deployed` (Number)
 - `name` (String)
 - `namespace` (String)
-- `first_deployed` (Number) timestamp when the release was first deployed
-- `last_deployed` (Number) timestamp when the release was last deployed
-- `revision` (Number) version of the release last deployed
-- `notes` (String) rendered templates/NOTES.txt if available
+- `notes` (String)
+- `revision` (Number)
 - `values` (String)
 - `version` (String)
+
 
 
 

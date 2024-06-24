@@ -25,47 +25,47 @@ For further details on the `helm template` command, refer to the [Helm documenta
 ### Optional
 
 - `api_versions` (List of String) Kubernetes api versions used for Capabilities.APIVersions
-- `atomic` (Boolean) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used
+- `atomic` (Boolean) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to `false`.
 - `crds` (List of String) List of rendered CRDs from the chart.
-- `create_namespace` (Boolean) Create the namespace if it does not exist
-- `dependency_update` (Boolean) Run helm dependency update before installing the chart
+- `create_namespace` (Boolean) Create the namespace if it does not exist. Defaults to `false`.
+- `dependency_update` (Boolean) Run helm dependency update before installing the chart. Defaults to `false`.
 - `description` (String) Add a custom description
 - `devel` (Boolean) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored
-- `disable_openapi_validation` (Boolean) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema
-- `disable_webhooks` (Boolean) Prevent hooks from running.
+- `disable_openapi_validation` (Boolean) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema.Defaults to `false`.
+- `disable_webhooks` (Boolean) Prevent hooks from running.Defaults to `300` seconds.
 - `include_crds` (Boolean) Include CRDs in the templated output
 - `is_upgrade` (Boolean) Set .Release.IsUpgrade instead of .Release.IsInstall
-- `keyring` (String) Location of public keys used for verification. Used only if `verify` is true
+- `keyring` (String) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`.
 - `kube_version` (String) Kubernetes version used for Capabilities.KubeVersion
 - `manifest` (String) Concatenated rendered chart templates. This corresponds to the output of the `helm template` command.
 - `manifests` (Map of String) Map of rendered chart templates indexed by the template name.
-- `namespace` (String) Namespace to install the release into.
+- `namespace` (String) Namespace to install the release into. Defaults to `default`.
 - `notes` (String) Rendered notes if the chart contains a `NOTES.txt`.
-- `pass_credentials` (Boolean) Pass credentials to all domains
+- `pass_credentials` (Boolean) Pass credentials to all domains. Defaults to `false`.
 - `postrender` (Block List, Max: 1) Postrender command configuration. (see [below for nested schema](#nestedblock--postrender))
-- `render_subchart_notes` (Boolean) If set, render subchart notes along with the parent
-- `replace` (Boolean) Re-use the given name, even if that name is already used. This is unsafe in production
+- `render_subchart_notes` (Boolean) If set, render subchart notes along with the parent. Defaults to `true`.
+- `replace` (Boolean) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
 - `repository` (String) Repository where to locate the requested chart. If is a URL the chart is installed without installing the repository.
 - `repository_ca_file` (String) The Repositories CA File
 - `repository_cert_file` (String) The repositories cert file
 - `repository_key_file` (String) The repositories cert key file
 - `repository_password` (String, Sensitive) Password for HTTP basic authentication
 - `repository_username` (String) Username for HTTP basic authentication
-- `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart
-- `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored
+- `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart.Defaults to `false`.
+- `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
 - `set` (Block Set) Custom values to be merged with the values. (see [below for nested schema](#nestedblock--set))
 - `set_list` (Block List) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
 - `set_sensitive` (Block Set) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_sensitive))
 - `set_string` (Block Set, Deprecated) Custom string values to be merged with the values. (see [below for nested schema](#nestedblock--set_string))
 - `show_only` (List of String) Only show manifests rendered from the given templates
-- `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present
-- `skip_tests` (Boolean) If set, tests will not be rendered. By default, tests are rendered
-- `timeout` (Number) Time in seconds to wait for any individual kubernetes operation.
+- `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
+- `skip_tests` (Boolean) If set, tests will not be rendered. By default, tests are rendered. Defaults to `false`.
+- `timeout` (Number) Time in seconds to wait for any individual kubernetes operation. Defaults to `300` seconds.
 - `validate` (Boolean) Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install
 - `values` (List of String) List of values in raw yaml format to pass to helm.
-- `verify` (Boolean) Verify the package before installing it.
+- `verify` (Boolean) Verify the package before installing it.Defaults to `false`.
 - `version` (String) Specify the exact chart version to install. If this is not specified, the latest version is installed.
-- `wait` (Boolean) Will wait until all resources are in a ready state before marking the release as successful.
+- `wait` (Boolean) Will wait until all resources are in a ready state before marking the release as successful.Defaults to `true`.
 
 ### Read-Only
 

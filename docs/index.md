@@ -17,7 +17,7 @@ Try the [hands-on tutorial](https://learn.hashicorp.com/tutorials/terraform/helm
 
 ## Data Sources
 
-* [Data Source: helm_template](d/template.md)
+* [Data Source: helm_template](d/template.html)
 
 ## Example Usage
 
@@ -186,10 +186,10 @@ The `kubernetes` block supports:
 * `config_context` - (Optional) Context to choose from the config file. Can be sourced from `KUBE_CTX`.
 * `proxy_url` - (Optional) URL to the proxy to be used for all API requests. URLs with "http", "https", and "socks5" schemes are supported. Can be sourced from `KUBE_PROXY_URL`.
 * `exec` - (Optional) Configuration block to use an [exec-based credential plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins), e.g. call an external command to receive user credentials.
-  * `api_version` - (Required) API version to use when decoding the ExecCredentials resource, e.g. `client.authentication.k8s.io/v1beta1`.
-  * `command` - (Required) Command to execute.
-  * `args` - (Optional) List of arguments to pass when executing the plugin.
-  * `env` - (Optional) Map of environment variables to set when executing the plugin.
+* `api_version` - (Required) API version to use when decoding the ExecCredentials resource, e.g. `client.authentication.k8s.io/v1beta1`.
+* `command` - (Required) Command to execute.
+* `args` - (Optional) List of arguments to pass when executing the plugin.
+* `env` - (Optional) Map of environment variables to set when executing the plugin.
 
 The `registry` block has options:
 
