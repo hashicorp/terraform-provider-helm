@@ -39,6 +39,7 @@ var defaultAttributes = map[string]interface{}{
 	"timeout":                    300,
 	"wait":                       true,
 	"wait_for_jobs":              false,
+	"deletion_propagation":       "background",
 	"disable_webhooks":           false,
 	"atomic":                     false,
 	"render_subchart_notes":      true,
@@ -321,6 +322,15 @@ func resourceRelease() *schema.Resource {
 				Optional:    true,
 				Default:     defaultAttributes["wait_for_jobs"],
 				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
+			},
+			"deletion_propagation": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     defaultAttributes["deletion_propagation"],
+				Description: "Propagation policy for deleting resources. Must be one of: foreground, background, orphan, or unspecified.",
+				ValidateFunc: validation.StringInSlice([]string{
+					"background", "foreground", "orphan",
+				}, false),
 			},
 			"status": {
 				Type:        schema.TypeString,
@@ -800,6 +810,7 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 	uninstall.Wait = d.Get("wait").(bool)
 	uninstall.DisableHooks = d.Get("disable_webhooks").(bool)
 	uninstall.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+	uninstall.DeletionPropagation = d.Get("deletion_propagation").(string)
 
 	res, err := uninstall.Run(name)
 	if err != nil {
