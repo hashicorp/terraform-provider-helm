@@ -978,6 +978,10 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 					debug(`cluster was unreachable at create time, marking "manifest" as computed`)
 					return d.SetNewComputed("manifest")
 				}
+				if strings.Contains(err.Error(), "ensure CRDs are installed first") {
+					debug(`some CRDs are not (yet) installed, marking "manifest" as computed`)
+					return d.SetNewComputed("manifest")
+				}
 				return err
 			}
 
