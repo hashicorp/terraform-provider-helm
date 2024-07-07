@@ -1628,6 +1628,43 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_manifest_dry_run_enabled(t *testing.T) {
+	name := randName("diff")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigManifestExperimentEnabledDryRunServer(testResourceName, namespace, name, "1.2.3", "server"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					func(state *terraform.State) error {
+						// FIXME this is bordering on testing the implementation
+						t.Logf("getting JSON manifest for release %q", name)
+						m, err := getReleaseJSONManifest(namespace, name)
+						if err != nil {
+							t.Fatal(err.Error())
+						}
+						return resource.TestCheckResourceAttr("helm_release.test", "manifest", m)(state)
+					},
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 	name := "example"
 	namespace := createRandomNamespace(t)
@@ -2097,6 +2134,24 @@ func testAccHelmReleaseConfigManifestExperimentEnabled(resource, ns, name, versi
 			chart       = "test-chart"
 		}
 	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccHelmReleaseConfigManifestExperimentEnabledDryRunServer(resource, ns, name, version string, dry_run_option string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments {
+				manifest = true
+			}
+		}
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+			dry_run_option = "%s"
+		}
+	`, resource, name, ns, testRepositoryURL, version, dry_run_option)
 }
 
 func testAccHelmReleaseConfigManifestUnknownValues(resource, ns, name, version string) string {
