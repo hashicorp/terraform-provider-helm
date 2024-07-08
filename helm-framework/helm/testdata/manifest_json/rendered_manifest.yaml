@@ -1,0 +1,48 @@
+---
+# Source: test/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: diff-tester
+  labels:
+    helm.sh/chart: test-0.1.5
+    app.kubernetes.io/name: test
+    app.kubernetes.io/instance: diff-tester
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: test/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: diff-tester
+  labels:
+    helm.sh/chart: test-0.1.5
+    app.kubernetes.io/name: test
+    app.kubernetes.io/instance: diff-tester
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: test
+    app.kubernetes.io/instance: diff-tester
+---
+# Source: test/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: diff-tester
+  labels:
+    helm.sh/chart: test-0.1.5
+    app.kubernetes.io/name: test
+    app.kubernetes.io/instance: diff-tester
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+data:
+  PASSWORD: cGFzc3dvcmQK
