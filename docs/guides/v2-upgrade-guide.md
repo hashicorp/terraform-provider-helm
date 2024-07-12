@@ -1,5 +1,5 @@
 ---
-layout : "helm"
+layout: "helm"
 page_title: "Helm: Upgrade Guide for Helm Provider v2.0.0"
 description: |-
   This guide covers the changes introduced in v2.0.0 of the Helm provider and what you may need to do to upgrade your configuration.
