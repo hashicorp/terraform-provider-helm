@@ -33,8 +33,9 @@ jobs:
                   ["Alex Somesan", "alexsomesan"],
                   ["Alex Pilon", "appilon"],
                   ["John Houston", "jrhouston"],
-                  ["Aleksandr Rybolovlev", "arybolovlev"],
-                ]);
+                  ["Sacha Rybolovlev", "arybolovlev"],
+              ]);
+
 
               let resp = await pd.get('oncalls?escalation_policy_ids%5B%5D=PH8IF3M')
               if (resp.status != 200){
@@ -52,5 +53,4 @@ jobs:
               })
               if (resp.status != 201){
                 core.setFailed("error assigning reviewer: user doesn't have the appropriate permissions to be assigned an issue.")
-              }
-      
+              }   
