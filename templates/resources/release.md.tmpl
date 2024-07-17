@@ -1,0 +1,83 @@
+---
+page_title: "helm: helm_release"
+sidebar_current: "docs-helm-release"
+description: |-
+
+---
+# Resource: {{ .Name }}
+
+A Release is an instance of a chart running in a Kubernetes cluster.
+
+A Chart is a Helm package. It contains all of the resource definitions necessary to run an application, tool, or service inside of a Kubernetes cluster.
+
+`helm_release` describes the desired status of a chart in a kubernetes cluster.
+
+{{ .SchemaMarkdown }}
+
+
+## Example Usage - Chart Repository
+
+{{tffile "examples/resources/release/example_1.tf"}}
+
+## Example Usage - Local Chart
+
+In case a Chart is not available from a repository, a path may be used:
+
+{{tffile "examples/resources/release/example_2.tf"}}
+
+## Example Usage - Chart URL
+
+An absolute URL to the .tgz of the Chart may also be used:
+
+{{tffile "examples/resources/release/example_3.tf"}}
+
+## Example Usage - Chart Repository configured from OCI Registry
+
+Provider supports grabbing charts from an OCI repository:
+
+{{tffile "examples/resources/release/example_4.tf"}}
+
+## Example Usage - Chart Repository configured using GCS/S3
+
+The provider also supports helm plugins such as GCS and S3 that add S3/GCS helm repositories by using `helm plugin install`
+
+{{tffile "examples/resources/release/example_5.tf"}}
+
+{{tffile "examples/resources/release/example_6.tf"}}
+
+## Example Usage - Chart Repository configured outside of Terraform
+
+The provider also supports repositories that are added to the local machine outside of Terraform by running `helm repo add`
+
+{{tffile "examples/resources/release/example_7.tf"}}
+
+The `set`, `set_list`, and `set_sensitive` blocks support:
+
+* `name` - (Required) full name of the variable to be set.
+* `value` - (Required) value of the variable to be set.
+* `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
+
+Since Terraform Utilizes HCL as well as Helm using the Helm Template Language, it's necessary to escape the `{}`, `[]`, `.`, and `,` characters twice in order for it to be parsed. `name` should also be set to the `value path`, and `value` is the desired value that will be set.
+
+{{tffile "examples/resources/release/example_8.tf"}}
+
+{{tffile "examples/resources/release/example_9.tf"}}
+
+{{tffile "examples/resources/release/example_10.tf"}}
+
+{{tffile "examples/resources/release/example_11.tf"}}
+
+The `postrender` block supports two attributes:
+
+* `binary_path` - (Required) relative or full path to command binary.
+* `args` - (Optional) a list of arguments to supply to the post-renderer.
+
+## Import
+
+A Helm Release resource can be imported using its namespace and name e.g.
+
+```shell
+$ terraform import helm_release.example default/example-name
+```
+
+~> **NOTE:** Since the `repository` attribute is not being persisted as metadata by helm, it will not be set to any value by default. All other provider specific attributes will be set to their default values and they can be overriden after running `apply` using the resource definition configuration.

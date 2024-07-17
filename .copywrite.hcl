@@ -11,5 +11,6 @@ project {
     ".release/**",
     "helm/testdata/**",
     "vendor/**",
+    "examples/**"
   ]
 }

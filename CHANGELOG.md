@@ -1,3 +1,27 @@
+## 2.13.2 (May 8, 2024)
+
+DEPENDENCIES:
+
+* Bump github.com/docker/docker from 24.0.7 to 24.0.9
+* Bump golang.org/x/net from 0.21.0 to 0.23.0
+* Bundle license file with TF provider release artifacts
+
+## 2.13.1 (Apr 15, 2024)
+
+HOTFIX:
+
+* `helm_release`: Fix regression causing errors at plan time. 
+
+## 2.13.0 (Apr 4, 2024)
+
+BUG FIXES:
+
+* `provider`: Fix manifest diff rendering for OCI charts. [[GH-1326](https://github.com/hashicorp/terraform-provider-helm/issues/1326)]
+
+DOCS:
+
+* `docs`: Use templatefile() instead of "template_file" provider in GKE example. [[GH-1329](https://github.com/hashicorp/terraform-provider-helm/issues/1329)]
+
 ## 2.12.1 (Nov 30, 2023)
 
 DEPENDENCIES:

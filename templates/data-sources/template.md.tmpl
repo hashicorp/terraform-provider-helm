@@ -1,0 +1,31 @@
+---
+page_title: "helm: helm_template"
+sidebar_current: "docs-helm-template"
+description: |-
+
+---
+# Data Source: {{ .Name }}
+
+Render chart templates locally.
+
+`helm_template` renders chart templates locally and exposes the rendered manifests in the data source attributes. `helm_template` mimics the functionality of the `helm template` command.
+
+The arguments aim to be identical to the `helm_release` resource.
+
+For further details on the `helm template` command, refer to the [Helm documentation](https://helm.sh/docs/helm/helm_template/).
+
+{{ .SchemaMarkdown }}
+
+## Example Usage
+
+### Render all chart templates
+
+The following example renders all templates of the `mariadb` chart of the official Helm stable repository. Concatenated manifests are exposed as output variable `mariadb_instance_manifest`.
+
+{{tffile "examples/data-sources/template/example_1.tf"}}
+
+### Render selected chart templates
+
+The following example renders only the templates `master-statefulset.yaml` and `master-svc.yaml` of the `mariadb` chart of the official Helm stable repository.
+
+{{tffile "examples/data-sources/template/example_2.tf"}}
