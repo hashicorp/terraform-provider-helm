@@ -56,10 +56,7 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 				return "", err
 			}
 
-			for k, v := range secret.Data {
-				h := hashSensitiveValue(string(v))
-				secret.Data[k] = []byte(h)
-			}
+			redactSecretData(&secret)
 
 			jsonbytes, err = json.Marshal(secret)
 			if err != nil {
@@ -87,6 +84,14 @@ func hashSensitiveValue(v string) string {
 	hash := make([]byte, 8)
 	sha3.ShakeSum256(hash, []byte(v))
 	return fmt.Sprintf("(sensitive value %x)", hash)
+}
+
+// redactSecretData redacts the `Data` of a Secret
+func redactSecretData(secret *corev1.Secret) {
+	for k, v := range secret.Data {
+		h := hashSensitiveValue(string(v))
+		secret.Data[k] = []byte(h)
+	}
 }
 
 // redactSensitiveValues removes values that appear in `set_sensitive` blocks from
