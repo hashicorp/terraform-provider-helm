@@ -574,16 +574,11 @@ func liveResources(r *release.Release, m *Meta, d resourceGetter) (map[string]st
 		return nil, errors.Errorf("client is not a *kube.Client")
 	}
 	return mapResources(actionConfig, r, d, func(i *resource.Info) (runtime.Object, error) {
-		accessor, err := apimeta.Accessor(i.Object)
-		if err != nil {
-			return nil, err
-		}
-		namespace, name := accessor.GetNamespace(), accessor.GetName()
 		gvk := i.Object.GetObjectKind().GroupVersionKind()
 		return kc.Factory.NewBuilder().
 			Unstructured().
-			NamespaceParam(namespace).DefaultNamespace().
-			ResourceNames(gvk.GroupKind().String(), name).
+			NamespaceParam(i.Namespace).DefaultNamespace().
+			ResourceNames(gvk.GroupKind().String(), i.Name).
 			Flatten().
 			Do().
 			Object()
