@@ -1712,7 +1712,7 @@ func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 	config := testAccHelmReleaseConfigManifestExperimentEnabled(testResourceName, namespace, name, "1.2.3")
 
 	deploymentName := fmt.Sprintf("%s-test-chart", name)
-	deploymentKey := fmt.Sprintf("resources.deployment.apps/%s/%s", namespace, deploymentName)
+	deploymentKey := fmt.Sprintf("resources.deployment.apps/v1/%s/%s", namespace, deploymentName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

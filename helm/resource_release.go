@@ -504,14 +504,6 @@ func resourceReleaseUpgrader() *schema.Resource {
 	}
 }
 
-func resourceCLIType(obj runtime.Object) string {
-	gvk := obj.GetObjectKind().GroupVersionKind()
-	if len(gvk.Group) == 0 {
-		return strings.ToLower(gvk.Kind)
-	}
-	return fmt.Sprintf("%s.%s", strings.ToLower(gvk.Kind), gvk.Group)
-}
-
 func buildManifestResources(r *release.Release, client kube.Interface) (kube.ResourceList, error) {
 	return client.Build(bytes.NewBufferString(r.Manifest), false)
 }
@@ -537,7 +529,13 @@ func mapRuntimeObjects(objects []runtime.Object, d resourceGetter) (map[string]s
 		if err != nil {
 			return nil, err
 		}
-		key := fmt.Sprintf("%s/%s/%s", resourceCLIType(obj), accessor.GetNamespace(), accessor.GetName())
+		gvk := obj.GetObjectKind().GroupVersionKind()
+		key := fmt.Sprintf("%s/%s/%s/%s",
+			strings.ToLower(gvk.GroupKind().String()),
+			gvk.Version,
+			accessor.GetNamespace(),
+			accessor.GetName(),
+		)
 		mappedObjects[key] = redactSensitiveValues(string(objJSON), d)
 	}
 	return mappedObjects, nil
@@ -581,10 +579,11 @@ func liveResources(r *release.Release, m *Meta, d resourceGetter) (map[string]st
 			return nil, err
 		}
 		namespace, name := accessor.GetNamespace(), accessor.GetName()
+		gvk := i.Object.GetObjectKind().GroupVersionKind()
 		return kc.Factory.NewBuilder().
 			Unstructured().
 			NamespaceParam(namespace).DefaultNamespace().
-			ResourceNames(resourceCLIType(i.Object), name).
+			ResourceNames(gvk.GroupKind().String(), name).
 			Flatten().
 			Do().
 			Object()
