@@ -4,6 +4,7 @@
 package helm
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -35,7 +36,9 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	runtimeresource "k8s.io/cli-runtime/pkg/resource"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -693,6 +696,16 @@ func checkResourceAttrExists(name, key string) resource.TestCheckFunc {
 		}
 		return fmt.Errorf("%s: Attribute '%s' expected to be set", name, key)
 	}
+}
+
+func checkResourceAttrMap(name, key string, expected map[string]string) resource.TestCheckFunc {
+	checks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(name, fmt.Sprintf("%s.%%", key), strconv.Itoa(len(expected))),
+	}
+	for k, v := range expected {
+		checks = append(checks, resource.TestCheckResourceAttr(name, fmt.Sprintf("%s.%s", key, k), v))
+	}
+	return resource.ComposeAggregateTestCheckFunc(checks...)
 }
 
 func TestAccResourceRelease_postrender(t *testing.T) {
@@ -1597,6 +1610,58 @@ func getReleaseJSONManifest(namespace, name string) (string, error) {
 	return jsonManifest, nil
 }
 
+func getReleaseJSONResources(namespace, name string) (map[string]string, error) {
+	m := testAccProvider.Meta()
+	if m == nil {
+		return nil, fmt.Errorf("provider not properly initialized")
+	}
+	actionConfig, err := m.(*Meta).GetHelmConfiguration(namespace)
+	if err != nil {
+		return nil, err
+	}
+	client, ok := actionConfig.KubeClient.(*kube.Client)
+	if !ok {
+		return nil, errors.Errorf("client is not a *kube.Client")
+	}
+
+	cmd := exec.Command("helm", "--kubeconfig", os.Getenv("KUBE_CONFIG_PATH"), "get", "manifest", "--namespace", namespace, name)
+	manifest, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	resources, err := actionConfig.KubeClient.Build(bytes.NewBuffer(manifest), false)
+	if err != nil {
+		return nil, err
+	}
+
+	var objects []runtime.Object
+	err = resources.Visit(func(i *runtimeresource.Info, err error) error {
+		if err != nil {
+			return err
+		}
+		gvk := i.Object.GetObjectKind().GroupVersionKind()
+		obj, err := client.Factory.NewBuilder().
+			Unstructured().
+			NamespaceParam(i.Namespace).DefaultNamespace().
+			ResourceNames(gvk.GroupKind().String(), i.Name).
+			Flatten().
+			Do().
+			Object()
+		if err != nil {
+			return err
+		}
+		objects = append(objects, obj)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	d := resourceRelease().Data(nil)
+	return mapRuntimeObjects(objects, d)
+}
+
 func TestAccResourceRelease_manifest(t *testing.T) {
 	name := randName("diff")
 	namespace := createRandomNamespace(t)
@@ -1732,132 +1797,74 @@ func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
 					func(state *terraform.State) error {
-						// FIXME this is bordering on testing the implementation
-						t.Logf("getting JSON manifest for release %q", name)
-						m, err := getReleaseJSONManifest(namespace, name)
+						t.Logf("getting JSON server resources for release %q", name)
+						r, err := getReleaseJSONResources(namespace, name)
 						if err != nil {
 							t.Fatal(err)
 						}
-
-						return resource.TestCheckResourceAttr("helm_release.test", "manifest", m)(state)
+						return checkResourceAttrMap("helm_release.test", "resources", r)(state)
 					},
 				),
 			},
 			{
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":2}}`)),
 				Config:    config,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
-					func(state *terraform.State) error {
-						// FIXME this is bordering on testing the implementation
-						t.Logf("getting JSON manifest for release %q", name)
-						m, err := getReleaseJSONManifest(namespace, name)
-						if err != nil {
-							t.Fatal(err)
-						}
-						return resource.TestCheckResourceAttr("helm_release.test", "manifest", m)(state)
-					},
-					func(state *terraform.State) error {
-						deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
-						var deployment appsv1.Deployment
-						if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
-							t.Fatal(err)
-						}
-						assert.NotNil(t, deployment.Spec.Replicas)
-						assert.Equal(t, int32(1), *deployment.Spec.Replicas)
-						assert.Equal(t, int64(3), deployment.Generation)
-						return nil
-					},
-				),
+				Check: func(state *terraform.State) error {
+					deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
+					var deployment appsv1.Deployment
+					if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
+						t.Fatal(err)
+					}
+					assert.NotNil(t, deployment.Spec.Replicas)
+					assert.Equal(t, int32(1), *deployment.Spec.Replicas)
+					assert.Equal(t, int64(3), deployment.Generation)
+					return nil
+				},
 			},
 			{
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":2}}`)),
 				Config:    testAccHelmReleaseConfigManifestExperimentEnabledSetReplicas(testResourceName, namespace, name, "1.2.3"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
-					func(state *terraform.State) error {
-						// FIXME this is bordering on testing the implementation
-						t.Logf("getting JSON manifest for release %q", name)
-						m, err := getReleaseJSONManifest(namespace, name)
-						if err != nil {
-							t.Fatal(err)
-						}
-						return resource.TestCheckResourceAttr("helm_release.test", "manifest", m)(state)
-					},
-					func(state *terraform.State) error {
-						deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
-						var deployment appsv1.Deployment
-						if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
-							t.Fatal(err)
-						}
-						assert.NotNil(t, deployment.Spec.Replicas)
-						assert.Equal(t, int32(3), *deployment.Spec.Replicas)
-						assert.Equal(t, int64(5), deployment.Generation)
-						return nil
-					},
-				),
+				Check: func(state *terraform.State) error {
+					deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
+					var deployment appsv1.Deployment
+					if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
+						t.Fatal(err)
+					}
+					assert.NotNil(t, deployment.Spec.Replicas)
+					assert.Equal(t, int32(3), *deployment.Spec.Replicas)
+					assert.Equal(t, int64(5), deployment.Generation)
+					return nil
+				},
 			},
 			{
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":1}}`)),
 				Config:    config,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
-					func(state *terraform.State) error {
-						// FIXME this is bordering on testing the implementation
-						t.Logf("getting JSON manifest for release %q", name)
-						m, err := getReleaseJSONManifest(namespace, name)
-						if err != nil {
-							t.Fatal(err)
-						}
-						return resource.TestCheckResourceAttr("helm_release.test", "manifest", m)(state)
-					},
-					func(state *terraform.State) error {
-						deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
-						var deployment appsv1.Deployment
-						if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
-							t.Fatal(err)
-						}
-						assert.NotNil(t, deployment.Spec.Replicas)
-						assert.Equal(t, int32(3), *deployment.Spec.Replicas)
-						assert.Equal(t, int64(7), deployment.Generation)
-						return nil
-					},
-				),
+				Check: func(state *terraform.State) error {
+					deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
+					var deployment appsv1.Deployment
+					if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
+						t.Fatal(err)
+					}
+					assert.NotNil(t, deployment.Spec.Replicas)
+					assert.Equal(t, int32(3), *deployment.Spec.Replicas)
+					assert.Equal(t, int64(7), deployment.Generation)
+					return nil
+				},
 			},
 			{
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":1}}`)),
 				Config:    testAccHelmReleaseConfigManifestExperimentEnabledResetValues(testResourceName, namespace, name, "1.2.3"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
-					func(state *terraform.State) error {
-						// FIXME this is bordering on testing the implementation
-						t.Logf("getting JSON manifest for release %q", name)
-						m, err := getReleaseJSONManifest(namespace, name)
-						if err != nil {
-							t.Fatal(err)
-						}
-						return resource.TestCheckResourceAttr("helm_release.test", "manifest", m)(state)
-					},
-					func(state *terraform.State) error {
-						deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
-						var deployment appsv1.Deployment
-						if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
-							t.Fatal(err)
-						}
-						assert.NotNil(t, deployment.Spec.Replicas)
-						assert.Equal(t, int32(1), *deployment.Spec.Replicas)
-						assert.Equal(t, int64(8), deployment.Generation)
-						return nil
-					},
-				),
+				Check: func(state *terraform.State) error {
+					deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
+					var deployment appsv1.Deployment
+					if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
+						t.Fatal(err)
+					}
+					assert.NotNil(t, deployment.Spec.Replicas)
+					assert.Equal(t, int32(1), *deployment.Spec.Replicas)
+					assert.Equal(t, int64(8), deployment.Generation)
+					return nil
+				},
 			},
 		},
 	})
