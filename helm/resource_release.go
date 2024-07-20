@@ -1485,14 +1485,10 @@ func getRelease(m *Meta, cfg *action.Configuration, name string) (*release.Relea
 	defer m.Unlock()
 	debug("%s getRelease got lock, started", name)
 
-	status := action.NewStatus(cfg)
+	get := action.NewGet(cfg)
 	debug("%s getRelease post action created", name)
 
-	if m.ExperimentEnabled("manifest") {
-		status.ShowResources = true
-	}
-
-	res, err := status.Run(name)
+	res, err := get.Run(name)
 	debug("%s getRelease post run", name)
 
 	if err != nil {
