@@ -25,7 +25,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/helmpath"
@@ -696,16 +695,6 @@ func checkResourceAttrExists(name, key string) resource.TestCheckFunc {
 		}
 		return fmt.Errorf("%s: Attribute '%s' expected to be set", name, key)
 	}
-}
-
-func checkResourceAttrMap(name, key string, expected map[string]string) resource.TestCheckFunc {
-	checks := []resource.TestCheckFunc{
-		resource.TestCheckResourceAttr(name, fmt.Sprintf("%s.%%", key), strconv.Itoa(len(expected))),
-	}
-	for k, v := range expected {
-		checks = append(checks, resource.TestCheckResourceAttr(name, fmt.Sprintf("%s.%s", key, k), v))
-	}
-	return resource.ComposeAggregateTestCheckFunc(checks...)
 }
 
 func TestAccResourceRelease_postrender(t *testing.T) {
@@ -1619,7 +1608,7 @@ func getReleaseJSONResources(namespace, name string) (map[string]string, error) 
 	if err != nil {
 		return nil, err
 	}
-	client, ok := actionConfig.KubeClient.(*kube.Client)
+	kc, ok := actionConfig.KubeClient.(*kube.Client)
 	if !ok {
 		return nil, errors.Errorf("client is not a *kube.Client")
 	}
@@ -1641,7 +1630,7 @@ func getReleaseJSONResources(namespace, name string) (map[string]string, error) 
 			return err
 		}
 		gvk := i.Object.GetObjectKind().GroupVersionKind()
-		obj, err := client.Factory.NewBuilder().
+		obj, err := kc.Factory.NewBuilder().
 			Unstructured().
 			NamespaceParam(i.Namespace).DefaultNamespace().
 			ResourceNames(gvk.GroupKind().String(), i.Name).
@@ -1769,6 +1758,36 @@ func patchDeployment(t *testing.T, namespace, name string, patchBytes []byte) fu
 	}
 }
 
+func checkResourceAttrMap(name, key string, expected map[string]string) resource.TestCheckFunc {
+	checks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(name, fmt.Sprintf("%s.%%", key), strconv.Itoa(len(expected))),
+	}
+	for k, v := range expected {
+		checks = append(checks, resource.TestCheckResourceAttr(name, fmt.Sprintf("%s.%s", key, k), v))
+	}
+	return resource.ComposeAggregateTestCheckFunc(checks...)
+}
+
+func checkDeploymentReplicasAndGeneration(name, namespace, deploymentName string, replicas int32, generation int64) resource.TestCheckFunc {
+	deploymentKey := fmt.Sprintf("resources.deployment.apps/v1/%s/%s", namespace, deploymentName)
+	return resource.TestCheckResourceAttrWith(name, deploymentKey, func(value string) error {
+		var deployment appsv1.Deployment
+		if err := json.Unmarshal([]byte(value), &deployment); err != nil {
+			return err
+		}
+		if deployment.Spec.Replicas == nil {
+			return fmt.Errorf("expected replicas to be set")
+		}
+		if *deployment.Spec.Replicas != replicas {
+			return fmt.Errorf("expected replicas to be %d, got %d", replicas, *deployment.Spec.Replicas)
+		}
+		if deployment.Generation != generation {
+			return fmt.Errorf("expected generation to be %d, got %d", generation, deployment.Generation)
+		}
+		return nil
+	})
+}
+
 func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 	name := randName("serverdiff")
 	namespace := createRandomNamespace(t)
@@ -1777,7 +1796,6 @@ func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 	config := testAccHelmReleaseConfigManifestExperimentEnabled(testResourceName, namespace, name, "1.2.3")
 
 	deploymentName := fmt.Sprintf("%s-test-chart", name)
-	deploymentKey := fmt.Sprintf("resources.deployment.apps/v1/%s/%s", namespace, deploymentName)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -1804,67 +1822,28 @@ func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 						}
 						return checkResourceAttrMap("helm_release.test", "resources", r)(state)
 					},
+					checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 1, 1),
 				),
 			},
 			{
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":2}}`)),
 				Config:    config,
-				Check: func(state *terraform.State) error {
-					deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
-					var deployment appsv1.Deployment
-					if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
-						t.Fatal(err)
-					}
-					assert.NotNil(t, deployment.Spec.Replicas)
-					assert.Equal(t, int32(1), *deployment.Spec.Replicas)
-					assert.Equal(t, int64(3), deployment.Generation)
-					return nil
-				},
+				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 1, 3),
 			},
 			{
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":2}}`)),
 				Config:    testAccHelmReleaseConfigManifestExperimentEnabledSetReplicas(testResourceName, namespace, name, "1.2.3"),
-				Check: func(state *terraform.State) error {
-					deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
-					var deployment appsv1.Deployment
-					if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
-						t.Fatal(err)
-					}
-					assert.NotNil(t, deployment.Spec.Replicas)
-					assert.Equal(t, int32(3), *deployment.Spec.Replicas)
-					assert.Equal(t, int64(5), deployment.Generation)
-					return nil
-				},
+				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 3, 5),
 			},
 			{
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":1}}`)),
 				Config:    config,
-				Check: func(state *terraform.State) error {
-					deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
-					var deployment appsv1.Deployment
-					if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
-						t.Fatal(err)
-					}
-					assert.NotNil(t, deployment.Spec.Replicas)
-					assert.Equal(t, int32(3), *deployment.Spec.Replicas)
-					assert.Equal(t, int64(7), deployment.Generation)
-					return nil
-				},
+				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 3, 7),
 			},
 			{
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":1}}`)),
 				Config:    testAccHelmReleaseConfigManifestExperimentEnabledResetValues(testResourceName, namespace, name, "1.2.3"),
-				Check: func(state *terraform.State) error {
-					deploymentJSON := state.RootModule().Resources["helm_release.test"].Primary.Attributes[deploymentKey]
-					var deployment appsv1.Deployment
-					if err := json.Unmarshal([]byte(deploymentJSON), &deployment); err != nil {
-						t.Fatal(err)
-					}
-					assert.NotNil(t, deployment.Spec.Replicas)
-					assert.Equal(t, int32(1), *deployment.Spec.Replicas)
-					assert.Equal(t, int64(8), deployment.Generation)
-					return nil
-				},
+				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 1, 8),
 			},
 		},
 	})
