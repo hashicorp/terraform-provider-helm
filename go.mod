@@ -15,9 +15,9 @@ require (
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.23.0
 	helm.sh/helm/v3 v3.15.3
-	k8s.io/api v0.30.0
-	k8s.io/apimachinery v0.30.0
-	k8s.io/client-go v0.30.0
+	k8s.io/api v0.30.3
+	k8s.io/apimachinery v0.30.3
+	k8s.io/client-go v0.30.3
 	k8s.io/klog v1.0.0
 	sigs.k8s.io/yaml v1.4.0
 )
