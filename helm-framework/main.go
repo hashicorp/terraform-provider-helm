@@ -37,7 +37,7 @@ func main() {
 		opts.Debug = true
 	}
 
-	serveErr := providerserver.Serve(context.Background(), helm.New(version), opts)
+	serveErr := providerserver.Serve(context.Background(), helm.New(), opts)
 	if serveErr != nil {
 		log.Fatal(serveErr.Error())
 	}

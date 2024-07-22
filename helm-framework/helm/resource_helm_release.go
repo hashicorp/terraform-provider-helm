@@ -1,5 +1,5 @@
-//MaKE SURE TO CHECK WHY THERES A METADATA BEING ADDED, DUE TO IT BEING MISSING IN THE TEST CONFIG
-
+// MaKE SURE TO CHECK WHY THERES A METADATA BEING ADDED, DUE TO IT BEING MISSING IN THE TEST CONFIG
+// namespace needs to be
 package helm
 
 import (
@@ -60,6 +60,7 @@ func NewHelmReleaseResource() resource.Resource {
 	return &HelmReleaseResource{}
 }
 
+// TODO, USE CAMALCASE INSTEAD OF UNDERSCORES
 type helmReleaseModel struct {
 	ID                         types.String `tfsdk:"id"`
 	Name                       types.String `tfsdk:"name"`
@@ -147,7 +148,7 @@ type setResourceModel struct {
 
 type set_listResourceModel struct {
 	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
+	Value types.List   `tfsdk:"value"`
 }
 
 type set_sensitiveResourceModel struct {
@@ -483,6 +484,8 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				},
 			},
 		},
+		//I think it might be a block issue so look into that
+
 		Blocks: map[string]schema.Block{
 			"set": schema.SetNestedBlock{
 				Description: "Custom values to be merged with the values",
@@ -539,7 +542,7 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 					},
 				},
 			},
-
+			//Needs to be single nested attribute
 			"postrender": schema.ListNestedBlock{
 				Validators: []validator.List{
 					listvalidator.SizeAtMost(1),
@@ -580,8 +583,7 @@ func (r *HelmReleaseResource) Configure(ctx context.Context, req resource.Config
 		)
 		return
 	}
-
-	// Assign the meta data to the resource's meta field
+	tflog.Debug(ctx, fmt.Sprintf("Configured meta: %+v", meta))
 	r.meta = meta
 
 }
@@ -661,6 +663,8 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	tflog.Debug(ctx, fmt.Sprintf("Plan state on Create: %+v", state))
+
 	meta := r.meta
 	if meta == nil {
 		resp.Diagnostics.AddError("Initialization Error", "Meta instance is not initialized")
@@ -670,7 +674,7 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 	namespace := state.Namespace.ValueString()
 	actionConfig, err := meta.GetHelmConfiguration(ctx, namespace)
 	if err != nil {
-		resp.Diagnostics.AddError("Error getting helm configuration could be the freaking issue", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
+		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
 
@@ -708,6 +712,7 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 	values, valuesDiags := getValues(ctx, &state)
 	resp.Diagnostics.Append(valuesDiags...)
 	if resp.Diagnostics.HasError() {
+		panic("Error might lie here")
 		return
 	}
 
@@ -736,6 +741,7 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 	client.CreateNamespace = state.Create_Namespace.ValueBool()
 
 	if !state.Postrender.IsNull() {
+		tflog.Debug(ctx, "Postrender is not null")
 		// Extract the list of postrender configurations
 		var postrenderList []postrenderModel
 		postrenderDiags := state.Postrender.ElementsAs(ctx, &postrenderList, false)
@@ -743,9 +749,10 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 		if resp.Diagnostics.HasError() {
 			return
 		}
-
+		tflog.Debug(ctx, fmt.Sprintf("Postrender list extracted: %+v", postrenderList))
 		// Since postrender is defined as a list but can only have one element, we fetch the first item
 		if len(postrenderList) > 0 {
+
 			prModel := postrenderList[0]
 
 			binaryPath := prModel.Binary_Path.ValueString()
@@ -755,7 +762,7 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 			for _, arg := range argsList {
 				args = append(args, arg.(basetypes.StringValue).ValueString())
 			}
-
+			tflog.Debug(ctx, fmt.Sprintf("Creating post-renderer with binary path: %s and args: %v", binaryPath, args))
 			pr, err := postrender.NewExec(binaryPath, args...)
 			if err != nil {
 				resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
@@ -771,7 +778,7 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 
 	rel, err := client.Run(c, values)
 	if err != nil && rel == nil {
-		resp.Diagnostics.AddError("Error installing chart the issue", fmt.Sprintf("Installation failed: %s", err))
+		resp.Diagnostics.AddError("installation failed", err.Error())
 		return
 	}
 
@@ -781,9 +788,9 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 		if resp.Diagnostics.HasError() {
 			return
 		}
-
+		//Have it match the desired error message here for the
 		if !exists {
-			resp.Diagnostics.AddError("Error installing chart", fmt.Sprintf("Installation failed: %s", err))
+			resp.Diagnostics.AddError("installation failed", err.Error())
 			return
 		}
 
@@ -810,6 +817,9 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	tflog.Debug(ctx, fmt.Sprintf("Actual state after Create: %+v", state))
+
 }
 
 // c
@@ -822,6 +832,7 @@ func (r *HelmReleaseResource) Read(ctx context.Context, req resource.ReadRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	tflog.Debug(ctx, fmt.Sprintf("Current state before changes: %+v", state))
 
 	meta := r.meta
 	if meta == nil {
@@ -849,7 +860,7 @@ func (r *HelmReleaseResource) Read(ctx context.Context, req resource.ReadRequest
 		//might be
 		resp.Diagnostics.AddError(
 			"Error getting helm configuration",
-			fmt.Sprintf("Unable to get Helm configuration for namespace(error lies here) %s: %s", state.Namespace.ValueString(), err),
+			fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", state.Namespace.ValueString(), err),
 		)
 		return
 	}
@@ -884,7 +895,6 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		panic("Error lies")
 		return
 	}
 
@@ -893,9 +903,10 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	diags = req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		panic("Error lies")
 		return
 	}
+	tflog.Debug(ctx, fmt.Sprintf("Plan state on Update: %+v", plan))
+	tflog.Debug(ctx, fmt.Sprintf("Actual state before Update: %+v", state))
 
 	logID := fmt.Sprintf("[resourceReleaseUpdate: %s]", state.Name.ValueString())
 	tflog.Debug(ctx, fmt.Sprintf("%s Started", logID))
@@ -914,7 +925,6 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	ociDiags := OCIRegistryLogin(ctx, actionConfig, actionConfig.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.Repository_Username.ValueString(), state.Repository_Password.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
-		panic("Error lies")
 		return
 	}
 	// Creating update object with configuration
@@ -923,14 +933,12 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	cpo, chartName, cpoDiags := chartPathOptions(&plan, meta, &client.ChartPathOptions)
 	resp.Diagnostics.Append(cpoDiags...)
 	if resp.Diagnostics.HasError() {
-		panic("Error lies")
 		return
 	}
 
 	c, path, chartDiags := getChart(ctx, &plan, meta, chartName, cpo)
 	resp.Diagnostics.Append(chartDiags...)
 	if resp.Diagnostics.HasError() {
-		panic("Error lies")
 		return
 	}
 
@@ -938,7 +946,6 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	updated, depDiags := checkChartDependencies(ctx, &plan, c, path, meta)
 	resp.Diagnostics.Append(depDiags...)
 	if resp.Diagnostics.HasError() {
-		panic("Error lies")
 		return
 	} else if updated {
 		c, err = loader.Load(path)
@@ -963,7 +970,6 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	client.ResetValues = plan.Reset_Values.ValueBool()
 	client.ReuseValues = plan.Reuse_Values.ValueBool()
 	client.Recreate = plan.Recreate_Pods.ValueBool()
-	//Having to do type conversion, due to it expecting int instead of int64
 	client.MaxHistory = int(plan.Max_History.ValueInt64())
 	client.CleanupOnFail = plan.Cleanup_On_Fail.ValueBool()
 	client.Description = plan.Description.ValueString()
@@ -976,6 +982,7 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 		if resp.Diagnostics.HasError() {
 			return
 		}
+		tflog.Debug(ctx, fmt.Sprintf("Initial postrender values update method: %+v", postrenderList))
 
 		// Since postrender is defined as a list but can only have one element, we fetch the first item
 		if len(postrenderList) > 0 {
@@ -988,7 +995,7 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 			for _, arg := range argsList {
 				args = append(args, arg.(basetypes.StringValue).ValueString())
 			}
-
+			tflog.Debug(ctx, fmt.Sprintf("Binary path update method: %s, Args: %v", binaryPath, args))
 			pr, err := postrender.NewExec(binaryPath, args...)
 			if err != nil {
 				resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
@@ -1001,7 +1008,6 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	values, valuesDiags := getValues(ctx, &plan)
 	resp.Diagnostics.Append(valuesDiags...)
 	if resp.Diagnostics.HasError() {
-		panic("Error lies")
 		return
 	}
 
@@ -1012,17 +1018,15 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	diags = setReleaseAttributes(ctx, &state, release, meta)
+	diags = setReleaseAttributes(ctx, &plan, release, meta)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		panic("Error lies")
 		return
 	}
 
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		panic("Error lies")
 		return
 	}
 
@@ -1216,6 +1220,7 @@ func getChart(ctx context.Context, d *helmReleaseModel, m *Meta, name string, cp
 
 	m.Lock()
 	defer m.Unlock()
+	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", m.Settings))
 
 	path, err := cpo.LocateChart(name, m.Settings)
 	if err != nil {
@@ -1247,33 +1252,30 @@ func convertSetSensitiveToSetResourceModel(ctx context.Context, sensitive set_se
 func getValues(ctx context.Context, d *helmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
 	base := map[string]interface{}{}
 	var diags diag.Diagnostics
-	tflog.Debug(ctx, "Starting to process values attribute")
-
-	// Log initial state of the helmReleaseModel
-	tflog.Debug(ctx, fmt.Sprintf("Initial helmReleaseModel: %+v", *d))
 
 	// Processing "values" attribute
-	for i, raw := range d.Values.Elements() {
-		tflog.Debug(ctx, fmt.Sprintf("Processing Values element at index %d: %v", i, raw))
+	for _, raw := range d.Values.Elements() {
 		if raw.IsNull() {
-			tflog.Debug(ctx, fmt.Sprintf("Skipping null Values element at index %d", i))
 			continue
 		}
 
-		values := raw.(types.String).ValueString()
+		value, ok := raw.(types.String)
+		if !ok {
+			diags.AddError("Type Error", fmt.Sprintf("Expected types.String, got %T", raw))
+			return nil, diags
+		}
+
+		values := value.ValueString()
 		if values == "" {
-			tflog.Debug(ctx, fmt.Sprintf("Skipping empty Values string at index %d", i))
 			continue
 		}
 
-		tflog.Debug(ctx, fmt.Sprintf("Unmarshaling Values string at index %d: %s", i, values))
 		currentMap := map[string]interface{}{}
 		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
 			diags.AddError("Error unmarshaling values", fmt.Sprintf("---> %v %s", err, values))
 			return nil, diags
 		}
 
-		tflog.Debug(ctx, fmt.Sprintf("Merged map after processing Values element at index %d: %v", i, currentMap))
 		base = mergeMaps(base, currentMap)
 	}
 
@@ -1284,7 +1286,6 @@ func getValues(ctx context.Context, d *helmReleaseModel) (map[string]interface{}
 		setDiags := d.Set.ElementsAs(ctx, &setList, false)
 		diags.Append(setDiags...)
 		if diags.HasError() {
-			tflog.Debug(ctx, "Error occurred while processing Set attribute")
 			return nil, diags
 		}
 
@@ -1300,7 +1301,7 @@ func getValues(ctx context.Context, d *helmReleaseModel) (map[string]interface{}
 	}
 
 	// Processing "set_list" attribute
-	if !d.Set_list.IsNull() {
+	if !d.Set_list.IsUnknown() {
 		tflog.Debug(ctx, "Processing Set_list attribute")
 		var setListList []set_listResourceModel
 		setListDiags := d.Set_list.ElementsAs(ctx, &setListList, false)
@@ -1434,16 +1435,27 @@ func getListValue(ctx context.Context, base map[string]interface{}, set set_list
 	var diags diag.Diagnostics
 
 	name := set.Name.ValueString()
-	listValue := set.Value.ValueString()
-	listStringArray := strings.Split(listValue, ",")
 
-	nonEmptyListStringArray := make([]string, 0, len(listStringArray))
-	for _, s := range listStringArray {
-		if s != "" {
-			nonEmptyListStringArray = append(nonEmptyListStringArray, s)
+	if set.Value.IsNull() {
+		diags.AddError("Null List Value", "The list value is null.")
+		return diags
+	}
+
+	// Get the elements of the ListValue
+	elements := set.Value.Elements()
+
+	// Convert elements to a list of strings
+	listStringArray := make([]string, 0, len(elements))
+	for _, element := range elements {
+		if !element.IsNull() {
+			strValue := element.(types.String).ValueString()
+			listStringArray = append(listStringArray, strValue)
 		}
 	}
-	listString := strings.Join(nonEmptyListStringArray, ",")
+
+	// Join the list into a single string
+	listString := strings.Join(listStringArray, ",")
+
 	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
 		diags.AddError("Error parsing list value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, listString, err))
 		return diags
@@ -1491,8 +1503,6 @@ func setReleaseAttributes(ctx context.Context, state *helmReleaseModel, r *relea
 		sensitiveValues := extractSensitiveValues(state)
 		manifest := redactSensitiveValues(string(jsonManifest), sensitiveValues)
 		state.Manifest = types.StringValue(manifest)
-	} else {
-		state.Manifest = types.StringValue(r.Manifest)
 	}
 
 	// Create metadata as a slice of maps
@@ -1593,7 +1603,7 @@ func resourceReleaseExists(ctx context.Context, name, namespace string, meta *Me
 	c, err := meta.GetHelmConfiguration(ctx, namespace)
 	if err != nil {
 		diags.AddError(
-			"Error getting helm configuration might be",
+			"Error getting helm configuration",
 			fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err),
 		)
 		return false, diags
@@ -1670,12 +1680,12 @@ func checkChartDependencies(ctx context.Context, d *helmReleaseModel, c *chart.C
 				}
 				tflog.Debug(ctx, "Downloading chart dependencies...")
 				if err := man.Update(); err != nil {
-					diags.AddError("Error updating chart dependencies", fmt.Sprintf("Failed to update chart dependencies: %s", err))
+					diags.AddError("", fmt.Sprintf("Failed to update chart dependencies: %s", err))
 					return true, diags
 				}
 				return true, diags
 			}
-			diags.AddError("Missing chart dependencies", fmt.Sprintf("Chart has missing dependencies: %s", err))
+			diags.AddError("", "Found in Chart.yaml, but missing in charts/ directory")
 			return false, diags
 		}
 	}
@@ -1704,6 +1714,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	}
 	var plan helmReleaseModel
 	var state *helmReleaseModel
+	//check if state is null, set plan.metadata to be unkown
 	log.Printf("Plan: %+v", state)
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -1713,6 +1724,8 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	tflog.Debug(ctx, fmt.Sprintf("Plan state on ModifyPlan: %+v", plan))
+	tflog.Debug(ctx, fmt.Sprintf("Actual state on ModifyPlan: %+v", state))
 
 	logID := fmt.Sprintf("[resourceDiff: %s]", plan.Name.ValueString())
 	tflog.Debug(ctx, fmt.Sprintf("%s Start", logID))
@@ -1723,7 +1736,6 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 
 	actionConfig, err := m.GetHelmConfiguration(ctx, namespace)
 	if err != nil {
-		//panic(fmt.Sprintf("%#v", err))
 		resp.Diagnostics.AddError("Error getting Helm configuration", err.Error())
 		return
 	}
@@ -1775,22 +1787,49 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 		}
 	}
 	if hasChanges {
-		plan.Metadata = types.ListNull(types.ObjectType{AttrTypes: metadataAttrTypes()})
+		plan.Metadata = types.ListUnknown(types.ObjectType{AttrTypes: metadataAttrTypes()})
 	}
 
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
 		var oldVersion, newVersion attr.Value
 		req.Plan.GetAttribute(ctx, path.Root("version"), &newVersion)
 		req.State.GetAttribute(ctx, path.Root("version"), &oldVersion)
+
+		// Print original values
+		fmt.Printf("Original Old Version: '%s'\n", oldVersion.String())
+		fmt.Printf("Original New Version: '%s'\n", newVersion.String())
+
+		// Check if version has changed
 		if !newVersion.Equal(oldVersion) {
-			plan.Metadata = types.ListNull(types.ObjectType{AttrTypes: metadataAttrTypes()})
+			fmt.Println("Version has changed.")
+
+			// Remove surrounding quotes if they exist
+			oldVersionStr := strings.Trim(oldVersion.String(), "\"")
+			newVersionStr := strings.Trim(newVersion.String(), "\"")
+
+			// Ensure trimming 'v' prefix correctly
+			oldVersionStr = strings.TrimPrefix(oldVersionStr, "v")
+			newVersionStr = strings.TrimPrefix(newVersionStr, "v")
+
+			// Print trimmed versions
+			fmt.Printf("Old Version after trimming: '%s'\n", oldVersionStr)
+			fmt.Printf("New Version after trimming: '%s'\n", newVersionStr)
+
+			// Only recompute metadata if the version actually changes
+			if oldVersionStr != newVersionStr && newVersionStr != "" {
+				fmt.Println("Old version and new version after trimming 'v' prefix are different.")
+				// Setting Metadata to a computed value
+				plan.Metadata = types.ListUnknown(types.ObjectType{AttrTypes: metadataAttrTypes()})
+			}
+		} else {
+			fmt.Println("Version has not changed.")
 		}
 	}
 
 	client := action.NewInstall(actionConfig)
 	cpo, chartName, diags := chartPathOptions(&plan, m, &client.ChartPathOptions)
-	if err != nil {
-		resp.Diagnostics.AddError("Error getting chart path options", err.Error())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -2016,6 +2055,9 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	} else {
 		plan.Version = types.StringNull()
 	}
+	//mark it as
+	//plan.Metadata = types.ListUnknown(types.ObjectType{AttrTypes: metadataAttrTypes()})
+	resp.Plan.Set(ctx, &plan)
 }
 
 func resourceReleaseValidate(ctx context.Context, d *helmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
@@ -2148,8 +2190,17 @@ func (r *HelmReleaseResource) ImportState(ctx context.Context, req resource.Impo
 		return
 	}
 
+	tflog.Debug(ctx, fmt.Sprintf("Setting final state: %+v", state))
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		tflog.Error(ctx, "Error setting final state", map[string]interface{}{
+			"state":       state,
+			"diagnostics": diags,
+		})
+		return
+	}
+
 }
 
 func parseImportIdentifier(id string) (string, string, error) {
