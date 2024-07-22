@@ -13,11 +13,13 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -43,51 +45,51 @@ type DataTemplate struct {
 
 // DataTemplateModel holds the attributes for configuring the Helm chart templates
 type DataTemplateModel struct {
-	Name                     types.String        `tfsdk:"name"`
-	Repository               types.String        `tfsdk:"repository"`
-	RepositoryKeyFile        types.String        `tfsdk:"repository_key_file"`
-	RepositoryCertFile       types.String        `tfsdk:"repository_cert_file"`
-	RepositoryCaFile         types.String        `tfsdk:"repository_ca_file"`
-	RepositoryUsername       types.String        `tfsdk:"repository_username"`
-	RepositoryPassword       types.String        `tfsdk:"repository_password"`
-	PassCredentials          types.Bool          `tfsdk:"pass_credentials"`
-	Chart                    types.String        `tfsdk:"chart"`
-	Version                  types.String        `tfsdk:"version"`
-	Devel                    types.Bool          `tfsdk:"devel"`
-	Values                   []types.String      `tfsdk:"values"`
-	Set                      []SetValue          `tfsdk:"set"`
-	SetList                  []SetListValue      `tfsdk:"set_list"`
-	SetSensitive             []SetSensitiveValue `tfsdk:"set_sensitive"`
-	SetString                []SetStringValue    `tfsdk:"set_string"`
-	Namespace                types.String        `tfsdk:"namespace"`
-	Verify                   types.Bool          `tfsdk:"verify"`
-	Keyring                  types.String        `tfsdk:"keyring"`
-	Timeout                  types.Int64         `tfsdk:"timeout"`
-	DisableWebhooks          types.Bool          `tfsdk:"disable_webhooks"`
-	ReuseValues              types.Bool          `tfsdk:"reuse_values"`
-	ResetValues              types.Bool          `tfsdk:"reset_values"`
-	Atomic                   types.Bool          `tfsdk:"atomic"`
-	SkipCrds                 types.Bool          `tfsdk:"skip_crds"`
-	SkipTests                types.Bool          `tfsdk:"skip_tests"`
-	RenderSubchartNotes      types.Bool          `tfsdk:"render_subchart_notes"`
-	DisableOpenAPIValidation types.Bool          `tfsdk:"disable_openapi_validation"`
-	Wait                     types.Bool          `tfsdk:"wait"`
-	DependencyUpdate         types.Bool          `tfsdk:"dependency_update"`
-	Replace                  types.Bool          `tfsdk:"replace"`
-	Description              types.String        `tfsdk:"description"`
-	CreateNamespace          types.Bool          `tfsdk:"create_namespace"`
-	Postrender               []Postrender        `tfsdk:"postrender"`
-	//TODO
-	ApiVersions []types.String    `tfsdk:"api_versions"`
-	IncludeCrds types.Bool        `tfsdk:"include_crds"`
-	IsUpgrade   types.Bool        `tfsdk:"is_upgrade"`
-	ShowOnly    []types.String    `tfsdk:"show_only"`
-	Validate    types.Bool        `tfsdk:"validate"`
-	Manifests   map[string]string `tfsdk:"manifests"`
-	CRDs        []types.String    `tfsdk:"crds"`
-	Manifest    types.String      `tfsdk:"manifest"`
-	Notes       types.String      `tfsdk:"notes"`
-	KubeVersion types.String      `tfsdk:"kube_version"`
+	ID                       types.String `tfsdk:"id"`
+	Name                     types.String `tfsdk:"name"`
+	Repository               types.String `tfsdk:"repository"`
+	RepositoryKeyFile        types.String `tfsdk:"repository_key_file"`
+	RepositoryCertFile       types.String `tfsdk:"repository_cert_file"`
+	RepositoryCaFile         types.String `tfsdk:"repository_ca_file"`
+	RepositoryUsername       types.String `tfsdk:"repository_username"`
+	RepositoryPassword       types.String `tfsdk:"repository_password"`
+	PassCredentials          types.Bool   `tfsdk:"pass_credentials"`
+	Chart                    types.String `tfsdk:"chart"`
+	Version                  types.String `tfsdk:"version"`
+	Devel                    types.Bool   `tfsdk:"devel"`
+	Values                   types.List   `tfsdk:"values"`
+	Set                      types.Set    `tfsdk:"set"`
+	SetList                  types.List   `tfsdk:"set_list"`
+	SetSensitive             types.Set    `tfsdk:"set_sensitive"`
+	SetString                types.Set    `tfsdk:"set_string"`
+	Namespace                types.String `tfsdk:"namespace"`
+	Verify                   types.Bool   `tfsdk:"verify"`
+	Keyring                  types.String `tfsdk:"keyring"`
+	Timeout                  types.Int64  `tfsdk:"timeout"`
+	DisableWebhooks          types.Bool   `tfsdk:"disable_webhooks"`
+	ReuseValues              types.Bool   `tfsdk:"reuse_values"`
+	ResetValues              types.Bool   `tfsdk:"reset_values"`
+	Atomic                   types.Bool   `tfsdk:"atomic"`
+	SkipCrds                 types.Bool   `tfsdk:"skip_crds"`
+	SkipTests                types.Bool   `tfsdk:"skip_tests"`
+	RenderSubchartNotes      types.Bool   `tfsdk:"render_subchart_notes"`
+	DisableOpenAPIValidation types.Bool   `tfsdk:"disable_openapi_validation"`
+	Wait                     types.Bool   `tfsdk:"wait"`
+	DependencyUpdate         types.Bool   `tfsdk:"dependency_update"`
+	Replace                  types.Bool   `tfsdk:"replace"`
+	Description              types.String `tfsdk:"description"`
+	CreateNamespace          types.Bool   `tfsdk:"create_namespace"`
+	Postrender               types.List   `tfsdk:"postrender"`
+	ApiVersions              types.List   `tfsdk:"api_versions"`
+	IncludeCrds              types.Bool   `tfsdk:"include_crds"`
+	IsUpgrade                types.Bool   `tfsdk:"is_upgrade"`
+	ShowOnly                 types.List   `tfsdk:"show_only"`
+	Validate                 types.Bool   `tfsdk:"validate"`
+	Manifests                types.Map    `tfsdk:"manifests"`
+	CRDs                     types.List   `tfsdk:"crds"`
+	Manifest                 types.String `tfsdk:"manifest"`
+	Notes                    types.String `tfsdk:"notes"`
+	KubeVersion              types.String `tfsdk:"kube_version"`
 }
 
 // SetValue represents the custom value to be merged with the Helm chart values
@@ -100,8 +102,8 @@ type SetValue struct {
 // SetListValue represents a custom list value to be merged with the Helm chart values.
 // This type is used to specify lists of values that should be passed to the Helm chart during deployment.
 type SetListValue struct {
-	Name  types.String   `tfsdk:"name"`
-	Value []types.String `tfsdk:"value"`
+	Name  types.String `tfsdk:"name"`
+	Value types.List   `tfsdk:"value"`
 }
 
 // SetSensitiveValue represents a custom sensitive value to be merged with the Helm chart values.
@@ -133,6 +135,7 @@ func (d *DataTemplate) Configure(ctx context.Context, req datasource.ConfigureRe
 
 // Metadata is a placeholder for defining metadata about the data source.
 func (d *DataTemplate) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_template"
 }
 
 // Schema defines the schema for the data source attributes.
@@ -140,33 +143,37 @@ func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 	resp.Schema = schema.Schema{
 		Description: "Data source to render Helm chart templates.",
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed: true,
+			},
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Release name",
 			},
 			"repository": schema.StringAttribute{
 				Optional:    true,
-				Description: "Repository where to locate the requested chart. If is a URL the chart is installed without installing the repository.",
+				Description: "Repository where to locate the requested chart. If it is a URL the chart is installed without installing the repository.",
 			},
 			"repository_key_file": schema.StringAttribute{
 				Optional:    true,
-				Description: "The repositories cert key file",
+				Description: "The repository's cert key file",
 			},
 			"repository_cert_file": schema.StringAttribute{
 				Optional:    true,
-				Description: "The repositories cert file",
+				Description: "The repository's cert file",
 			},
 			"repository_ca_file": schema.StringAttribute{
 				Optional:    true,
-				Description: "The Repositories CA file",
+				Description: "The repository's CA file",
 			},
 			"repository_username": schema.StringAttribute{
 				Optional:    true,
 				Description: "Username for HTTP basic authentication",
 			},
 			"repository_password": schema.StringAttribute{
-				Optional:  true,
-				Sensitive: true,
+				Optional:    true,
+				Sensitive:   true,
+				Description: "Password for HTTP basic authentication",
 			},
 			"pass_credentials": schema.BoolAttribute{
 				Optional:    true,
@@ -179,90 +186,20 @@ func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 			"version": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed. ",
+				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed.",
 			},
 			"devel": schema.BoolAttribute{
 				Optional:    true,
-				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored",
+				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored.",
 			},
 			"values": schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
 				Description: "List of values in raw yaml format to pass to helm.",
 			},
-			"set": schema.SetNestedAttribute{
-				Description: "Custom values to be merged with the values.",
-				Optional:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Required: true,
-						},
-						"value": schema.StringAttribute{
-							Required: true,
-						},
-						"type": schema.StringAttribute{
-							Optional: true,
-							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string"),
-							},
-						},
-					},
-				},
-			},
-			"set_list": schema.ListNestedAttribute{
-				Description: "Custom sensitive values to be merged with the values ",
-				Optional:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Required: true,
-						},
-						"value": schema.ListAttribute{
-							Required:    true,
-							ElementType: types.StringType,
-						},
-					},
-				},
-			},
-			"set_sensitive": schema.SetNestedAttribute{
-				Description: "Custom sensitive values to be merged with the values.",
-				Optional:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Required: true,
-						},
-						"value": schema.StringAttribute{
-							Required:  true,
-							Sensitive: true,
-						},
-						"type": schema.StringAttribute{
-							Optional: true,
-							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string"),
-							},
-						},
-					},
-				},
-			},
-			"set_string": schema.SetNestedAttribute{
-				Description: "Custom string values to be merged with the values.",
-				Optional:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Required: true,
-						},
-						"value": schema.StringAttribute{
-							Required: true,
-						},
-					},
-				},
-			},
 			"namespace": schema.StringAttribute{
-				Description: "Namespace to install the release info.",
 				Optional:    true,
+				Description: "Namespace to install the release into.",
 			},
 			"verify": schema.BoolAttribute{
 				Optional:    true,
@@ -270,11 +207,11 @@ func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 			},
 			"keyring": schema.StringAttribute{
 				Optional:    true,
-				Description: "Location of public keys used for verification. Used only if `verify` is true",
+				Description: "Location of public keys used for verification. Used only if `verify` is true.",
 			},
 			"timeout": schema.Int64Attribute{
 				Optional:    true,
-				Description: "Time in seconds to wait for any individual kubernetes operation.",
+				Description: "Time in seconds to wait for any individual Kubernetes operation.",
 			},
 			"disable_webhooks": schema.BoolAttribute{
 				Optional:    true,
@@ -282,31 +219,31 @@ func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 			},
 			"reuse_values": schema.BoolAttribute{
 				Optional:    true,
-				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored",
+				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored.",
 			},
 			"reset_values": schema.BoolAttribute{
 				Optional:    true,
-				Description: "When upgrading, reset the values to the ones built into the chart",
+				Description: "When upgrading, reset the values to the ones built into the chart.",
 			},
 			"atomic": schema.BoolAttribute{
 				Optional:    true,
-				Description: "If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used",
+				Description: "If set, the installation process purges the chart on fail. The 'wait' flag will be set automatically if 'atomic' is used.",
 			},
 			"skip_crds": schema.BoolAttribute{
 				Optional:    true,
-				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
+				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present.",
 			},
 			"skip_tests": schema.BoolAttribute{
 				Optional:    true,
-				Description: "If set, tests will not be rendered. By default, tests are rendered",
+				Description: "If set, tests will not be rendered. By default, tests are rendered.",
 			},
 			"render_subchart_notes": schema.BoolAttribute{
 				Optional:    true,
-				Description: "If set, render subchart notes along with the parent",
+				Description: "If set, render subchart notes along with the parent.",
 			},
 			"disable_openapi_validation": schema.BoolAttribute{
 				Optional:    true,
-				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
+				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema.",
 			},
 			"wait": schema.BoolAttribute{
 				Optional:    true,
@@ -314,57 +251,41 @@ func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 			},
 			"dependency_update": schema.BoolAttribute{
 				Optional:    true,
-				Description: "Run helm dependency update before installing the chart",
+				Description: "Run helm dependency update before installing the chart.",
 			},
 			"replace": schema.BoolAttribute{
 				Optional:    true,
-				Description: "Re-use the given name, even if that name is already used. This is unsafe in production",
+				Description: "Re-use the given name, even if that name is already used. This is unsafe in production.",
 			},
 			"description": schema.StringAttribute{
 				Optional:    true,
-				Description: "Add a custom description",
+				Description: "Add a custom description.",
 			},
 			"create_namespace": schema.BoolAttribute{
 				Optional:    true,
-				Description: "Create the namespace if it does not exist",
-			},
-
-			"postrender": schema.ListNestedAttribute{
-				Description: "Postrender command configuration",
-				Optional:    true,
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
-				},
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"binary_path": schema.StringAttribute{
-							Required:    true,
-							Description: "The command binary path.",
-						},
-					},
-				},
+				Description: "Create the namespace if it does not exist.",
 			},
 			"api_versions": schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: "Kubernetes api versions used for Capabilities.APIVersions",
+				Description: "Kubernetes api versions used for Capabilities.APIVersions.",
 			},
 			"include_crds": schema.BoolAttribute{
 				Optional:    true,
-				Description: "Include CRDs in the templated output",
+				Description: "Include CRDs in the templated output.",
 			},
 			"is_upgrade": schema.BoolAttribute{
 				Optional:    true,
-				Description: "Set .Release.IsUpgrade instead of .Release.IsInstall",
+				Description: "Set .Release.IsUpgrade instead of .Release.IsInstall.",
 			},
 			"show_only": schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: "Only show manifests rendered from the given templates",
+				Description: "Only show manifests rendered from the given templates.",
 			},
 			"validate": schema.BoolAttribute{
 				Optional:    true,
-				Description: "Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install",
+				Description: "Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install.",
 			},
 			"manifests": schema.MapAttribute{
 				Optional:    true,
@@ -390,7 +311,90 @@ func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 			},
 			"kube_version": schema.StringAttribute{
 				Optional:    true,
-				Description: "Kubernetes version used for Capabilities.KubeVersion",
+				Description: "Kubernetes version used for Capabilities.KubeVersion.",
+			},
+		},
+		Blocks: map[string]schema.Block{
+			// Definitions for set, set_list, set_sensitive, set_string, and postrender as previously modified
+			"set": schema.SetNestedBlock{
+				Description: "Custom values to be merged with the values.",
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Required: true,
+						},
+						"value": schema.StringAttribute{
+							Required: true,
+						},
+						"type": schema.StringAttribute{
+							Optional: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("auto", "string"),
+							},
+						},
+					},
+				},
+			},
+			"set_list": schema.ListNestedBlock{
+				Description: "Custom sensitive values to be merged with the values.",
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Required: true,
+						},
+						"value": schema.ListAttribute{
+							Required:    true,
+							ElementType: types.StringType,
+						},
+					},
+				},
+			},
+			"set_sensitive": schema.SetNestedBlock{
+				Description: "Custom sensitive values to be merged with the values.",
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Required: true,
+						},
+						"value": schema.StringAttribute{
+							Required:  true,
+							Sensitive: true,
+						},
+						"type": schema.StringAttribute{
+							Optional: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("auto", "string"),
+							},
+						},
+					},
+				},
+			},
+			"set_string": schema.SetNestedBlock{
+				Description: "Custom string values to be merged with the values.",
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Required: true,
+						},
+						"value": schema.StringAttribute{
+							Required: true,
+						},
+					},
+				},
+			},
+			"postrender": schema.ListNestedBlock{
+				Description: "Postrender command configuration",
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(1),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"binary_path": schema.StringAttribute{
+							Required:    true,
+							Description: "The command binary path.",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -494,7 +498,7 @@ func (d *DataTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting Helm configuration",
-			fmt.Sprintf("Error getting Helm configuration: %s", err),
+			fmt.Sprintf("Error getting Helm configuration might be: %s", err),
 		)
 		return
 	}
@@ -587,9 +591,13 @@ func (d *DataTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	sort.Sort(releaseutil.BySplitManifestsOrder(manifestsKeys))
 
 	var manifestsToRender []string
-	if len(state.ShowOnly) > 0 {
-		for _, f := range state.ShowOnly {
-			fString := filepath.ToSlash(f.ValueString())
+	if !state.ShowOnly.IsNull() && state.ShowOnly.Elements() != nil {
+		for _, raw := range state.ShowOnly.Elements() {
+			if raw.IsNull() {
+				continue
+			}
+			value := raw.(basetypes.StringValue).ValueString()
+			fString := filepath.ToSlash(value)
 			missing := true
 			for manifestKey, manifestName := range splitManifests {
 				manifestPathSplit := strings.Split(manifestName, "/")
@@ -626,9 +634,29 @@ func (d *DataTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	for _, crd := range rel.Chart.CRDObjects() {
 		chartCRDs = append(chartCRDs, string(crd.File.Data))
 	}
+	// Convert chartCRDs to types.List
+	listElements := make([]attr.Value, len(chartCRDs))
+	for i, crd := range chartCRDs {
+		listElements[i] = types.StringValue(crd)
+	}
+	listValue, diags := types.ListValue(types.StringType, listElements)
+	if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
+		return
+	}
+	state.CRDs = listValue
+	// Convert computedManifests to types.Map
+	elements := make(map[string]attr.Value, len(computedManifests))
+	for k, v := range computedManifests {
+		elements[k] = types.StringValue(v)
+	}
+	mapValue, diags := types.MapValue(types.StringType, elements)
+	if diags.HasError() {
+		resp.Diagnostics.Append(diags...)
+		return
+	}
+	state.Manifests = mapValue
 
-	state.CRDs = convertStringsToTypesStrings(chartCRDs)
-	state.Manifests = computedManifests
 	state.Manifest = types.StringValue(computedManifest.String())
 	state.Notes = types.StringValue(rel.Info.Notes)
 
@@ -640,53 +668,115 @@ func getTemplateValues(ctx context.Context, model *DataTemplateModel) (map[strin
 	var diags diag.Diagnostics
 
 	// Process "values" field
-	for _, raw := range model.Values {
-		if raw.IsNull() {
-			continue
-		}
-
-		values := raw.ValueString()
-		if values == "" {
-			continue
-		}
-
-		currentMap := map[string]interface{}{}
-		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
-			diags.AddError("Failed to unmarshal values", fmt.Sprintf("---> %v %s", err, values))
+	if !model.Values.IsNull() && !model.Values.IsUnknown() {
+		var values []types.String
+		diags = model.Values.ElementsAs(ctx, &values, false)
+		if diags.HasError() {
 			return nil, diags
 		}
 
-		base = mergeMaps(base, currentMap)
+		for _, raw := range values {
+			if raw.IsNull() {
+				continue
+			}
+
+			valueStr := raw.ValueString()
+			if valueStr == "" {
+				continue
+			}
+
+			currentMap := map[string]interface{}{}
+			if err := yaml.Unmarshal([]byte(valueStr), &currentMap); err != nil {
+				diags.AddError("Failed to unmarshal values", fmt.Sprintf("---> %v %s", err, valueStr))
+				return nil, diags
+			}
+
+			base = mergeMaps(base, currentMap)
+		}
 	}
 
 	// Process "set" field
-	for _, raw := range model.Set {
-		set := raw
-		if err := getDataValue(base, set); err.HasError() {
-			diags.Append(err...)
+	if !model.Set.IsNull() && !model.Set.IsUnknown() {
+		var sets []SetValue
+		diags = model.Set.ElementsAs(ctx, &sets, false)
+		if diags.HasError() {
 			return nil, diags
+		}
+
+		for _, raw := range sets {
+			set := raw
+			if err := getDataValue(base, set); err.HasError() {
+				diags.Append(err...)
+				return nil, diags
+			}
 		}
 	}
 
 	// Process "set_list" field
-	for _, raw := range model.SetList {
-		setList := raw
-		if err := getDataListValue(ctx, base, setList); err.HasError() {
-			diags.Append(err...)
+	if !model.SetList.IsNull() && !model.SetList.IsUnknown() {
+		var setListList []SetListValue
+		diags = model.SetList.ElementsAs(ctx, &setListList, false)
+		if diags.HasError() {
 			return nil, diags
+		}
+		for _, setList := range setListList {
+			setListDiags := getDataSourceListValue(ctx, base, setList)
+			diags.Append(setListDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
 		}
 	}
 
 	// Process "set_sensitive" field
-	for _, raw := range model.SetSensitive {
-		set := raw
-		if err := getDataSensitiveValue(base, set); err.HasError() {
-			diags.Append(err...)
+	if !model.SetSensitive.IsNull() && !model.SetList.IsUnknown() {
+		var setSensitiveList []SetSensitiveValue
+		diags = model.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
+		if diags.HasError() {
 			return nil, diags
+		}
+		for _, setSensitive := range setSensitiveList {
+			setSensitiveDiags := getDataSensitiveValue(base, setSensitive)
+			diags.Append(setSensitiveDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
 		}
 	}
 
 	return base, logDataValues(ctx, base, model)
+}
+func getDataSourceListValue(ctx context.Context, base map[string]interface{}, set SetListValue) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	name := set.Name.ValueString()
+	listValue := set.Value
+
+	// Check if the list is null or unknown
+	if listValue.IsNull() || listValue.IsUnknown() {
+		return diags
+	}
+
+	// Get the elements from the list
+	elements := listValue.Elements()
+	listStringArray := make([]string, len(elements))
+	for i, v := range elements {
+		listStringArray[i] = v.(basetypes.StringValue).ValueString()
+	}
+
+	nonEmptyListStringArray := make([]string, 0, len(listStringArray))
+	for _, s := range listStringArray {
+		if s != "" {
+			nonEmptyListStringArray = append(nonEmptyListStringArray, s)
+		}
+	}
+	listString := strings.Join(nonEmptyListStringArray, ",")
+	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
+		diags.AddError("Error parsing list value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, listString, err))
+		return diags
+	}
+
+	return diags
 }
 
 func getDataSensitiveValue(base map[string]interface{}, set SetSensitiveValue) diag.Diagnostics {
@@ -756,7 +846,7 @@ func logDataValues(ctx context.Context, values map[string]interface{}, model *Da
 		return diags
 	}
 
-	cloakDataSetValues(c, model)
+	diags.Append(cloakDataSetValues(ctx, c, model)...)
 
 	y, err := yaml.Marshal(c)
 	if err != nil {
@@ -768,23 +858,43 @@ func logDataValues(ctx context.Context, values map[string]interface{}, model *Da
 	return diags
 }
 
-func cloakDataSetValues(config map[string]interface{}, model *DataTemplateModel) {
-	for _, set := range model.SetSensitive {
-		cloakSetValue(config, set.Name.ValueString())
+func cloakDataSetValues(ctx context.Context, config map[string]interface{}, model *DataTemplateModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if !model.SetSensitive.IsNull() && !model.SetSensitive.IsUnknown() {
+		var setSensitiveList []SetSensitiveValue
+		diags = model.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
+		if diags.HasError() {
+			return diags
+		}
+
+		for _, set := range setSensitiveList {
+			cloakSetValue(config, set.Name.ValueString())
+		}
 	}
+
+	return diags
 }
 
-func getDataListValue(ctx context.Context, base map[string]interface{}, set SetListValue) diag.Diagnostics {
+func getDataListValue(base map[string]interface{}, set SetListValue) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	name := set.Name.ValueString()
 	listValue := set.Value
-	listStringArray := make([]string, len(listValue))
-	for i, v := range listValue {
-		listStringArray[i] = v.ValueString()
+
+	// Check if the list is null or unknown
+	if listValue.IsNull() || listValue.IsUnknown() {
+		return diags
 	}
 
-	nonEmptyListStringArray := make([]string, 0, len(listStringArray))
+	// Get the elements from the list
+	elements := listValue.Elements()
+	listStringArray := make([]string, len(elements))
+	for i, v := range elements {
+		listStringArray[i] = v.(basetypes.StringValue).ValueString()
+	}
+
+	nonEmptyListStringArray := make([]string, 0, len(elements))
 	for _, s := range listStringArray {
 		if s != "" {
 			nonEmptyListStringArray = append(nonEmptyListStringArray, s)

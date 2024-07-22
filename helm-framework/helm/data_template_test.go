@@ -18,7 +18,7 @@ func TestAccDataTemplate_basic(t *testing.T) {
 	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+		//PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{{
 			Config: testAccDataHelmTemplateConfigBasic(testResourceName, namespace, name, "1.2.3"),
