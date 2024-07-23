@@ -18,7 +18,7 @@ expect:
    it is fully completed by creating a [draft pull request](https://help.github.com/en/articles/about-pull-requests#draft-pull-requests).
    Please include specific questions or items you'd like feedback on. 
 
-1. Our documentation utilizes the `tfplugindocs` tool. When making updates to documentation, please only edit the `.md.tmpl` files and execute the `tfplugindocs generate` command to ensure the changes are reflected in the `.md` files. 
+1. Our documentation utilizes the [`tfplugindocs`](https://github.com/hashicorp/terraform-plugin-docs) tool. When making updates to documentation, please only edit the `.md.tmpl` files and execute the `tfplugindocs generate` command to ensure the changes are reflected in the `.md` files. 
 
 1. Once you believe your pull request is ready to be reviewed, ensure the
    pull request is not a draft pull request by [marking it ready for review](https://help.github.com/en/articles/changing-the-stage-of-a-pull-request) and a
