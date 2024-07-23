@@ -504,10 +504,8 @@ func resourceReleaseUpgrader() *schema.Resource {
 	}
 }
 
-func buildManifestResources(r *release.Release, client kube.Interface) (kube.ResourceList, error) {
-	return client.Build(bytes.NewBufferString(r.Manifest), false)
-}
-
+// mapRuntimeObjects maps a list of kubernetes objects by key to their JSON
+// representation, with sensitive values redacted
 func mapRuntimeObjects(objects []runtime.Object, d resourceGetter) (map[string]string, error) {
 	mappedObjects := make(map[string]string)
 	for _, obj := range objects {
@@ -542,7 +540,7 @@ func mapRuntimeObjects(objects []runtime.Object, d resourceGetter) (map[string]s
 }
 
 func mapResources(actionConfig *action.Configuration, r *release.Release, d resourceGetter, f func(*resource.Info) (runtime.Object, error)) (map[string]string, error) {
-	resources, err := buildManifestResources(r, actionConfig.KubeClient)
+	resources, err := actionConfig.KubeClient.Build(bytes.NewBufferString(r.Manifest), false)
 	if err != nil {
 		return nil, err
 	}
@@ -564,7 +562,8 @@ func mapResources(actionConfig *action.Configuration, r *release.Release, d reso
 	return mapRuntimeObjects(objects, d)
 }
 
-func liveResources(r *release.Release, m *Meta, d resourceGetter) (map[string]string, error) {
+// getLiveResources gets the live kubernetes resources of a release
+func getLiveResources(r *release.Release, m *Meta, d resourceGetter) (map[string]string, error) {
 	actionConfig, err := m.GetHelmConfiguration(r.Namespace)
 	if err != nil {
 		return nil, err
@@ -585,7 +584,10 @@ func liveResources(r *release.Release, m *Meta, d resourceGetter) (map[string]st
 	})
 }
 
-func dryRunResources(r *release.Release, m *Meta, d resourceGetter) (map[string]string, error) {
+// getDryRunResources gets the kubernetes resources as they would look like if
+// the helm manifest is applied to the cluster. this is useful for detecting the
+// differences between the live cluster state and the desired state.
+func getDryRunResources(r *release.Release, m *Meta, d resourceGetter) (map[string]string, error) {
 	actionConfig, err := m.GetHelmConfiguration(r.Namespace)
 	if err != nil {
 		return nil, err
@@ -1184,7 +1186,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		manifest := redactSensitiveValues(string(jsonManifest), d)
 		d.SetNew("manifest", manifest)
 		debug("%s set manifest: %s", logID, jsonManifest)
-		resources, err := dryRunResources(dry, m, d)
+		resources, err := getDryRunResources(dry, m, d)
 		if err != nil {
 			return err
 		}
@@ -1235,7 +1237,7 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 		}
 		manifest := redactSensitiveValues(string(jsonManifest), d)
 		d.Set("manifest", manifest)
-		resources, err := liveResources(r, m, d)
+		resources, err := getLiveResources(r, m, d)
 		if err != nil {
 			return err
 		}

@@ -1826,21 +1826,31 @@ func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 				),
 			},
 			{
+				// patch the deployment to have 2 replicas (generation 2) then apply the
+				// config to restore the replicas to 1 (generation 3)
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":2}}`)),
 				Config:    config,
 				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 1, 3),
 			},
 			{
+				// patch the deployment to have 2 replicas (generation 4) then apply a
+				// new config to set the replicas to 3 (generation 5)
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":2}}`)),
 				Config:    testAccHelmReleaseConfigManifestExperimentEnabledSetReplicas(testResourceName, namespace, name, "1.2.3"),
 				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 3, 5),
 			},
 			{
+				// patch the deployment to have 1 replicas (generation 6) then apply the
+				// original config (without `replicaCount` set) which sets the replicas
+				// to the previous value of 3 (generation 7)
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":1}}`)),
 				Config:    config,
 				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 3, 7),
 			},
 			{
+				// patch the deployment to have 1 replicas (generation 8) then apply the
+				// original config but now with `reset_values = true` so the `replicaCount`
+				// is reset to the chart's default value of 1 (generation 8, no changes)
 				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":1}}`)),
 				Config:    testAccHelmReleaseConfigManifestExperimentEnabledResetValues(testResourceName, namespace, name, "1.2.3"),
 				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 1, 8),
