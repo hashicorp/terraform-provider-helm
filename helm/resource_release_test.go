@@ -34,6 +34,7 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 
 	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -1599,7 +1600,7 @@ func getReleaseJSONManifest(namespace, name string) (string, error) {
 	return jsonManifest, nil
 }
 
-func getReleaseJSONResources(namespace, name string) (map[string]string, error) {
+func getKubeClient(namespace string) (*kube.Client, error) {
 	m := testAccProvider.Meta()
 	if m == nil {
 		return nil, fmt.Errorf("provider not properly initialized")
@@ -1610,7 +1611,15 @@ func getReleaseJSONResources(namespace, name string) (map[string]string, error) 
 	}
 	kc, ok := actionConfig.KubeClient.(*kube.Client)
 	if !ok {
-		return nil, errors.Errorf("client is not a *kube.Client")
+		return nil, fmt.Errorf("client is not a *kube.Client")
+	}
+	return kc, nil
+}
+
+func getReleaseJSONResources(namespace, name string) (map[string]string, error) {
+	kc, err := getKubeClient(namespace)
+	if err != nil {
+		return nil, err
 	}
 
 	cmd := exec.Command("helm", "--kubeconfig", os.Getenv("KUBE_CONFIG_PATH"), "get", "manifest", "--namespace", namespace, name)
@@ -1619,7 +1628,7 @@ func getReleaseJSONResources(namespace, name string) (map[string]string, error) 
 		return nil, err
 	}
 
-	resources, err := actionConfig.KubeClient.Build(bytes.NewBuffer(manifest), false)
+	resources, err := kc.Build(bytes.NewBuffer(manifest), false)
 	if err != nil {
 		return nil, err
 	}
@@ -1637,6 +1646,9 @@ func getReleaseJSONResources(namespace, name string) (map[string]string, error) 
 			Flatten().
 			Do().
 			Object()
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -1721,17 +1733,9 @@ func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 
 func patchDeployment(t *testing.T, namespace, name string, patchBytes []byte) func() {
 	return func() {
-		m := testAccProvider.Meta()
-		if m == nil {
-			t.Fatal(fmt.Errorf("provider not properly initialized"))
-		}
-		actionConfig, err := m.(*Meta).GetHelmConfiguration(namespace)
+		kc, err := getKubeClient(namespace)
 		if err != nil {
 			t.Fatal(err)
-		}
-		kc, ok := actionConfig.KubeClient.(*kube.Client)
-		if !ok {
-			t.Fatal(fmt.Errorf("client is not a *kube.Client"))
 		}
 		client, err := kc.Factory.KubernetesClientSet()
 		if err != nil {
@@ -1795,7 +1799,8 @@ func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 
 	config := testAccHelmReleaseConfigManifestExperimentEnabled(testResourceName, namespace, name, "1.2.3")
 
-	deploymentName := fmt.Sprintf("%s-test-chart", name)
+	fullName := fmt.Sprintf("%s-test-chart", name)
+	foregroundPropagation := metav1.DeletePropagationForeground
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -1822,38 +1827,69 @@ func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 						}
 						return checkResourceAttrMap("helm_release.test", "resources", r)(state)
 					},
-					checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 1, 1),
+					checkDeploymentReplicasAndGeneration("helm_release.test", namespace, fullName, 1, 1),
 				),
 			},
 			{
 				// patch the deployment to have 2 replicas (generation 2) then apply the
 				// config to restore the replicas to 1 (generation 3)
-				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":2}}`)),
+				PreConfig: patchDeployment(t, namespace, fullName, []byte(`{"spec":{"replicas":2}}`)),
 				Config:    config,
-				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 1, 3),
+				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, fullName, 1, 3),
 			},
 			{
 				// patch the deployment to have 2 replicas (generation 4) then apply a
 				// new config to set the replicas to 3 (generation 5)
-				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":2}}`)),
+				PreConfig: patchDeployment(t, namespace, fullName, []byte(`{"spec":{"replicas":2}}`)),
 				Config:    testAccHelmReleaseConfigManifestExperimentEnabledSetReplicas(testResourceName, namespace, name, "1.2.3"),
-				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 3, 5),
+				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, fullName, 3, 5),
 			},
 			{
 				// patch the deployment to have 1 replicas (generation 6) then apply the
 				// original config (without `replicaCount` set) which sets the replicas
 				// to the previous value of 3 (generation 7)
-				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":1}}`)),
+				PreConfig: patchDeployment(t, namespace, fullName, []byte(`{"spec":{"replicas":1}}`)),
 				Config:    config,
-				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 3, 7),
+				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, fullName, 3, 7),
 			},
 			{
 				// patch the deployment to have 1 replicas (generation 8) then apply the
 				// original config but now with `reset_values = true` so the `replicaCount`
 				// is reset to the chart's default value of 1 (generation 8, no changes)
-				PreConfig: patchDeployment(t, namespace, deploymentName, []byte(`{"spec":{"replicas":1}}`)),
+				PreConfig: patchDeployment(t, namespace, fullName, []byte(`{"spec":{"replicas":1}}`)),
 				Config:    testAccHelmReleaseConfigManifestExperimentEnabledResetValues(testResourceName, namespace, name, "1.2.3"),
-				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, deploymentName, 1, 8),
+				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, fullName, 1, 8),
+			},
+			{
+				// delete the service then apply the previous config to recreate it
+				PreConfig: func() {
+					kc, err := getKubeClient(namespace)
+					if err != nil {
+						t.Fatal(err)
+					}
+					client, err := kc.Factory.KubernetesClientSet()
+					if err != nil {
+						t.Fatal(err)
+					}
+					err = client.CoreV1().Services(namespace).Delete(context.Background(), fullName, metav1.DeleteOptions{
+						PropagationPolicy: &foregroundPropagation,
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+				},
+				Config: testAccHelmReleaseConfigManifestExperimentEnabledResetValues(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkResourceAttrExists("helm_release.test", fmt.Sprintf("resources.service/v1/%s/%s", namespace, fullName)),
+					func(state *terraform.State) error {
+						t.Logf("getting JSON server resources for release %q", name)
+						r, err := getReleaseJSONResources(namespace, name)
+						if err != nil {
+							t.Fatal(err)
+						}
+						return checkResourceAttrMap("helm_release.test", "resources", r)(state)
+					},
+				),
 			},
 		},
 	})

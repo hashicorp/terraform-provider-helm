@@ -30,8 +30,11 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/kubectl/pkg/cmd/diff"
@@ -513,6 +516,8 @@ func mapRuntimeObjects(objects []runtime.Object, d resourceGetter) (map[string]s
 		if err != nil {
 			return nil, err
 		}
+		accessor.SetUID(types.UID(""))
+		accessor.SetCreationTimestamp(metav1.Time{})
 		accessor.SetManagedFields(nil)
 		if obj.GetObjectKind().GroupVersionKind().Kind == "Secret" {
 			secret := &corev1.Secret{}
@@ -550,6 +555,9 @@ func mapResources(actionConfig *action.Configuration, r *release.Release, d reso
 			return err
 		}
 		obj, err := f(i)
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
