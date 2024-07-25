@@ -610,7 +610,6 @@ func getDryRunResources(r *release.Release, m *Meta, d resourceGetter) (map[stri
 			LocalObj:        i.Object,
 			Info:            i,
 			Encoder:         scheme.DefaultJSONEncoder(),
-			OpenAPI:         nil,
 			Force:           false,
 			ServerSideApply: true,
 			FieldManager:    "terraform-provider-helm",
