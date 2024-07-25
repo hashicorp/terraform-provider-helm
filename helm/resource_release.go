@@ -110,7 +110,7 @@ func resourceRelease() *schema.Resource {
 			"pass_credentials": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "Pass credentials to all domains",
+				Description: "Pass credentials to all domains. Defaults to `false`.",
 				Default:     defaultAttributes["pass_credentials"],
 			},
 			"chart": {
@@ -213,20 +213,20 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Description: "Namespace to install the release into.",
+				Description: "Namespace to install the release into. Defaults to `default`.",
 				DefaultFunc: schema.EnvDefaultFunc("HELM_NAMESPACE", "default"),
 			},
 			"verify": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["verify"],
-				Description: "Verify the package before installing it.",
+				Description: "Verify the package before installing it.Defaults to `false`.",
 			},
 			"keyring": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     os.ExpandEnv("$HOME/.gnupg/pubring.gpg"),
-				Description: "Location of public keys used for verification. Used only if `verify` is true",
+				Description: "Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`.",
 				// Suppress changes of this attribute if `verify` is false
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return !d.Get("verify").(bool)
@@ -236,13 +236,13 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Default:     defaultAttributes["timeout"],
-				Description: "Time in seconds to wait for any individual kubernetes operation.",
+				Description: "Time in seconds to wait for any individual kubernetes operation. Defaults to 300 seconds.",
 			},
 			"disable_webhooks": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["disable_webhooks"],
-				Description: "Prevent hooks from running.",
+				Description: "Prevent hooks from running.Defaults to `false`.",
 			},
 			"disable_crd_hooks": {
 				Type:        schema.TypeBool,
@@ -253,74 +253,74 @@ func resourceRelease() *schema.Resource {
 			"reuse_values": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored",
+				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.",
 				Default:     defaultAttributes["reuse_values"],
 			},
 			"reset_values": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "When upgrading, reset the values to the ones built into the chart",
+				Description: "When upgrading, reset the values to the ones built into the chart. Defaults to `false`.",
 				Default:     defaultAttributes["reset_values"],
 			},
 			"force_update": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["force_update"],
-				Description: "Force resource update through delete/recreate if needed.",
+				Description: "Force resource update through delete/recreate if needed. Defaults to `false`.",
 			},
 			"recreate_pods": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["recreate_pods"],
-				Description: "Perform pods restart during upgrade/rollback",
+				Description: "Perform pods restart during upgrade/rollback. Defaults to `false`.",
 			},
 			"cleanup_on_fail": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["cleanup_on_fail"],
-				Description: "Allow deletion of new resources created in this upgrade when upgrade fails",
+				Description: "Allow deletion of new resources created in this upgrade when upgrade fails. Defaults to `false`.",
 			},
 			"max_history": {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Default:     defaultAttributes["max_history"],
-				Description: "Limit the maximum number of revisions saved per release. Use 0 for no limit",
+				Description: "Limit the maximum number of revisions saved per release. Use 0 for no limit. Defaults to 0 (no limit).",
 			},
 			"atomic": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["atomic"],
-				Description: "If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used",
+				Description: "If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to `false`.",
 			},
 			"skip_crds": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["skip_crds"],
-				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
+				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.",
 			},
 			"render_subchart_notes": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["render_subchart_notes"],
-				Description: "If set, render subchart notes along with the parent",
+				Description: "If set, render subchart notes along with the parent. Defaults to `true`.",
 			},
 			"disable_openapi_validation": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["disable_openapi_validation"],
-				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
+				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false`.",
 			},
 			"wait": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["wait"],
-				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
+				Description: "Will wait until all resources are in a ready state before marking the release as successful. Defaults to `true`.",
 			},
 			"wait_for_jobs": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["wait_for_jobs"],
-				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
+				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful. Defaults to `false``.",
 			},
 			"status": {
 				Type:        schema.TypeString,
@@ -331,13 +331,13 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["dependency_update"],
-				Description: "Run helm dependency update before installing the chart",
+				Description: "Run helm dependency update before installing the chart. Defaults to `false`.",
 			},
 			"replace": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["replace"],
-				Description: "Re-use the given name, even if that name is already used. This is unsafe in production",
+				Description: "Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.",
 			},
 			"description": {
 				Type:        schema.TypeString,
@@ -351,7 +351,7 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["create_namespace"],
-				Description: "Create the namespace if it does not exist",
+				Description: "Create the namespace if it does not exist. Defaults to `false`.",
 			},
 			"postrender": {
 				Type:        schema.TypeList,
@@ -378,7 +378,7 @@ func resourceRelease() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     defaultAttributes["lint"],
-				Description: "Run helm lint when planning",
+				Description: "Run helm lint when planning. Defaults to `false`.",
 			},
 			"manifest": {
 				Type:        schema.TypeString,
@@ -420,6 +420,21 @@ func resourceRelease() *schema.Resource {
 							Type:        schema.TypeString,
 							Computed:    true,
 							Description: "The version number of the application being deployed.",
+						},
+						"first_deployed": {
+							Type:        schema.TypeInt,
+							Computed:    true,
+							Description: "FirstDeployed is an int32 which represents timestamp when the release was first deployed.",
+						},
+						"last_deployed": {
+							Type:        schema.TypeInt,
+							Computed:    true,
+							Description: "LastDeployed is an int32 which represents timestamp when the release was last deployed.",
+						},
+						"notes": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "Contains the rendered templates/NOTES.txt if available",
 						},
 						"values": {
 							Type:        schema.TypeString,
@@ -1082,13 +1097,16 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 	}
 
 	return d.Set("metadata", []map[string]interface{}{{
-		"name":        r.Name,
-		"revision":    r.Version,
-		"namespace":   r.Namespace,
-		"chart":       r.Chart.Metadata.Name,
-		"version":     r.Chart.Metadata.Version,
-		"app_version": r.Chart.Metadata.AppVersion,
-		"values":      values,
+		"name":           r.Name,
+		"revision":       r.Version,
+		"namespace":      r.Namespace,
+		"chart":          r.Chart.Metadata.Name,
+		"version":        r.Chart.Metadata.Version,
+		"app_version":    r.Chart.Metadata.AppVersion,
+		"first_deployed": r.Info.FirstDeployed.Time.Unix(),
+		"last_deployed":  r.Info.LastDeployed.Time.Unix(),
+		"notes":          r.Info.Notes,
+		"values":         values,
 	}})
 }
 

@@ -32,23 +32,23 @@ variable "kube_config_dir" {
 }
 
 data "google_container_engine_versions" "supported" {
-  zone           = "${data.google_compute_zones.available.names[0]}"
-  version_prefix = "${var.kubernetes_version}"
+  zone           = data.google_compute_zones.available.names[0]
+  version_prefix = var.kubernetes_version
 }
 
 resource "google_container_cluster" "primary" {
   name               = "tf-acc-test-${random_id.cluster_name.hex}"
-  zone               = "${data.google_compute_zones.available.names[0]}"
-  initial_node_count = "${var.workers_count}"
-  min_master_version = "${data.google_container_engine_versions.supported.latest_master_version}"
+  zone               = data.google_compute_zones.available.names[0]
+  initial_node_count = var.workers_count
+  min_master_version = data.google_container_engine_versions.supported.latest_master_version
 
   additional_zones = [
     "${data.google_compute_zones.available.names[1]}",
   ]
 
   master_auth {
-    username = "${random_id.username.hex}"
-    password = "${random_id.password.hex}"
+    username = random_id.username.hex
+    password = random_id.password.hex
   }
 
   node_config {
@@ -64,7 +64,7 @@ resource "google_container_cluster" "primary" {
 }
 
 resource "local_file" "kubeconfig" {
-  content  = templatefile("${path.module}/kubeconfig-template.yaml",{
+  content = templatefile("${path.module}/kubeconfig-template.yaml", {
     cluster_name    = "${google_container_cluster.primary.name}"
     user_name       = "${google_container_cluster.primary.master_auth.0.username}"
     user_password   = "${google_container_cluster.primary.master_auth.0.password}"
@@ -77,13 +77,13 @@ resource "local_file" "kubeconfig" {
 }
 
 output "google_zone" {
-  value = "${data.google_compute_zones.available.names[0]}"
+  value = data.google_compute_zones.available.names[0]
 }
 
 output "node_version" {
-  value = "${google_container_cluster.primary.node_version}"
+  value = google_container_cluster.primary.node_version
 }
 
 output "kubeconfig_path" {
-  value = "${local_file.kubeconfig.filename}"
+  value = local_file.kubeconfig.filename
 }
