@@ -1,3 +1,10 @@
+## 2.14.0 (June 13, 2024)
+
+ENHANCEMENT:
+
+* Add support for Terraform's experimental deferred actions [[GH-1377](https://github.com/hashicorp/terraform-provider-helm/issues/1377)]
+* `helm_release`: add new attributes metadata.last_deployed, metadata.first_deployed, metadata.notes [[GH-1380](https://github.com/hashicorp/terraform-provider-helm/issues/1380)]
+
 ## 2.13.2 (May 8, 2024)
 
 DEPENDENCIES:
