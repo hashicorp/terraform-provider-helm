@@ -169,7 +169,7 @@ func resourceRelease() *schema.Resource {
 			"set_list": {
 				Type:        schema.TypeList,
 				Optional:    true,
-				Description: "Custom sensitive values to be merged with the values.",
+				Description: "Custom list values to be merged with the values.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
