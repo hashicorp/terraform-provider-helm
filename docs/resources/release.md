@@ -31,6 +31,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `disable_crd_hooks` (Boolean) Prevent CRD hooks from, running, but run other hooks.  See helm install --no-crd-hook
 - `disable_openapi_validation` (Boolean) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false`.
 - `disable_webhooks` (Boolean) Prevent hooks from running.Defaults to `false`.
+- `dry_run_option` (String) Use "server" to interact with remote apiserver while creating plan. Only used in experimental manifest mode.
 - `force_update` (Boolean) Force resource update through delete/recreate if needed. Defaults to `false`.
 - `keyring` (String) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`.
 - `lint` (Boolean) Run helm lint when planning. Defaults to `false`.
