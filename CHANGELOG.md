@@ -1,3 +1,13 @@
+## 2.14.1 (Aug 7, 2024)
+
+DEPENDENCIES:
+
+* Bump golang.org/x/crypto from v0.23.0 to v0.25.0 [[GH-1399](https://github.com/hashicorp/terraform-provider-helm/pull/1399)]
+* Bump k8s.io/api from v0.30.0 to v0.30.3 [[GH-1436](https://github.com/hashicorp/terraform-provider-helm/pull/1436)]
+* Bump k8s.io/apimachinery from v0.30.0 to v0.30.3 [[GH-1436](https://github.com/hashicorp/terraform-provider-helm/pull/1436)]
+* Bump k8s.io/client-go from v0.30.0 to v0.30.3 [[GH-1436](https://github.com/hashicorp/terraform-provider-helm/pull/1436)]
+* Bump helm.sh/helm/v3 from v3.13.2 to v3.15.3 [[GH-1422](https://github.com/hashicorp/terraform-provider-helm/pull/1422)]
+
 ## 2.14.0 (June 13, 2024)
 
 ENHANCEMENT:
