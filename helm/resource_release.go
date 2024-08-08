@@ -386,26 +386,11 @@ func resourceRelease() *schema.Resource {
 				Description: "The rendered manifest as JSON.",
 				Computed:    true,
 			},
-			"upgrade": {
-				Type:        schema.TypeList,
+			"upgrade_install": {
+				Type:        schema.TypeBool,
 				Optional:    true,
-				MaxItems:    1,
-				Description: "Configure 'upgrade' strategy for installing charts.  WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' section of the provider documentation,",
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"enable": {
-							Type:        schema.TypeBool,
-							Required:    true,
-							Description: "If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to using the 'helm upgrade' CLI tool rather than 'helm install'.",
-						},
-						"install": {
-							Type:        schema.TypeBool,
-							Optional:    true,
-							Default:     false,
-							Description: "When using the 'upgrade' strategy, install the release if it is not already present. This is equivalent to using the 'helm upgrade' CLI tool with the '--install' flag.",
-						},
-					},
-				},
+				Default:     defaultAttributes["upgrade_install"],
+				Description: "If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' note in the provider documentation. Defaults to `false`.",
 			},
 			"metadata": {
 				Type:        schema.TypeList,
@@ -626,20 +611,11 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	}
 
 	var rel *release.Release
-	var installIfNoReleaseToUpgrade bool
 	var releaseAlreadyExists bool
 	var enableUpgradeStrategy bool
 
 	releaseName := d.Get("name").(string)
-	upgradeBlock := d.Get("upgrade").([]interface{})
-	if len(upgradeBlock) > 0 {
-		upgradeStrategyMap := upgradeBlock[0].(map[string]interface{})
-		var ok bool
-		enableUpgradeStrategy, ok = upgradeStrategyMap["enable"].(bool)
-		if ok && enableUpgradeStrategy {
-			installIfNoReleaseToUpgrade, _ = upgradeStrategyMap["install"].(bool)
-		}
-	}
+	enableUpgradeStrategy = d.Get("upgrade_install").(bool)
 
 	if enableUpgradeStrategy {
 		// Check to see if there is already a release installed.
@@ -656,7 +632,7 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 	}
 
 	if enableUpgradeStrategy && releaseAlreadyExists {
-		debug("%s Upgrading chart", logID)
+		debug("%s Upgrade-installing chart installed out of band", logID)
 
 		upgradeClient := action.NewUpgrade(actionConfig)
 		upgradeClient.ChartPathOptions = *cpo
@@ -682,7 +658,7 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 
 		debug("%s Upgrading chart", logID)
 		rel, err = upgradeClient.Run(releaseName, c, values)
-	} else if (enableUpgradeStrategy && installIfNoReleaseToUpgrade && !releaseAlreadyExists) || !enableUpgradeStrategy {
+	} else {
 		instClient := action.NewInstall(actionConfig)
 		instClient.Replace = d.Get("replace").(bool)
 
@@ -716,16 +692,12 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 
 		debug("%s Installing chart", logID)
 		rel, err = instClient.Run(c, values)
-	} else if enableUpgradeStrategy && !installIfNoReleaseToUpgrade && !releaseAlreadyExists {
-		return diag.FromErr(fmt.Errorf(
-			"upgrade strategy enabled, but chart not already installed and install=false chartName=%v releaseName=%v enableUpgradeStrategy=%t installIfNoReleaseToUpgrade=%t releaseAlreadyExists=%t",
-			chartName, releaseName, enableUpgradeStrategy, installIfNoReleaseToUpgrade, releaseAlreadyExists))
 	}
 	if err != nil && rel == nil {
 		return diag.FromErr(err)
 	}
 
-	if err != nil && rel != nil {
+	if err != nil {
 		exists, existsErr := resourceReleaseExists(d, meta)
 
 		if existsErr != nil {

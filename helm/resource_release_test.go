@@ -111,7 +111,7 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 	})
 }
 
-// "upgrade" without a previously installed release with --install (effectively equivalent to TestAccResourceRelease_basic)
+// "upgrade_install" without a previously installed release (effectively equivalent to TestAccResourceRelease_basic)
 func TestAccResourceRelease_upgrade_with_install_coldstart(t *testing.T) {
 	name := randName("basic")
 	namespace := createRandomNamespace(t)
@@ -124,7 +124,7 @@ func TestAccResourceRelease_upgrade_with_install_coldstart(t *testing.T) {
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigWithUpgradeStrategy(testResourceName, namespace, name, "1.2.3", true, true),
+			Config: testAccHelmReleaseConfigWithUpgradeStrategy(testResourceName, namespace, name, "1.2.3", true),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
@@ -136,7 +136,7 @@ func TestAccResourceRelease_upgrade_with_install_coldstart(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.app_version", "1.19.5"),
 			),
 		}, {
-			Config: testAccHelmReleaseConfigWithUpgradeStrategy(testResourceName, namespace, name, "1.2.3", true, true),
+			Config: testAccHelmReleaseConfigWithUpgradeStrategy(testResourceName, namespace, name, "1.2.3", true),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
@@ -174,25 +174,6 @@ func TestAccResourceRelease_upgrade_with_install_warmstart(t *testing.T) {
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 			)}},
-	})
-}
-
-// "upgrade" without a previously installed release without --install (will fail because nothing to upgrade)
-func TestAccResourceRelease_upgrade_without_install(t *testing.T) {
-	name := randName("basic")
-	namespace := createRandomNamespace(t)
-	// Delete namespace automatically created by helm after checks
-	defer deleteNamespace(t, namespace)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheck(t) },
-		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
-		Steps: []resource.TestStep{{
-			Config:             testAccHelmReleaseConfigWithUpgradeStrategy(testResourceName, namespace, name, "1.2.3", true, false),
-			ExpectError:        regexp.MustCompile("upgrade strategy enabled, but chart not already installed and install=false"),
-			ExpectNonEmptyPlan: true,
-		}},
 	})
 }
 
@@ -1010,7 +991,7 @@ func testAccHelmReleaseConfigEmptyVersion(resource, ns, name string) string {
 	`, resource, name, ns, testRepositoryURL)
 }
 
-func testAccHelmReleaseConfigWithUpgradeStrategy(resource, ns, name, version string, enabled, install bool) string {
+func testAccHelmReleaseConfigWithUpgradeStrategy(resource, ns, name, version string, upgrade_install bool) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
  			name        = %q
@@ -1020,10 +1001,7 @@ func testAccHelmReleaseConfigWithUpgradeStrategy(resource, ns, name, version str
   			chart       = "test-chart"
 			version     = %q
 
-			upgrade {
-				enable = %t
-				install = %t
-			}
+			upgrade_install = %t
 
 			set {
 				name = "foo"
@@ -1044,7 +1022,7 @@ func testAccHelmReleaseConfigWithUpgradeStrategy(resource, ns, name, version str
 				value = false
 			}
 		}
-	`, resource, name, ns, testRepositoryURL, version, enabled, install)
+	`, resource, name, ns, testRepositoryURL, version, upgrade_install)
 }
 
 func testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(ns, name string) string {
@@ -1056,10 +1034,8 @@ func testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(ns, name string) strin
   			chart       = "./test-chart-1.2.3.tgz"
 			version     = "0.1.0"
 
-			upgrade {
-				enable = true
-				install = false
-			}
+			upgrade_install = true
+			
 			set {
 				name  = "foo"
 				value = "bar"
