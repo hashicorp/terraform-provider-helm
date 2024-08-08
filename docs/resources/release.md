@@ -54,7 +54,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `set_sensitive` (Block Set) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_sensitive))
 - `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
 - `timeout` (Number) Time in seconds to wait for any individual kubernetes operation. Defaults to 300 seconds.
-- `upgrade` (Block List, Max: 1) Configure 'upgrade' strategy for installing charts.  WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' section of the provider documentation, (see [below for nested schema](#nestedblock--upgrade))
+- `upgrade_install` (Boolean) If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' note in the provider documentation. Defaults to `false`.
 - `values` (List of String) List of values in raw yaml format to pass to helm.
 - `verify` (Boolean) Verify the package before installing it.Defaults to `false`.
 - `version` (String) Specify the exact chart version to install. If this is not specified, the latest version is installed.
@@ -113,18 +113,6 @@ Required:
 Optional:
 
 - `type` (String)
-
-
-<a id="nestedblock--upgrade"></a>
-### Nested Schema for `upgrade`
-
-Required:
-
-- `enable` (Boolean) If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to using the 'helm upgrade' CLI tool rather than 'helm install'.
-
-Optional:
-
-- `install` (Boolean) When using the 'upgrade' strategy, install the release if it is not already present. This is equivalent to using the 'helm upgrade' CLI tool with the '--install' flag.
 
 
 <a id="nestedatt--metadata"></a>
@@ -353,16 +341,14 @@ having to manually import the release into terraform state each time. But the me
 different from the defaults and you can easily produce unexpected or undesirable results if you are not careful:
 using this approach in production is not necessarily recommended!
 
-If upgrade mode is enabled by setting `enable` to `true` in the `upgrade` block, the provider will first check to see
+If upgrade mode is enabled by setting the `upgrade_install` attribute to `true`, the provider will first check to see
 if a release with the given name already exists.  If that release exists, it will attempt to upgrade the release to
 the state defined in the resource, using the same strategy as the [helm upgrade](https://helm.sh/docs/helm/helm_upgrade)
 command.  In this case, the `generate_name`, `name_template` and `replace` attributes of the resource (if set) are
 ignored, as those attributes are not supported by helm's "upgrade" behavior.
 
-If the release does _not_ exist, the behavior is controlled by the setting of the `install` attribute.  If `install`
-is `false` or unset, the apply stage will fail: the provider cannot upgrade a non-existent release.  If `install`
-is set to `true`, the provider will perform a from-scratch installation of the chart.  In this case, all resource
-attributes are honored.
+If the release does not already exist, the provider will perform a from-scratch installation of the chart.  In this
+case, all resource attributes are honored.
 
 ## Import
 

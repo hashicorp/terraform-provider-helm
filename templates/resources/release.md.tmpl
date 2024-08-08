@@ -86,16 +86,14 @@ having to manually import the release into terraform state each time. But the me
 different from the defaults and you can easily produce unexpected or undesirable results if you are not careful:
 using this approach in production is not necessarily recommended!
 
-If upgrade mode is enabled by setting `enable` to `true` in the `upgrade` block, the provider will first check to see
+If upgrade mode is enabled by setting the `upgrade_install` attribute to `true`, the provider will first check to see
 if a release with the given name already exists.  If that release exists, it will attempt to upgrade the release to
 the state defined in the resource, using the same strategy as the [helm upgrade](https://helm.sh/docs/helm/helm_upgrade)
 command.  In this case, the `generate_name`, `name_template` and `replace` attributes of the resource (if set) are
 ignored, as those attributes are not supported by helm's "upgrade" behavior.
 
-If the release does _not_ exist, the behavior is controlled by the setting of the `install` attribute.  If `install`
-is `false` or unset, the apply stage will fail: the provider cannot upgrade a non-existent release.  If `install`
-is set to `true`, the provider will perform a from-scratch installation of the chart.  In this case, all resource
-attributes are honored.
+If the release does not already exist, the provider will perform a from-scratch installation of the chart.  In this
+case, all resource attributes are honored.
 
 ## Import
 
