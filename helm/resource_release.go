@@ -558,12 +558,29 @@ func checkChartDependencies(d resourceGetter, c *chart.Chart, path string, m *Me
 	return false, nil
 }
 
+func getInstalledReleaseVersion(m *Meta, c *action.Configuration, name string) (string, error) {
+	logID := fmt.Sprintf("[getInstalledReleaseVersion: %s]", name)
+	histClient := action.NewHistory(c)
+	histClient.Max = 1
+	if hist, err := histClient.Run(name); errors.Is(err, driver.ErrReleaseNotFound) {
+		debug("%s Chart %s is not yet installed", logID, name)
+		return "", nil
+	} else if err != nil {
+		return "", err
+	} else {
+		installedVersion := hist[0].Chart.Metadata.Version
+		debug("%s Chart %s is installed as release %s", logID, name, installedVersion)
+		return installedVersion, nil
+	}
+}
+
 func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	logID := fmt.Sprintf("[resourceReleaseCreate: %s]", d.Get("name").(string))
 	debug("%s Started", logID)
 
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
+	enableUpgradeStrategy := d.Get("upgrade_install").(bool)
 
 	debug("%s Getting helm configuration", logID)
 	actionConfig, err := m.GetHelmConfiguration(n)
@@ -612,22 +629,21 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 
 	var rel *release.Release
 	var releaseAlreadyExists bool
-	var enableUpgradeStrategy bool
+	var installedVersion string
 
 	releaseName := d.Get("name").(string)
-	enableUpgradeStrategy = d.Get("upgrade_install").(bool)
 
 	if enableUpgradeStrategy {
 		// Check to see if there is already a release installed.
-		histClient := action.NewHistory(actionConfig)
-		histClient.Max = 1
-		if _, err := histClient.Run(releaseName); errors.Is(err, driver.ErrReleaseNotFound) {
-			debug("%s Chart %s is not yet installed", logID, chartName)
-		} else if err != nil {
+		installedVersion, err = getInstalledReleaseVersion(m, actionConfig, releaseName)
+		if err != nil {
 			return diag.FromErr(err)
-		} else {
+		}
+		if installedVersion != "" {
+			debug("%s Release %s is installed as version %s", logID, releaseName, installedVersion)
 			releaseAlreadyExists = true
-			debug("%s Chart %s is installed as release %s", logID, chartName, releaseName)
+		} else {
+			debug("%s Release %s is not yet installed", logID, releaseName)
 		}
 	}
 
@@ -874,6 +890,11 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	name := d.Get("name").(string)
 	namespace := d.Get("namespace").(string)
 
+	targetVersion := d.Get("version").(string)
+	enableUpgradeStrategy := d.Get("upgrade_install").(bool)
+	debug("%s upgrade_install is enabled: %t", logID, enableUpgradeStrategy)
+	debug("%s targetVersion for release %s: '%s'", logID, name, targetVersion)
+
 	actionConfig, err := m.GetHelmConfiguration(namespace)
 	if err != nil {
 		return err
@@ -881,6 +902,15 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	err = OCIRegistryLogin(actionConfig, d, m)
 	if err != nil {
 		return err
+	}
+
+	var installedVersion string
+	if enableUpgradeStrategy {
+		// Check to see if there is already a release installed.
+		installedVersion, err = getInstalledReleaseVersion(m, actionConfig, name)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Always set desired state to DEPLOYED
@@ -910,6 +940,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			old, new := d.GetChange("version")
 			oldVersion := strings.TrimPrefix(old.(string), "v")
 			newVersion := strings.TrimPrefix(new.(string), "v")
+			debug("%s oldVersion: %s, newVersion: %s", logID, oldVersion, newVersion)
 			if oldVersion != newVersion && newVersion != "" {
 				d.SetNewComputed("metadata")
 			}
@@ -929,7 +960,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		debug("resourceDiff: getChart failed: %v", err)
 		return nil
 	}
-	debug("%s Got chart", logID)
+	debug("%s Got chart %s version %s", logID, chart.Metadata.Name, chart.Metadata.Version)
 
 	// check and update the chart's dependencies if needed
 	updated, err := checkChartDependencies(d, chart, path, m)
@@ -1097,13 +1128,34 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		d.Clear("manifest")
 	}
 
-	debug("%s Done", logID)
+	// handle possible upgrade_install scenarios when the version attribute is empty
+	if enableUpgradeStrategy && targetVersion == "" {
+		// If the release is already present, we need to set the version to the installed version
+		if installedVersion != "" {
+			debug("%s setting version to installed version %s", logID, installedVersion)
+			debug("%s Done", logID)
+			return d.SetNew("version", installedVersion)
+		}
+		// If the release does not exist, we need to set the version to the chart version
+		if len(chart.Metadata.Version) > 0 {
+			debug("%s setting version to chart version %s", logID, chart.Metadata.Version)
+			debug("%s Done", logID)
+			return d.SetNew("version", chart.Metadata.Version)
+		}
+		// If the release does not exist and the chart version is not available, we need to set the version to computed
+		debug("%s setting version to computed", logID)
+		debug("%s Done", logID)
+		return d.SetNewComputed("version")
+	}
 
 	// Set desired version from the Chart metadata if available
 	if len(chart.Metadata.Version) > 0 {
+		debug("%s setting version to %s", logID, chart.Metadata.Version)
+		debug("%s Done", logID)
 		return d.SetNew("version", chart.Metadata.Version)
 	}
 
+	debug("%s Done", logID)
 	return d.SetNewComputed("version")
 }
 

@@ -155,7 +155,11 @@ func TestAccResourceRelease_upgrade_with_install_warmstart(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	// preinstall the first revision of our chart directly via the helm CLI
-	args := []string{"install", "-n", namespace, "--create-namespace", name, "./test-chart-1.2.3.tgz"}
+	args := []string{"install",
+		"-n", namespace,
+		"--repo", testRepositoryURL,
+		"--version", "1.2.3",
+		name, "test-chart"}
 	cmd := exec.Command("helm", args...)
 	stdout, err := cmd.Output()
 	if err != nil {
@@ -168,13 +172,50 @@ func TestAccResourceRelease_upgrade_with_install_warmstart(t *testing.T) {
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{{
-			Config: testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(namespace, name),
+			Config: testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(namespace, name, testRepositoryURL),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 			)}},
 	})
+}
+
+func TestAccResourceRelease_upgrade_with_install_warmstart_no_version(t *testing.T) {
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	versions := []string{"1.2.3", "2.0.0"}
+
+	for _, version := range versions {
+		// preinstall the first revision of our chart directly via the helm CLI
+		args := []string{"install",
+			"-n", namespace,
+			"--repo", testRepositoryURL,
+			"--version", version,
+			name, "test-chart"}
+		cmd := exec.Command("helm", args...)
+		stdout, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("could not preinstall helm chart: %v -- %s", err, stdout)
+		}
+
+		// upgrade-install on top of the existing release, creating a new revision
+		resource.Test(t, resource.TestCase{
+			PreCheck:     func() { testAccPreCheck(t) },
+			Providers:    testAccProviders,
+			CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+			Steps: []resource.TestStep{{
+				Config: testAccHelmReleaseConfigWithUpgradeStrategyWarmstartNoVersion(namespace, name, testRepositoryURL),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", version),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				)}},
+		})
+	}
 }
 
 func TestAccResourceRelease_import(t *testing.T) {
@@ -1025,14 +1066,15 @@ func testAccHelmReleaseConfigWithUpgradeStrategy(resource, ns, name, version str
 	`, resource, name, ns, testRepositoryURL, version, upgrade_install)
 }
 
-func testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(ns, name string) string {
+func testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(ns, name, repository string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "test" {
  			name        = %q
 			namespace   = %q
 			description = "Test"
-  			chart       = "./test-chart-1.2.3.tgz"
-			version     = "0.1.0"
+  			chart       = "test-chart"
+			repository  = %q
+			version     = "1.2.3"
 
 			upgrade_install = true
 			
@@ -1041,7 +1083,26 @@ func testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(ns, name string) strin
 				value = "bar"
 			}
 		}
-	`, name, ns)
+	`, name, ns, repository)
+}
+
+func testAccHelmReleaseConfigWithUpgradeStrategyWarmstartNoVersion(ns, name, repository string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "test" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+  			chart       = "test-chart"
+			repository  = %q
+
+			upgrade_install = true
+			
+			set {
+				name  = "foo"
+				value = "bar"
+			}
+		}
+	`, name, ns, repository)
 }
 
 func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, values []string) string {
