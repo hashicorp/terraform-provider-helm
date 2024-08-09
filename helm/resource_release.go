@@ -4,6 +4,7 @@
 package helm
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -23,10 +24,21 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/cli-runtime/pkg/genericiooptions"
+	"k8s.io/cli-runtime/pkg/resource"
+	"k8s.io/kubectl/pkg/cmd/diff"
+	"k8s.io/kubectl/pkg/scheme"
 	"sigs.k8s.io/yaml"
 )
 
@@ -385,6 +397,16 @@ func resourceRelease() *schema.Resource {
 				Description: "The rendered manifest as JSON.",
 				Computed:    true,
 			},
+			"resources": {
+				Type:        schema.TypeMap,
+				Computed:    true,
+				Description: "The kubernetes resources created by this release.",
+				Elem: &schema.Schema{
+					Type:        schema.TypeString,
+					Computed:    true,
+					Description: "The information of a kubernetes resource as JSON.",
+				},
+			},
 			"metadata": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -483,6 +505,119 @@ func resourceReleaseUpgrader() *schema.Resource {
 			},
 		},
 	}
+}
+
+// mapRuntimeObjects maps a list of kubernetes objects by key to their JSON
+// representation, with sensitive values redacted
+func mapRuntimeObjects(objects []runtime.Object, d resourceGetter) (map[string]string, error) {
+	mappedObjects := make(map[string]string)
+	for _, obj := range objects {
+		accessor, err := apimeta.Accessor(obj)
+		if err != nil {
+			return nil, err
+		}
+		accessor.SetUID(types.UID(""))
+		accessor.SetCreationTimestamp(metav1.Time{})
+		accessor.SetManagedFields(nil)
+		if obj.GetObjectKind().GroupVersionKind().Kind == "Secret" {
+			secret := &corev1.Secret{}
+			err := scheme.Scheme.Convert(obj, secret, nil)
+			if err != nil {
+				return nil, err
+			}
+			redactSecretData(secret)
+			obj = secret
+		}
+		objJSON, err := json.Marshal(obj)
+		if err != nil {
+			return nil, err
+		}
+		gvk := obj.GetObjectKind().GroupVersionKind()
+		key := fmt.Sprintf("%s/%s/%s/%s",
+			strings.ToLower(gvk.GroupKind().String()),
+			gvk.Version,
+			accessor.GetNamespace(),
+			accessor.GetName(),
+		)
+		mappedObjects[key] = redactSensitiveValues(string(objJSON), d)
+	}
+	return mappedObjects, nil
+}
+
+func mapResources(actionConfig *action.Configuration, r *release.Release, d resourceGetter, f func(*resource.Info) (runtime.Object, error)) (map[string]string, error) {
+	resources, err := actionConfig.KubeClient.Build(bytes.NewBufferString(r.Manifest), false)
+	if err != nil {
+		return nil, err
+	}
+	var objects []runtime.Object
+	err = resources.Visit(func(i *resource.Info, err error) error {
+		if err != nil {
+			return err
+		}
+		obj, err := f(i)
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		objects = append(objects, obj)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapRuntimeObjects(objects, d)
+}
+
+// getLiveResources gets the live kubernetes resources of a release
+func getLiveResources(r *release.Release, m *Meta, d resourceGetter) (map[string]string, error) {
+	actionConfig, err := m.GetHelmConfiguration(r.Namespace)
+	if err != nil {
+		return nil, err
+	}
+	kc, ok := actionConfig.KubeClient.(*kube.Client)
+	if !ok {
+		return nil, errors.Errorf("client is not a *kube.Client")
+	}
+	return mapResources(actionConfig, r, d, func(i *resource.Info) (runtime.Object, error) {
+		gvk := i.Object.GetObjectKind().GroupVersionKind()
+		return kc.Factory.NewBuilder().
+			Unstructured().
+			NamespaceParam(i.Namespace).DefaultNamespace().
+			ResourceNames(gvk.GroupKind().String(), i.Name).
+			Flatten().
+			Do().
+			Object()
+	})
+}
+
+// getDryRunResources gets the kubernetes resources as they would look like if
+// the helm manifest is applied to the cluster. this is useful for detecting the
+// differences between the live cluster state and the desired state.
+func getDryRunResources(r *release.Release, m *Meta, d resourceGetter) (map[string]string, error) {
+	actionConfig, err := m.GetHelmConfiguration(r.Namespace)
+	if err != nil {
+		return nil, err
+	}
+	ioStreams := genericiooptions.IOStreams{
+		In:     os.Stdin,
+		Out:    os.Stdout,
+		ErrOut: os.Stderr,
+	}
+	return mapResources(actionConfig, r, d, func(i *resource.Info) (runtime.Object, error) {
+		info := &diff.InfoObject{
+			LocalObj:        i.Object,
+			Info:            i,
+			Encoder:         scheme.DefaultJSONEncoder(),
+			Force:           false,
+			ServerSideApply: true,
+			FieldManager:    "terraform-provider-helm",
+			ForceConflicts:  true,
+			IOStreams:       ioStreams,
+		}
+		return info.Merged()
+	})
 }
 
 func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -827,6 +962,11 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	name := d.Get("name").(string)
 	namespace := d.Get("namespace").(string)
 
+	if !m.ExperimentEnabled("manifest") {
+		d.Clear("manifest")
+		d.Clear("resources")
+	}
+
 	actionConfig, err := m.GetHelmConfiguration(namespace)
 	if err != nil {
 		return err
@@ -917,6 +1057,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			// but this is not possible with the SDK
 			debug("not all values are known, skipping dry run to render manifest")
 			d.SetNewComputed("manifest")
+			d.SetNewComputed("resources")
 			return d.SetNewComputed("version")
 		}
 
@@ -975,8 +1116,9 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 					// NOTE it would be nice to return a diagnostic here to warn the user
 					// that we can't generate the diff here because the cluster is not yet
 					// reachable but this is not supported by CustomizeDiffFunc
-					debug(`cluster was unreachable at create time, marking "manifest" as computed`)
-					return d.SetNewComputed("manifest")
+					debug(`cluster was unreachable at create time, marking "manifest" and "resources" as computed`)
+					d.SetNewComputed("manifest")
+					return d.SetNewComputed("resources")
 				}
 				return err
 			}
@@ -986,6 +1128,9 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 				return err
 			}
 			manifest := redactSensitiveValues(string(jsonManifest), d)
+
+			d.SetNewComputed("resources")
+
 			return d.SetNew("manifest", manifest)
 		}
 
@@ -996,6 +1141,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 				return d.SetNew("version", chart.Metadata.Version)
 			}
 			d.SetNewComputed("manifest")
+			d.SetNewComputed("resources")
 			return d.SetNewComputed("version")
 		} else if err != nil {
 			return fmt.Errorf("error retrieving old release for a diff: %v", err)
@@ -1034,6 +1180,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			}
 			d.SetNewComputed("version")
 			d.SetNewComputed("manifest")
+			d.SetNewComputed("resources")
 			return nil
 		} else if err != nil {
 			return fmt.Errorf("error running dry run for a diff: %v", err)
@@ -1046,8 +1193,12 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		manifest := redactSensitiveValues(string(jsonManifest), d)
 		d.SetNew("manifest", manifest)
 		debug("%s set manifest: %s", logID, jsonManifest)
-	} else {
-		d.Clear("manifest")
+		resources, err := getDryRunResources(dry, m, d)
+		if err != nil {
+			return err
+		}
+		d.SetNew("resources", resources)
+		debug("%s set resources: %v", logID, resources)
 	}
 
 	debug("%s Done", logID)
@@ -1093,6 +1244,11 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 		}
 		manifest := redactSensitiveValues(string(jsonManifest), d)
 		d.Set("manifest", manifest)
+		resources, err := getLiveResources(r, m, d)
+		if err != nil {
+			return err
+		}
+		d.Set("resources", resources)
 	}
 
 	return d.Set("metadata", []map[string]interface{}{{
