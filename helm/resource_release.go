@@ -856,11 +856,11 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	}
 
 	if !useChartVersion(d.Get("chart").(string), d.Get("repository").(string)) {
-		if d.HasChange("version") {
+		if d.HasChange("metadata.0.version") {
 			// only recompute metadata if the version actually changes
 			// chart versioning is not consistent and some will add
 			// a `v` prefix to the chart version after installation
-			old, new := d.GetChange("version")
+			old, new := d.GetChange("metadata.0.version")
 			oldVersion := strings.TrimPrefix(old.(string), "v")
 			newVersion := strings.TrimPrefix(new.(string), "v")
 			if oldVersion != newVersion && newVersion != "" {
