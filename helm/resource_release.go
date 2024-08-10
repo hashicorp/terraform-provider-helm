@@ -863,7 +863,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			old, new := d.GetChange("metadata.0.version")
 			oldVersion := strings.TrimPrefix(old.(string), "v")
 			newVersion := strings.TrimPrefix(new.(string), "v")
-			if oldVersion != newVersion && newVersion != "" {
+			if oldVersion != newVersion {
 				d.SetNewComputed("metadata")
 			}
 		}
