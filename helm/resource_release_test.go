@@ -1600,7 +1600,7 @@ func getReleaseJSONManifest(namespace, name string) (string, error) {
 	return jsonManifest, nil
 }
 
-func getKubeClient(namespace string) (*kube.Client, error) {
+func getTestKubeClient(namespace string) (*kube.Client, error) {
 	m := testAccProvider.Meta()
 	if m == nil {
 		return nil, fmt.Errorf("provider not properly initialized")
@@ -1609,15 +1609,11 @@ func getKubeClient(namespace string) (*kube.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	kc, ok := actionConfig.KubeClient.(*kube.Client)
-	if !ok {
-		return nil, fmt.Errorf("client is not a *kube.Client")
-	}
-	return kc, nil
+	return getKubeClient(actionConfig)
 }
 
 func getReleaseJSONResources(namespace, name string) (map[string]string, error) {
-	kc, err := getKubeClient(namespace)
+	kc, err := getTestKubeClient(namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -1660,7 +1656,7 @@ func getReleaseJSONResources(namespace, name string) (map[string]string, error) 
 	}
 
 	d := resourceRelease().Data(nil)
-	return mapRuntimeObjects(objects, d)
+	return mapRuntimeObjects(kc, objects, d)
 }
 
 func TestAccResourceRelease_manifest(t *testing.T) {
@@ -1733,7 +1729,7 @@ func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 
 func patchDeployment(t *testing.T, namespace, name string, patchBytes []byte) func() {
 	return func() {
-		kc, err := getKubeClient(namespace)
+		kc, err := getTestKubeClient(namespace)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1863,7 +1859,7 @@ func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 			{
 				// delete the service then apply the previous config to recreate it
 				PreConfig: func() {
-					kc, err := getKubeClient(namespace)
+					kc, err := getTestKubeClient(namespace)
 					if err != nil {
 						t.Fatal(err)
 					}

@@ -4,7 +4,6 @@
 package helm
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -24,21 +23,10 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
-	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/strvals"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apimeta "k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
-	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/kubectl/pkg/cmd/diff"
-	"k8s.io/kubectl/pkg/scheme"
 	"sigs.k8s.io/yaml"
 )
 
@@ -505,119 +493,6 @@ func resourceReleaseUpgrader() *schema.Resource {
 			},
 		},
 	}
-}
-
-// mapRuntimeObjects maps a list of kubernetes objects by key to their JSON
-// representation, with sensitive values redacted
-func mapRuntimeObjects(objects []runtime.Object, d resourceGetter) (map[string]string, error) {
-	mappedObjects := make(map[string]string)
-	for _, obj := range objects {
-		accessor, err := apimeta.Accessor(obj)
-		if err != nil {
-			return nil, err
-		}
-		accessor.SetUID(types.UID(""))
-		accessor.SetCreationTimestamp(metav1.Time{})
-		accessor.SetManagedFields(nil)
-		if obj.GetObjectKind().GroupVersionKind().Kind == "Secret" {
-			secret := &corev1.Secret{}
-			err := scheme.Scheme.Convert(obj, secret, nil)
-			if err != nil {
-				return nil, err
-			}
-			redactSecretData(secret)
-			obj = secret
-		}
-		objJSON, err := json.Marshal(obj)
-		if err != nil {
-			return nil, err
-		}
-		gvk := obj.GetObjectKind().GroupVersionKind()
-		key := fmt.Sprintf("%s/%s/%s/%s",
-			strings.ToLower(gvk.GroupKind().String()),
-			gvk.Version,
-			accessor.GetNamespace(),
-			accessor.GetName(),
-		)
-		mappedObjects[key] = redactSensitiveValues(string(objJSON), d)
-	}
-	return mappedObjects, nil
-}
-
-func mapResources(actionConfig *action.Configuration, r *release.Release, d resourceGetter, f func(*resource.Info) (runtime.Object, error)) (map[string]string, error) {
-	resources, err := actionConfig.KubeClient.Build(bytes.NewBufferString(r.Manifest), false)
-	if err != nil {
-		return nil, err
-	}
-	var objects []runtime.Object
-	err = resources.Visit(func(i *resource.Info, err error) error {
-		if err != nil {
-			return err
-		}
-		obj, err := f(i)
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		objects = append(objects, obj)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return mapRuntimeObjects(objects, d)
-}
-
-// getLiveResources gets the live kubernetes resources of a release
-func getLiveResources(r *release.Release, m *Meta, d resourceGetter) (map[string]string, error) {
-	actionConfig, err := m.GetHelmConfiguration(r.Namespace)
-	if err != nil {
-		return nil, err
-	}
-	kc, ok := actionConfig.KubeClient.(*kube.Client)
-	if !ok {
-		return nil, errors.Errorf("client is not a *kube.Client")
-	}
-	return mapResources(actionConfig, r, d, func(i *resource.Info) (runtime.Object, error) {
-		gvk := i.Object.GetObjectKind().GroupVersionKind()
-		return kc.Factory.NewBuilder().
-			Unstructured().
-			NamespaceParam(i.Namespace).DefaultNamespace().
-			ResourceNames(gvk.GroupKind().String(), i.Name).
-			Flatten().
-			Do().
-			Object()
-	})
-}
-
-// getDryRunResources gets the kubernetes resources as they would look like if
-// the helm manifest is applied to the cluster. this is useful for detecting the
-// differences between the live cluster state and the desired state.
-func getDryRunResources(r *release.Release, m *Meta, d resourceGetter) (map[string]string, error) {
-	actionConfig, err := m.GetHelmConfiguration(r.Namespace)
-	if err != nil {
-		return nil, err
-	}
-	ioStreams := genericiooptions.IOStreams{
-		In:     os.Stdin,
-		Out:    os.Stdout,
-		ErrOut: os.Stderr,
-	}
-	return mapResources(actionConfig, r, d, func(i *resource.Info) (runtime.Object, error) {
-		info := &diff.InfoObject{
-			LocalObj:        i.Object,
-			Info:            i,
-			Encoder:         scheme.DefaultJSONEncoder(),
-			Force:           false,
-			ServerSideApply: true,
-			FieldManager:    "terraform-provider-helm",
-			ForceConflicts:  true,
-			IOStreams:       ioStreams,
-		}
-		return info.Merged()
-	})
 }
 
 func resourceReleaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
