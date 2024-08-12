@@ -1129,7 +1129,8 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	}
 
 	// handle possible upgrade_install scenarios when the version attribute is empty
-	if enableUpgradeStrategy && targetVersion == "" {
+	if enableUpgradeStrategy && len(targetVersion) == 0 {
+		debug("%s upgrade_install is enabled and version attribute is empty", logID)
 		// If the release is already present, we need to set the version to the installed version
 		if installedVersion != "" {
 			debug("%s setting version to installed version %s", logID, installedVersion)
