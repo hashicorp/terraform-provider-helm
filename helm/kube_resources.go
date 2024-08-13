@@ -55,6 +55,8 @@ func regenerateGVKParser(dc discovery.DiscoveryInterface) (*managedfields.GvkPar
 	return managedfields.NewGVKParser(models, false)
 }
 
+// removeUnmanagedFields removes fields updated by `kube-controller-manager` or
+// through subresource apis from a kubernetes object
 func removeUnmanagedFields(parser *managedfields.GvkParser, obj runtime.Object, gvk schema.GroupVersionKind) error {
 	parseableType := parser.Type(gvk)
 	if parseableType == nil {
@@ -88,7 +90,7 @@ func removeUnmanagedFields(parser *managedfields.GvkParser, obj runtime.Object, 
 }
 
 // mapRuntimeObjects maps a list of kubernetes objects by key to their JSON
-// representation, with sensitive values redacted
+// representation, with unmanaged fields removed and sensitive values redacted
 func mapRuntimeObjects(kc *kube.Client, objects []runtime.Object, d resourceGetter) (map[string]string, error) {
 	clientSet, err := kc.Factory.KubernetesClientSet()
 	if err != nil {
