@@ -126,6 +126,7 @@ func mapRuntimeObjects(kc *kube.Client, objects []runtime.Object, d resourceGett
 		}
 		accessor.SetUID(types.UID(""))
 		accessor.SetCreationTimestamp(metav1.Time{})
+		accessor.SetResourceVersion("")
 		accessor.SetManagedFields(nil)
 		objJSON, err := json.Marshal(obj)
 		if err != nil {
