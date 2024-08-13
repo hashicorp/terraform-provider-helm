@@ -26,6 +26,7 @@ import (
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/storage/driver"
 	"helm.sh/helm/v3/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
@@ -385,6 +386,12 @@ func resourceRelease() *schema.Resource {
 				Description: "The rendered manifest as JSON.",
 				Computed:    true,
 			},
+			"upgrade_install": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     defaultAttributes["upgrade_install"],
+				Description: "If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' note in the provider documentation. Defaults to `false`.",
+			},
 			"metadata": {
 				Type:        schema.TypeList,
 				Computed:    true,
@@ -551,12 +558,29 @@ func checkChartDependencies(d resourceGetter, c *chart.Chart, path string, m *Me
 	return false, nil
 }
 
+func getInstalledReleaseVersion(m *Meta, c *action.Configuration, name string) (string, error) {
+	logID := fmt.Sprintf("[getInstalledReleaseVersion: %s]", name)
+	histClient := action.NewHistory(c)
+	histClient.Max = 1
+	if hist, err := histClient.Run(name); errors.Is(err, driver.ErrReleaseNotFound) {
+		debug("%s Chart %s is not yet installed", logID, name)
+		return "", nil
+	} else if err != nil {
+		return "", err
+	} else {
+		installedVersion := hist[0].Chart.Metadata.Version
+		debug("%s Chart %s is installed as release %s", logID, name, installedVersion)
+		return installedVersion, nil
+	}
+}
+
 func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	logID := fmt.Sprintf("[resourceReleaseCreate: %s]", d.Get("name").(string))
 	debug("%s Started", logID)
 
 	m := meta.(*Meta)
 	n := d.Get("namespace").(string)
+	enableUpgradeStrategy := d.Get("upgrade_install").(bool)
 
 	debug("%s Getting helm configuration", logID)
 	actionConfig, err := m.GetHelmConfiguration(n)
@@ -603,54 +627,93 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	client.ClientOnly = false
-	client.DryRun = false
-	client.DisableHooks = d.Get("disable_webhooks").(bool)
-	client.Wait = d.Get("wait").(bool)
-	client.WaitForJobs = d.Get("wait_for_jobs").(bool)
-	client.Devel = d.Get("devel").(bool)
-	client.DependencyUpdate = d.Get("dependency_update").(bool)
-	client.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
-	client.Namespace = d.Get("namespace").(string)
-	client.ReleaseName = d.Get("name").(string)
-	client.GenerateName = false
-	client.NameTemplate = ""
-	client.OutputDir = ""
-	client.Atomic = d.Get("atomic").(bool)
-	client.SkipCRDs = d.Get("skip_crds").(bool)
-	client.SubNotes = d.Get("render_subchart_notes").(bool)
-	client.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
-	client.Replace = d.Get("replace").(bool)
-	client.Description = d.Get("description").(string)
-	client.CreateNamespace = d.Get("create_namespace").(bool)
+	var rel *release.Release
+	var releaseAlreadyExists bool
+	var installedVersion string
 
-	if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-		av := d.Get("postrender.0.args")
-		var args []string
-		for _, arg := range av.([]interface{}) {
-			if arg == nil {
-				continue
-			}
-			args = append(args, arg.(string))
-		}
+	releaseName := d.Get("name").(string)
 
-		pr, err := postrender.NewExec(cmd, args...)
+	if enableUpgradeStrategy {
+		// Check to see if there is already a release installed.
+		installedVersion, err = getInstalledReleaseVersion(m, actionConfig, releaseName)
 		if err != nil {
 			return diag.FromErr(err)
 		}
-
-		client.PostRenderer = pr
+		if installedVersion != "" {
+			debug("%s Release %s is installed as version %s", logID, releaseName, installedVersion)
+			releaseAlreadyExists = true
+		} else {
+			debug("%s Release %s is not yet installed", logID, releaseName)
+		}
 	}
 
-	debug("%s Installing chart", logID)
+	if enableUpgradeStrategy && releaseAlreadyExists {
+		debug("%s Upgrade-installing chart installed out of band", logID)
 
-	rel, err := client.Run(c, values)
+		upgradeClient := action.NewUpgrade(actionConfig)
+		upgradeClient.ChartPathOptions = *cpo
+		upgradeClient.DryRun = false
+		upgradeClient.DisableHooks = d.Get("disable_webhooks").(bool)
+		upgradeClient.Wait = d.Get("wait").(bool)
+		upgradeClient.Devel = d.Get("devel").(bool)
+		upgradeClient.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+		upgradeClient.Namespace = d.Get("namespace").(string)
+		upgradeClient.Atomic = d.Get("atomic").(bool)
+		upgradeClient.SkipCRDs = d.Get("skip_crds").(bool)
+		upgradeClient.SubNotes = d.Get("render_subchart_notes").(bool)
+		upgradeClient.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
+		upgradeClient.Description = d.Get("description").(string)
 
+		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+			pr, err := postrender.NewExec(cmd)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			upgradeClient.PostRenderer = pr
+		}
+
+		debug("%s Upgrading chart", logID)
+		rel, err = upgradeClient.Run(releaseName, c, values)
+	} else {
+		instClient := action.NewInstall(actionConfig)
+		instClient.Replace = d.Get("replace").(bool)
+
+		instClient.ChartPathOptions = *cpo
+		instClient.ClientOnly = false
+		instClient.DryRun = false
+		instClient.DisableHooks = d.Get("disable_webhooks").(bool)
+		instClient.Wait = d.Get("wait").(bool)
+		instClient.Devel = d.Get("devel").(bool)
+		instClient.DependencyUpdate = d.Get("dependency_update").(bool)
+		instClient.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
+		instClient.Namespace = d.Get("namespace").(string)
+		instClient.ReleaseName = d.Get("name").(string)
+		instClient.GenerateName = false
+		instClient.NameTemplate = ""
+		instClient.OutputDir = ""
+		instClient.Atomic = d.Get("atomic").(bool)
+		instClient.SkipCRDs = d.Get("skip_crds").(bool)
+		instClient.SubNotes = d.Get("render_subchart_notes").(bool)
+		instClient.DisableOpenAPIValidation = d.Get("disable_openapi_validation").(bool)
+		instClient.Description = d.Get("description").(string)
+		instClient.CreateNamespace = d.Get("create_namespace").(bool)
+
+		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
+			pr, err := postrender.NewExec(cmd)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			instClient.PostRenderer = pr
+		}
+
+		debug("%s Installing chart", logID)
+		rel, err = instClient.Run(c, values)
+	}
 	if err != nil && rel == nil {
 		return diag.FromErr(err)
 	}
 
-	if err != nil && rel != nil {
+	if err != nil {
 		exists, existsErr := resourceReleaseExists(d, meta)
 
 		if existsErr != nil {
@@ -827,6 +890,11 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	name := d.Get("name").(string)
 	namespace := d.Get("namespace").(string)
 
+	targetVersion := d.Get("version").(string)
+	enableUpgradeStrategy := d.Get("upgrade_install").(bool)
+	debug("%s upgrade_install is enabled: %t", logID, enableUpgradeStrategy)
+	debug("%s targetVersion for release %s: '%s'", logID, name, targetVersion)
+
 	actionConfig, err := m.GetHelmConfiguration(namespace)
 	if err != nil {
 		return err
@@ -834,6 +902,15 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	err = OCIRegistryLogin(actionConfig, d, m)
 	if err != nil {
 		return err
+	}
+
+	var installedVersion string
+	if enableUpgradeStrategy {
+		// Check to see if there is already a release installed.
+		installedVersion, err = getInstalledReleaseVersion(m, actionConfig, name)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Always set desired state to DEPLOYED
@@ -863,6 +940,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			old, new := d.GetChange("version")
 			oldVersion := strings.TrimPrefix(old.(string), "v")
 			newVersion := strings.TrimPrefix(new.(string), "v")
+			debug("%s oldVersion: %s, newVersion: %s", logID, oldVersion, newVersion)
 			if oldVersion != newVersion && newVersion != "" {
 				d.SetNewComputed("metadata")
 			}
@@ -882,7 +960,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		debug("resourceDiff: getChart failed: %v", err)
 		return nil
 	}
-	debug("%s Got chart", logID)
+	debug("%s Got chart %s version %s", logID, chart.Metadata.Name, chart.Metadata.Version)
 
 	// check and update the chart's dependencies if needed
 	updated, err := checkChartDependencies(d, chart, path, m)
@@ -1050,13 +1128,35 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		d.Clear("manifest")
 	}
 
-	debug("%s Done", logID)
+	// handle possible upgrade_install scenarios when the version attribute is empty
+	if enableUpgradeStrategy && len(targetVersion) == 0 {
+		debug("%s upgrade_install is enabled and version attribute is empty", logID)
+		// If the release is already present, we need to set the version to the installed version
+		if installedVersion != "" {
+			debug("%s setting version to installed version %s", logID, installedVersion)
+			debug("%s Done", logID)
+			return d.SetNew("version", installedVersion)
+		}
+		// If the release does not exist, we need to set the version to the chart version
+		if len(chart.Metadata.Version) > 0 {
+			debug("%s setting version to chart version %s", logID, chart.Metadata.Version)
+			debug("%s Done", logID)
+			return d.SetNew("version", chart.Metadata.Version)
+		}
+		// If the release does not exist and the chart version is not available, we need to set the version to computed
+		debug("%s setting version to computed", logID)
+		debug("%s Done", logID)
+		return d.SetNewComputed("version")
+	}
 
 	// Set desired version from the Chart metadata if available
 	if len(chart.Metadata.Version) > 0 {
+		debug("%s setting version to %s", logID, chart.Metadata.Version)
+		debug("%s Done", logID)
 		return d.SetNew("version", chart.Metadata.Version)
 	}
 
+	debug("%s Done", logID)
 	return d.SetNewComputed("version")
 }
 
