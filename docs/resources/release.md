@@ -50,10 +50,11 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
 - `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
 - `set` (Block Set) Custom values to be merged with the values. (see [below for nested schema](#nestedblock--set))
-- `set_list` (Block List) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
+- `set_list` (Block List) Custom list values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
 - `set_sensitive` (Block Set) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_sensitive))
 - `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
 - `timeout` (Number) Time in seconds to wait for any individual kubernetes operation. Defaults to 300 seconds.
+- `upgrade_install` (Boolean) If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' note in the provider documentation. Defaults to `false`.
 - `values` (List of String) List of values in raw yaml format to pass to helm.
 - `verify` (Boolean) Verify the package before installing it.Defaults to `false`.
 - `version` (String) Specify the exact chart version to install. If this is not specified, the latest version is installed.
@@ -325,6 +326,46 @@ The `postrender` block supports two attributes:
 
 * `binary_path` - (Required) relative or full path to command binary.
 * `args` - (Optional) a list of arguments to supply to the post-renderer.
+
+## Upgrade Mode Notes
+
+When using the Helm CLI directly, it is possible to use `helm upgrade --install` to
+_idempotently_ install a release.  For example, `helm upgrade --install mariadb charts/mariadb --verson 7.1.0`
+will check to see if there is already a release called `mariadb`: if there is, ensure that it is set to version
+7.1.0, and if there is not, install that version from scratch. (See the documentation for the
+[helm upgrade](https://helm.sh/docs/helm/helm_upgrade) command for more details.)
+
+ **NOTE:** The mechanics of this approach are subtly different from the defaults and you can easily produce unexpected or undesirable results if you are not careful:
+using this approach in production is not necessarily recommended!
+
+If upgrade mode is enabled by setting the `upgrade_install` attribute to `true`, the provider will first check to see
+if a release with the given name already exists.  If the release does not already exist, the provider will perform a
+from-scratch installation of the chart.  In this case, all resource attributes are honored.
+
+However, if the release _does_ already exist, the provider will attempt to upgrade the release to
+the state defined in the resource, using the same strategy as the [helm upgrade](https://helm.sh/docs/helm/helm_upgrade)
+command.
+
+When using `upgrade_install`, the `version` attribute is used to determine the version of the chart to install or
+upgrade to.  If the `version` attribute is not set, the provider will attempt to determine the version of the chart
+from the existing release and will use that version for the upgrade: this is to ensure that using `upgrade_install`
+does not inadvertently change the version of the chart being used.
+
+**CRITICAL**: The user-supplied values passed to the chart in the new revision will be the ones specified in the
+`helm_release` resource, not the values used in the original installation of the chart. This means that if
+you are using `upgrade_install` to manage a release that was originally installed with a different set of values,
+you must ensure that the values in the `helm_release` resource are correct, or you may inadvertently change the
+configuration of the release. Additionally, since there is no existing terraform state to compare against, you
+must manually inspect the installed release's values with the `helm get values` CLI command.
+
+**IMPORTANT**: Even if you are "upgrading" to the same version of the chart that is already present in the cluster,
+the `helm_release` resource will still show as "changed" in the terraform plan output, because there is no existing
+state for it to compare against. This also means that in the apply stage, the provider will in fact reinstall the
+chart, which means that if there are any
+[deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/),
+[daemonset](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/) or
+[statefulset](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) resources in the chart, they will
+be replaced, which will cause a rolling update of the pods.
 
 ## Import
 

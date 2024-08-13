@@ -54,7 +54,7 @@ For further details on the `helm template` command, refer to the [Helm documenta
 - `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart.Defaults to `false`.
 - `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
 - `set` (Block Set) Custom values to be merged with the values. (see [below for nested schema](#nestedblock--set))
-- `set_list` (Block List) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
+- `set_list` (Block List) Custom list values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
 - `set_sensitive` (Block Set) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_sensitive))
 - `set_string` (Block Set, Deprecated) Custom string values to be merged with the values. (see [below for nested schema](#nestedblock--set_string))
 - `show_only` (List of String) Only show manifests rendered from the given templates

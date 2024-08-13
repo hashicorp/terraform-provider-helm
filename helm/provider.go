@@ -522,3 +522,7 @@ func OCIRegistryPerformLogin(registryClient *registry.Client, ociURL string, use
 func debug(format string, a ...interface{}) {
 	log.Printf("[DEBUG] %s", fmt.Sprintf(format, a...))
 }
+
+func warn(format string, a ...interface{}) {
+	log.Printf("[WARN] %s", fmt.Sprintf(format, a...))
+}
