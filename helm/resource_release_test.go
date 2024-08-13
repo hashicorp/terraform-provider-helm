@@ -176,6 +176,7 @@ func TestAccResourceRelease_upgrade_with_install_warmstart(t *testing.T) {
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
 				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", `{"foo":"bar"}`),
 				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 			)}},
 	})
