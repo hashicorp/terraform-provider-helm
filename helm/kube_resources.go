@@ -20,6 +20,7 @@ import (
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/managedfields"
 	"k8s.io/cli-runtime/pkg/genericiooptions"
@@ -54,8 +55,12 @@ func regenerateGVKParser(dc discovery.DiscoveryInterface) (*managedfields.GvkPar
 	return managedfields.NewGVKParser(models, false)
 }
 
-func removeUnmanagedFields(parser *managedfields.GvkParser, obj runtime.Object) error {
-	typedObj, err := parser.Type(obj.GetObjectKind().GroupVersionKind()).FromStructured(obj)
+func removeUnmanagedFields(parser *managedfields.GvkParser, obj runtime.Object, gvk schema.GroupVersionKind) error {
+	parseableType := parser.Type(gvk)
+	if parseableType == nil {
+		return errors.Errorf("no parseable type found for %s", gvk.String())
+	}
+	typedObj, err := parseableType.FromStructured(obj)
 	if err != nil {
 		return err
 	}
@@ -116,7 +121,7 @@ func mapRuntimeObjects(kc *kube.Client, objects []runtime.Object, d resourceGett
 			accessor.GetNamespace(),
 			accessor.GetName(),
 		)
-		if err := removeUnmanagedFields(parser, obj); err != nil {
+		if err := removeUnmanagedFields(parser, obj, gvk); err != nil {
 			return nil, err
 		}
 		accessor.SetUID(types.UID(""))
