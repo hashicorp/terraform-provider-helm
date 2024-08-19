@@ -502,7 +502,7 @@ func (d *DataTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		)
 		return
 	}
-	diags := OCIRegistryLogin(ctx, actionConfig, actionConfig.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+	diags := OCIRegistryLogin(ctx, actionConfig, m.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return

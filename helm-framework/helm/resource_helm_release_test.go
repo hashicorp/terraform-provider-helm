@@ -8,8 +8,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-
-	//"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,8 +26,6 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-// todo
-// pass
 func TestAccResourceRelease_basic(t *testing.T) {
 	name := randName("basic")
 	namespace := createRandomNamespace(t)
@@ -65,8 +61,6 @@ func TestAccResourceRelease_basic(t *testing.T) {
 		},
 	})
 }
-
-// TEST Case pass
 func TestAccResourceRelease_emptyVersion(t *testing.T) {
 	name := randName("basic")
 	namespace := createRandomNamespace(t)
@@ -95,6 +89,7 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 }
 
 // Import state error, type mismatch from set_sensitive
+
 func TestAccResourceRelease_import(t *testing.T) {
 	name := randName("import")
 	namespace := createRandomNamespace(t)
@@ -163,26 +158,24 @@ func TestAccResourceRelease_import(t *testing.T) {
 // 	namespace := createRandomNamespace(t)
 // 	defer deleteNamespace(t, namespace)
 
-// 	resource.Test(t, resource.TestCase{
-// 		//PreCheck:                 func() { testAccPreCheck(t) },
-// 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-// 		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
-// 				Check: resource.ComposeAggregateTestCheckFunc(
-// 					resource.TestCheckResourceAttr("helm_release.test", "version", "1.2.3"),
-// 				),
-// 			},
-// 			{
-// 				Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
-// 				PlanOnly: true,
-// 			},
-// 		},
-// 	})
-// }
-
-// PASS \\
+//		resource.Test(t, resource.TestCase{
+//			//PreCheck:                 func() { testAccPreCheck(t) },
+//			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+//			//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+//			Steps: []resource.TestStep{
+//				{
+//					Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
+//					Check: resource.ComposeAggregateTestCheckFunc(
+//						resource.TestCheckResourceAttr("helm_release.test", "version", "1.2.3"),
+//					),
+//				},
+//				{
+//					Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
+//					PlanOnly: true,
+//				},
+//			},
+//		})
+//	}
 func TestAccResourceRelease_multiple_releases(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -230,8 +223,6 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 		},
 	})
 }
-
-// TEST CASE PASS
 func TestAccResourceRelease_concurrent(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(3)
@@ -259,8 +250,6 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 	}
 	wg.Wait()
 }
-
-// pass
 func TestAccResourceRelease_update(t *testing.T) {
 	name := randName("update")
 	namespace := createRandomNamespace(t)
@@ -292,8 +281,6 @@ func TestAccResourceRelease_update(t *testing.T) {
 		},
 	})
 }
-
-// PASS TEST CASE
 func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 	name := randName("test-empty-values-list")
 	namespace := createRandomNamespace(t)
@@ -317,8 +304,6 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 		},
 	})
 }
-
-// test case pass
 func TestAccResourceRelease_updateValues(t *testing.T) {
 	name := randName("test-update-values")
 	namespace := createRandomNamespace(t)
@@ -352,8 +337,6 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 		},
 	})
 }
-
-// PASS TEST CASE
 func TestAccResourceRelease_cloakValues(t *testing.T) {
 	name := randName("test-update-values")
 	namespace := createRandomNamespace(t)
@@ -378,8 +361,6 @@ func TestAccResourceRelease_cloakValues(t *testing.T) {
 		},
 	})
 }
-
-// Test case pass
 func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 	name := randName("test-update-multiple-values")
 	namespace := createRandomNamespace(t)
@@ -415,8 +396,6 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 		},
 	})
 }
-
-// TEST CASS PASS
 func TestAccResourceRelease_repository_url(t *testing.T) {
 	name := randName("test-repository-url")
 	namespace := createRandomNamespace(t)
@@ -447,8 +426,6 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 		},
 	})
 }
-
-// PASS TEST CASE \\
 func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	name := randName("test-update-after-fail")
 	namespace := createRandomNamespace(t)
@@ -511,8 +488,6 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 		},
 	})
 }
-
-// TEST CASE PASS \\
 func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 	name := randName("test-update-existing-failed")
 	namespace := createRandomNamespace(t)
@@ -556,8 +531,6 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 		},
 	})
 }
-
-// Test case pass
 func TestAccResourceRelease_updateSetValue(t *testing.T) {
 	name := randName("test-update-set-value")
 	namespace := createRandomNamespace(t)
@@ -592,8 +565,6 @@ func TestAccResourceRelease_updateSetValue(t *testing.T) {
 		},
 	})
 }
-
-// Test case pass
 func TestAccResourceRelease_validation(t *testing.T) {
 	invalidName := "this-helm-release-name-is-longer-than-53-characters-long"
 	namespace := createRandomNamespace(t)
@@ -631,8 +602,6 @@ func checkResourceAttrExists(name, key string) resource.TestCheckFunc {
 		return fmt.Errorf("%s: Attribute '%s' expected to be set", name, key)
 	}
 }
-
-// Pass
 func TestAccResourceRelease_postrender(t *testing.T) {
 	// TODO: Add Test Fixture to return real YAML here
 
@@ -667,8 +636,6 @@ func TestAccResourceRelease_postrender(t *testing.T) {
 		},
 	})
 }
-
-// Test case pass
 func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 	name := randName("test-namespace-does-not-exist")
 	namespace := createRandomNamespace(t)
@@ -710,8 +677,6 @@ func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 		},
 	})
 }
-
-// PASS TEST CASE
 func TestAccResourceRelease_invalidName(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -737,8 +702,6 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 		},
 	})
 }
-
-// PASS TEST CASE
 func TestAccResourceRelease_createNamespace(t *testing.T) {
 	name := randName("create-namespace")
 	namespace := randName("helm-created-namespace")
@@ -962,7 +925,7 @@ func testAccHelmReleaseConfigSet(resource, ns, name, version, setValue string) s
 
 // func TestGetValuesString(t *testing.T) {
 // 	ctx := context.Background()
-// 	d := resourceRelease().Data(nil)
+// 	d := NewHelmReleaseResource().Data(nil)
 // 	err := d.Set("set", []interface{}{
 // 		map[string]interface{}{"name": "foo", "value": "42", "type": "string"},
 // 	})
@@ -1015,10 +978,11 @@ func TestUseChartVersion(t *testing.T) {
 	}
 }
 
+//check for unit test documentation
 // func TestGetListValues(t *testing.T) {
 // 	ctx := context.Background()
 
-// 	d := resourceRelease().Data(nil)
+// 	d := NewHelmReleaseResource().Create()
 // 	testValue := []string{"1", "2", "3"}
 // 	err := d.Set("set_list", []interface{}{
 // 		map[string]interface{}{"name": "foo", "value": testValue},
@@ -1263,8 +1227,6 @@ func testAccHelmReleaseConfigPostrender(resource, ns, name, binaryPath string, a
 		}
 	`, resource, name, ns, testRepositoryURL, binaryPath, fmt.Sprintf(`["%s"]`, strings.Join(args, `","`)))
 }
-
-// PASS TEST CASE
 func TestAccResourceRelease_LintFailValues(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -1295,8 +1257,6 @@ func TestAccResourceRelease_LintFailValues(t *testing.T) {
 		},
 	})
 }
-
-// PASS TEST CASE
 func TestAccResourceRelease_LintFailChart(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -1324,9 +1284,6 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 		},
 	})
 }
-
-// create: failed to create: an empty namespace may not be set during creation
-// FAIL
 func TestAccResourceRelease_FailedDeployFailsApply(t *testing.T) {
 	name := randName("test-failed-deploy-fails-apply")
 	namespace := createRandomNamespace(t)
@@ -1350,7 +1307,6 @@ func TestAccResourceRelease_FailedDeployFailsApply(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusFailed.String()),
 				),
-				// I sort of hard coded the error message that it was expecting, instead of the error message i had prior
 				ExpectError:        regexp.MustCompile(`namespaces "doesnt-exist" not found`),
 				ExpectNonEmptyPlan: true,
 			},
@@ -1361,6 +1317,7 @@ func TestAccResourceRelease_FailedDeployFailsApply(t *testing.T) {
 // Error: Missing chart dependencies, look into checkChartDependcies
 // Expected an error with patter, will have to look into this
 // FAIL
+// expected due to delete shenanigans
 func TestAccResourceRelease_dependency(t *testing.T) {
 	name := fmt.Sprintf("test-dependency-%s", acctest.RandString(10))
 	namespace := createRandomNamespace(t)
@@ -1378,7 +1335,7 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccHelmReleaseConfigDependency(testResourceName, namespace, name, false),
-				ExpectError: regexp.MustCompile("found in Chart.yaml, but missing in charts/ directory"),
+				ExpectError: regexp.MustCompile("ound in Chart.yaml, but missing in charts/ directory"),
 			},
 			{
 				Config: testAccHelmReleaseConfigDependency(testResourceName, namespace, name, true),
@@ -1418,8 +1375,6 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 		},
 	})
 }
-
-// PASS TEST CASE
 func TestAccResourceRelease_chartURL(t *testing.T) {
 	name := randName("chart-url")
 	namespace := createRandomNamespace(t)
@@ -1442,8 +1397,6 @@ func TestAccResourceRelease_chartURL(t *testing.T) {
 		},
 	})
 }
-
-// PASS TEST CASE
 func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 	name := randName("helm-repo-add")
 	namespace := createRandomNamespace(t)
@@ -1473,9 +1426,6 @@ func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 		},
 	})
 }
-
-// Error uninstalling releease, error running post-test destroy, release not loaded
-// FAIL
 func TestAccResourceRelease_delete_regression(t *testing.T) {
 	name := randName("outside-delete")
 	namespace := createRandomNamespace(t)
@@ -1589,8 +1539,6 @@ func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 		},
 	})
 }
-
-// Test case pass
 func TestAccResourceRelease_set_list_chart(t *testing.T) {
 	name := randName("helm-setlist-chart")
 	namespace := createRandomNamespace(t)
@@ -1617,8 +1565,6 @@ func TestAccResourceRelease_set_list_chart(t *testing.T) {
 		},
 	})
 }
-
-// Test case pass
 func TestAccResourceRelease_update_set_list_chart(t *testing.T) {
 	name := randName("helm-setlist-chart")
 	namespace := createRandomNamespace(t)
@@ -1760,10 +1706,6 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 		}
 	}
 }
-
-// ok
-// Error locating chart, missing registry client
-// FAIL
 func TestAccResourceRelease_OCI_repository(t *testing.T) {
 	name := randName("oci")
 	namespace := createRandomNamespace(t)
@@ -1813,8 +1755,7 @@ func TestAccResourceRelease_OCI_repository(t *testing.T) {
 	})
 }
 
-// ok
-// FAIL
+// passes but make sure to change attributes in the config to single instead of list nested attribute
 func TestAccResourceRelease_OCI_registry_login(t *testing.T) {
 	name := randName("oci")
 	namespace := createRandomNamespace(t)
@@ -1846,14 +1787,14 @@ func TestAccResourceRelease_OCI_registry_login(t *testing.T) {
 func testAccHelmReleaseConfig_OCI_login_provider(kubeconfig, resource, ns, name, repo, version, username, password, chart string) string {
 	return fmt.Sprintf(`
 provider "helm" {
-    kubernetes {
+    kubernetes = [{
         config_path = "%s"
-    }
-    registry {
+    }]
+    registry = [{
         url      = "%s"
         username = "%s"
         password = "%s"
-    }
+    }]
 }
 
 resource "helm_release" "%s" {
@@ -1864,9 +1805,6 @@ resource "helm_release" "%s" {
     chart       = "%s"
 }`, kubeconfig, repo, username, password, resource, name, ns, version, repo, chart)
 }
-
-// registry client nil
-// FAIL
 func TestAccResourceRelease_OCI_login(t *testing.T) {
 	name := randName("oci")
 	namespace := createRandomNamespace(t)
@@ -1898,8 +1836,6 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 		},
 	})
 }
-
-// test case pass
 func TestAccResourceRelease_recomputeMetadata(t *testing.T) {
 	name := randName("basic")
 	namespace := createRandomNamespace(t)
@@ -1942,7 +1878,6 @@ func TestAccResourceRelease_recomputeMetadata(t *testing.T) {
 		},
 	})
 }
-
 func testAccHelmReleaseConfig_OCI(resource, ns, name, repo, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
@@ -2152,7 +2087,7 @@ func removeSubcharts(chartName string) error {
 // 	}
 
 // 	for _, state := range states {
-// 		actual, err := resourceReleaseStateUpgradeV0(context.Background(), state, nil)
+// 		actual, err := stateUpgradeV0toV1(context.Background(), state, nil)
 // 		if err != nil {
 // 			t.Fatalf("error migrating state: %s", err)
 // 		}
