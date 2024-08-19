@@ -603,9 +603,6 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		},
 	}
 	fmt.Println("Meta initialized:", meta)
-	//tflog.Debug(ctx, "Constructed meta object", map[string]interface{}{
-	//	"meta": meta,
-	//})
 	fmt.Println("RegistryClient before initialization:", meta.RegistryClient)
 	registryClient, err := registry.NewClient()
 	if err != nil {
@@ -616,17 +613,19 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	fmt.Println("Registry client initialized")
-
 	meta.RegistryClient = registryClient
-
-	if !config.Registry.IsNull() && !config.Registry.IsUnknown() {
+	fmt.Println("Registry client initialized:", meta.RegistryClient)
+	fmt.Println("Registry client initializedv1:", !config.Registry.IsUnknown())
+	fmt.Println("Registry client initializedv2:", !config.Registry.IsNull())
+	//TODO -> 	if !config.Registry.IsNull() && !config.Registry.IsUnknown() {
+	if !config.Registry.IsUnknown() {
 		var registryConfigs []RegistryConfigModel
 		diags := config.Registry.ElementsAs(ctx, &registryConfigs, false)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
+		fmt.Println(registryConfigs)
 		for _, r := range registryConfigs {
 			if r.URL.IsNull() || r.Username.IsNull() || r.Password.IsNull() {
 				resp.Diagnostics.AddError(
@@ -725,6 +724,7 @@ func OCIRegistryPerformLogin(ctx context.Context, registryClient *registry.Clien
 	if err != nil {
 		return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
 	}
+	fmt.Println("RegistryClient after initialization provider:", registryClient)
 
 	loggedInOCIRegistries[u.Host] = ""
 	tflog.Info(ctx, fmt.Sprintf("Logged into OCI registry %q", u.Host))
