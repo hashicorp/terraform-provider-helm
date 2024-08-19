@@ -224,6 +224,37 @@ func suppressKeyring() planmodifier.String {
 	return suppressKeyringPlanModifier{}
 }
 
+type NamespacePlanModifier struct{}
+
+func (m NamespacePlanModifier) Description(context.Context) string {
+	return "Sets the namespace value from the HELM_NAMESPACE environment variable or defaults to 'default'."
+}
+
+func (m NamespacePlanModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m NamespacePlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	var namespace types.String
+	diags := req.Plan.GetAttribute(ctx, path.Root("namespace"), &namespace)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if namespace.IsNull() || namespace.ValueString() == "" {
+		envNamespace := os.Getenv("HELM_NAMESPACE")
+		if envNamespace == "" {
+			envNamespace = "default"
+		}
+		resp.PlanValue = types.StringValue(envNamespace)
+	}
+}
+
+func NewNamespacePlanModifier() planmodifier.String {
+	return &NamespacePlanModifier{}
+}
+
 func (r *HelmReleaseResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_release"
 }
@@ -302,6 +333,7 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+					NewNamespacePlanModifier(),
 				},
 				Description: "Namespace to install the release into",
 			},
@@ -677,8 +709,8 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-
-	ociDiags := OCIRegistryLogin(ctx, actionConfig, actionConfig.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.Repository_Username.ValueString(), state.Repository_Password.ValueString())
+	tflog.Debug(ctx, fmt.Sprintf("clientSearch%#v", meta.RegistryClient))
+	ociDiags := OCIRegistryLogin(ctx, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.Repository_Username.ValueString(), state.Repository_Password.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -773,9 +805,6 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 		}
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Installing chart with values: %+v", values))
-	tflog.Debug(ctx, fmt.Sprintf("Chart information: Name=%s, Version=%s", c.Metadata.Name, c.Metadata.Version))
-
 	rel, err := client.Run(c, values)
 	if err != nil && rel == nil {
 		resp.Diagnostics.AddError("installation failed", err.Error())
@@ -783,6 +812,8 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 	}
 
 	if err != nil && rel != nil {
+		fmt.Printf("Namespace value before calling resourceReleaseExists: %s\n", state.Namespace.ValueString())
+
 		exists, existsDiags := resourceReleaseExists(ctx, state.Name.ValueString(), state.Namespace.ValueString(), meta)
 		resp.Diagnostics.Append(existsDiags...)
 		if resp.Diagnostics.HasError() {
@@ -844,11 +875,12 @@ func (r *HelmReleaseResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	exists, diags := resourceReleaseExists(ctx, state.Name.ValueString(), state.Namespace.ValueString(), meta)
+	if !exists {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		if !exists {
-			resp.State.RemoveResource(ctx)
-		}
 		return
 	}
 
@@ -922,7 +954,7 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 	//?
-	ociDiags := OCIRegistryLogin(ctx, actionConfig, actionConfig.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.Repository_Username.ValueString(), state.Repository_Password.ValueString())
+	ociDiags := OCIRegistryLogin(ctx, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.Repository_Username.ValueString(), state.Repository_Password.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1063,6 +1095,14 @@ func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 	log.Printf("[DEBUG] Meta information is set")
 
+	exists, diags := resourceReleaseExists(ctx, state.Name.ValueString(), state.Namespace.ValueString(), meta)
+	if !exists {
+		return
+	}
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	// Get namespace
 	namespace := state.Namespace.ValueString()
 	log.Printf("[DEBUG] Namespace: %s", namespace)
@@ -1152,6 +1192,7 @@ func chartPathOptions(d *helmReleaseModel, meta *Meta, cpo *action.ChartPathOpti
 	if !useChartVersion(chartName, cpo.RepoURL) {
 		cpo.Version = version
 	}
+	//cpo.registryClient
 	cpo.Username = d.Repository_Username.ValueString()
 	cpo.Password = d.Repository_Password.ValueString()
 	cpo.PassCredentialsAll = d.Pass_Credentials.ValueBool()
@@ -1191,7 +1232,6 @@ func resolveChartName(repository, name string) (string, string, error) {
 	return "", name, nil
 }
 
-// 99% sure
 func getVersion(d *helmReleaseModel, meta *Meta) string {
 	version := d.Version.ValueString()
 
@@ -1714,7 +1754,6 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	}
 	var plan helmReleaseModel
 	var state *helmReleaseModel
-	//check if state is null, set plan.metadata to be unkown
 	log.Printf("Plan: %+v", state)
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -1758,7 +1797,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	repositoryUsername := plan.Repository_Username.ValueString()
 	repositoryPassword := plan.Repository_Password.ValueString()
 	chartName := plan.Chart.ValueString()
-	ociDiags := OCIRegistryLogin(ctx, actionConfig, actionConfig.RegistryClient, repositoryURL, chartName, repositoryUsername, repositoryPassword)
+	ociDiags := OCIRegistryLogin(ctx, actionConfig, m.RegistryClient, repositoryURL, chartName, repositoryUsername, repositoryPassword)
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1787,6 +1826,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 		}
 	}
 	if hasChanges {
+		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
 		plan.Metadata = types.ListUnknown(types.ObjectType{AttrTypes: metadataAttrTypes()})
 	}
 
