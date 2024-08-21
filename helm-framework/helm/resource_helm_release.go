@@ -1,5 +1,3 @@
-// MaKE SURE TO CHECK WHY THERES A METADATA BEING ADDED, DUE TO IT BEING MISSING IN THE TEST CONFIG
-// namespace needs to be
 package helm
 
 import (
@@ -58,8 +56,7 @@ func NewHelmReleaseResource() resource.Resource {
 	return &HelmReleaseResource{}
 }
 
-// TODO, USE CAMALCASE INSTEAD OF UNDERSCORES
-type helmReleaseModel struct {
+type HelmReleaseModel struct {
 	ID                         types.String `tfsdk:"id"`
 	Name                       types.String `tfsdk:"name"`
 	Repository                 types.String `tfsdk:"repository"`
@@ -160,12 +157,12 @@ type postrenderModel struct {
 	Args        types.List   `tfsdk:"args"`
 }
 
-// Supress describption
 type suppressDescriptionPlanModifier struct{}
 
 func (m suppressDescriptionPlanModifier) Description(ctx context.Context) string {
 	return "Suppress changes if the new description is an empty string"
 }
+
 func (m suppressDescriptionPlanModifier) MarkdownDescription(ctx context.Context) string {
 	return m.Description(ctx)
 }
@@ -175,6 +172,7 @@ func (m suppressDescriptionPlanModifier) PlanModifyString(ctx context.Context, r
 		resp.PlanValue = req.StateValue
 	}
 }
+
 func suppressDescription() planmodifier.String {
 	return suppressDescriptionPlanModifier{}
 }
@@ -188,6 +186,7 @@ func (m suppressDevelPlanModifier) Description(ctx context.Context) string {
 func (m suppressDevelPlanModifier) MarkdownDescription(ctx context.Context) string {
 	return m.Description(ctx)
 }
+
 func (m suppressDevelPlanModifier) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
 	var version types.String
 	req.Plan.GetAttribute(ctx, path.Root("version"), &version)
@@ -195,6 +194,7 @@ func (m suppressDevelPlanModifier) PlanModifyBool(ctx context.Context, req planm
 		resp.PlanValue = req.StateValue
 	}
 }
+
 func suppressDevel() planmodifier.Bool {
 	return suppressDevelPlanModifier{}
 }
@@ -209,6 +209,7 @@ func (m suppressKeyringPlanModifier) Description(ctx context.Context) string {
 func (m suppressKeyringPlanModifier) MarkdownDescription(ctx context.Context) string {
 	return m.Description(ctx)
 }
+
 func (m suppressKeyringPlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
 	var verify types.Bool
 	req.Plan.GetAttribute(ctx, path.Root("verify"), &verify)
@@ -216,6 +217,7 @@ func (m suppressKeyringPlanModifier) PlanModifyString(ctx context.Context, req p
 		resp.PlanValue = req.StateValue
 	}
 }
+
 func suppressKeyring() planmodifier.String {
 	return suppressKeyringPlanModifier{}
 }
@@ -611,7 +613,6 @@ func (r *HelmReleaseResource) Configure(ctx context.Context, req resource.Config
 	}
 	tflog.Debug(ctx, fmt.Sprintf("Configured meta: %+v", meta))
 	r.meta = meta
-
 }
 
 // maps version 0 state to the upgrade function.
@@ -623,6 +624,7 @@ func (r *HelmReleaseResource) UpgradeState(ctx context.Context) map[int64]resour
 		},
 	}
 }
+
 func stateUpgradeV0toV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 	var priorState map[string]interface{}
 	diags := req.State.Get(ctx, &priorState)
@@ -679,7 +681,7 @@ func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 }
 
 func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var state helmReleaseModel
+	var state HelmReleaseModel
 	diags := req.Plan.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -692,7 +694,6 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 	if meta == nil {
 		resp.Diagnostics.AddError("Initialization Error", "Meta instance is not initialized")
 		return
-	} else {
 	}
 	namespace := state.Namespace.ValueString()
 	actionConfig, err := meta.GetHelmConfiguration(ctx, namespace)
@@ -700,7 +701,6 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	tflog.Debug(ctx, fmt.Sprintf("clientSearch%#v", meta.RegistryClient))
 	ociDiags := OCIRegistryLogin(ctx, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.Repository_Username.ValueString(), state.Repository_Password.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
@@ -735,7 +735,6 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 	values, valuesDiags := getValues(ctx, &state)
 	resp.Diagnostics.Append(valuesDiags...)
 	if resp.Diagnostics.HasError() {
-		panic("Error might lie here")
 		return
 	}
 
@@ -803,8 +802,6 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 	}
 
 	if err != nil && rel != nil {
-		fmt.Printf("Namespace value before calling resourceReleaseExists: %s\n", state.Namespace.ValueString())
-
 		exists, existsDiags := resourceReleaseExists(ctx, state.Name.ValueString(), state.Namespace.ValueString(), meta)
 		resp.Diagnostics.Append(existsDiags...)
 		if resp.Diagnostics.HasError() {
@@ -838,14 +835,10 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Actual state after Create: %+v", state))
-
 }
 
 func (r *HelmReleaseResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-
-	var state helmReleaseModel
+	var state HelmReleaseModel
 
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -904,29 +897,24 @@ func (r *HelmReleaseResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("%s Done", logID))
-	//Save data into terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Desired state of the resource after update operation is applied
-	var plan helmReleaseModel
+	var plan HelmReleaseModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	//Current state of the resource before update operation is applied
-	var state helmReleaseModel
+	// Current state of the resource before update operation is applied
+	var state HelmReleaseModel
 	diags = req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, fmt.Sprintf("Plan state on Update: %+v", plan))
-	tflog.Debug(ctx, fmt.Sprintf("Actual state before Update: %+v", state))
 
 	logID := fmt.Sprintf("[resourceReleaseUpdate: %s]", state.Name.ValueString())
 	tflog.Debug(ctx, fmt.Sprintf("%s Started", logID))
@@ -934,7 +922,6 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	meta := r.meta
 	namespace := state.Namespace.ValueString()
 	tflog.Debug(ctx, fmt.Sprintf("%s Getting helm configuration for namespace: %s", logID, namespace))
-	tflog.Debug(ctx, fmt.Sprintf("%s Getting helm configuration", logID))
 	actionConfig, err := meta.GetHelmConfiguration(ctx, namespace)
 	if err != nil {
 		tflog.Debug(ctx, fmt.Sprintf("%s Failed to get helm configuration: %v", logID, err))
@@ -960,7 +947,7 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	//Check and update the chart's depenedcies if it's needed
+	// Check and update the chart's depenedcies if it's needed
 	updated, depDiags := checkChartDependencies(ctx, &plan, c, path, meta)
 	resp.Diagnostics.Append(depDiags...)
 	if resp.Diagnostics.HasError() {
@@ -1047,26 +1034,23 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
 }
 
-// c
 func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// Initialize state
-	var state helmReleaseModel
+	var state HelmReleaseModel
 	diags := req.State.Get(ctx, &state)
 
 	for _, diag := range diags {
-		log.Printf("[DEBUG] Diagnostics after state get: %s", diag.Detail())
+		tflog.Debug(ctx, fmt.Sprintf("Diagnostics after state get: %s", diag.Detail()))
 	}
 
 	// Append diagnostics to response
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		log.Printf("[ERROR] Error retrieving state: %v", resp.Diagnostics)
+		tflog.Error(ctx, fmt.Sprintf("Error retrieving state: %v", resp.Diagnostics))
 		return
 	}
-	log.Printf("[DEBUG] Retrieved state: %+v", state)
+	tflog.Debug(ctx, fmt.Sprintf("Retrieved state: %+v", state))
 
 	// Check if meta is set
 	meta := r.meta
@@ -1075,12 +1059,14 @@ func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteReq
 			"Meta not set",
 			"The meta information is not set for the resource",
 		)
-		log.Printf("[ERROR] Meta information is not set for the resource")
+		tflog.Error(ctx, "Meta information is not set for the resource")
 		return
 	}
-	log.Printf("[DEBUG] Meta information is set")
 
-	exists, diags := resourceReleaseExists(ctx, state.Name.ValueString(), state.Namespace.ValueString(), meta)
+	name := state.Name.ValueString()
+	namespace := state.Namespace.ValueString()
+
+	exists, diags := resourceReleaseExists(ctx, name, namespace, meta)
 	if !exists {
 		return
 	}
@@ -1088,9 +1074,6 @@ func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// Get namespace
-	namespace := state.Namespace.ValueString()
-	log.Printf("[DEBUG] Namespace: %s", namespace)
 
 	// Get Helm configuration
 	actionConfig, err := meta.GetHelmConfiguration(ctx, namespace)
@@ -1099,31 +1082,26 @@ func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteReq
 			"Error getting helm configuration",
 			fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err),
 		)
-		log.Printf("[ERROR] Unable to get Helm configuration for namespace %s: %s", namespace, err)
+		tflog.Error(ctx, fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	log.Printf("[DEBUG] Retrieved Helm configuration for namespace: %s", namespace)
-
-	// Get release name
-	name := state.Name.ValueString()
-	log.Printf("[DEBUG] Release name: %s", name)
+	tflog.Debug(ctx, fmt.Sprintf("Retrieved Helm configuration for namespace: %s", namespace))
 
 	// Initialize uninstall action
 	uninstall := action.NewUninstall(actionConfig)
 	uninstall.Wait = state.Wait.ValueBool()
 	uninstall.DisableHooks = state.Disable_Webhooks.ValueBool()
 	uninstall.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
-	log.Printf("[DEBUG] Uninstall configuration: Wait=%t, DisableHooks=%t, Timeout=%d", uninstall.Wait, uninstall.DisableHooks, uninstall.Timeout)
 
 	// Uninstall the release
-	log.Printf("[INFO] Uninstalling Helm release: %s", name)
+	tflog.Info(ctx, fmt.Sprintf("Uninstalling Helm release: %s", name))
 	res, err := uninstall.Run(name)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error uninstalling release",
 			fmt.Sprintf("Unable to uninstall Helm release %s: %s", name, err),
 		)
-		log.Printf("[ERROR] Unable to uninstall Helm release %s: %s", name, err)
+		tflog.Error(ctx, fmt.Sprintf("Unable to uninstall Helm release %s: %s", name, err))
 		return
 	}
 
@@ -1132,15 +1110,10 @@ func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteReq
 			"Helm uninstall returned an information message",
 			res.Info,
 		))
-		log.Printf("[WARN] Helm uninstall returned an information message: %s", res.Info)
 	}
-
-	// Remove resource from state
-	//resp.State.RemoveResource(ctx)
-
 }
 
-func chartPathOptions(d *helmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
+func chartPathOptions(d *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chartName := d.Chart.ValueString()
 	repository := d.Repository.ValueString()
@@ -1164,7 +1137,7 @@ func chartPathOptions(d *helmReleaseModel, meta *Meta, cpo *action.ChartPathOpti
 		}
 	}
 
-	version := getVersion(d, meta)
+	version := getVersion(d)
 
 	cpo.CaFile = d.Repository_Ca_File.ValueString()
 	cpo.CertFile = d.Repository_Cert_File.ValueString()
@@ -1213,29 +1186,23 @@ func resolveChartName(repository, name string) (string, string, error) {
 	return "", name, nil
 }
 
-func getVersion(d *helmReleaseModel, meta *Meta) string {
+func getVersion(d *HelmReleaseModel) string {
 	version := d.Version.ValueString()
-
 	if version == "" && d.Devel.ValueBool() {
-		tflog.Debug(context.Background(), "setting version to >0.0.0-0")
-		version = ">0.0.0-0"
-	} else {
-		version = strings.TrimSpace(version)
+		return ">0.0.0-0"
 	}
-
-	return version
+	return strings.TrimSpace(version)
 }
 
-// c
 func isChartInstallable(ch *chart.Chart) error {
-	switch ch.Metadata.Type {
-	case "", "application":
-		return nil
+	chartType := ch.Metadata.Type
+	if strings.EqualFold(chartType, "library") {
+		return errors.Errorf("library charts are not installable")
 	}
-	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
+	return nil
 }
 
-func getChart(ctx context.Context, d *helmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
+func getChart(ctx context.Context, d *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	m.Lock()
@@ -1256,6 +1223,7 @@ func getChart(ctx context.Context, d *helmReleaseModel, m *Meta, name string, cp
 
 	return c, path, diags
 }
+
 func convertSetSensitiveToSetResourceModel(ctx context.Context, sensitive set_sensitiveResourceModel) setResourceModel {
 	tflog.Debug(ctx, fmt.Sprintf("Converting set_sensitiveResourceModel: %+v", sensitive))
 
@@ -1269,7 +1237,7 @@ func convertSetSensitiveToSetResourceModel(ctx context.Context, sensitive set_se
 	return converted
 }
 
-func getValues(ctx context.Context, d *helmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
+func getValues(ctx context.Context, d *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
 	base := map[string]interface{}{}
 	var diags diag.Diagnostics
 
@@ -1401,7 +1369,7 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 	return diags
 }
 
-func logValues(ctx context.Context, values map[string]interface{}, state *helmReleaseModel) diag.Diagnostics {
+func logValues(ctx context.Context, values map[string]interface{}, state *HelmReleaseModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Copy array to avoid changing values by the cloak function.
@@ -1431,7 +1399,7 @@ func logValues(ctx context.Context, values map[string]interface{}, state *helmRe
 	return diags
 }
 
-func cloakSetValues(config map[string]interface{}, state *helmReleaseModel) {
+func cloakSetValues(config map[string]interface{}, state *HelmReleaseModel) {
 	if !state.Set_Sensitive.IsNull() {
 		var setSensitiveList []set_sensitiveResourceModel
 		diags := state.Set_Sensitive.ElementsAs(context.Background(), &setSensitiveList, false)
@@ -1479,7 +1447,7 @@ func getListValue(ctx context.Context, base map[string]interface{}, set set_list
 	return diags
 }
 
-func setReleaseAttributes(ctx context.Context, state *helmReleaseModel, r *release.Release, meta *Meta) diag.Diagnostics {
+func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *release.Release, meta *Meta) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Update state with attributes from the helm release
@@ -1579,7 +1547,7 @@ func metadataAttrTypes() map[string]attr.Type {
 	}
 }
 
-func extractSensitiveValues(state *helmReleaseModel) map[string]string {
+func extractSensitiveValues(state *HelmReleaseModel) map[string]string {
 	sensitiveValues := make(map[string]string)
 
 	if !state.Set_Sensitive.IsNull() {
@@ -1671,7 +1639,7 @@ func getRelease(ctx context.Context, m *Meta, cfg *action.Configuration, name st
 }
 
 // c
-func checkChartDependencies(ctx context.Context, d *helmReleaseModel, c *chart.Chart, path string, m *Meta) (bool, diag.Diagnostics) {
+func checkChartDependencies(ctx context.Context, d *HelmReleaseModel, c *chart.Chart, path string, m *Meta) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	p := getter.All(m.Settings)
 
@@ -1720,11 +1688,11 @@ func (r *HelmReleaseResource) StateUpgrade(ctx context.Context, version int, sta
 // We just want plan
 func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
-		//resource is being destroyed
+		// resource is being destroyed
 		return
 	}
-	var plan helmReleaseModel
-	var state *helmReleaseModel
+	var plan HelmReleaseModel
+	var state *HelmReleaseModel
 	log.Printf("Plan: %+v", state)
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -2052,7 +2020,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	resp.Plan.Set(ctx, &plan)
 }
 
-func resourceReleaseValidate(ctx context.Context, d *helmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
+func resourceReleaseValidate(ctx context.Context, d *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	cpo, name, chartDiags := chartPathOptions(d, meta, cpo)
@@ -2087,6 +2055,7 @@ func lintChart(m *Meta, name string, cpo *action.ChartPathOptions, values map[st
 
 	return resultToError(result)
 }
+
 func resultToError(r *action.LintResult) error {
 	if len(r.Errors) == 0 {
 		return nil
@@ -2149,7 +2118,7 @@ func (r *HelmReleaseResource) ImportState(ctx context.Context, req resource.Impo
 		return
 	}
 
-	var state helmReleaseModel
+	var state HelmReleaseModel
 
 	// Set additional attributes (name, description, chart)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), release.Name)...)
@@ -2185,7 +2154,6 @@ func (r *HelmReleaseResource) ImportState(ctx context.Context, req resource.Impo
 		})
 		return
 	}
-
 }
 
 func parseImportIdentifier(id string) (string, string, error) {
