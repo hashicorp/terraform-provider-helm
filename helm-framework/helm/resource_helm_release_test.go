@@ -945,7 +945,6 @@ func testAccHelmReleaseConfigSet(resource, ns, name, version, setValue string) s
 // 	}
 // }
 
-// TEST CASE PASS \\
 func TestUseChartVersion(t *testing.T) {
 
 	type test struct {
@@ -1314,8 +1313,6 @@ func TestAccResourceRelease_FailedDeployFailsApply(t *testing.T) {
 	})
 }
 
-// Error: Missing chart dependencies, look into checkChartDependcies
-// Expected an error with patter, will have to look into this
 // FAIL
 // expected due to delete shenanigans
 func TestAccResourceRelease_dependency(t *testing.T) {

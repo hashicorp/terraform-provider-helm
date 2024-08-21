@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 
-	//pathpkg "path"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,7 +30,6 @@ import (
 
 var _ provider.Provider = &HelmProvider{}
 
-// New instances of our provider. // provider initialization
 func New() func() provider.Provider {
 	return func() provider.Provider {
 		return &HelmProvider{}
@@ -99,7 +97,6 @@ type ExecConfigModel struct {
 	Args       types.List   `tfsdk:"args"`
 }
 
-// Represents custom Terraform provider for helm
 type HelmProvider struct {
 	meta *Meta
 }
@@ -310,8 +307,6 @@ func execSchema() map[string]schema.Attribute {
 
 // Setting up the provider, anything we need to get the provider running, probbaly authentication. like the api
 func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	fmt.Println("Starting Configure method")
-
 	debug := os.Getenv("HELM_DEBUG")
 	pluginsPath := os.Getenv("HELM_PLUGINS_PATH")
 	registryConfigPath := os.Getenv("HELM_REGISTRY_CONFIG_PATH")
@@ -340,11 +335,8 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		fmt.Println("Error reading config")
 		return
 	}
-	fmt.Println("Config values read from main.tf:", config)
-
 	// Override environment variables if the configuration values are provided
 	if !config.Debug.IsNull() {
 		debug = fmt.Sprintf("%t", config.Debug.ValueBool())
@@ -401,7 +393,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			return
 		}
 		if len(kubernetesConfigs) > 0 {
-			kubernetesConfig = kubernetesConfigs[0] // Assuming only one Kubernetes config is provided
+			kubernetesConfig = kubernetesConfigs[0]
 		}
 	}
 
@@ -484,7 +476,6 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	kubeConfigPathsListValue, diags := types.ListValue(types.StringType, kubeConfigPathsList)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		fmt.Println("Error converting kubeConfigPathsList to ListValue")
 		return
 	}
 
@@ -497,7 +488,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			return
 		}
 		if len(experimentsConfigs) > 0 {
-			experimentsConfig = experimentsConfigs[0] // Assuming only one Experiments config is provided
+			experimentsConfig = experimentsConfigs[0]
 		}
 	}
 
@@ -602,8 +593,6 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			"manifest": manifestExperiment,
 		},
 	}
-	fmt.Println("Meta initialized:", meta)
-	fmt.Println("RegistryClient before initialization:", meta.RegistryClient)
 	registryClient, err := registry.NewClient()
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -614,10 +603,6 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 
 	meta.RegistryClient = registryClient
-	fmt.Println("Registry client initialized:", meta.RegistryClient)
-	fmt.Println("Registry client initializedv1:", !config.Registry.IsUnknown())
-	fmt.Println("Registry client initializedv2:", !config.Registry.IsNull())
-	//TODO -> 	if !config.Registry.IsNull() && !config.Registry.IsUnknown() {
 	if !config.Registry.IsUnknown() {
 		var registryConfigs []RegistryConfigModel
 		diags := config.Registry.ElementsAs(ctx, &registryConfigs, false)
@@ -625,7 +610,6 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		fmt.Println(registryConfigs)
 		for _, r := range registryConfigs {
 			if r.URL.IsNull() || r.Username.IsNull() || r.Password.IsNull() {
 				resp.Diagnostics.AddError(
@@ -643,27 +627,22 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 				)
 				return
 			}
-			fmt.Println("OCI Registry login successful for", r.URL.ValueString())
 		}
 	} else {
 		tflog.Debug(ctx, "No registry configurations found")
 	}
-	fmt.Println("RegistryClient after initialization:", meta.RegistryClient)
-	fmt.Println("Final Meta configuration:", meta)
 	resp.DataSourceData = meta
 	resp.ResourceData = meta
 
 	tflog.Debug(ctx, "Configure method completed successfully")
 }
 
-// Defining data sources that will be implemented by the provider
 func (p *HelmProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewDataTemplate,
 	}
 }
 
-// Defining resources that will be implemented by the provider
 func (p *HelmProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewHelmReleaseResource,
@@ -675,7 +654,6 @@ var (
 	loggedInOCIRegistries = make(map[string]string)
 )
 
-// Make sure the data is coming from the data source, and not the provider block
 func OCIRegistryLogin(ctx context.Context, actionConfig *action.Configuration, registryClient *registry.Client, repository, chartName, username, password string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -689,7 +667,7 @@ func OCIRegistryLogin(ctx context.Context, actionConfig *action.Configuration, r
 	}
 
 	if ociURL == "" {
-		return diags // No OCI URL, nothing to do
+		return diags
 	}
 
 	if username != "" && password != "" {
@@ -724,8 +702,6 @@ func OCIRegistryPerformLogin(ctx context.Context, registryClient *registry.Clien
 	if err != nil {
 		return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
 	}
-	fmt.Println("RegistryClient after initialization provider:", registryClient)
-
 	loggedInOCIRegistries[u.Host] = ""
 	tflog.Info(ctx, fmt.Sprintf("Logged into OCI registry %q", u.Host))
 	return nil
@@ -743,7 +719,6 @@ func (m *Meta) GetHelmConfiguration(ctx context.Context, namespace string) (*act
 	actionConfig := new(action.Configuration)
 	kc, err := m.NewKubeConfig(ctx, namespace)
 	if err != nil {
-		fmt.Println("Error fetching new kube config:", err)
 		return nil, err
 	}
 	if err := actionConfig.Init(kc, namespace, m.HelmDriver, func(format string, v ...interface{}) {
