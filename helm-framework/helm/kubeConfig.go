@@ -54,9 +54,15 @@ func (k *KubeConfig) ToRESTMapper() (meta.RESTMapper, error) {
 		return nil, err
 	}
 
-	// Use the appropriate types for the arguments
+	// Using the appropriate types for the arguments
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(discoveryClient)
-	expander := restmapper.NewShortcutExpander(mapper, discoveryClient)
+
+	warningHandler := func(warning string) {
+		fmt.Printf("Warning: %s\n", warning)
+	}
+
+	// Pass the warning handler to the NewShortcutExpander function
+	expander := restmapper.NewShortcutExpander(mapper, discoveryClient, warningHandler)
 
 	return expander, nil
 }

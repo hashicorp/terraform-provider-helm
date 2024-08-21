@@ -10,8 +10,6 @@ import (
 	"net/url"
 	"os"
 	pathpkg "path"
-
-	//"reflect"
 	"strings"
 	"time"
 
@@ -172,7 +170,6 @@ func (m suppressDescriptionPlanModifier) MarkdownDescription(ctx context.Context
 	return m.Description(ctx)
 }
 
-// If planned value for describ is null or empty, we supress the change
 func (m suppressDescriptionPlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
 	if req.PlanValue.IsNull() || req.PlanValue.ValueString() == "" {
 		resp.PlanValue = req.StateValue
@@ -182,7 +179,6 @@ func suppressDescription() planmodifier.String {
 	return suppressDescriptionPlanModifier{}
 }
 
-// Supressing devel
 type suppressDevelPlanModifier struct{}
 
 func (m suppressDevelPlanModifier) Description(ctx context.Context) string {
@@ -516,8 +512,6 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				},
 			},
 		},
-		//I think it might be a block issue so look into that
-
 		Blocks: map[string]schema.Block{
 			"set": schema.SetNestedBlock{
 				Description: "Custom values to be merged with the values",
@@ -574,7 +568,7 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 					},
 				},
 			},
-			//Needs to be single nested attribute
+			// single nested
 			"postrender": schema.ListNestedBlock{
 				Validators: []validator.List{
 					listvalidator.SizeAtMost(1),
@@ -650,7 +644,6 @@ func stateUpgradeV0toV1(ctx context.Context, req resource.UpgradeStateRequest, r
 
 const sensitiveContentValue = "(sensitive value)"
 
-// c
 func cloakSetValue(values map[string]interface{}, valuePath string) {
 	pathKeys := strings.Split(valuePath, ".")
 	sensitiveKey := pathKeys[len(pathKeys)-1]
@@ -666,7 +659,6 @@ func cloakSetValue(values map[string]interface{}, valuePath string) {
 	m[sensitiveKey] = sensitiveContentValue
 }
 
-// c
 func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{}, len(a))
 	for k, v := range a {
@@ -686,7 +678,6 @@ func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-// c
 func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var state helmReleaseModel
 	diags := req.Plan.Get(ctx, &state)
@@ -819,7 +810,6 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		//Have it match the desired error message here for the
 		if !exists {
 			resp.Diagnostics.AddError("installation failed", err.Error())
 			return
@@ -853,7 +843,6 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 
 }
 
-// c
 func (r *HelmReleaseResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 
 	var state helmReleaseModel
@@ -889,7 +878,6 @@ func (r *HelmReleaseResource) Read(ctx context.Context, req resource.ReadRequest
 
 	c, err := meta.GetHelmConfiguration(ctx, state.Namespace.ValueString())
 	if err != nil {
-		//might be
 		resp.Diagnostics.AddError(
 			"Error getting helm configuration",
 			fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", state.Namespace.ValueString(), err),
@@ -953,13 +941,11 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	//?
 	ociDiags := OCIRegistryLogin(ctx, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.Repository_Username.ValueString(), state.Repository_Password.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// Creating update object with configuration
 	client := action.NewUpgrade(actionConfig)
 
 	cpo, chartName, cpoDiags := chartPathOptions(&plan, meta, &client.ChartPathOptions)
@@ -1070,7 +1056,6 @@ func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteReq
 	var state helmReleaseModel
 	diags := req.State.Get(ctx, &state)
 
-	// Log the diagnostics information
 	for _, diag := range diags {
 		log.Printf("[DEBUG] Diagnostics after state get: %s", diag.Detail())
 	}
@@ -1142,7 +1127,6 @@ func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteReq
 		return
 	}
 
-	// Check for any info messages from the uninstall process
 	if res.Info != "" {
 		resp.Diagnostics.Append(diag.NewWarningDiagnostic(
 			"Helm uninstall returned an information message",
@@ -1153,10 +1137,9 @@ func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteReq
 
 	// Remove resource from state
 	//resp.State.RemoveResource(ctx)
-	log.Printf("[INFO] Successfully removed Helm release %s from state", name)
+
 }
 
-// c
 func chartPathOptions(d *helmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chartName := d.Chart.ValueString()
@@ -1192,7 +1175,6 @@ func chartPathOptions(d *helmReleaseModel, meta *Meta, cpo *action.ChartPathOpti
 	if !useChartVersion(chartName, cpo.RepoURL) {
 		cpo.Version = version
 	}
-	//cpo.registryClient
 	cpo.Username = d.Repository_Username.ValueString()
 	cpo.Password = d.Repository_Password.ValueString()
 	cpo.PassCredentialsAll = d.Pass_Credentials.ValueBool()
@@ -1218,7 +1200,6 @@ func useChartVersion(chart string, repo string) bool {
 	return false
 }
 
-// c
 func resolveChartName(repository, name string) (string, string, error) {
 	_, err := url.ParseRequestURI(repository)
 	if err == nil {
@@ -1254,7 +1235,6 @@ func isChartInstallable(ch *chart.Chart) error {
 	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
-// c
 func getChart(ctx context.Context, d *helmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -1396,7 +1376,6 @@ func getValues(ctx context.Context, d *helmReleaseModel) (map[string]interface{}
 	return base, diags
 }
 
-// c
 func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -1422,7 +1401,6 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 	return diags
 }
 
-// c
 func logValues(ctx context.Context, values map[string]interface{}, state *helmReleaseModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -1453,8 +1431,6 @@ func logValues(ctx context.Context, values map[string]interface{}, state *helmRe
 	return diags
 }
 
-// maybe
-// Iterates over the SET_SENSITIVE attribute. For each item, it call cloackSetValue with config map and name of sens value
 func cloakSetValues(config map[string]interface{}, state *helmReleaseModel) {
 	if !state.Set_Sensitive.IsNull() {
 		var setSensitiveList []set_sensitiveResourceModel
@@ -1470,7 +1446,6 @@ func cloakSetValues(config map[string]interface{}, state *helmReleaseModel) {
 	}
 }
 
-// c
 func getListValue(ctx context.Context, base map[string]interface{}, set set_listResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -1558,9 +1533,6 @@ func setReleaseAttributes(ctx context.Context, state *helmReleaseModel, r *relea
 		},
 	}
 
-	// Log metadata before conversion
-	tflog.Debug(ctx, fmt.Sprintf("Metadata before conversion: %+v", metadata))
-
 	// Define the object type for metadata
 	metadataObjectType := types.ObjectType{
 		AttrTypes: metadataAttrTypes(),
@@ -1614,7 +1586,6 @@ func extractSensitiveValues(state *helmReleaseModel) map[string]string {
 		var setSensitiveList []set_sensitiveResourceModel
 		diags := state.Set_Sensitive.ElementsAs(context.Background(), &setSensitiveList, false)
 		if diags.HasError() {
-			// Handle diagnostics error
 			return sensitiveValues
 		}
 
@@ -1835,14 +1806,8 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 		req.Plan.GetAttribute(ctx, path.Root("version"), &newVersion)
 		req.State.GetAttribute(ctx, path.Root("version"), &oldVersion)
 
-		// Print original values
-		fmt.Printf("Original Old Version: '%s'\n", oldVersion.String())
-		fmt.Printf("Original New Version: '%s'\n", newVersion.String())
-
 		// Check if version has changed
 		if !newVersion.Equal(oldVersion) {
-			fmt.Println("Version has changed.")
-
 			// Remove surrounding quotes if they exist
 			oldVersionStr := strings.Trim(oldVersion.String(), "\"")
 			newVersionStr := strings.Trim(newVersion.String(), "\"")
@@ -1851,18 +1816,11 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 			oldVersionStr = strings.TrimPrefix(oldVersionStr, "v")
 			newVersionStr = strings.TrimPrefix(newVersionStr, "v")
 
-			// Print trimmed versions
-			fmt.Printf("Old Version after trimming: '%s'\n", oldVersionStr)
-			fmt.Printf("New Version after trimming: '%s'\n", newVersionStr)
-
-			// Only recompute metadata if the version actually changes
 			if oldVersionStr != newVersionStr && newVersionStr != "" {
-				fmt.Println("Old version and new version after trimming 'v' prefix are different.")
 				// Setting Metadata to a computed value
 				plan.Metadata = types.ListUnknown(types.ObjectType{AttrTypes: metadataAttrTypes()})
 			}
 		} else {
-			fmt.Println("Version has not changed.")
 		}
 	}
 
@@ -1926,8 +1884,6 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 			if resp.Diagnostics.HasError() {
 				return
 			}
-
-			// Since postrender is defined as a list but can only have one element, we fetch the first item
 			if len(postrenderList) > 0 {
 				prModel := postrenderList[0]
 
@@ -1992,7 +1948,6 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 				resp.Diagnostics.AddError("Error converting YAML manifest to JSON", err.Error())
 				return
 			}
-			// preparing the map for the func redactSensitiveValues
 			valuesMap := make(map[string]string)
 			if !plan.Set_Sensitive.IsNull() {
 				var setSensitiveList []set_sensitiveResourceModel
@@ -2067,7 +2022,6 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 			resp.Diagnostics.AddError("Error converting YAML manifest to JSON", err.Error())
 			return
 		}
-		// preparing the map for the func redactSensitiveValues
 		valuesMap := make(map[string]string)
 		if !plan.Set_Sensitive.IsNull() {
 			var setSensitiveList []set_sensitiveResourceModel
@@ -2095,15 +2049,12 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	} else {
 		plan.Version = types.StringNull()
 	}
-	//mark it as
-	//plan.Metadata = types.ListUnknown(types.ObjectType{AttrTypes: metadataAttrTypes()})
 	resp.Plan.Set(ctx, &plan)
 }
 
 func resourceReleaseValidate(ctx context.Context, d *helmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// Convert chartPathOptions call to handle diagnostics
 	cpo, name, chartDiags := chartPathOptions(d, meta, cpo)
 	diags.Append(chartDiags...)
 	if diags.HasError() {
@@ -2111,17 +2062,14 @@ func resourceReleaseValidate(ctx context.Context, d *helmReleaseModel, meta *Met
 		return diags
 	}
 
-	// Get values from the resource data
 	values, valuesDiags := getValues(ctx, d)
 	diags.Append(valuesDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	// Lint the chart
 	lintDiags := lintChart(meta, name, cpo, values)
 	if lintDiags != nil {
-		// Convert the error to a diag.Diagnostic and append
 		diagnostic := diag.NewErrorDiagnostic("Lint Error", lintDiags.Error())
 		diags = append(diags, diagnostic)
 	}
@@ -2158,7 +2106,6 @@ func resultToError(r *action.LintResult) error {
 }
 
 func (r *HelmReleaseResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Parse the import identifier to get namespace and name
 	namespace, name, err := parseImportIdentifier(req.ID)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -2168,7 +2115,6 @@ func (r *HelmReleaseResource) ImportState(ctx context.Context, req resource.Impo
 		return
 	}
 
-	// Set the basic attributes in the state
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("namespace"), namespace)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
 
@@ -2176,7 +2122,6 @@ func (r *HelmReleaseResource) ImportState(ctx context.Context, req resource.Impo
 		return
 	}
 
-	// Perform the logic to fetch the release information and set additional state attributes
 	meta := r.meta
 	if meta == nil {
 		resp.Diagnostics.AddError(

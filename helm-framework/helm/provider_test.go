@@ -96,7 +96,6 @@ func TestMain(m *testing.M) {
 		// Build the test repository and start the server
 		buildChartRepository()
 		testRepositoryURL, stopRepositoryServer = startRepositoryServer()
-		log.Println("Test repository is listening on", testRepositoryURL)
 	}
 
 	ec := m.Run()
@@ -129,24 +128,19 @@ func TestProvider(t *testing.T) {
 	if hasError(validateResponse.Diagnostics) {
 		t.Fatalf("Provider config validation failed, diagnostics: %v", validateResponse.Diagnostics)
 	}
-	log.Println("Provider configuration validated successfully.")
 
 }
 
 func createProviderServer(provider provider.Provider) (tfprotov6.ProviderServer, error) {
-	log.Println("Creating the provider server function...")
 	providerServerFunc := providerserver.NewProtocol6WithError(provider)
 	server, err := providerServerFunc()
 	if err != nil {
-		log.Printf("Error creating provider server: %v\n", err)
 	} else {
-		log.Println("Provider server function created successfully.")
 	}
 	return server, err
 }
 
 func buildChartRepository() {
-	log.Println("Building chart repository...")
 
 	if _, err := os.Stat(testRepositoryDir); os.IsNotExist(err) {
 		os.Mkdir(testRepositoryDir, os.ModePerm)
