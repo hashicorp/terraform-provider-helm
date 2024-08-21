@@ -113,32 +113,25 @@ type SetSensitiveValue struct {
 	Type  types.String `tfsdk:"type"`
 }
 
-// SetStringValue represents a custom string value to be merged with the Helm chart values.
 type SetStringValue struct {
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
 }
 
-// Postrender represents the configuration for post-rendering commands.
-// This type is used to specify commands that should be run after the Helm chart has been rendered
 type Postrender struct {
 	BinaryPath types.String `tfsdk:"binary_path"`
 }
 
-// Configure assigns the provider data to the DataTemplate struct.
 func (d *DataTemplate) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData != nil {
-		//Casting the provider data to the HelmProvider type assigning it to the provider field in data template struct
 		d.meta = req.ProviderData.(*Meta)
 	}
 }
 
-// Metadata is a placeholder for defining metadata about the data source.
 func (d *DataTemplate) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_template"
 }
 
-// Schema defines the schema for the data source attributes.
 func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Data source to render Helm chart templates.",
