@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -87,7 +87,7 @@ type KubernetesConfigModel struct {
 	ConfigContextCluster  types.String `tfsdk:"config_context_cluster"`
 	Token                 types.String `tfsdk:"token"`
 	ProxyUrl              types.String `tfsdk:"proxy_url"`
-	//Exec                  types.List   `tfsdk:"exec"`
+	// Exec                  types.List   `tfsdk:"exec"`
 }
 
 type ExecConfigModel struct {
@@ -173,6 +173,7 @@ func (p *HelmProvider) Schema(ctx context.Context, req provider.SchemaRequest, r
 		},
 	}
 }
+
 func experimentsSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"manifest": schema.BoolAttribute{
@@ -181,6 +182,7 @@ func experimentsSchema() map[string]schema.Attribute {
 		},
 	}
 }
+
 func registryResourceSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"url": schema.StringAttribute{
@@ -197,6 +199,7 @@ func registryResourceSchema() map[string]schema.Attribute {
 		},
 	}
 }
+
 func kubernetesResourceSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"host": schema.StringAttribute{
@@ -281,7 +284,6 @@ func kubernetesResourceSchema() map[string]schema.Attribute {
 
 func execSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		//TODO
 		"api_version": schema.StringAttribute{
 			Required:    true,
 			Description: "API version for the exec plugin.",
@@ -423,7 +425,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		kubeCaCert = kubernetesConfig.ClusterCaCertificate.ValueString()
 	}
 	if kubeConfigPaths != "" {
-		for _, path := range strings.Split(kubeConfigPaths, ",") {
+		for _, path := range filepath.Split(kubeConfigPaths) {
 			kubeConfigPathsList = append(kubeConfigPathsList, types.StringValue(path))
 		}
 	}
