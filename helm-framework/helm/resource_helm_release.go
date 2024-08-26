@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	pathpkg "path"
@@ -1692,12 +1691,11 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 		return
 	}
 	var plan HelmReleaseModel
-	var state *HelmReleaseModel
-	log.Printf("Plan: %+v", state)
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	var state *HelmReleaseModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1771,7 +1769,9 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
 		var oldVersion, newVersion attr.Value
+
 		req.Plan.GetAttribute(ctx, path.Root("version"), &newVersion)
+
 		req.State.GetAttribute(ctx, path.Root("version"), &oldVersion)
 
 		// Check if version has changed
@@ -1786,9 +1786,10 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 
 			if oldVersionStr != newVersionStr && newVersionStr != "" {
 				// Setting Metadata to a computed value
-				plan.Metadata = types.ListUnknown(types.ObjectType{AttrTypes: metadataAttrTypes()})
+				plan.Metadata = types.ListUnknown(types.ObjectType{
+					AttrTypes: metadataAttrTypes(),
+				})
 			}
-		} else {
 		}
 	}
 
@@ -1821,9 +1822,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	if plan.Lint.ValueBool() {
 		diags := resourceReleaseValidate(ctx, &plan, m, cpo)
 		if diags.HasError() {
-			for _, diag := range diags {
-				resp.Diagnostics.Append(diag)
-			}
+			resp.Diagnostics.Append(diags...)
 			return
 		}
 	}
@@ -1902,7 +1901,14 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 			tflog.Debug(ctx, fmt.Sprintf("%s performing dry run install", logID))
 			dry, err := install.Run(chart, values)
 			if err != nil {
+				// NOTE if the cluster is not reachable then we can't run the install
+				// this will happen if the user has their cluster creation in the
+				// same apply. We are catching this case here and marking manifest
+				// as computed to avoid breaking existing configs
+
 				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
+					// FIXME add diagnostic here
+
 					tflog.Debug(ctx, "cluster was unreachable at create time, marking manifest as computed")
 					plan.Manifest = types.StringNull()
 					return
@@ -1978,6 +1984,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 			if len(chart.Metadata.Version) > 0 && cpo.Version != "" {
 				plan.Version = types.StringValue(chart.Metadata.Version)
 			}
+			plan.Version = types.StringNull()
 			plan.Manifest = types.StringNull()
 			return
 		} else if err != nil {
@@ -2185,37 +2192,10 @@ func valuesKnown(ctx context.Context, req resource.ModifyPlanRequest) (bool, dia
 			return false, diags
 		}
 
-		// Check if the attribute is known and not null
-		if !attr.IsUnknown() || attr.IsNull() {
+		if attr.IsUnknown() {
 			return false, nil
 		}
 	}
 
 	return true, nil
-}
-
-func getDefaultAttributes() map[string]interface{} {
-	return map[string]interface{}{
-		"verify":                     false,
-		"timeout":                    int64(300),
-		"wait":                       true,
-		"wait_for_jobs":              false,
-		"disable_webhooks":           false,
-		"atomic":                     false,
-		"render_subchart_notes":      true,
-		"disable_openapi_validation": false,
-		"disable_crd_hooks":          false,
-		"force_update":               false,
-		"reset_values":               false,
-		"reuse_values":               false,
-		"recreate_pods":              false,
-		"max_history":                int64(0),
-		"skip_crds":                  false,
-		"cleanup_on_fail":            false,
-		"dependency_update":          false,
-		"replace":                    false,
-		"create_namespace":           false,
-		"lint":                       false,
-		"pass_credentials":           false,
-	}
 }
