@@ -339,8 +339,6 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	debug := os.Getenv("HELM_DEBUG") == "true" || config.Debug.ValueBool()
-
 	if !config.PluginsPath.IsNull() {
 		pluginsPath = config.PluginsPath.ValueString()
 	}
@@ -456,6 +454,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	tflog.Debug(ctx, "Config values after overrides", map[string]interface{}{
 		"config": config,
 	})
+	debug := os.Getenv("HELM_DEBUG") == "true" || config.Debug.ValueBool()
 	settings := cli.New()
 	settings.Debug = debug
 	if pluginsPath != "" {
