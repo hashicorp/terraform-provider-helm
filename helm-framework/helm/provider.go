@@ -309,7 +309,6 @@ func execSchema() map[string]schema.Attribute {
 
 // Setting up the provider, anything we need to get the provider running, probbaly authentication. like the api
 func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	debug := os.Getenv("HELM_DEBUG")
 	pluginsPath := os.Getenv("HELM_PLUGINS_PATH")
 	registryConfigPath := os.Getenv("HELM_REGISTRY_CONFIG_PATH")
 	repositoryConfigPath := os.Getenv("HELM_REPOSITORY_CONFIG_PATH")
@@ -339,10 +338,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// Override environment variables if the configuration values are provided
-	if !config.Debug.IsNull() {
-		debug = fmt.Sprintf("%t", config.Debug.ValueBool())
-	}
+
 	if !config.PluginsPath.IsNull() {
 		pluginsPath = config.PluginsPath.ValueString()
 	}
@@ -458,8 +454,9 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	tflog.Debug(ctx, "Config values after overrides", map[string]interface{}{
 		"config": config,
 	})
+	debug := os.Getenv("HELM_DEBUG") == "true" || config.Debug.ValueBool()
 	settings := cli.New()
-	settings.Debug = debug == "true"
+	settings.Debug = debug
 	if pluginsPath != "" {
 		settings.PluginsDirectory = pluginsPath
 	}
@@ -579,7 +576,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	meta := &Meta{
 		Data: &HelmProviderModel{
-			Debug:                types.BoolValue(debug == "true"),
+			Debug:                types.BoolValue(debug),
 			PluginsPath:          types.StringValue(pluginsPath),
 			RegistryConfigPath:   types.StringValue(registryConfigPath),
 			RepositoryConfigPath: types.StringValue(repositoryConfigPath),
