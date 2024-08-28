@@ -184,8 +184,8 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 			"tlsServerName": overrides.ClusterInfo.TLSServerName,
 		})
 	}
-	if !kubernetesConfig.ClusterCaCertificate.IsNull() {
-		overrides.ClusterInfo.CertificateAuthorityData = []byte(kubernetesConfig.ClusterCaCertificate.ValueString())
+	if !kubernetesConfig.ClusterCACertificate.IsNull() {
+		overrides.ClusterInfo.CertificateAuthorityData = []byte(kubernetesConfig.ClusterCACertificate.ValueString())
 		fmt.Println("Setting cluster CA certificate")
 		tflog.Debug(ctx, "Setting cluster CA certificate")
 	}
