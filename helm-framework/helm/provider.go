@@ -57,7 +57,7 @@ type HelmProviderModel struct {
 	HelmDriver           types.String `tfsdk:"helm_driver"`
 	BurstLimit           types.Int64  `tfsdk:"burst_limit"`
 	Kubernetes           types.List   `tfsdk:"kubernetes"`
-	Registry             types.List   `tfsdk:"registry"`
+	Registries           types.List   `tfsdk:"registries"`
 	Experiments          types.List   `tfsdk:"experiments"`
 }
 
@@ -156,11 +156,11 @@ func (p *HelmProvider) Schema(ctx context.Context, req provider.SchemaRequest, r
 					Attributes: kubernetesResourceSchema(),
 				},
 			},
-			"registry": schema.ListNestedAttribute{
+			"registries": schema.ListNestedAttribute{
 				Optional:    true,
 				Description: "RegistryClient configuration.",
 				NestedObject: schema.NestedAttributeObject{
-					Attributes: registryResourceSchema(),
+					Attributes: registriesResourceSchema(),
 				},
 			},
 			"experiments": schema.ListNestedAttribute{
@@ -183,7 +183,7 @@ func experimentsSchema() map[string]schema.Attribute {
 	}
 }
 
-func registryResourceSchema() map[string]schema.Attribute {
+func registriesResourceSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"url": schema.StringAttribute{
 			Required:    true,
@@ -602,9 +602,9 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 
 	meta.RegistryClient = registryClient
-	if !config.Registry.IsUnknown() {
+	if !config.Registries.IsUnknown() {
 		var registryConfigs []RegistryConfigModel
-		diags := config.Registry.ElementsAs(ctx, &registryConfigs, false)
+		diags := config.Registries.ElementsAs(ctx, &registryConfigs, false)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
