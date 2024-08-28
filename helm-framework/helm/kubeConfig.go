@@ -177,8 +177,8 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 			"insecureSkipTLSVerify": overrides.ClusterInfo.InsecureSkipTLSVerify,
 		})
 	}
-	if !kubernetesConfig.TlsServerName.IsNull() {
-		overrides.ClusterInfo.TLSServerName = kubernetesConfig.TlsServerName.ValueString()
+	if !kubernetesConfig.TLSServerName.IsNull() {
+		overrides.ClusterInfo.TLSServerName = kubernetesConfig.TLSServerName.ValueString()
 		fmt.Println("Setting TLS server name:", overrides.ClusterInfo.TLSServerName)
 		tflog.Debug(ctx, "Setting TLS server name", map[string]interface{}{
 			"tlsServerName": overrides.ClusterInfo.TLSServerName,
@@ -238,8 +238,8 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 			"token": overrides.AuthInfo.Token,
 		})
 	}
-	if !kubernetesConfig.ProxyUrl.IsNull() {
-		overrides.ClusterDefaults.ProxyURL = kubernetesConfig.ProxyUrl.ValueString()
+	if !kubernetesConfig.ProxyURL.IsNull() {
+		overrides.ClusterDefaults.ProxyURL = kubernetesConfig.ProxyURL.ValueString()
 		fmt.Println("Setting proxy URL:", overrides.ClusterDefaults.ProxyURL)
 		tflog.Debug(ctx, "Setting proxy URL", map[string]interface{}{
 			"proxyURL": overrides.ClusterDefaults.ProxyURL,
