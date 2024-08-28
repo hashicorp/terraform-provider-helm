@@ -343,7 +343,6 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	if os.Getenv("HELM_DEBUG") == "true" {
 		debug = true
 	}
-	// Override environment variables if the configuration values are provided
 	if !config.Debug.IsNull() {
 		debug = true
 	}
