@@ -76,22 +76,22 @@ type KubernetesConfigModel struct {
 	Username              types.String `tfsdk:"username"`
 	Password              types.String `tfsdk:"password"`
 	Insecure              types.Bool   `tfsdk:"insecure"`
-	TlsServerName         types.String `tfsdk:"tls_server_name"`
+	TLSServerName         types.String `tfsdk:"tls_server_name"`
 	ClientCertificate     types.String `tfsdk:"client_certificate"`
 	ClientKey             types.String `tfsdk:"client_key"`
-	ClusterCaCertificate  types.String `tfsdk:"cluster_ca_certificate"`
+	ClusterCACertificate  types.String `tfsdk:"cluster_ca_certificate"`
 	ConfigPaths           types.List   `tfsdk:"config_paths"`
 	ConfigPath            types.String `tfsdk:"config_path"`
 	ConfigContext         types.String `tfsdk:"config_context"`
 	ConfigContextAuthInfo types.String `tfsdk:"config_context_auth_info"`
 	ConfigContextCluster  types.String `tfsdk:"config_context_cluster"`
 	Token                 types.String `tfsdk:"token"`
-	ProxyUrl              types.String `tfsdk:"proxy_url"`
+	ProxyURL              types.String `tfsdk:"proxy_url"`
 	// Exec                  types.List   `tfsdk:"exec"`
 }
 
 type ExecConfigModel struct {
-	ApiVersion types.String `tfsdk:"api_version"`
+	APIVersion types.String `tfsdk:"api_version"`
 	Command    types.String `tfsdk:"command"`
 	Env        types.Map    `tfsdk:"env"`
 	Args       types.List   `tfsdk:"args"`
@@ -320,7 +320,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	kubeUser := os.Getenv("KUBE_USER")
 	kubePassword := os.Getenv("KUBE_PASSWORD")
 	kubeInsecureStr := os.Getenv("KUBE_INSECURE")
-	kubeTlsServerName := os.Getenv("KUBE_TLS_SERVER_NAME")
+	kubeTLSServerName := os.Getenv("KUBE_TLS_SERVER_NAME")
 	kubeClientCert := os.Getenv("KUBE_CLIENT_CERT_DATA")
 	kubeClientKey := os.Getenv("KUBE_CLIENT_KEY_DATA")
 	kubeCaCert := os.Getenv("KUBE_CLUSTER_CA_CERT_DATA")
@@ -412,8 +412,8 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	if !kubernetesConfig.Password.IsNull() {
 		kubePassword = kubernetesConfig.Password.ValueString()
 	}
-	if !kubernetesConfig.TlsServerName.IsNull() {
-		kubeTlsServerName = kubernetesConfig.TlsServerName.ValueString()
+	if !kubernetesConfig.TLSServerName.IsNull() {
+		kubeTLSServerName = kubernetesConfig.TLSServerName.ValueString()
 	}
 	if !kubernetesConfig.ClientCertificate.IsNull() {
 		kubeClientCert = kubernetesConfig.ClientCertificate.ValueString()
@@ -421,8 +421,8 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	if !kubernetesConfig.ClientKey.IsNull() {
 		kubeClientKey = kubernetesConfig.ClientKey.ValueString()
 	}
-	if !kubernetesConfig.ClusterCaCertificate.IsNull() {
-		kubeCaCert = kubernetesConfig.ClusterCaCertificate.ValueString()
+	if !kubernetesConfig.ClusterCACertificate.IsNull() {
+		kubeCaCert = kubernetesConfig.ClusterCACertificate.ValueString()
 	}
 	if kubeConfigPaths != "" {
 		for _, path := range filepath.Split(kubeConfigPaths) {
@@ -452,8 +452,8 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	if !kubernetesConfig.Token.IsNull() {
 		kubeToken = kubernetesConfig.Token.ValueString()
 	}
-	if !kubernetesConfig.ProxyUrl.IsNull() {
-		kubeProxy = kubernetesConfig.ProxyUrl.ValueString()
+	if !kubernetesConfig.ProxyURL.IsNull() {
+		kubeProxy = kubernetesConfig.ProxyURL.ValueString()
 	}
 	tflog.Debug(ctx, "Config values after overrides", map[string]interface{}{
 		"config": config,
@@ -522,7 +522,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			"username":                 types.StringValue(kubeUser),
 			"password":                 types.StringValue(kubePassword),
 			"insecure":                 types.BoolValue(kubeInsecure),
-			"tls_server_name":          types.StringValue(kubeTlsServerName),
+			"tls_server_name":          types.StringValue(kubeTLSServerName),
 			"client_certificate":       types.StringValue(kubeClientCert),
 			"client_key":               types.StringValue(kubeClientKey),
 			"cluster_ca_certificate":   types.StringValue(kubeCaCert),
