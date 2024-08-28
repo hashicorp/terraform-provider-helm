@@ -339,15 +339,8 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	debug := false
+	debug := os.Getenv("HELM_DEBUG") == "true" || config.Debug.ValueBool()
 
-	if os.Getenv("HELM_DEBUG") == "true" {
-		debug = true
-	}
-
-	if !config.Debug.IsNull() {
-		debug = config.Debug.ValueBool()
-	}
 	if !config.PluginsPath.IsNull() {
 		pluginsPath = config.PluginsPath.ValueString()
 	}
