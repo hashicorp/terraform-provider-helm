@@ -1738,12 +1738,8 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
 		var oldVersion, newVersion attr.Value
 
-		req.Plan.GetAttribute(ctx, path.Root("version"), &newVersion)
-
-		req.State.GetAttribute(ctx, path.Root("version"), &oldVersion)
-
 		// Check if version has changed
-		if !newVersion.Equal(oldVersion) {
+		if !plan.Version.Equal(state.Version) {
 			// Remove surrounding quotes if they exist
 			oldVersionStr := strings.Trim(oldVersion.String(), "\"")
 			newVersionStr := strings.Trim(newVersion.String(), "\"")
