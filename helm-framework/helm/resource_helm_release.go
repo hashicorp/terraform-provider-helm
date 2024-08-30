@@ -1789,7 +1789,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 
 	if m.ExperimentEnabled("manifest") {
 		// Check if all necessary values are known
-		if !valuesKnown(plan) {
+		if valuesUnknown(plan) {
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
 			plan.Manifest = types.StringNull()
 			plan.Version = types.StringNull()
@@ -2150,8 +2150,19 @@ func parseImportIdentifier(id string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-// returns true if values, set_list, set, set_sensitive are all known
-func valuesKnown(plan HelmReleaseModel) bool {
-	return !plan.Values.IsUnknown() && !plan.Set_list.IsUnknown() &&
-		!plan.Set.IsUnknown() && !plan.Set_Sensitive.IsUnknown()
+// returns true if any values, set_list, set, set_sensitive are unknown
+func valuesUnknown(plan HelmReleaseModel) bool {
+	if plan.Values.IsUnknown() {
+		return true
+	}
+	if plan.Set_list.IsUnknown() {
+		return true
+	}
+	if plan.Set.IsUnknown() {
+		return true
+	}
+	if plan.Set_Sensitive.IsUnknown() {
+		return true
+	}
+	return false
 }
