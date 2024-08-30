@@ -1684,7 +1684,6 @@ func (r *HelmReleaseResource) StateUpgrade(ctx context.Context, version int, sta
 	return state, diags
 }
 
-// We just want plan
 func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
 		// resource is being destroyed
@@ -1718,18 +1717,6 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	tflog.Debug(ctx, fmt.Sprintf("%s Initial Values: Name=%s, Namespace=%s, Repository=%s, Repository_Username=%s, Repository_Password=%s, Chart=%s", logID,
 		name, namespace, plan.Repository.ValueString(), plan.Repository_Username.ValueString(), plan.Repository_Password.ValueString(), plan.Chart.ValueString()))
 
-	if plan.Repository.IsNull() {
-		tflog.Debug(ctx, fmt.Sprintf("%s Repository is null", logID))
-	}
-	if plan.Repository_Username.IsNull() {
-		tflog.Debug(ctx, fmt.Sprintf("%s Repository_Username is null", logID))
-	}
-	if plan.Repository_Password.IsNull() {
-		tflog.Debug(ctx, fmt.Sprintf("%s Repository_Password is null", logID))
-	}
-	if plan.Chart.IsNull() {
-		tflog.Debug(ctx, fmt.Sprintf("%s Chart is null", logID))
-	}
 	repositoryURL := plan.Repository.ValueString()
 	repositoryUsername := plan.Repository_Username.ValueString()
 	repositoryPassword := plan.Repository_Password.ValueString()
