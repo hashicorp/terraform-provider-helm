@@ -1983,9 +1983,25 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 
 // returns true if any metadata fields have changed
 func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
-	return !(plan.Chart.Equal(state.Chart) && plan.Repository.Equal(state.Repository) &&
-		plan.Values.Equal(state.Values) && plan.Set.Equal(state.Set) &&
-		plan.Set_Sensitive.Equal(state.Set_Sensitive) && plan.Set_list.Equal(state.Set_list))
+	if plan.Chart.Equal(state.Chart) {
+		return true
+	}
+	if plan.Repository.Equal(state.Repository) {
+		return true
+	}
+	if plan.Values.Equal(state.Values) {
+		return true
+	}
+	if plan.Set.Equal(state.Set) {
+		return true
+	}
+	if plan.Set_Sensitive.Equal(state.Set_Sensitive) {
+		return true
+	}
+	if plan.Set_list.Equal(state.Set_list) {
+		return true
+	}
+	return false
 }
 
 func resourceReleaseValidate(ctx context.Context, d *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
