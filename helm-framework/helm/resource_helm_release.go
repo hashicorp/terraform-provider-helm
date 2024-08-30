@@ -1789,12 +1789,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 
 	if m.ExperimentEnabled("manifest") {
 		// Check if all necessary values are known
-		known, diags := valuesKnown(ctx, req)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if !known {
+		if !isValuesKnown(plan) {
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
 			plan.Manifest = types.StringNull()
 			plan.Version = types.StringNull()
@@ -2139,29 +2134,22 @@ func parseImportIdentifier(id string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-func valuesKnown(ctx context.Context, req resource.ModifyPlanRequest) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
+// returns true if values, set_list, set, set_sensitive are known
+func isValuesKnown(plan HelmReleaseModel) bool {
+	return !(isListKnownAndNull(plan.Values) && isListKnownAndNull(plan.Set_list) &&
+		isSetKnownAndNull(plan.Set) && isSetKnownAndNull(plan.Set_Sensitive))
+}
 
-	// List of attributes to check
-	checkAttributes := []path.Path{
-		path.Root("values"),
-		path.Root("set"),
-		path.Root("set_sensitive"),
-		path.Root("set_list"),
+func isListKnownAndNull(list basetypes.ListValue) bool {
+	if !list.IsUnknown() && list.IsNull() {
+		return true
 	}
+	return false
+}
 
-	for _, attrPath := range checkAttributes {
-		var attr attr.Value
-		// Get the attribute value from the plan
-		diags = req.Plan.GetAttribute(ctx, attrPath, &attr)
-		if diags.HasError() {
-			return false, diags
-		}
-
-		if attr.IsUnknown() {
-			return false, nil
-		}
+func isSetKnownAndNull(set basetypes.SetValue) bool {
+	if !set.IsUnknown() && set.IsNull() {
+		return true
 	}
-
-	return true, nil
+	return false
 }
