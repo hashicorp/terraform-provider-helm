@@ -1684,7 +1684,6 @@ func (r *HelmReleaseResource) StateUpgrade(ctx context.Context, version int, sta
 	return state, diags
 }
 
-// We just want plan
 func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
 		// resource is being destroyed
@@ -1718,18 +1717,6 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	tflog.Debug(ctx, fmt.Sprintf("%s Initial Values: Name=%s, Namespace=%s, Repository=%s, Repository_Username=%s, Repository_Password=%s, Chart=%s", logID,
 		name, namespace, plan.Repository.ValueString(), plan.Repository_Username.ValueString(), plan.Repository_Password.ValueString(), plan.Chart.ValueString()))
 
-	if plan.Repository.IsNull() {
-		tflog.Debug(ctx, fmt.Sprintf("%s Repository is null", logID))
-	}
-	if plan.Repository_Username.IsNull() {
-		tflog.Debug(ctx, fmt.Sprintf("%s Repository_Username is null", logID))
-	}
-	if plan.Repository_Password.IsNull() {
-		tflog.Debug(ctx, fmt.Sprintf("%s Repository_Password is null", logID))
-	}
-	if plan.Chart.IsNull() {
-		tflog.Debug(ctx, fmt.Sprintf("%s Chart is null", logID))
-	}
 	repositoryURL := plan.Repository.ValueString()
 	repositoryUsername := plan.Repository_Username.ValueString()
 	repositoryPassword := plan.Repository_Password.ValueString()
@@ -1743,46 +1730,18 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	// Always set desired state to DEPLOYED
 	plan.Status = types.StringValue(release.StatusDeployed.String())
 
-	recomputeMetadataFields := []string{
-		"chart",
-		"repository",
-		"values",
-		"set",
-		"set_sensitive",
-		"set_list",
-	}
-	hasChanges := false
-	for _, field := range recomputeMetadataFields {
-		// We are using Plan.GetAttribute to check if the attribute has changed
-		var oldValue, newValue attr.Value
-		req.Plan.GetAttribute(ctx, path.Root(field), &newValue)
-		req.State.GetAttribute(ctx, path.Root(field), &oldValue)
-		if !newValue.Equal(oldValue) {
-			hasChanges = true
-			break
-		}
-	}
-	if hasChanges {
+	if recomputeMetadata(plan, state) {
 		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
 		plan.Metadata = types.ListUnknown(types.ObjectType{AttrTypes: metadataAttrTypes()})
 	}
 
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
-		var oldVersion, newVersion attr.Value
-
-		req.Plan.GetAttribute(ctx, path.Root("version"), &newVersion)
-
-		req.State.GetAttribute(ctx, path.Root("version"), &oldVersion)
-
 		// Check if version has changed
-		if !newVersion.Equal(oldVersion) {
-			// Remove surrounding quotes if they exist
-			oldVersionStr := strings.Trim(oldVersion.String(), "\"")
-			newVersionStr := strings.Trim(newVersion.String(), "\"")
+		if !plan.Version.Equal(state.Version) {
 
 			// Ensure trimming 'v' prefix correctly
-			oldVersionStr = strings.TrimPrefix(oldVersionStr, "v")
-			newVersionStr = strings.TrimPrefix(newVersionStr, "v")
+			oldVersionStr := strings.TrimPrefix(state.Version.String(), "v")
+			newVersionStr := strings.TrimPrefix(plan.Version.String(), "v")
 
 			if oldVersionStr != newVersionStr && newVersionStr != "" {
 				// Setting Metadata to a computed value
@@ -1830,12 +1789,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 
 	if m.ExperimentEnabled("manifest") {
 		// Check if all necessary values are known
-		known, diags := valuesKnown(ctx, req)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if !known {
+		if valuesUnknown(plan) {
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
 			plan.Manifest = types.StringNull()
 			plan.Version = types.StringNull()
@@ -2027,6 +1981,29 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	resp.Plan.Set(ctx, &plan)
 }
 
+// returns true if any metadata fields have changed
+func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
+	if plan.Chart.Equal(state.Chart) {
+		return true
+	}
+	if plan.Repository.Equal(state.Repository) {
+		return true
+	}
+	if plan.Values.Equal(state.Values) {
+		return true
+	}
+	if plan.Set.Equal(state.Set) {
+		return true
+	}
+	if plan.Set_Sensitive.Equal(state.Set_Sensitive) {
+		return true
+	}
+	if plan.Set_list.Equal(state.Set_list) {
+		return true
+	}
+	return false
+}
+
 func resourceReleaseValidate(ctx context.Context, d *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -2173,29 +2150,19 @@ func parseImportIdentifier(id string) (string, string, error) {
 	return parts[0], parts[1], nil
 }
 
-func valuesKnown(ctx context.Context, req resource.ModifyPlanRequest) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	// List of attributes to check
-	checkAttributes := []path.Path{
-		path.Root("values"),
-		path.Root("set"),
-		path.Root("set_sensitive"),
-		path.Root("set_list"),
+// returns true if any values, set_list, set, set_sensitive are unknown
+func valuesUnknown(plan HelmReleaseModel) bool {
+	if plan.Values.IsUnknown() {
+		return true
 	}
-
-	for _, attrPath := range checkAttributes {
-		var attr attr.Value
-		// Get the attribute value from the plan
-		diags = req.Plan.GetAttribute(ctx, attrPath, &attr)
-		if diags.HasError() {
-			return false, diags
-		}
-
-		if attr.IsUnknown() {
-			return false, nil
-		}
+	if plan.Set_list.IsUnknown() {
+		return true
 	}
-
-	return true, nil
+	if plan.Set.IsUnknown() {
+		return true
+	}
+	if plan.Set_Sensitive.IsUnknown() {
+		return true
+	}
+	return false
 }
