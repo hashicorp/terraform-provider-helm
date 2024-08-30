@@ -1730,26 +1730,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	// Always set desired state to DEPLOYED
 	plan.Status = types.StringValue(release.StatusDeployed.String())
 
-	recomputeMetadataFields := []string{
-		"chart",
-		"repository",
-		"values",
-		"set",
-		"set_sensitive",
-		"set_list",
-	}
-	hasChanges := false
-	for _, field := range recomputeMetadataFields {
-		// We are using Plan.GetAttribute to check if the attribute has changed
-		var oldValue, newValue attr.Value
-		req.Plan.GetAttribute(ctx, path.Root(field), &newValue)
-		req.State.GetAttribute(ctx, path.Root(field), &oldValue)
-		if !newValue.Equal(oldValue) {
-			hasChanges = true
-			break
-		}
-	}
-	if hasChanges {
+	if recomputeMetadata(plan, state) {
 		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
 		plan.Metadata = types.ListUnknown(types.ObjectType{AttrTypes: metadataAttrTypes()})
 	}
@@ -2012,6 +1993,13 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 		plan.Version = types.StringNull()
 	}
 	resp.Plan.Set(ctx, &plan)
+}
+
+// returns true if any metadata fields have changed
+func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
+	return !(plan.Chart.Equal(state.Chart) && plan.Repository.Equal(state.Repository) &&
+		plan.Values.Equal(state.Values) && plan.Set.Equal(state.Set) &&
+		plan.Set_Sensitive.Equal(state.Set_Sensitive) && plan.Set_list.Equal(state.Set_list))
 }
 
 func resourceReleaseValidate(ctx context.Context, d *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
