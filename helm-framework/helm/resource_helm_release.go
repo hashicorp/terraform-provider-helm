@@ -1129,9 +1129,9 @@ func chartPathOptions(d *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOpti
 		chartName = u.String()
 	} else {
 		var err error
-		repositoryURL, chartName, err = resolveChartName(repository, strings.TrimSpace(chartName))
+		repositoryURL, chartName, err = buildChartNameWithRepository(repository, strings.TrimSpace(chartName))
 		if err != nil {
-			diags.AddError("Error Resolving Chart Name", fmt.Sprintf("Could not resolve chart name for repository %s and chart %s: %s", repository, chartName, err))
+			diags.AddError("Error building Chart Name With Repository", fmt.Sprintf("Could not build Chart Name With Repository %s and chart %s: %s", repository, chartName, err))
 			return nil, "", diags
 		}
 	}
@@ -1172,7 +1172,7 @@ func useChartVersion(chart string, repo string) bool {
 	return false
 }
 
-func resolveChartName(repository, name string) (string, string, error) {
+func buildChartNameWithRepository(repository, name string) (string, string, error) {
 	_, err := url.ParseRequestURI(repository)
 	if err == nil {
 		return repository, name, nil
