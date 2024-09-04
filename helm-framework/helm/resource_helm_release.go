@@ -1112,10 +1112,10 @@ func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 }
 
-func chartPathOptions(d *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
+func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	chartName := d.Chart.ValueString()
-	repository := d.Repository.ValueString()
+	chartName := model.Chart.ValueString()
+	repository := model.Repository.ValueString()
 
 	var repositoryURL string
 	if registry.IsOCI(repository) {
@@ -1136,20 +1136,20 @@ func chartPathOptions(d *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOpti
 		}
 	}
 
-	version := getVersion(d)
+	version := getVersion(model)
 
-	cpo.CaFile = d.Repository_Ca_File.ValueString()
-	cpo.CertFile = d.Repository_Cert_File.ValueString()
-	cpo.KeyFile = d.Repository_Key_File.ValueString()
-	cpo.Keyring = d.Keyring.ValueString()
+	cpo.CaFile = model.Repository_Ca_File.ValueString()
+	cpo.CertFile = model.Repository_Cert_File.ValueString()
+	cpo.KeyFile = model.Repository_Key_File.ValueString()
+	cpo.Keyring = model.Keyring.ValueString()
 	cpo.RepoURL = repositoryURL
-	cpo.Verify = d.Verify.ValueBool()
+	cpo.Verify = model.Verify.ValueBool()
 	if !useChartVersion(chartName, cpo.RepoURL) {
 		cpo.Version = version
 	}
-	cpo.Username = d.Repository_Username.ValueString()
-	cpo.Password = d.Repository_Password.ValueString()
-	cpo.PassCredentialsAll = d.Pass_Credentials.ValueBool()
+	cpo.Username = model.Repository_Username.ValueString()
+	cpo.Password = model.Repository_Password.ValueString()
+	cpo.PassCredentialsAll = model.Pass_Credentials.ValueBool()
 
 	return cpo, chartName, diags
 }
@@ -1185,9 +1185,9 @@ func buildChartNameWithRepository(repository, name string) (string, string, erro
 	return "", name, nil
 }
 
-func getVersion(d *HelmReleaseModel) string {
-	version := d.Version.ValueString()
-	if version == "" && d.Devel.ValueBool() {
+func getVersion(model *HelmReleaseModel) string {
+	version := model.Version.ValueString()
+	if version == "" && model.Devel.ValueBool() {
 		return ">0.0.0-0"
 	}
 	return strings.TrimSpace(version)
@@ -1201,7 +1201,7 @@ func isChartInstallable(ch *chart.Chart) error {
 	return nil
 }
 
-func getChart(ctx context.Context, d *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
+func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	m.Lock()
@@ -1236,12 +1236,12 @@ func convertSetSensitiveToSetResourceModel(ctx context.Context, sensitive set_se
 	return converted
 }
 
-func getValues(ctx context.Context, d *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
+func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
 	base := map[string]interface{}{}
 	var diags diag.Diagnostics
 
 	// Processing "values" attribute
-	for _, raw := range d.Values.Elements() {
+	for _, raw := range model.Values.Elements() {
 		if raw.IsNull() {
 			continue
 		}
@@ -1267,10 +1267,10 @@ func getValues(ctx context.Context, d *HelmReleaseModel) (map[string]interface{}
 	}
 
 	// Processing "set" attribute
-	if !d.Set.IsNull() {
+	if !model.Set.IsNull() {
 		tflog.Debug(ctx, "Processing Set attribute")
 		var setList []setResourceModel
-		setDiags := d.Set.ElementsAs(ctx, &setList, false)
+		setDiags := model.Set.ElementsAs(ctx, &setList, false)
 		diags.Append(setDiags...)
 		if diags.HasError() {
 			return nil, diags
@@ -1288,10 +1288,10 @@ func getValues(ctx context.Context, d *HelmReleaseModel) (map[string]interface{}
 	}
 
 	// Processing "set_list" attribute
-	if !d.Set_list.IsUnknown() {
+	if !model.Set_list.IsUnknown() {
 		tflog.Debug(ctx, "Processing Set_list attribute")
 		var setListList []set_listResourceModel
-		setListDiags := d.Set_list.ElementsAs(ctx, &setListList, false)
+		setListDiags := model.Set_list.ElementsAs(ctx, &setListList, false)
 		diags.Append(setListDiags...)
 		if diags.HasError() {
 			tflog.Debug(ctx, "Error occurred while processing Set_list attribute")
@@ -1310,10 +1310,10 @@ func getValues(ctx context.Context, d *HelmReleaseModel) (map[string]interface{}
 	}
 
 	// Processing "set_sensitive" attribute
-	if !d.Set_Sensitive.IsNull() {
+	if !model.Set_Sensitive.IsNull() {
 		tflog.Debug(ctx, "Processing Set_Sensitive attribute")
 		var setSensitiveList []set_sensitiveResourceModel
-		setSensitiveDiags := d.Set_Sensitive.ElementsAs(ctx, &setSensitiveList, false)
+		setSensitiveDiags := model.Set_Sensitive.ElementsAs(ctx, &setSensitiveList, false)
 		diags.Append(setSensitiveDiags...)
 		if diags.HasError() {
 			tflog.Debug(ctx, "Error occurred while processing Set_Sensitive attribute")
@@ -1333,7 +1333,7 @@ func getValues(ctx context.Context, d *HelmReleaseModel) (map[string]interface{}
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Final merged values: %v", base))
-	logDiags := logValues(ctx, base, d)
+	logDiags := logValues(ctx, base, model)
 	diags.Append(logDiags...)
 	if diags.HasError() {
 		tflog.Debug(ctx, "Error occurred while logging values")
@@ -1638,18 +1638,18 @@ func getRelease(ctx context.Context, m *Meta, cfg *action.Configuration, name st
 }
 
 // c
-func checkChartDependencies(ctx context.Context, d *HelmReleaseModel, c *chart.Chart, path string, m *Meta) (bool, diag.Diagnostics) {
+func checkChartDependencies(ctx context.Context, model *HelmReleaseModel, c *chart.Chart, path string, m *Meta) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	p := getter.All(m.Settings)
 
 	if req := c.Metadata.Dependencies; req != nil {
 		err := action.CheckDependencies(c, req)
 		if err != nil {
-			if d.Dependency_Update.ValueBool() {
+			if model.Dependency_Update.ValueBool() {
 				man := &downloader.Manager{
 					Out:              os.Stdout,
 					ChartPath:        path,
-					Keyring:          d.Keyring.ValueString(),
+					Keyring:          model.Keyring.ValueString(),
 					SkipUpdate:       false,
 					Getters:          p,
 					RepositoryConfig: m.Settings.RepositoryConfig,
@@ -2004,17 +2004,17 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 	return false
 }
 
-func resourceReleaseValidate(ctx context.Context, d *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
+func resourceReleaseValidate(ctx context.Context, model *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	cpo, name, chartDiags := chartPathOptions(d, meta, cpo)
+	cpo, name, chartDiags := chartPathOptions(model, meta, cpo)
 	diags.Append(chartDiags...)
 	if diags.HasError() {
 		diags.AddError("Malformed values", fmt.Sprintf("Chart path options error: %s", chartDiags))
 		return diags
 	}
 
-	values, valuesDiags := getValues(ctx, d)
+	values, valuesDiags := getValues(ctx, model)
 	diags.Append(valuesDiags...)
 	if diags.HasError() {
 		return diags
