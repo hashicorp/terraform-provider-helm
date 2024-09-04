@@ -260,8 +260,133 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 	resp.Schema = schema.Schema{
 		Description: "Schema to define attributes that are available in the resource",
 		Attributes: map[string]schema.Attribute{
+			"atomic": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used",
+			},
+			"chart": schema.StringAttribute{
+				Required:    true,
+				Description: "Chart name to be installed. A path may be used",
+			},
+			"cleanup_on_fail": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "Allow deletion of new resources created in this upgrade when upgrade fails",
+			},
+			"create_namespace": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "Create the namespace if it does not exist",
+			},
+			"dependency_update": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "Run helm dependency update before installing the chart",
+			},
+			"description": schema.StringAttribute{
+				Optional:    true,
+				Description: "Add a custom description",
+				PlanModifiers: []planmodifier.String{
+					suppressDescription(),
+				},
+			},
+			"devel": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If 'version' is set, this is ignored",
+				PlanModifiers: []planmodifier.Bool{
+					suppressDevel(),
+				},
+			},
+			"disable_crd_hooks": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "Prevent CRD hooks from running, but run other hooks. See helm install --no-crd-hook",
+			},
+			"disable_openapi_validation": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
+			},
+			"disable_webhooks": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "Prevent hooks from running",
+			},
+			"force_update": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "Force resource update through delete/recreate if needed.",
+			},
 			"id": schema.StringAttribute{
 				Computed: true,
+			},
+			"keyring": schema.StringAttribute{
+				Optional:    true,
+				Description: "Location of public keys used for verification, Used only if 'verify is true'",
+				PlanModifiers: []planmodifier.String{
+					suppressKeyring(),
+				},
+			},
+			"lint": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "Run helm lint when planning",
+			},
+			"manifest": schema.StringAttribute{
+				Description: "The rendered manifest as JSON.",
+				Computed:    true,
+			},
+			"max_history": schema.Int64Attribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     int64default.StaticInt64(0),
+				Description: "Limit the maximum number of revisions saved per release. Use 0 for no limit",
+			},
+			"metadata": schema.ListNestedAttribute{
+				Description: "Status of the deployed release.",
+				Computed:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"app_version": schema.StringAttribute{
+							Computed:    true,
+							Description: "The version number of the application being deployed",
+						},
+						"chart": schema.StringAttribute{
+							Computed:    true,
+							Description: "The name of the chart",
+						},
+						"name": schema.StringAttribute{
+							Computed:    true,
+							Description: "Name is the name of the release",
+						},
+						"namespace": schema.StringAttribute{
+							Computed:    true,
+							Description: "Namespace is the kubernetes namespace of the release",
+						},
+						"revision": schema.Int64Attribute{
+							Computed:    true,
+							Description: "Version is an int32 which represents the version of the release",
+						},
+						"values": schema.StringAttribute{
+							Computed:    true,
+							Description: "Set of extra values. added to the chart. The sensitive data is cloaked. JSON encoded.",
+						},
+						"version": schema.StringAttribute{
+							Computed:    true,
+							Description: "A SemVer 2 conformant version string of the chart",
+						},
+					},
+				},
 			},
 			"name": schema.StringAttribute{
 				Required: true,
@@ -273,58 +398,6 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				},
 				Description: "Release name. The length must not be longer than 53 characters",
 			},
-			"repository": schema.StringAttribute{
-				Optional:    true,
-				Description: "Repository where to locate the requested chart. If it is a URL, the chart is installed without installing the repository",
-			},
-			"repository_key_file": schema.StringAttribute{
-				Optional:    true,
-				Description: "The repositories cert key file",
-			},
-			"repository_cert_file": schema.StringAttribute{
-				Optional:    true,
-				Description: "The repositories cert file",
-			},
-			"repository_ca_file": schema.StringAttribute{
-				Optional:    true,
-				Description: "The Repositories CA file",
-			},
-			"repository_username": schema.StringAttribute{
-				Optional:    true,
-				Description: "Username for HTTP basic authentication",
-			},
-			"repository_password": schema.StringAttribute{
-				Optional:    true,
-				Sensitive:   true,
-				Description: "Password for HTTP basic authentication",
-			},
-			"pass_credentials": schema.BoolAttribute{
-				Optional:    true,
-				Description: "Pass credentials to all domains",
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-			},
-			"chart": schema.StringAttribute{
-				Required:    true,
-				Description: "Chart name to be installed. A path may be used",
-			},
-			"version": schema.StringAttribute{
-				Optional:    true,
-				Computed:    true,
-				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed",
-			},
-			"devel": schema.BoolAttribute{
-				Optional:    true,
-				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If 'version' is set, this is ignored",
-				PlanModifiers: []planmodifier.Bool{
-					suppressDevel(),
-				},
-			},
-			"values": schema.ListAttribute{
-				Optional:    true,
-				Description: "List of values in raw YAML format to pass to helm",
-				ElementType: types.StringType,
-			},
 			"namespace": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
@@ -334,54 +407,11 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				},
 				Description: "Namespace to install the release into",
 			},
-			"verify": schema.BoolAttribute{
+			"pass_credentials": schema.BoolAttribute{
 				Optional:    true,
+				Description: "Pass credentials to all domains",
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
-				Description: "Verify the package before installing it.",
-			},
-			"keyring": schema.StringAttribute{
-				Optional:    true,
-				Description: "Location of public keys used for verification, Used only if 'verify is true'",
-				PlanModifiers: []planmodifier.String{
-					suppressKeyring(),
-				},
-			},
-			"timeout": schema.Int64Attribute{
-				Optional:    true,
-				Computed:    true,
-				Default:     int64default.StaticInt64(300),
-				Description: "Time in seconds to wait for any individual kubernetes operation",
-			},
-			"disable_webhooks": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-				Description: "Prevent hooks from running",
-			},
-			"disable_crd_hooks": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-				Description: "Prevent CRD hooks from running, but run other hooks. See helm install --no-crd-hook",
-			},
-			"reuse_values": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored",
-				Default:     booldefault.StaticBool(false),
-			},
-			"reset_values": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Description: "When upgrading, reset the values to the ones built into the chart",
-				Default:     booldefault.StaticBool(false),
-			},
-			"force_update": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-				Description: "Force resource update through delete/recreate if needed.",
 			},
 			"recreate_pods": schema.BoolAttribute{
 				Optional:    true,
@@ -389,23 +419,54 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				Default:     booldefault.StaticBool(false),
 				Description: "Perform pods restart during upgrade/rollback",
 			},
-			"cleanup_on_fail": schema.BoolAttribute{
+			"render_subchart_notes": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
+				Description: "If set, render subchart notes along with the parent",
+			},
+			"replace": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
-				Description: "Allow deletion of new resources created in this upgrade when upgrade fails",
+				Description: "Re-use the given name, even if that name is already used. This is unsafe in production",
 			},
-			"max_history": schema.Int64Attribute{
+			"repository": schema.StringAttribute{
+				Optional:    true,
+				Description: "Repository where to locate the requested chart. If it is a URL, the chart is installed without installing the repository",
+			},
+			"repository_ca_file": schema.StringAttribute{
+				Optional:    true,
+				Description: "The Repositories CA file",
+			},
+			"repository_cert_file": schema.StringAttribute{
+				Optional:    true,
+				Description: "The repositories cert file",
+			},
+			"repository_key_file": schema.StringAttribute{
+				Optional:    true,
+				Description: "The repositories cert key file",
+			},
+			"repository_password": schema.StringAttribute{
+				Optional:    true,
+				Sensitive:   true,
+				Description: "Password for HTTP basic authentication",
+			},
+			"repository_username": schema.StringAttribute{
+				Optional:    true,
+				Description: "Username for HTTP basic authentication",
+			},
+			"reset_values": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     int64default.StaticInt64(0),
-				Description: "Limit the maximum number of revisions saved per release. Use 0 for no limit",
-			},
-			"atomic": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
+				Description: "When upgrading, reset the values to the ones built into the chart",
 				Default:     booldefault.StaticBool(false),
-				Description: "If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used",
+			},
+			"reuse_values": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored",
+				Default:     booldefault.StaticBool(false),
 			},
 			"skip_crds": schema.BoolAttribute{
 				Optional:    true,
@@ -413,17 +474,31 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				Default:     booldefault.StaticBool(false),
 				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
 			},
-			"render_subchart_notes": schema.BoolAttribute{
+			"status": schema.StringAttribute{
+				Computed:    true,
+				Description: "Status of the release",
+			},
+			"timeout": schema.Int64Attribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(true),
-				Description: "If set, render subchart notes along with the parent",
+				Default:     int64default.StaticInt64(300),
+				Description: "Time in seconds to wait for any individual kubernetes operation",
 			},
-			"disable_openapi_validation": schema.BoolAttribute{
+			"values": schema.ListAttribute{
+				Optional:    true,
+				Description: "List of values in raw YAML format to pass to helm",
+				ElementType: types.StringType,
+			},
+			"verify": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
-				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
+				Description: "Verify the package before installing it.",
+			},
+			"version": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed",
 			},
 			"wait": schema.BoolAttribute{
 				Optional:    true,
@@ -436,81 +511,6 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
-			},
-			"status": schema.StringAttribute{
-				Computed:    true,
-				Description: "Status of the release",
-			},
-			"dependency_update": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-				Description: "Run helm dependency update before installing the chart",
-			},
-			"replace": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-				Description: "Re-use the given name, even if that name is already used. This is unsafe in production",
-			},
-			"description": schema.StringAttribute{
-				Optional:    true,
-				Description: "Add a custom description",
-				PlanModifiers: []planmodifier.String{
-					suppressDescription(),
-				},
-			},
-			"create_namespace": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-				Description: "Create the namespace if it does not exist",
-			},
-			"lint": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(false),
-				Description: "Run helm lint when planning",
-			},
-			"manifest": schema.StringAttribute{
-				Description: "The rendered manifest as JSON.",
-				Computed:    true,
-			},
-			"metadata": schema.ListNestedAttribute{
-				Description: "Status of the deployed release.",
-				Computed:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Computed:    true,
-							Description: "Name is the name of the release",
-						},
-						"revision": schema.Int64Attribute{
-							Computed:    true,
-							Description: "Version is an int32 which represents the version of the release",
-						},
-						"namespace": schema.StringAttribute{
-							Computed:    true,
-							Description: "Namespace is the kubernetes namespace of the release",
-						},
-						"chart": schema.StringAttribute{
-							Computed:    true,
-							Description: "The name of the chart",
-						},
-						"version": schema.StringAttribute{
-							Computed:    true,
-							Description: "A SemVer 2 conformant version string of the chart",
-						},
-						"app_version": schema.StringAttribute{
-							Computed:    true,
-							Description: "The version number of the application being deployed",
-						},
-						"values": schema.StringAttribute{
-							Computed:    true,
-							Description: "Set of extra values. added to the chart. The sensitive data is cloaked. JSON encoded.",
-						},
-					},
-				},
 			},
 		},
 		Blocks: map[string]schema.Block{
@@ -577,14 +577,14 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				Description: "Postrender command config",
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
-						"binary_path": schema.StringAttribute{
-							Required:    true,
-							Description: "The common binary path",
-						},
 						"args": schema.ListAttribute{
 							Optional:    true,
 							Description: "An argument to the post-renderer (can specify multiple)",
 							ElementType: types.StringType,
+						},
+						"binary_path": schema.StringAttribute{
+							Required:    true,
+							Description: "The common binary path",
 						},
 					},
 				},
