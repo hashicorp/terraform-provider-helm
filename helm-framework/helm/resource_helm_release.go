@@ -56,49 +56,49 @@ func NewHelmReleaseResource() resource.Resource {
 }
 
 type HelmReleaseModel struct {
-	ID                       types.String `tfsdk:"id"`
-	Name                     types.String `tfsdk:"name"`
-	Repository               types.String `tfsdk:"repository"`
-	RepositoryKeyFile        types.String `tfsdk:"repository_key_file"`
-	RepositoryCertFile       types.String `tfsdk:"repository_cert_file"`
-	RepositoryCaFile         types.String `tfsdk:"repository_ca_file"`
-	RepositoryUsername       types.String `tfsdk:"repository_username"`
-	RepositoryPassword       types.String `tfsdk:"repository_password"`
-	PassCredentials          types.Bool   `tfsdk:"pass_credentials"`
+	Atomic                   types.Bool   `tfsdk:"atomic"`
 	Chart                    types.String `tfsdk:"chart"`
-	Version                  types.String `tfsdk:"version"`
+	CleanupOnFail            types.Bool   `tfsdk:"cleanup_on_fail"`
+	CreateNamespace          types.Bool   `tfsdk:"create_namespace"`
+	DependencyUpdate         types.Bool   `tfsdk:"dependency_update"`
+	Description              types.String `tfsdk:"description"`
 	Devel                    types.Bool   `tfsdk:"devel"`
-	Values                   types.List   `tfsdk:"values"`
+	DisableCrdHooks          types.Bool   `tfsdk:"disable_crd_hooks"`
+	DisableOpenapiValidation types.Bool   `tfsdk:"disable_openapi_validation"`
+	DisableWebhooks          types.Bool   `tfsdk:"disable_webhooks"`
+	ForceUpdate              types.Bool   `tfsdk:"force_update"`
+	ID                       types.String `tfsdk:"id"`
+	Keyring                  types.String `tfsdk:"keyring"`
+	Lint                     types.Bool   `tfsdk:"lint"`
+	Manifest                 types.String `tfsdk:"manifest"`
+	MaxHistory               types.Int64  `tfsdk:"max_history"`
+	Metadata                 types.List   `tfsdk:"metadata"`
+	Name                     types.String `tfsdk:"name"`
+	Namespace                types.String `tfsdk:"namespace"`
+	PassCredentials          types.Bool   `tfsdk:"pass_credentials"`
+	Postrender               types.List   `tfsdk:"postrender"`
+	RecreatePods             types.Bool   `tfsdk:"recreate_pods"`
+	Replace                  types.Bool   `tfsdk:"replace"`
+	RenderSubchartNotes      types.Bool   `tfsdk:"render_subchart_notes"`
+	Repository               types.String `tfsdk:"repository"`
+	RepositoryCaFile         types.String `tfsdk:"repository_ca_file"`
+	RepositoryCertFile       types.String `tfsdk:"repository_cert_file"`
+	RepositoryKeyFile        types.String `tfsdk:"repository_key_file"`
+	RepositoryPassword       types.String `tfsdk:"repository_password"`
+	RepositoryUsername       types.String `tfsdk:"repository_username"`
+	ResetValues              types.Bool   `tfsdk:"reset_values"`
+	ReuseValues              types.Bool   `tfsdk:"reuse_values"`
 	Set                      types.Set    `tfsdk:"set"`
 	SetList                  types.List   `tfsdk:"set_list"`
 	SetSensitive             types.Set    `tfsdk:"set_sensitive"`
-	Namespace                types.String `tfsdk:"namespace"`
-	Verify                   types.Bool   `tfsdk:"verify"`
-	Keyring                  types.String `tfsdk:"keyring"`
-	Timeout                  types.Int64  `tfsdk:"timeout"`
-	DisableWebhooks          types.Bool   `tfsdk:"disable_webhooks"`
-	DisableCrdHooks          types.Bool   `tfsdk:"disable_crd_hooks"`
-	Reset_Values             types.Bool   `tfsdk:"reset_values"`
-	ReuseValues              types.Bool   `tfsdk:"reuse_values"`
-	ForceUpdate              types.Bool   `tfsdk:"force_update"`
-	RecreatePods             types.Bool   `tfsdk:"recreate_pods"`
-	CleanupOnFail            types.Bool   `tfsdk:"cleanup_on_fail"`
-	MaxHistory               types.Int64  `tfsdk:"max_history"`
-	Atomic                   types.Bool   `tfsdk:"atomic"`
 	SkipCrds                 types.Bool   `tfsdk:"skip_crds"`
-	RenderSubchartNotes      types.Bool   `tfsdk:"render_subchart_notes"`
-	DisableOpenapiValidation types.Bool   `tfsdk:"disable_openapi_validation"`
+	Status                   types.String `tfsdk:"status"`
+	Timeout                  types.Int64  `tfsdk:"timeout"`
+	Values                   types.List   `tfsdk:"values"`
+	Verify                   types.Bool   `tfsdk:"verify"`
+	Version                  types.String `tfsdk:"version"`
 	Wait                     types.Bool   `tfsdk:"wait"`
 	WaitForJobs              types.Bool   `tfsdk:"wait_for_jobs"`
-	Status                   types.String `tfsdk:"status"`
-	DependencyUpdate         types.Bool   `tfsdk:"dependency_update"`
-	Replace                  types.Bool   `tfsdk:"replace"`
-	Description              types.String `tfsdk:"description"`
-	CreateNamespace          types.Bool   `tfsdk:"create_namespace"`
-	Postrender               types.List   `tfsdk:"postrender"`
-	Lint                     types.Bool   `tfsdk:"lint"`
-	Manifest                 types.String `tfsdk:"manifest"`
-	Metadata                 types.List   `tfsdk:"metadata"`
 }
 
 var defaultAttributes = map[string]interface{}{
@@ -126,18 +126,18 @@ var defaultAttributes = map[string]interface{}{
 }
 
 type releaseMetaData struct {
-	Name       types.String `tfsdk:"name"`
-	Revision   types.Int64  `tfsdk:"revision"`
-	Namespace  types.String `tfsdk:"namespace"`
-	Chart      types.String `tfsdk:"chart"`
-	Version    types.String `tfsdk:"version"`
 	AppVersion types.String `tfsdk:"app_version"`
+	Chart      types.String `tfsdk:"chart"`
+	Name       types.String `tfsdk:"name"`
+	Namespace  types.String `tfsdk:"namespace"`
+	Revision   types.Int64  `tfsdk:"revision"`
+	Version    types.String `tfsdk:"version"`
 	Values     types.String `tfsdk:"values"`
 }
 type setResourceModel struct {
 	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
 	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
 }
 
 type set_listResourceModel struct {
@@ -147,13 +147,13 @@ type set_listResourceModel struct {
 
 type set_sensitiveResourceModel struct {
 	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
 	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
 }
 
 type postrenderModel struct {
-	BinaryPath types.String `tfsdk:"binary_path"`
 	Args       types.List   `tfsdk:"args"`
+	BinaryPath types.String `tfsdk:"binary_path"`
 }
 
 type suppressDescriptionPlanModifier struct{}
@@ -971,7 +971,7 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	client.SubNotes = plan.RenderSubchartNotes.ValueBool()
 	client.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
 	client.Force = plan.ForceUpdate.ValueBool()
-	client.ResetValues = plan.Reset_Values.ValueBool()
+	client.ResetValues = plan.ResetValues.ValueBool()
 	client.ReuseValues = plan.ReuseValues.ValueBool()
 	client.Recreate = plan.RecreatePods.ValueBool()
 	client.MaxHistory = int(plan.MaxHistory.ValueInt64())
@@ -1918,7 +1918,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 		upgrade.SubNotes = plan.RenderSubchartNotes.ValueBool()
 		upgrade.WaitForJobs = plan.WaitForJobs.ValueBool()
 		upgrade.Force = plan.ForceUpdate.ValueBool()
-		upgrade.ResetValues = plan.Reset_Values.ValueBool()
+		upgrade.ResetValues = plan.ResetValues.ValueBool()
 		upgrade.ReuseValues = plan.ReuseValues.ValueBool()
 		upgrade.Recreate = plan.RecreatePods.ValueBool()
 		upgrade.MaxHistory = int(plan.MaxHistory.ValueInt64())
