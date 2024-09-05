@@ -56,49 +56,49 @@ func NewHelmReleaseResource() resource.Resource {
 }
 
 type HelmReleaseModel struct {
-	ID                         types.String `tfsdk:"id"`
-	Name                       types.String `tfsdk:"name"`
-	Repository                 types.String `tfsdk:"repository"`
-	Repository_Key_File        types.String `tfsdk:"repository_key_file"`
-	Repository_Cert_File       types.String `tfsdk:"repository_cert_file"`
-	Repository_Ca_File         types.String `tfsdk:"repository_ca_file"`
-	Repository_Username        types.String `tfsdk:"repository_username"`
-	Repository_Password        types.String `tfsdk:"repository_password"`
-	Pass_Credentials           types.Bool   `tfsdk:"pass_credentials"`
-	Chart                      types.String `tfsdk:"chart"`
-	Version                    types.String `tfsdk:"version"`
-	Devel                      types.Bool   `tfsdk:"devel"`
-	Values                     types.List   `tfsdk:"values"`
-	Set                        types.Set    `tfsdk:"set"`
-	Set_list                   types.List   `tfsdk:"set_list"`
-	Set_Sensitive              types.Set    `tfsdk:"set_sensitive"`
-	Namespace                  types.String `tfsdk:"namespace"`
-	Verify                     types.Bool   `tfsdk:"verify"`
-	Keyring                    types.String `tfsdk:"keyring"`
-	Timeout                    types.Int64  `tfsdk:"timeout"`
-	Disable_Webhooks           types.Bool   `tfsdk:"disable_webhooks"`
-	Disable_Crd_Hooks          types.Bool   `tfsdk:"disable_crd_hooks"`
-	Reset_Values               types.Bool   `tfsdk:"reset_values"`
-	Reuse_Values               types.Bool   `tfsdk:"reuse_values"`
-	Force_Update               types.Bool   `tfsdk:"force_update"`
-	Recreate_Pods              types.Bool   `tfsdk:"recreate_pods"`
-	Cleanup_On_Fail            types.Bool   `tfsdk:"cleanup_on_fail"`
-	Max_History                types.Int64  `tfsdk:"max_history"`
-	Atomic                     types.Bool   `tfsdk:"atomic"`
-	Skip_Crds                  types.Bool   `tfsdk:"skip_crds"`
-	Render_Subchart_Notes      types.Bool   `tfsdk:"render_subchart_notes"`
-	Disable_Openapi_Validation types.Bool   `tfsdk:"disable_openapi_validation"`
-	Wait                       types.Bool   `tfsdk:"wait"`
-	Wait_For_Jobs              types.Bool   `tfsdk:"wait_for_jobs"`
-	Status                     types.String `tfsdk:"status"`
-	Dependency_Update          types.Bool   `tfsdk:"dependency_update"`
-	Replace                    types.Bool   `tfsdk:"replace"`
-	Description                types.String `tfsdk:"description"`
-	Create_Namespace           types.Bool   `tfsdk:"create_namespace"`
-	Postrender                 types.List   `tfsdk:"postrender"`
-	Lint                       types.Bool   `tfsdk:"lint"`
-	Manifest                   types.String `tfsdk:"manifest"`
-	Metadata                   types.List   `tfsdk:"metadata"`
+	Atomic                   types.Bool   `tfsdk:"atomic"`
+	Chart                    types.String `tfsdk:"chart"`
+	CleanupOnFail            types.Bool   `tfsdk:"cleanup_on_fail"`
+	CreateNamespace          types.Bool   `tfsdk:"create_namespace"`
+	DependencyUpdate         types.Bool   `tfsdk:"dependency_update"`
+	Description              types.String `tfsdk:"description"`
+	Devel                    types.Bool   `tfsdk:"devel"`
+	DisableCrdHooks          types.Bool   `tfsdk:"disable_crd_hooks"`
+	DisableOpenapiValidation types.Bool   `tfsdk:"disable_openapi_validation"`
+	DisableWebhooks          types.Bool   `tfsdk:"disable_webhooks"`
+	ForceUpdate              types.Bool   `tfsdk:"force_update"`
+	ID                       types.String `tfsdk:"id"`
+	Keyring                  types.String `tfsdk:"keyring"`
+	Lint                     types.Bool   `tfsdk:"lint"`
+	Manifest                 types.String `tfsdk:"manifest"`
+	MaxHistory               types.Int64  `tfsdk:"max_history"`
+	Metadata                 types.List   `tfsdk:"metadata"`
+	Name                     types.String `tfsdk:"name"`
+	Namespace                types.String `tfsdk:"namespace"`
+	PassCredentials          types.Bool   `tfsdk:"pass_credentials"`
+	Postrender               types.List   `tfsdk:"postrender"`
+	RecreatePods             types.Bool   `tfsdk:"recreate_pods"`
+	Replace                  types.Bool   `tfsdk:"replace"`
+	RenderSubchartNotes      types.Bool   `tfsdk:"render_subchart_notes"`
+	Repository               types.String `tfsdk:"repository"`
+	RepositoryCaFile         types.String `tfsdk:"repository_ca_file"`
+	RepositoryCertFile       types.String `tfsdk:"repository_cert_file"`
+	RepositoryKeyFile        types.String `tfsdk:"repository_key_file"`
+	RepositoryPassword       types.String `tfsdk:"repository_password"`
+	RepositoryUsername       types.String `tfsdk:"repository_username"`
+	ResetValues              types.Bool   `tfsdk:"reset_values"`
+	ReuseValues              types.Bool   `tfsdk:"reuse_values"`
+	Set                      types.Set    `tfsdk:"set"`
+	SetList                  types.List   `tfsdk:"set_list"`
+	SetSensitive             types.Set    `tfsdk:"set_sensitive"`
+	SkipCrds                 types.Bool   `tfsdk:"skip_crds"`
+	Status                   types.String `tfsdk:"status"`
+	Timeout                  types.Int64  `tfsdk:"timeout"`
+	Values                   types.List   `tfsdk:"values"`
+	Verify                   types.Bool   `tfsdk:"verify"`
+	Version                  types.String `tfsdk:"version"`
+	Wait                     types.Bool   `tfsdk:"wait"`
+	WaitForJobs              types.Bool   `tfsdk:"wait_for_jobs"`
 }
 
 var defaultAttributes = map[string]interface{}{
@@ -126,18 +126,18 @@ var defaultAttributes = map[string]interface{}{
 }
 
 type releaseMetaData struct {
-	Name        types.String `tfsdk:"name"`
-	Revision    types.Int64  `tfsdk:"revision"`
-	Namespace   types.String `tfsdk:"namespace"`
-	Chart       types.String `tfsdk:"chart"`
-	Version     types.String `tfsdk:"version"`
-	App_Version types.String `tfsdk:"app_version"`
-	Values      types.String `tfsdk:"values"`
+	AppVersion types.String `tfsdk:"app_version"`
+	Chart      types.String `tfsdk:"chart"`
+	Name       types.String `tfsdk:"name"`
+	Namespace  types.String `tfsdk:"namespace"`
+	Revision   types.Int64  `tfsdk:"revision"`
+	Version    types.String `tfsdk:"version"`
+	Values     types.String `tfsdk:"values"`
 }
 type setResourceModel struct {
 	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
 	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
 }
 
 type set_listResourceModel struct {
@@ -147,13 +147,13 @@ type set_listResourceModel struct {
 
 type set_sensitiveResourceModel struct {
 	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
 	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
 }
 
 type postrenderModel struct {
-	Binary_Path types.String `tfsdk:"binary_path"`
-	Args        types.List   `tfsdk:"args"`
+	Args       types.List   `tfsdk:"args"`
+	BinaryPath types.String `tfsdk:"binary_path"`
 }
 
 type suppressDescriptionPlanModifier struct{}
@@ -700,7 +700,7 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	ociDiags := OCIRegistryLogin(ctx, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.Repository_Username.ValueString(), state.Repository_Password.ValueString())
+	ociDiags := OCIRegistryLogin(ctx, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -745,21 +745,21 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 
 	client.ClientOnly = false
 	client.DryRun = false
-	client.DisableHooks = state.Disable_Webhooks.ValueBool()
+	client.DisableHooks = state.DisableWebhooks.ValueBool()
 	client.Wait = state.Wait.ValueBool()
-	client.WaitForJobs = state.Wait_For_Jobs.ValueBool()
+	client.WaitForJobs = state.WaitForJobs.ValueBool()
 	client.Devel = state.Devel.ValueBool()
-	client.DependencyUpdate = state.Dependency_Update.ValueBool()
+	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
 	client.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
 	client.Namespace = state.Namespace.ValueString()
 	client.ReleaseName = state.Name.ValueString()
 	client.Atomic = state.Atomic.ValueBool()
-	client.SkipCRDs = state.Skip_Crds.ValueBool()
-	client.SubNotes = state.Render_Subchart_Notes.ValueBool()
-	client.DisableOpenAPIValidation = state.Disable_Openapi_Validation.ValueBool()
+	client.SkipCRDs = state.SkipCrds.ValueBool()
+	client.SubNotes = state.RenderSubchartNotes.ValueBool()
+	client.DisableOpenAPIValidation = state.DisableOpenapiValidation.ValueBool()
 	client.Replace = state.Replace.ValueBool()
 	client.Description = state.Description.ValueString()
-	client.CreateNamespace = state.Create_Namespace.ValueBool()
+	client.CreateNamespace = state.CreateNamespace.ValueBool()
 
 	if !state.Postrender.IsNull() {
 		tflog.Debug(ctx, "Postrender is not null")
@@ -776,7 +776,7 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 
 			prModel := postrenderList[0]
 
-			binaryPath := prModel.Binary_Path.ValueString()
+			binaryPath := prModel.BinaryPath.ValueString()
 			argsList := prModel.Args.Elements()
 
 			var args []string
@@ -927,7 +927,7 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	ociDiags := OCIRegistryLogin(ctx, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.Repository_Username.ValueString(), state.Repository_Password.ValueString())
+	ociDiags := OCIRegistryLogin(ctx, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -963,19 +963,19 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	client.Namespace = plan.Namespace.ValueString()
 	client.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
 	client.Wait = plan.Wait.ValueBool()
-	client.WaitForJobs = plan.Wait_For_Jobs.ValueBool()
+	client.WaitForJobs = plan.WaitForJobs.ValueBool()
 	client.DryRun = false
-	client.DisableHooks = plan.Disable_Webhooks.ValueBool()
+	client.DisableHooks = plan.DisableWebhooks.ValueBool()
 	client.Atomic = plan.Atomic.ValueBool()
-	client.SkipCRDs = plan.Skip_Crds.ValueBool()
-	client.SubNotes = plan.Render_Subchart_Notes.ValueBool()
-	client.DisableOpenAPIValidation = plan.Disable_Openapi_Validation.ValueBool()
-	client.Force = plan.Force_Update.ValueBool()
-	client.ResetValues = plan.Reset_Values.ValueBool()
-	client.ReuseValues = plan.Reuse_Values.ValueBool()
-	client.Recreate = plan.Recreate_Pods.ValueBool()
-	client.MaxHistory = int(plan.Max_History.ValueInt64())
-	client.CleanupOnFail = plan.Cleanup_On_Fail.ValueBool()
+	client.SkipCRDs = plan.SkipCrds.ValueBool()
+	client.SubNotes = plan.RenderSubchartNotes.ValueBool()
+	client.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
+	client.Force = plan.ForceUpdate.ValueBool()
+	client.ResetValues = plan.ResetValues.ValueBool()
+	client.ReuseValues = plan.ReuseValues.ValueBool()
+	client.Recreate = plan.RecreatePods.ValueBool()
+	client.MaxHistory = int(plan.MaxHistory.ValueInt64())
+	client.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 	client.Description = plan.Description.ValueString()
 
 	if !plan.Postrender.IsNull() {
@@ -992,7 +992,7 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 		if len(postrenderList) > 0 {
 			prModel := postrenderList[0]
 
-			binaryPath := prModel.Binary_Path.ValueString()
+			binaryPath := prModel.BinaryPath.ValueString()
 			argsList := prModel.Args.Elements()
 
 			var args []string
@@ -1089,7 +1089,7 @@ func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteReq
 	// Initialize uninstall action
 	uninstall := action.NewUninstall(actionConfig)
 	uninstall.Wait = state.Wait.ValueBool()
-	uninstall.DisableHooks = state.Disable_Webhooks.ValueBool()
+	uninstall.DisableHooks = state.DisableWebhooks.ValueBool()
 	uninstall.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
 
 	// Uninstall the release
@@ -1138,18 +1138,18 @@ func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPath
 
 	version := getVersion(model)
 
-	cpo.CaFile = model.Repository_Ca_File.ValueString()
-	cpo.CertFile = model.Repository_Cert_File.ValueString()
-	cpo.KeyFile = model.Repository_Key_File.ValueString()
+	cpo.CaFile = model.RepositoryCaFile.ValueString()
+	cpo.CertFile = model.RepositoryCertFile.ValueString()
+	cpo.KeyFile = model.RepositoryKeyFile.ValueString()
 	cpo.Keyring = model.Keyring.ValueString()
 	cpo.RepoURL = repositoryURL
 	cpo.Verify = model.Verify.ValueBool()
 	if !useChartVersion(chartName, cpo.RepoURL) {
 		cpo.Version = version
 	}
-	cpo.Username = model.Repository_Username.ValueString()
-	cpo.Password = model.Repository_Password.ValueString()
-	cpo.PassCredentialsAll = model.Pass_Credentials.ValueBool()
+	cpo.Username = model.RepositoryUsername.ValueString()
+	cpo.Password = model.RepositoryPassword.ValueString()
+	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
 
 	return cpo, chartName, diags
 }
@@ -1288,10 +1288,10 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 	}
 
 	// Processing "set_list" attribute
-	if !model.Set_list.IsUnknown() {
+	if !model.SetList.IsUnknown() {
 		tflog.Debug(ctx, "Processing Set_list attribute")
 		var setListList []set_listResourceModel
-		setListDiags := model.Set_list.ElementsAs(ctx, &setListList, false)
+		setListDiags := model.SetList.ElementsAs(ctx, &setListList, false)
 		diags.Append(setListDiags...)
 		if diags.HasError() {
 			tflog.Debug(ctx, "Error occurred while processing Set_list attribute")
@@ -1310,10 +1310,10 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 	}
 
 	// Processing "set_sensitive" attribute
-	if !model.Set_Sensitive.IsNull() {
+	if !model.SetSensitive.IsNull() {
 		tflog.Debug(ctx, "Processing Set_Sensitive attribute")
 		var setSensitiveList []set_sensitiveResourceModel
-		setSensitiveDiags := model.Set_Sensitive.ElementsAs(ctx, &setSensitiveList, false)
+		setSensitiveDiags := model.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
 		diags.Append(setSensitiveDiags...)
 		if diags.HasError() {
 			tflog.Debug(ctx, "Error occurred while processing Set_Sensitive attribute")
@@ -1399,9 +1399,9 @@ func logValues(ctx context.Context, values map[string]interface{}, state *HelmRe
 }
 
 func cloakSetValues(config map[string]interface{}, state *HelmReleaseModel) {
-	if !state.Set_Sensitive.IsNull() {
+	if !state.SetSensitive.IsNull() {
 		var setSensitiveList []set_sensitiveResourceModel
-		diags := state.Set_Sensitive.ElementsAs(context.Background(), &setSensitiveList, false)
+		diags := state.SetSensitive.ElementsAs(context.Background(), &setSensitiveList, false)
 		if diags.HasError() {
 			// Handle diagnostics error
 			return
@@ -1549,9 +1549,9 @@ func metadataAttrTypes() map[string]attr.Type {
 func extractSensitiveValues(state *HelmReleaseModel) map[string]string {
 	sensitiveValues := make(map[string]string)
 
-	if !state.Set_Sensitive.IsNull() {
+	if !state.SetSensitive.IsNull() {
 		var setSensitiveList []set_sensitiveResourceModel
-		diags := state.Set_Sensitive.ElementsAs(context.Background(), &setSensitiveList, false)
+		diags := state.SetSensitive.ElementsAs(context.Background(), &setSensitiveList, false)
 		if diags.HasError() {
 			return sensitiveValues
 		}
@@ -1645,7 +1645,7 @@ func checkChartDependencies(ctx context.Context, model *HelmReleaseModel, c *cha
 	if req := c.Metadata.Dependencies; req != nil {
 		err := action.CheckDependencies(c, req)
 		if err != nil {
-			if model.Dependency_Update.ValueBool() {
+			if model.DependencyUpdate.ValueBool() {
 				man := &downloader.Manager{
 					Out:              os.Stdout,
 					ChartPath:        path,
@@ -1715,11 +1715,11 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 		return
 	}
 	tflog.Debug(ctx, fmt.Sprintf("%s Initial Values: Name=%s, Namespace=%s, Repository=%s, Repository_Username=%s, Repository_Password=%s, Chart=%s", logID,
-		name, namespace, plan.Repository.ValueString(), plan.Repository_Username.ValueString(), plan.Repository_Password.ValueString(), plan.Chart.ValueString()))
+		name, namespace, plan.Repository.ValueString(), plan.RepositoryUsername.ValueString(), plan.RepositoryPassword.ValueString(), plan.Chart.ValueString()))
 
 	repositoryURL := plan.Repository.ValueString()
-	repositoryUsername := plan.Repository_Username.ValueString()
-	repositoryPassword := plan.Repository_Password.ValueString()
+	repositoryUsername := plan.RepositoryUsername.ValueString()
+	repositoryPassword := plan.RepositoryPassword.ValueString()
 	chartName := plan.Chart.ValueString()
 	ociDiags := OCIRegistryLogin(ctx, actionConfig, m.RegistryClient, repositoryURL, chartName, repositoryUsername, repositoryPassword)
 	resp.Diagnostics.Append(ociDiags...)
@@ -1808,7 +1808,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 			if len(postrenderList) > 0 {
 				prModel := postrenderList[0]
 
-				binaryPath := prModel.Binary_Path.ValueString()
+				binaryPath := prModel.BinaryPath.ValueString()
 				argsList := prModel.Args.Elements()
 
 				var args []string
@@ -1829,21 +1829,21 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 			install := action.NewInstall(actionConfig)
 			install.ChartPathOptions = *cpo
 			install.DryRun = true
-			install.DisableHooks = plan.Disable_Webhooks.ValueBool()
+			install.DisableHooks = plan.DisableWebhooks.ValueBool()
 			install.Wait = plan.Wait.ValueBool()
-			install.WaitForJobs = plan.Wait_For_Jobs.ValueBool()
+			install.WaitForJobs = plan.WaitForJobs.ValueBool()
 			install.Devel = plan.Devel.ValueBool()
-			install.DependencyUpdate = plan.Dependency_Update.ValueBool()
+			install.DependencyUpdate = plan.DependencyUpdate.ValueBool()
 			install.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
 			install.Namespace = plan.Namespace.ValueString()
 			install.ReleaseName = plan.Name.ValueString()
 			install.Atomic = plan.Atomic.ValueBool()
-			install.SkipCRDs = plan.Skip_Crds.ValueBool()
-			install.SubNotes = plan.Render_Subchart_Notes.ValueBool()
-			install.DisableOpenAPIValidation = plan.Disable_Openapi_Validation.ValueBool()
+			install.SkipCRDs = plan.SkipCrds.ValueBool()
+			install.SubNotes = plan.RenderSubchartNotes.ValueBool()
+			install.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
 			install.Replace = plan.Replace.ValueBool()
 			install.Description = plan.Description.ValueString()
-			install.CreateNamespace = plan.Create_Namespace.ValueBool()
+			install.CreateNamespace = plan.CreateNamespace.ValueBool()
 			install.PostRenderer = postRenderer
 
 			values, diags := getValues(ctx, &plan)
@@ -1877,9 +1877,9 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 				return
 			}
 			valuesMap := make(map[string]string)
-			if !plan.Set_Sensitive.IsNull() {
+			if !plan.SetSensitive.IsNull() {
 				var setSensitiveList []set_sensitiveResourceModel
-				setSensitiveDiags := plan.Set_Sensitive.ElementsAs(ctx, &setSensitiveList, false)
+				setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
 				resp.Diagnostics.Append(setSensitiveDiags...)
 				if resp.Diagnostics.HasError() {
 					return
@@ -1913,16 +1913,16 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 		upgrade.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
 		upgrade.Wait = plan.Wait.ValueBool()
 		upgrade.DryRun = true
-		upgrade.DisableHooks = plan.Disable_Webhooks.ValueBool()
+		upgrade.DisableHooks = plan.DisableWebhooks.ValueBool()
 		upgrade.Atomic = plan.Atomic.ValueBool()
-		upgrade.SubNotes = plan.Render_Subchart_Notes.ValueBool()
-		upgrade.WaitForJobs = plan.Wait_For_Jobs.ValueBool()
-		upgrade.Force = plan.Force_Update.ValueBool()
-		upgrade.ResetValues = plan.Reset_Values.ValueBool()
-		upgrade.ReuseValues = plan.Reuse_Values.ValueBool()
-		upgrade.Recreate = plan.Recreate_Pods.ValueBool()
-		upgrade.MaxHistory = int(plan.Max_History.ValueInt64())
-		upgrade.CleanupOnFail = plan.Cleanup_On_Fail.ValueBool()
+		upgrade.SubNotes = plan.RenderSubchartNotes.ValueBool()
+		upgrade.WaitForJobs = plan.WaitForJobs.ValueBool()
+		upgrade.Force = plan.ForceUpdate.ValueBool()
+		upgrade.ResetValues = plan.ResetValues.ValueBool()
+		upgrade.ReuseValues = plan.ReuseValues.ValueBool()
+		upgrade.Recreate = plan.RecreatePods.ValueBool()
+		upgrade.MaxHistory = int(plan.MaxHistory.ValueInt64())
+		upgrade.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 		upgrade.Description = plan.Description.ValueString()
 		upgrade.PostRenderer = postRenderer
 
@@ -1952,9 +1952,9 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 			return
 		}
 		valuesMap := make(map[string]string)
-		if !plan.Set_Sensitive.IsNull() {
+		if !plan.SetSensitive.IsNull() {
 			var setSensitiveList []set_sensitiveResourceModel
-			setSensitiveDiags := plan.Set_Sensitive.ElementsAs(ctx, &setSensitiveList, false)
+			setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
 			resp.Diagnostics.Append(setSensitiveDiags...)
 			if resp.Diagnostics.HasError() {
 				return
@@ -1995,10 +1995,10 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 	if plan.Set.Equal(state.Set) {
 		return true
 	}
-	if plan.Set_Sensitive.Equal(state.Set_Sensitive) {
+	if plan.SetSensitive.Equal(state.SetSensitive) {
 		return true
 	}
-	if plan.Set_list.Equal(state.Set_list) {
+	if plan.SetList.Equal(state.SetList) {
 		return true
 	}
 	return false
@@ -2155,13 +2155,13 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 	if plan.Values.IsUnknown() {
 		return true
 	}
-	if plan.Set_list.IsUnknown() {
+	if plan.SetList.IsUnknown() {
 		return true
 	}
 	if plan.Set.IsUnknown() {
 		return true
 	}
-	if plan.Set_Sensitive.IsUnknown() {
+	if plan.SetSensitive.IsUnknown() {
 		return true
 	}
 	return false
