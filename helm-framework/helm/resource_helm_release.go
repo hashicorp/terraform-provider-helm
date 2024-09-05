@@ -1290,15 +1290,15 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 	// Processing "set_list" attribute
 	if !model.SetList.IsUnknown() {
 		tflog.Debug(ctx, "Processing Set_list attribute")
-		var setListList []set_listResourceModel
-		setListDiags := model.SetList.ElementsAs(ctx, &setListList, false)
+		var setListSlice []set_listResourceModel
+		setListDiags := model.SetList.ElementsAs(ctx, &setListSlice, false)
 		diags.Append(setListDiags...)
 		if diags.HasError() {
 			tflog.Debug(ctx, "Error occurred while processing Set_list attribute")
 			return nil, diags
 		}
 
-		for i, setList := range setListList {
+		for i, setList := range setListSlice {
 			tflog.Debug(ctx, fmt.Sprintf("Processing Set_list element at index %d: %v", i, setList))
 			setListDiags := getListValue(ctx, base, setList)
 			diags.Append(setListDiags...)
