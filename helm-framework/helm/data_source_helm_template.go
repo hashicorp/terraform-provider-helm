@@ -707,12 +707,12 @@ func getTemplateValues(ctx context.Context, model *DataTemplateModel) (map[strin
 
 	// Process "set_list" field
 	if !model.SetList.IsNull() && !model.SetList.IsUnknown() {
-		var setListList []SetListValue
-		diags = model.SetList.ElementsAs(ctx, &setListList, false)
+		var setListSlice []SetListValue
+		diags = model.SetList.ElementsAs(ctx, &setListSlice, false)
 		if diags.HasError() {
 			return nil, diags
 		}
-		for _, setList := range setListList {
+		for _, setList := range setListSlice {
 			setListDiags := getDataSourceListValue(ctx, base, setList)
 			diags.Append(setListDiags...)
 			if diags.HasError() {
