@@ -102,27 +102,27 @@ type HelmReleaseModel struct {
 }
 
 var defaultAttributes = map[string]interface{}{
-	"verify":                     false,
-	"timeout":                    300,
-	"wait":                       true,
-	"wait_for_jobs":              false,
-	"disable_webhooks":           false,
 	"atomic":                     false,
-	"render_subchart_notes":      true,
-	"disable_openapi_validation": false,
+	"cleanup_on_fail":            false,
+	"create_namespace":           false,
+	"dependency_update":          false,
 	"disable_crd_hooks":          false,
+	"disable_openapi_validation": false,
+	"disable_webhooks":           false,
 	"force_update":               false,
+	"lint":                       false,
+	"max_history":                0,
+	"pass_credentials":           false,
+	"recreate_pods":              false,
+	"render_subchart_notes":      true,
+	"replace":                    false,
 	"reset_values":               false,
 	"reuse_values":               false,
-	"recreate_pods":              false,
-	"max_history":                0,
 	"skip_crds":                  false,
-	"cleanup_on_fail":            false,
-	"dependency_update":          false,
-	"replace":                    false,
-	"create_namespace":           false,
-	"lint":                       false,
-	"pass_credentials":           false,
+	"timeout":                    300,
+	"verify":                     false,
+	"wait":                       true,
+	"wait_for_jobs":              false,
 }
 
 type releaseMetaData struct {
@@ -263,7 +263,7 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 			"atomic": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["atomic"].(bool)),
 				Description: "If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used",
 			},
 			"chart": schema.StringAttribute{
@@ -273,19 +273,19 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 			"cleanup_on_fail": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["cleanup_on_fail"].(bool)),
 				Description: "Allow deletion of new resources created in this upgrade when upgrade fails",
 			},
 			"create_namespace": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["create_namespace"].(bool)),
 				Description: "Create the namespace if it does not exist",
 			},
 			"dependency_update": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["dependency_update"].(bool)),
 				Description: "Run helm dependency update before installing the chart",
 			},
 			"description": schema.StringAttribute{
@@ -305,25 +305,25 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 			"disable_crd_hooks": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["disable_crd_hooks"].(bool)),
 				Description: "Prevent CRD hooks from running, but run other hooks. See helm install --no-crd-hook",
 			},
 			"disable_openapi_validation": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["disable_openapi_validation"].(bool)),
 				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
 			},
 			"disable_webhooks": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["disable_webhooks"].(bool)),
 				Description: "Prevent hooks from running",
 			},
 			"force_update": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["force_update"].(bool)),
 				Description: "Force resource update through delete/recreate if needed.",
 			},
 			"id": schema.StringAttribute{
@@ -339,7 +339,7 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 			"lint": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["lint"].(bool)),
 				Description: "Run helm lint when planning",
 			},
 			"manifest": schema.StringAttribute{
@@ -349,7 +349,7 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 			"max_history": schema.Int64Attribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     int64default.StaticInt64(0),
+				Default:     int64default.StaticInt64(defaultAttributes["max_history"].(int64)),
 				Description: "Limit the maximum number of revisions saved per release. Use 0 for no limit",
 			},
 			"metadata": schema.ListNestedAttribute{
@@ -411,24 +411,24 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				Optional:    true,
 				Description: "Pass credentials to all domains",
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["pass_credentials"].(bool)),
 			},
 			"recreate_pods": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["recreate_pods"].(bool)),
 				Description: "Perform pods restart during upgrade/rollback",
 			},
 			"render_subchart_notes": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(true),
+				Default:     booldefault.StaticBool(defaultAttributes["render_subchart_notes"].(bool)),
 				Description: "If set, render subchart notes along with the parent",
 			},
 			"replace": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["replace"].(bool)),
 				Description: "Re-use the given name, even if that name is already used. This is unsafe in production",
 			},
 			"repository": schema.StringAttribute{
@@ -460,18 +460,18 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 				Optional:    true,
 				Computed:    true,
 				Description: "When upgrading, reset the values to the ones built into the chart",
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["reset_values"].(bool)),
 			},
 			"reuse_values": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
 				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored",
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["reuse_values"].(bool)),
 			},
 			"skip_crds": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["skip_crds"].(bool)),
 				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
 			},
 			"status": schema.StringAttribute{
@@ -481,7 +481,7 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 			"timeout": schema.Int64Attribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     int64default.StaticInt64(300),
+				Default:     int64default.StaticInt64(defaultAttributes["timeout"].(int64)),
 				Description: "Time in seconds to wait for any individual kubernetes operation",
 			},
 			"values": schema.ListAttribute{
@@ -492,7 +492,7 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 			"verify": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["verify"].(bool)),
 				Description: "Verify the package before installing it.",
 			},
 			"version": schema.StringAttribute{
@@ -503,13 +503,13 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 			"wait": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(true),
+				Default:     booldefault.StaticBool(defaultAttributes["wait"].(bool)),
 				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
 			},
 			"wait_for_jobs": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["wait_for_jobs"].(bool)),
 				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
 			},
 		},
