@@ -1,3 +1,26 @@
+## 2.15.0 (Aug 14, 2024)
+
+ENHANCEMENT:
+
+* resource/helm_release: add `upgrade_install` boolean attribute to enable idempotent release installation, addressing components of [GH-425](https://github.com/hashicorp/terraform-provider-helm/issues/425) [[GH-1247](https://github.com/hashicorp/terraform-provider-helm/issues/1247)]
+
+## 2.14.1 (Aug 7, 2024)
+
+DEPENDENCIES:
+
+* Bump golang.org/x/crypto from v0.23.0 to v0.25.0 [[GH-1399](https://github.com/hashicorp/terraform-provider-helm/pull/1399)]
+* Bump k8s.io/api from v0.30.0 to v0.30.3 [[GH-1436](https://github.com/hashicorp/terraform-provider-helm/pull/1436)]
+* Bump k8s.io/apimachinery from v0.30.0 to v0.30.3 [[GH-1436](https://github.com/hashicorp/terraform-provider-helm/pull/1436)]
+* Bump k8s.io/client-go from v0.30.0 to v0.30.3 [[GH-1436](https://github.com/hashicorp/terraform-provider-helm/pull/1436)]
+* Bump helm.sh/helm/v3 from v3.13.2 to v3.15.3 [[GH-1422](https://github.com/hashicorp/terraform-provider-helm/pull/1422)]
+
+## 2.14.0 (June 13, 2024)
+
+ENHANCEMENT:
+
+* Add support for Terraform's experimental deferred actions [[GH-1377](https://github.com/hashicorp/terraform-provider-helm/issues/1377)]
+* `helm_release`: add new attributes metadata.last_deployed, metadata.first_deployed, metadata.notes [[GH-1380](https://github.com/hashicorp/terraform-provider-helm/issues/1380)]
+
 ## 2.13.2 (May 8, 2024)
 
 DEPENDENCIES:
