@@ -930,9 +930,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	}
 	if d.HasChanges(recomputeMetadataFields...) {
 		d.SetNewComputed("metadata")
-	}
-
-	if !useChartVersion(d.Get("chart").(string), d.Get("repository").(string)) {
+	} else if !useChartVersion(d.Get("chart").(string), d.Get("repository").(string)) {
 		if d.HasChange("metadata.0.version") {
 			// only recompute metadata if the version actually changes
 			// chart versioning is not consistent and some will add
