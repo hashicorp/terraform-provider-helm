@@ -1,3 +1,9 @@
+## 2.15.0 (Aug 14, 2024)
+
+ENHANCEMENT:
+
+* resource/helm_release: add `upgrade_install` boolean attribute to enable idempotent release installation, addressing components of [GH-425](https://github.com/hashicorp/terraform-provider-helm/issues/425) [[GH-1247](https://github.com/hashicorp/terraform-provider-helm/issues/1247)]
+
 ## 2.14.1 (Aug 7, 2024)
 
 DEPENDENCIES:
