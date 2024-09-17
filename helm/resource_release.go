@@ -908,8 +908,10 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	if enableUpgradeStrategy {
 		// Check to see if there is already a release installed.
 		installedVersion, err = getInstalledReleaseVersion(m, actionConfig, name)
+		// because we are in the diff stage, there is no guarantee that the release exists
+		// or even that the _cluster_ exists, so log, leave the installedVersion as "", and continue
 		if err != nil {
-			return err
+			warn("%s could not determine installed version for release '%s': %v", logID, name, err)
 		}
 	}
 
