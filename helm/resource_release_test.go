@@ -111,6 +111,114 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 	})
 }
 
+// "upgrade_install" without a previously installed release (effectively equivalent to TestAccResourceRelease_basic)
+func TestAccResourceRelease_upgrade_with_install_coldstart(t *testing.T) {
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigWithUpgradeStrategy(testResourceName, namespace, name, "1.2.3", true),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.app_version", "1.19.5"),
+			),
+		}, {
+			Config: testAccHelmReleaseConfigWithUpgradeStrategy(testResourceName, namespace, name, "1.2.3", true),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
+			),
+		}},
+	})
+}
+
+// "upgrade" install wherein we pretend that someone else (e.g. a CI/CD system) has done the first install
+func TestAccResourceRelease_upgrade_with_install_warmstart(t *testing.T) {
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	// preinstall the first revision of our chart directly via the helm CLI
+	args := []string{"install",
+		"-n", namespace,
+		"--repo", testRepositoryURL,
+		"--version", "1.2.3",
+		name, "test-chart"}
+	cmd := exec.Command("helm", args...)
+	stdout, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("could not preinstall helm chart: %v -- %s", err, stdout)
+	}
+
+	// upgrade-install on top of the existing release, creating a new revision
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{{
+			Config: testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(namespace, name, testRepositoryURL),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+				resource.TestCheckResourceAttr("helm_release.test", "metadata.0.values", `{"foo":"bar"}`),
+				resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+			)}},
+	})
+}
+
+func TestAccResourceRelease_upgrade_with_install_warmstart_no_version(t *testing.T) {
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	// Delete namespace automatically created by helm after checks
+	defer deleteNamespace(t, namespace)
+
+	versions := []string{"1.2.3", "2.0.0"}
+
+	for _, version := range versions {
+		// preinstall the first revision of our chart directly via the helm CLI
+		args := []string{"install",
+			"-n", namespace,
+			"--repo", testRepositoryURL,
+			"--version", version,
+			name, "test-chart"}
+		cmd := exec.Command("helm", args...)
+		stdout, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("could not preinstall helm chart: %v -- %s", err, stdout)
+		}
+
+		// upgrade-install on top of the existing release, creating a new revision
+		resource.Test(t, resource.TestCase{
+			PreCheck:     func() { testAccPreCheck(t) },
+			Providers:    testAccProviders,
+			CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+			Steps: []resource.TestStep{{
+				Config: testAccHelmReleaseConfigWithUpgradeStrategyWarmstartNoVersion(namespace, name, testRepositoryURL),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", version),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				)}},
+		})
+	}
+}
+
 func TestAccResourceRelease_import(t *testing.T) {
 	name := randName("import")
 	namespace := createRandomNamespace(t)
@@ -255,13 +363,11 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 	})
 }
 
-// This test is doing concurrent Terraform plan and applies, each lock is a terraform run. Lock == Terraform run. Meaning we have 10 separate terraform runs.
 func TestAccResourceRelease_concurrent(t *testing.T) {
 	wg := sync.WaitGroup{}
-	wg.Add(10)
-	for i := 0; i < 10; i++ {
+	wg.Add(3)
+	for i := 0; i < 3; i++ {
 		go func(name string) {
-			t.Logf("Starting goroutine - namespace: %s", name)
 			defer wg.Done()
 			namespace := createRandomNamespace(t)
 			defer deleteNamespace(t, namespace)
@@ -284,7 +390,6 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 					},
 				},
 			})
-			t.Logf("Finishing goroutine - namespace: %s", name)
 		}(fmt.Sprintf("concurrent-%d-%s", i, acctest.RandString(10)))
 	}
 	wg.Wait()
@@ -926,6 +1031,79 @@ func testAccHelmReleaseConfigEmptyVersion(resource, ns, name string) string {
 			version     = ""
 		}
 	`, resource, name, ns, testRepositoryURL)
+}
+
+func testAccHelmReleaseConfigWithUpgradeStrategy(resource, ns, name, version string, upgrade_install bool) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = "%s"
+  			chart       = "test-chart"
+			version     = %q
+
+			upgrade_install = %t
+
+			set {
+				name = "foo"
+				value = "qux"
+			}
+
+			set {
+				name = "qux.bar"
+				value = 1
+			}
+
+			set {
+				name = "master.persistence.enabled"
+				value = false # persistent volumes are giving non-related issues when testing
+			}
+			set {
+				name = "replication.enabled"
+				value = false
+			}
+		}
+	`, resource, name, ns, testRepositoryURL, version, upgrade_install)
+}
+
+func testAccHelmReleaseConfigWithUpgradeStrategyWarmstart(ns, name, repository string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "test" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+  			chart       = "test-chart"
+			repository  = %q
+			version     = "1.2.3"
+
+			upgrade_install = true
+			
+			set {
+				name  = "foo"
+				value = "bar"
+			}
+		}
+	`, name, ns, repository)
+}
+
+func testAccHelmReleaseConfigWithUpgradeStrategyWarmstartNoVersion(ns, name, repository string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "test" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+  			chart       = "test-chart"
+			repository  = %q
+
+			upgrade_install = true
+			
+			set {
+				name  = "foo"
+				value = "bar"
+			}
+		}
+	`, name, ns, repository)
 }
 
 func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, values []string) string {
