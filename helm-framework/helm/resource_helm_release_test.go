@@ -224,7 +224,6 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 	})
 }
 
-// This test is doing concurrent Terraform plan and applies, each lock is a terraform run. Lock == Terraform run. Meaning we have 10 separate terraform runs.
 func TestAccResourceRelease_concurrent(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(10)
@@ -815,18 +814,15 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 }
 
 func testAccHelmReleaseConfigConcurrent(resource, ns, name, version string) string {
-
-	tfconfig := ""
-
-	for i := range 10 {
-		tfconfig += fmt.Sprintf(`
-		resource "helm_release" "%s_%d" {
- 			name        = "%s-%[2]d"
-			namespace   = %[4]q
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			count       = 10
+ 			name        = "%s-${count.index}"
+			namespace   = %q
 			description = "Test"
-			repository  = %[5]q
+			repository  = %q
   			chart       = "test-chart"
-			version     = %[6]q
+			version     = %q
 
 			set {
 				name = "foo"
@@ -838,10 +834,7 @@ func testAccHelmReleaseConfigConcurrent(resource, ns, name, version string) stri
 				value = 1337
 			}
 		}
-	`, resource, i, name, ns, testRepositoryURL, version)
-	}
-
-	return tfconfig
+	`, resource, name, ns, testRepositoryURL, version)
 }
 
 // Changed version = "", due to changes in the framework. Will look into later!
