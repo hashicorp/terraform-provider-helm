@@ -255,11 +255,13 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 	})
 }
 
+// This test is doing concurrent Terraform plan and applies, each lock is a terraform run. Lock == Terraform run. Meaning we have 10 separate terraform runs.
 func TestAccResourceRelease_concurrent(t *testing.T) {
 	wg := sync.WaitGroup{}
-	wg.Add(3)
-	for i := 0; i < 3; i++ {
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
 		go func(name string) {
+			t.Logf("Starting goroutine - namespace: %s", name)
 			defer wg.Done()
 			namespace := createRandomNamespace(t)
 			defer deleteNamespace(t, namespace)
@@ -282,6 +284,7 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 					},
 				},
 			})
+			t.Logf("Finishing goroutine - namespace: %s", name)
 		}(fmt.Sprintf("concurrent-%d-%s", i, acctest.RandString(10)))
 	}
 	wg.Wait()

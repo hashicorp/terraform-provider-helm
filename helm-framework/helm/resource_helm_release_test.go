@@ -223,11 +223,14 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 		},
 	})
 }
+
+// This test is doing concurrent Terraform plan and applies, each lock is a terraform run. Lock == Terraform run. Meaning we have 10 separate terraform runs.
 func TestAccResourceRelease_concurrent(t *testing.T) {
 	wg := sync.WaitGroup{}
-	wg.Add(3)
-	for i := 0; i < 3; i++ {
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
 		go func(name string) {
+			t.Logf("Starting goroutine - namespace: %s", name)
 			defer wg.Done()
 			namespace := createRandomNamespace(t)
 			defer deleteNamespace(t, namespace)
@@ -237,15 +240,17 @@ func TestAccResourceRelease_concurrent(t *testing.T) {
 				//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 				Steps: []resource.TestStep{
 					{
-						Config: testAccHelmReleaseConfigBasic(name, namespace, name, "1.2.3"),
-						Check: resource.ComposeAggregateTestCheckFunc(
-							resource.TestCheckResourceAttr(
-								fmt.Sprintf("helm_release.%s", name), "metadata.0.name", name,
-							),
-						),
+						Config: testAccHelmReleaseConfigConcurrent(name, namespace, name, "1.2.3"),
+						Check: func(s *terraform.State) error {
+							if len(s.RootModule().Resources) != 10 {
+								return fmt.Errorf("Test should have created 10 resources from one tfconfig.")
+							}
+							return nil
+						},
 					},
 				},
 			})
+			t.Logf("Finishing goroutine - namespace: %s", name)
 		}(fmt.Sprintf("concurrent-%d-%s", i, acctest.RandString(10)))
 	}
 	wg.Wait()
@@ -807,6 +812,36 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 			}
 		}
 	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccHelmReleaseConfigConcurrent(resource, ns, name, version string) string {
+
+	tfconfig := ""
+
+	for i := range 10 {
+		tfconfig += fmt.Sprintf(`
+		resource "helm_release" "%s_%d" {
+ 			name        = "%s-%[2]d"
+			namespace   = %[4]q
+			description = "Test"
+			repository  = %[5]q
+  			chart       = "test-chart"
+			version     = %[6]q
+
+			set {
+				name = "foo"
+				value = "bar"
+			}
+
+			set {
+				name = "fizz"
+				value = 1337
+			}
+		}
+	`, resource, i, name, ns, testRepositoryURL, version)
+	}
+
+	return tfconfig
 }
 
 // Changed version = "", due to changes in the framework. Will look into later!

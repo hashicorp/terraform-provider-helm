@@ -42,7 +42,6 @@ type Meta struct {
 	Settings       *cli.EnvSettings
 	RegistryClient *registry.Client
 	HelmDriver     string
-	sync.Mutex
 	// Experimental feature toggles
 	Experiments map[string]bool
 }
@@ -421,7 +420,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		kubeCaCert = kubernetesConfig.ClusterCACertificate.ValueString()
 	}
 	if kubeConfigPaths != "" {
-		for _, path := range filepath.Split(kubeConfigPaths) {
+		for _, path := range filepath.SplitList(kubeConfigPaths) {
 			kubeConfigPathsList = append(kubeConfigPathsList, types.StringValue(path))
 		}
 	}
@@ -712,8 +711,7 @@ func (m *Meta) GetHelmConfiguration(ctx context.Context, namespace string) (*act
 		tflog.Error(ctx, "Meta is nil")
 		return nil, fmt.Errorf("Meta is nil")
 	}
-	m.Lock()
-	defer m.Unlock()
+
 	tflog.Info(context.Background(), "[INFO] GetHelmConfiguration start")
 	actionConfig := new(action.Configuration)
 	kc, err := m.NewKubeConfig(ctx, namespace)
