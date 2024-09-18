@@ -1977,27 +1977,26 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 // TODO: write unit test, always returns true for recomputing the metadata
 // returns true if any metadata fields have changed
 func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
-	return false // FIXME! Don't leave me here
 	if state == nil {
 		return true
 	}
 
-	if plan.Chart.Equal(state.Chart) {
+	if !plan.Chart.Equal(state.Chart) {
 		return true
 	}
-	if plan.Repository.Equal(state.Repository) {
+	if !plan.Repository.Equal(state.Repository) {
 		return true
 	}
-	if plan.Values.Equal(state.Values) {
+	if !plan.Values.Equal(state.Values) {
 		return true
 	}
-	if plan.Set.Equal(state.Set) {
+	if !plan.Set.Equal(state.Set) {
 		return true
 	}
-	if plan.SetSensitive.Equal(state.SetSensitive) {
+	if !plan.SetSensitive.Equal(state.SetSensitive) {
 		return true
 	}
-	if plan.SetList.Equal(state.SetList) {
+	if !plan.SetList.Equal(state.SetList) {
 		return true
 	}
 	return false
