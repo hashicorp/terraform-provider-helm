@@ -3,9 +3,11 @@ on:
   push:
     branches:
     - main
+    - helm-framework
   pull_request:
     branches:
     - main
+    - helm-framework
 
 env:
   KUBECONFIG: ${{ github.workspace }}/.kube/config
