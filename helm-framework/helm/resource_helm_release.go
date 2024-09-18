@@ -111,7 +111,7 @@ var defaultAttributes = map[string]interface{}{
 	"disable_webhooks":           false,
 	"force_update":               false,
 	"lint":                       false,
-	"max_history":                0,
+	"max_history":                int64(0),
 	"pass_credentials":           false,
 	"recreate_pods":              false,
 	"render_subchart_notes":      true,
@@ -119,7 +119,7 @@ var defaultAttributes = map[string]interface{}{
 	"reset_values":               false,
 	"reuse_values":               false,
 	"skip_crds":                  false,
-	"timeout":                    300,
+	"timeout":                    int64(300),
 	"verify":                     false,
 	"wait":                       true,
 	"wait_for_jobs":              false,
@@ -1204,8 +1204,6 @@ func isChartInstallable(ch *chart.Chart) error {
 func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	m.Lock()
-	defer m.Unlock()
 	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", m.Settings))
 
 	path, err := cpo.LocateChart(name, m.Settings)
@@ -1610,11 +1608,6 @@ var errReleaseNotFound = fmt.Errorf("release: not found")
 
 // c
 func getRelease(ctx context.Context, m *Meta, cfg *action.Configuration, name string) (*release.Release, error) {
-	tflog.Debug(ctx, fmt.Sprintf("%s getRelease wait for lock", name))
-	m.Lock()
-	defer m.Unlock()
-	tflog.Debug(ctx, fmt.Sprintf("%s getRelease got lock, started", name))
-
 	get := action.NewGet(cfg)
 	tflog.Debug(ctx, fmt.Sprintf("%s getRelease post action created", name))
 
@@ -1737,7 +1730,7 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
 		// Check if version has changed
-		if !plan.Version.Equal(state.Version) {
+		if state != nil && !plan.Version.Equal(state.Version) {
 
 			// Ensure trimming 'v' prefix correctly
 			oldVersionStr := strings.TrimPrefix(state.Version.String(), "v")
@@ -1981,24 +1974,29 @@ func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.Modif
 	resp.Plan.Set(ctx, &plan)
 }
 
+// TODO: write unit test, always returns true for recomputing the metadata
 // returns true if any metadata fields have changed
 func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
-	if plan.Chart.Equal(state.Chart) {
+	if state == nil {
 		return true
 	}
-	if plan.Repository.Equal(state.Repository) {
+
+	if !plan.Chart.Equal(state.Chart) {
 		return true
 	}
-	if plan.Values.Equal(state.Values) {
+	if !plan.Repository.Equal(state.Repository) {
 		return true
 	}
-	if plan.Set.Equal(state.Set) {
+	if !plan.Values.Equal(state.Values) {
 		return true
 	}
-	if plan.SetSensitive.Equal(state.SetSensitive) {
+	if !plan.Set.Equal(state.Set) {
 		return true
 	}
-	if plan.SetList.Equal(state.SetList) {
+	if !plan.SetSensitive.Equal(state.SetSensitive) {
+		return true
+	}
+	if !plan.SetList.Equal(state.SetList) {
 		return true
 	}
 	return false
