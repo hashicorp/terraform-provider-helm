@@ -38,11 +38,21 @@ var (
 	testMeta          *Meta
 )
 
+var providerFactory map[string]func() (tfprotov6.ProviderServer, error)
+
 func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
-	return map[string]func() (tfprotov6.ProviderServer, error){
+
+	if len(providerFactory) != 0 {
+		return providerFactory
+	}
+
+	providerFactory = map[string]func() (tfprotov6.ProviderServer, error){
 		"helm": providerserver.NewProtocol6WithError(New()()),
 	}
+
+	return providerFactory
 }
+
 func TestMain(m *testing.M) {
 	home, err := ioutil.TempDir(os.TempDir(), "helm")
 
