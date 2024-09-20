@@ -111,6 +111,48 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 	})
 }
 
+// NOTE this is a regression test for: https://github.com/hashicorp/terraform-provider-helm/issues/1344
+func TestAccResourceRelease_inexactVersion(t *testing.T) {
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { testAccPreCheck(t) },
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"helm": func() (*schema.Provider, error) {
+				return Provider(), nil
+			},
+		},
+		CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+				),
+			},
+			{
+				Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2"),
+				PlanOnly: true,
+			},
+			{
+				Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.x"),
+				PlanOnly: true,
+			},
+			{
+				Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.x"),
+				PlanOnly: true,
+			},
+			{
+				Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "~1.2.2"),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 // "upgrade_install" without a previously installed release (effectively equivalent to TestAccResourceRelease_basic)
 func TestAccResourceRelease_upgrade_with_install_coldstart(t *testing.T) {
 	name := randName("basic")

@@ -1,0 +1,3 @@
+```release-note:bug
+`resource/helm_release`: Fix: only recompute metadata when the version in the metadata changes
+```
