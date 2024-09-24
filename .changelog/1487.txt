@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: On destroy, do not error when release is not found
+```

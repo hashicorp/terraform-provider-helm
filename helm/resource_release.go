@@ -865,7 +865,7 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 	uninstall.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 
 	res, err := uninstall.Run(name)
-	if err != nil {
+	if err != nil && !errors.Is(err, driver.ErrReleaseNotFound) {
 		return diag.FromErr(err)
 	}
 
