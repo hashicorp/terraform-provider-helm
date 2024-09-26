@@ -45,6 +45,7 @@ var defaultAttributes = map[string]interface{}{
 	"render_subchart_notes":      true,
 	"disable_openapi_validation": false,
 	"disable_crd_hooks":          false,
+	"dry_run_option":             "",
 	"force_update":               false,
 	"reset_values":               false,
 	"reuse_values":               false,
@@ -250,6 +251,12 @@ func resourceRelease() *schema.Resource {
 				Optional:    true,
 				Default:     defaultAttributes["disable_crd_hooks"],
 				Description: "Prevent CRD hooks from, running, but run other hooks.  See helm install --no-crd-hook",
+			},
+			"dry_run_option": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     defaultAttributes["dry_run_option"],
+				Description: "When executing a dry run to render manifest in experiment mode, render manifest with remote interaction.  See helm install --dry-run=server",
 			},
 			"reuse_values": {
 				Type:        schema.TypeBool,
@@ -1018,6 +1025,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			install := action.NewInstall(actionConfig)
 			install.ChartPathOptions = *cpo
 			install.DryRun = true
+			install.DryRunOption = d.Get("dry_run_option").(string)
 			install.DisableHooks = d.Get("disable_webhooks").(bool)
 			install.Wait = d.Get("wait").(bool)
 			install.WaitForJobs = d.Get("wait_for_jobs").(bool)
@@ -1084,6 +1092,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		upgrade.Timeout = time.Duration(d.Get("timeout").(int)) * time.Second
 		upgrade.Wait = d.Get("wait").(bool)
 		upgrade.DryRun = true // do not apply changes
+		upgrade.DryRunOption = d.Get("dry_run_option").(string)
 		upgrade.DisableHooks = d.Get("disable_webhooks").(bool)
 		upgrade.Atomic = d.Get("atomic").(bool)
 		upgrade.SubNotes = d.Get("render_subchart_notes").(bool)
