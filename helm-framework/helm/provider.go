@@ -637,13 +637,13 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 func (p *HelmProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewDataTemplate,
+		NewHelmTemplate,
 	}
 }
 
 func (p *HelmProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewHelmReleaseResource,
+		NewHelmRelease,
 	}
 }
 

@@ -31,20 +31,20 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var _ datasource.DataSource = &DataTemplate{}
-var _ datasource.DataSourceWithConfigure = &DataTemplate{}
+var _ datasource.DataSource = &HelmTemplate{}
+var _ datasource.DataSourceWithConfigure = &HelmTemplate{}
 
-func NewDataTemplate() datasource.DataSource {
-	return &DataTemplate{}
+func NewHelmTemplate() datasource.DataSource {
+	return &HelmTemplate{}
 }
 
-// DataTemplate represents the data source for rendering Helm chart templates
-type DataTemplate struct {
+// HelmTemplate represents the data source for rendering Helm chart templates
+type HelmTemplate struct {
 	meta *Meta
 }
 
-// DataTemplateModel holds the attributes for configuring the Helm chart templates
-type DataTemplateModel struct {
+// HelmTemplateModel holds the attributes for configuring the Helm chart templates
+type HelmTemplateModel struct {
 	ID                       types.String `tfsdk:"id"`
 	Name                     types.String `tfsdk:"name"`
 	Repository               types.String `tfsdk:"repository"`
@@ -122,17 +122,17 @@ type Postrender struct {
 	BinaryPath types.String `tfsdk:"binary_path"`
 }
 
-func (d *DataTemplate) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *HelmTemplate) Configure(ctx context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData != nil {
 		d.meta = req.ProviderData.(*Meta)
 	}
 }
 
-func (d *DataTemplate) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *HelmTemplate) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_template"
 }
 
-func (d *DataTemplate) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Data source to render Helm chart templates.",
 		Attributes: map[string]schema.Attribute{
@@ -402,8 +402,8 @@ func convertStringsToTypesStrings(input []string) []types.String {
 }
 
 // Reads the current state of the data template and will update the state with the data fetched
-func (d *DataTemplate) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state DataTemplateModel
+func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var state HelmTemplateModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -656,7 +656,7 @@ func (d *DataTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func getTemplateValues(ctx context.Context, model *DataTemplateModel) (map[string]interface{}, diag.Diagnostics) {
+func getTemplateValues(ctx context.Context, model *HelmTemplateModel) (map[string]interface{}, diag.Diagnostics) {
 	base := map[string]interface{}{}
 	var diags diag.Diagnostics
 
@@ -823,7 +823,7 @@ func getDataValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
 	return diags
 }
 
-func logDataValues(ctx context.Context, values map[string]interface{}, model *DataTemplateModel) diag.Diagnostics {
+func logDataValues(ctx context.Context, values map[string]interface{}, model *HelmTemplateModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	asJSON, err := json.Marshal(values)
@@ -851,7 +851,7 @@ func logDataValues(ctx context.Context, values map[string]interface{}, model *Da
 	return diags
 }
 
-func cloakDataSetValues(ctx context.Context, config map[string]interface{}, model *DataTemplateModel) diag.Diagnostics {
+func cloakDataSetValues(ctx context.Context, config map[string]interface{}, model *HelmTemplateModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if !model.SetSensitive.IsNull() && !model.SetSensitive.IsUnknown() {
