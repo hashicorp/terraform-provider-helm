@@ -76,22 +76,22 @@ type RegistryConfigModel struct {
 
 // KubernetesConfigModel configures a Kubernetes client
 type KubernetesConfigModel struct {
-	Host                  types.String `tfsdk:"host"`
-	Username              types.String `tfsdk:"username"`
-	Password              types.String `tfsdk:"password"`
-	Insecure              types.Bool   `tfsdk:"insecure"`
-	TLSServerName         types.String `tfsdk:"tls_server_name"`
-	ClientCertificate     types.String `tfsdk:"client_certificate"`
-	ClientKey             types.String `tfsdk:"client_key"`
-	ClusterCACertificate  types.String `tfsdk:"cluster_ca_certificate"`
-	ConfigPaths           types.List   `tfsdk:"config_paths"`
-	ConfigPath            types.String `tfsdk:"config_path"`
-	ConfigContext         types.String `tfsdk:"config_context"`
-	ConfigContextAuthInfo types.String `tfsdk:"config_context_auth_info"`
-	ConfigContextCluster  types.String `tfsdk:"config_context_cluster"`
-	Token                 types.String `tfsdk:"token"`
-	ProxyURL              types.String `tfsdk:"proxy_url"`
-	// Exec                  types.List   `tfsdk:"exec"`
+	Host                  types.String    `tfsdk:"host"`
+	Username              types.String    `tfsdk:"username"`
+	Password              types.String    `tfsdk:"password"`
+	Insecure              types.Bool      `tfsdk:"insecure"`
+	TLSServerName         types.String    `tfsdk:"tls_server_name"`
+	ClientCertificate     types.String    `tfsdk:"client_certificate"`
+	ClientKey             types.String    `tfsdk:"client_key"`
+	ClusterCACertificate  types.String    `tfsdk:"cluster_ca_certificate"`
+	ConfigPaths           types.List      `tfsdk:"config_paths"`
+	ConfigPath            types.String    `tfsdk:"config_path"`
+	ConfigContext         types.String    `tfsdk:"config_context"`
+	ConfigContextAuthInfo types.String    `tfsdk:"config_context_auth_info"`
+	ConfigContextCluster  types.String    `tfsdk:"config_context_cluster"`
+	Token                 types.String    `tfsdk:"token"`
+	ProxyURL              types.String    `tfsdk:"proxy_url"`
+	Exec                  ExecConfigModel `tfsdk:"exec"`
 }
 
 // ExecConfigModel configures an external command to configure the Kubernetes client
@@ -274,16 +274,11 @@ func kubernetesResourceSchema() map[string]schema.Attribute {
 			Optional:    true,
 			Description: "URL to the proxy to be used for all API requests.",
 		},
-		//  "exec": schema.ListNestedAttribute{
-		//  	Optional: true,
-		//  	Validators: []validator.List{
-		//  		listvalidator.SizeAtMost(1),
-		//  	},
-		//  	Description: "Exec configuration for Kubernetes authentication",
-		//  	NestedObject: schema.NestedAttributeObject{
-		//  		Attributes: execSchema(),
-		//  	},
-		//  },
+		"exec": schema.SingleNestedAttribute{
+			Optional:    true,
+			Description: "Exec configuration for Kubernetes authentication",
+			Attributes:  execSchema(),
+		},
 	}
 }
 
