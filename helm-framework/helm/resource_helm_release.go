@@ -41,18 +41,18 @@ import (
 )
 
 var (
-	_ resource.Resource                 = &HelmReleaseResource{}
-	_ resource.ResourceWithUpgradeState = &HelmReleaseResource{}
-	_ resource.ResourceWithModifyPlan   = &HelmReleaseResource{}
-	_ resource.ResourceWithImportState  = &HelmReleaseResource{}
+	_ resource.Resource                 = &HelmRelease{}
+	_ resource.ResourceWithUpgradeState = &HelmRelease{}
+	_ resource.ResourceWithModifyPlan   = &HelmRelease{}
+	_ resource.ResourceWithImportState  = &HelmRelease{}
 )
 
-type HelmReleaseResource struct {
+type HelmRelease struct {
 	meta *Meta
 }
 
-func NewHelmReleaseResource() resource.Resource {
-	return &HelmReleaseResource{}
+func NewHelmRelease() resource.Resource {
+	return &HelmRelease{}
 }
 
 type HelmReleaseModel struct {
@@ -252,11 +252,11 @@ func NewNamespacePlanModifier() planmodifier.String {
 	return &NamespacePlanModifier{}
 }
 
-func (r *HelmReleaseResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+func (r *HelmRelease) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_release"
 }
 
-func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Schema to define attributes that are available in the resource",
 		Attributes: map[string]schema.Attribute{
@@ -595,7 +595,7 @@ func (r *HelmReleaseResource) Schema(ctx context.Context, req resource.SchemaReq
 	}
 }
 
-func (r *HelmReleaseResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *HelmRelease) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Ensure that the ProviderData is not nil
 	if req.ProviderData == nil {
 		return
@@ -616,7 +616,7 @@ func (r *HelmReleaseResource) Configure(ctx context.Context, req resource.Config
 
 // maps version 0 state to the upgrade function.
 // If terraform detects data with version 0, we call upgrade to upgrade the state to the current schema version "1"
-func (r *HelmReleaseResource) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+func (r *HelmRelease) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
 		0: {
 			StateUpgrader: stateUpgradeV0toV1,
@@ -679,7 +679,7 @@ func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var state HelmReleaseModel
 	diags := req.Plan.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -836,7 +836,7 @@ func (r *HelmReleaseResource) Create(ctx context.Context, req resource.CreateReq
 	}
 }
 
-func (r *HelmReleaseResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state HelmReleaseModel
 
 	diags := req.State.Get(ctx, &state)
@@ -899,7 +899,7 @@ func (r *HelmReleaseResource) Read(ctx context.Context, req resource.ReadRequest
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan HelmReleaseModel
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
@@ -1035,7 +1035,7 @@ func (r *HelmReleaseResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 }
 
-func (r *HelmReleaseResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state HelmReleaseModel
 	diags := req.State.Get(ctx, &state)
 
@@ -1664,7 +1664,7 @@ func checkChartDependencies(ctx context.Context, model *HelmReleaseModel, c *cha
 	return false, diags
 }
 
-func (r *HelmReleaseResource) StateUpgrade(ctx context.Context, version int, state map[string]interface{}, meta interface{}) (map[string]interface{}, diag.Diagnostics) {
+func (r *HelmRelease) StateUpgrade(ctx context.Context, version int, state map[string]interface{}, meta interface{}) (map[string]interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if state["pass_credentials"] == nil {
@@ -1677,7 +1677,7 @@ func (r *HelmReleaseResource) StateUpgrade(ctx context.Context, version int, sta
 	return state, diags
 }
 
-func (r *HelmReleaseResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
 		// resource is being destroyed
 		return
@@ -2056,7 +2056,7 @@ func resultToError(r *action.LintResult) error {
 	return fmt.Errorf("malformed chart or values: \n\t%s", strings.Join(messages, "\n\t"))
 }
 
-func (r *HelmReleaseResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	namespace, name, err := parseImportIdentifier(req.ID)
 	if err != nil {
 		resp.Diagnostics.AddError(
