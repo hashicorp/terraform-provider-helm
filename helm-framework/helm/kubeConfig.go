@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	//"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/mitchellh/go-homedir"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -20,7 +19,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
-	//clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // Struct holding k8s client config, burst limit for api requests, and mutex for sync
@@ -224,39 +223,24 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		})
 	}
 
-	// Extract the first element from the Exec list
-	// var execConfig *ExecConfigModel
-	// if !kubernetesConfig.Exec.IsUnknown() {
-	// 	var execConfigs []ExecConfigModel
-	// 	diags := kubernetesConfig.Exec.ElementsAs(ctx, &execConfigs, false)
-	// 	if diags.HasError() {
-	// 		fmt.Println("Error extracting Exec config")
-	// 		return nil, fmt.Errorf("configuration error: unable to extract Exec config")
-	// 	}
-	// 	if len(execConfigs) > 0 {
-	// 		execConfig = &execConfigs[0]
-	// 	}
-	// }
+	execConfig := kubernetesConfig.Exec
+	if !execConfig.APIVersion.IsNull() || !execConfig.Command.IsNull() || !execConfig.Args.IsNull() || !execConfig.Env.IsNull() {
+		args := execConfig.Args.Elements()
+		env := execConfig.Env.Elements()
+		exec := &clientcmdapi.ExecConfig{
+			APIVersion: execConfig.APIVersion.ValueString(),
+			Command:    execConfig.Command.ValueString(),
+			Args:       expandStringSlice(args),
+		}
 
-	// if execConfig != nil {
-	// 	args := execConfig.Args.Elements()
-	// 	env := execConfig.Env.Elements()
-
-	// 	exec := &clientcmdapi.ExecConfig{
-	// 		APIVersion: execConfig.ApiVersion.ValueString(),
-	// 		Command:    execConfig.Command.ValueString(),
-	// 		Args:       expandStringSlice(args),
-	// 	}
-	// 	for k, v := range env {
-	// 		exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: k, Value: v.(basetypes.StringValue).ValueString()})
-	// 	}
-	// 	overrides.AuthInfo.Exec = exec
-	// 	fmt.Println("Setting exec configuration:", exec)
-	// 	tflog.Debug(ctx, "Setting exec configuration", map[string]interface{}{
-	// 		"execConfig": exec,
-	// 	})
-	// }
-
+		for k, v := range env {
+			exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: k, Value: v.(types.String).ValueString()})
+		}
+		overrides.AuthInfo.Exec = exec
+		tflog.Debug(ctx, "Setting exec configuration", map[string]interface{}{
+			"execConfig": exec,
+		})
+	}
 	overrides.Context.Namespace = "default"
 	if namespace != "" {
 		overrides.Context.Namespace = namespace
