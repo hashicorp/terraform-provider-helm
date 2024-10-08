@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -57,7 +56,7 @@ type HelmProviderModel struct {
 	RepositoryCache      types.String `tfsdk:"repository_cache"`
 	HelmDriver           types.String `tfsdk:"helm_driver"`
 	BurstLimit           types.Int64  `tfsdk:"burst_limit"`
-	Kubernetes           types.List   `tfsdk:"kubernetes"`
+	Kubernetes           types.Object `tfsdk:"kubernetes"`
 	Registries           types.List   `tfsdk:"registries"`
 	Experiments          types.List   `tfsdk:"experiments"`
 }
@@ -152,15 +151,10 @@ func (p *HelmProvider) Schema(ctx context.Context, req provider.SchemaRequest, r
 				Optional:    true,
 				Description: "Helm burst limit. Increase this if you have a cluster with many CRDs",
 			},
-			"kubernetes": schema.ListNestedAttribute{
-				Optional: true,
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
-				},
+			"kubernetes": schema.SingleNestedAttribute{
+				Optional:    true,
 				Description: "Kubernetes Configuration",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: kubernetesResourceSchema(),
-				},
+				Attributes:  kubernetesResourceSchema(),
 			},
 			"registries": schema.ListNestedAttribute{
 				Optional:    true,
@@ -384,14 +378,10 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 
 	var kubernetesConfig KubernetesConfigModel
 	if !config.Kubernetes.IsNull() && !config.Kubernetes.IsUnknown() {
-		var kubernetesConfigs []KubernetesConfigModel
-		diags := config.Kubernetes.ElementsAs(ctx, &kubernetesConfigs, false)
+		diags := req.Config.GetAttribute(ctx, path.Root("kubernetes"), &kubernetesConfig)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
-		}
-		if len(kubernetesConfigs) > 0 {
-			kubernetesConfig = kubernetesConfigs[0]
 		}
 	}
 
@@ -497,60 +487,39 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 
 	// Create a list of KubernetesConfigModel
-	kubernetesConfigList := []attr.Value{
-		types.ObjectValueMust(map[string]attr.Type{
-			"host":                     types.StringType,
-			"username":                 types.StringType,
-			"password":                 types.StringType,
-			"insecure":                 types.BoolType,
-			"tls_server_name":          types.StringType,
-			"client_certificate":       types.StringType,
-			"client_key":               types.StringType,
-			"cluster_ca_certificate":   types.StringType,
-			"config_paths":             types.ListType{ElemType: types.StringType},
-			"config_path":              types.StringType,
-			"config_context":           types.StringType,
-			"config_context_auth_info": types.StringType,
-			"config_context_cluster":   types.StringType,
-			"token":                    types.StringType,
-			"proxy_url":                types.StringType,
-		}, map[string]attr.Value{
-			"host":                     types.StringValue(kubeHost),
-			"username":                 types.StringValue(kubeUser),
-			"password":                 types.StringValue(kubePassword),
-			"insecure":                 types.BoolValue(kubeInsecure),
-			"tls_server_name":          types.StringValue(kubeTLSServerName),
-			"client_certificate":       types.StringValue(kubeClientCert),
-			"client_key":               types.StringValue(kubeClientKey),
-			"cluster_ca_certificate":   types.StringValue(kubeCaCert),
-			"config_paths":             kubeConfigPathsListValue,
-			"config_path":              types.StringValue(kubeConfigPath),
-			"config_context":           types.StringValue(kubeConfigContext),
-			"config_context_auth_info": types.StringValue(kubeConfigContextAuthInfo),
-			"config_context_cluster":   types.StringValue(kubeConfigContextCluster),
-			"token":                    types.StringValue(kubeToken),
-			"proxy_url":                types.StringValue(kubeProxy),
-		}),
-	}
-	kubernetesConfigListValue, diags := types.ListValue(types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"host":                     types.StringType,
-			"username":                 types.StringType,
-			"password":                 types.StringType,
-			"insecure":                 types.BoolType,
-			"tls_server_name":          types.StringType,
-			"client_certificate":       types.StringType,
-			"client_key":               types.StringType,
-			"cluster_ca_certificate":   types.StringType,
-			"config_paths":             types.ListType{ElemType: types.StringType},
-			"config_path":              types.StringType,
-			"config_context":           types.StringType,
-			"config_context_auth_info": types.StringType,
-			"config_context_cluster":   types.StringType,
-			"token":                    types.StringType,
-			"proxy_url":                types.StringType,
-		},
-	}, kubernetesConfigList)
+	kubernetesConfigObjectValue, diags := types.ObjectValue(map[string]attr.Type{
+		"host":                     types.StringType,
+		"username":                 types.StringType,
+		"password":                 types.StringType,
+		"insecure":                 types.BoolType,
+		"tls_server_name":          types.StringType,
+		"client_certificate":       types.StringType,
+		"client_key":               types.StringType,
+		"cluster_ca_certificate":   types.StringType,
+		"config_paths":             types.ListType{ElemType: types.StringType},
+		"config_path":              types.StringType,
+		"config_context":           types.StringType,
+		"config_context_auth_info": types.StringType,
+		"config_context_cluster":   types.StringType,
+		"token":                    types.StringType,
+		"proxy_url":                types.StringType,
+	}, map[string]attr.Value{
+		"host":                     types.StringValue(kubeHost),
+		"username":                 types.StringValue(kubeUser),
+		"password":                 types.StringValue(kubePassword),
+		"insecure":                 types.BoolValue(kubeInsecure),
+		"tls_server_name":          types.StringValue(kubeTLSServerName),
+		"client_certificate":       types.StringValue(kubeClientCert),
+		"client_key":               types.StringValue(kubeClientKey),
+		"cluster_ca_certificate":   types.StringValue(kubeCaCert),
+		"config_paths":             kubeConfigPathsListValue,
+		"config_path":              types.StringValue(kubeConfigPath),
+		"config_context":           types.StringValue(kubeConfigContext),
+		"config_context_auth_info": types.StringValue(kubeConfigContextAuthInfo),
+		"config_context_cluster":   types.StringValue(kubeConfigContextCluster),
+		"token":                    types.StringValue(kubeToken),
+		"proxy_url":                types.StringValue(kubeProxy),
+	})
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -583,7 +552,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			RepositoryCache:      types.StringValue(repositoryCache),
 			HelmDriver:           types.StringValue(helmDriver),
 			BurstLimit:           types.Int64Value(burstLimit),
-			Kubernetes:           kubernetesConfigListValue,
+			Kubernetes:           kubernetesConfigObjectValue,
 			Experiments:          experimentsConfigListValue,
 		},
 		Settings:   settings,
