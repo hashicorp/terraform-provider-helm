@@ -665,7 +665,16 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		upgradeClient.Description = d.Get("description").(string)
 
 		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-			pr, err := postrender.NewExec(cmd)
+			av := d.Get("postrender.0.args")
+			var args []string
+			for _, arg := range av.([]interface{}) {
+				if arg == nil {
+					continue
+				}
+				args = append(args, arg.(string))
+			}
+
+			pr, err := postrender.NewExec(cmd, args...)
 			if err != nil {
 				return diag.FromErr(err)
 			}
@@ -699,7 +708,16 @@ func resourceReleaseCreate(ctx context.Context, d *schema.ResourceData, meta int
 		instClient.CreateNamespace = d.Get("create_namespace").(bool)
 
 		if cmd := d.Get("postrender.0.binary_path").(string); cmd != "" {
-			pr, err := postrender.NewExec(cmd)
+			av := d.Get("postrender.0.args")
+			var args []string
+			for _, arg := range av.([]interface{}) {
+				if arg == nil {
+					continue
+				}
+				args = append(args, arg.(string))
+			}
+
+			pr, err := postrender.NewExec(cmd, args...)
 			if err != nil {
 				return diag.FromErr(err)
 			}
