@@ -1,3 +1,10 @@
+## 2.16.0 (Oct 10, 2024)
+
+BUG FIXES:
+
+* `helm_release`: On destroy, do not error when release is not found [[GH-1487](https://github.com/hashicorp/terraform-provider-helm/issues/1487)]
+* `resource/helm_release`: Fix: only recompute metadata when the version in the metadata changes [[GH-1458](https://github.com/hashicorp/terraform-provider-helm/issues/1458)]
+
 ## 2.15.0 (Aug 14, 2024)
 
 ENHANCEMENT:
