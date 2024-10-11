@@ -869,7 +869,7 @@ func resourceReleaseDelete(ctx context.Context, d *schema.ResourceData, meta int
 		return diag.FromErr(err)
 	}
 
-	if res.Info != "" {
+	if res != nil && res.Info != "" {
 		return diag.Diagnostics{
 			{
 				Severity: diag.Warning,

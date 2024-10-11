@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: Fix nil pointer deref panic on destroy when helm release is not found
+```
