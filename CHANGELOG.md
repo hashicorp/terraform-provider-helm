@@ -1,3 +1,9 @@
+## 2.16.1 (Oct 15, 2024)
+
+BUG FIXES:
+
+* `helm_release`: Fix nil pointer deref panic on destroy when helm release is not found [[GH-1501](https://github.com/hashicorp/terraform-provider-helm/issues/1501)]
+
 ## 2.16.0 (Oct 10, 2024)
 
 BUG FIXES:
