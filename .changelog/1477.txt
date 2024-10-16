@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: Fixed issue with missing postrender arguments
+```
