@@ -2066,13 +2066,6 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("namespace"), namespace)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	meta := r.meta
 	if meta == nil {
 		resp.Diagnostics.AddError(
@@ -2101,15 +2094,9 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 	}
 
 	var state HelmReleaseModel
-
-	// Set additional attributes (name, description, chart)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), release.Name)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("description"), release.Info.Description)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("chart"), release.Chart.Metadata.Name)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	state.Name = types.StringValue(release.Name)
+	state.Description = types.StringValue(release.Info.Description)
+	state.Chart = types.StringValue(release.Chart.Metadata.Name)
 
 	// Set default attributes
 	for key, value := range defaultAttributes {
