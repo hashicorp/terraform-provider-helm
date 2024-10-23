@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -31,8 +30,10 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var _ datasource.DataSource = &HelmTemplate{}
-var _ datasource.DataSourceWithConfigure = &HelmTemplate{}
+var (
+	_ datasource.DataSource              = &HelmTemplate{}
+	_ datasource.DataSourceWithConfigure = &HelmTemplate{}
+)
 
 func NewHelmTemplate() datasource.DataSource {
 	return &HelmTemplate{}
@@ -79,7 +80,7 @@ type HelmTemplateModel struct {
 	Replace                  types.Bool   `tfsdk:"replace"`
 	Description              types.String `tfsdk:"description"`
 	CreateNamespace          types.Bool   `tfsdk:"create_namespace"`
-	Postrender               types.List   `tfsdk:"postrender"`
+	Postrender               types.Object `tfsdk:"postrender"`
 	ApiVersions              types.List   `tfsdk:"api_versions"`
 	IncludeCrds              types.Bool   `tfsdk:"include_crds"`
 	IsUpgrade                types.Bool   `tfsdk:"is_upgrade"`
@@ -306,12 +307,10 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Optional:    true,
 				Description: "Kubernetes version used for Capabilities.KubeVersion.",
 			},
-		},
-		Blocks: map[string]schema.Block{
-			// Definitions for set, set_list, set_sensitive, set_string, and postrender as previously modified
-			"set": schema.SetNestedBlock{
-				Description: "Custom values to be merged with the values.",
-				NestedObject: schema.NestedBlockObject{
+			"set": schema.SetNestedAttribute{
+				Description: "Custom values to be merged with the values",
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							Required: true,
@@ -321,6 +320,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 						},
 						"type": schema.StringAttribute{
 							Optional: true,
+							Computed: true,
 							Validators: []validator.String{
 								stringvalidator.OneOf("auto", "string"),
 							},
@@ -328,9 +328,10 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 					},
 				},
 			},
-			"set_list": schema.ListNestedBlock{
-				Description: "Custom sensitive values to be merged with the values.",
-				NestedObject: schema.NestedBlockObject{
+			"set_list": schema.ListNestedAttribute{
+				Description: "Custom sensitive values to be merged with the values",
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							Required: true,
@@ -342,9 +343,10 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 					},
 				},
 			},
-			"set_sensitive": schema.SetNestedBlock{
-				Description: "Custom sensitive values to be merged with the values.",
-				NestedObject: schema.NestedBlockObject{
+			"set_sensitive": schema.SetNestedAttribute{
+				Description: "Custom sensitive values to be merged with the values",
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							Required: true,
@@ -362,30 +364,18 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 					},
 				},
 			},
-			"set_string": schema.SetNestedBlock{
-				Description: "Custom string values to be merged with the values.",
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Required: true,
-						},
-						"value": schema.StringAttribute{
-							Required: true,
-						},
+			"postrender": schema.SingleNestedAttribute{
+				Description: "Postrender command config",
+				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"args": schema.ListAttribute{
+						Optional:    true,
+						Description: "An argument to the post-renderer (can specify multiple)",
+						ElementType: types.StringType,
 					},
-				},
-			},
-			"postrender": schema.ListNestedBlock{
-				Description: "Postrender command configuration",
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
-				},
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"binary_path": schema.StringAttribute{
-							Required:    true,
-							Description: "The command binary path.",
-						},
+					"binary_path": schema.StringAttribute{
+						Required:    true,
+						Description: "The common binary path",
 					},
 				},
 			},
@@ -409,7 +399,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		return
 	}
 
-	//setting default values to false is attributes are not provided in the config
+	// setting default values to false is attributes are not provided in the config
 	if state.Description.IsNull() || state.Description.ValueString() == "" {
 		state.Description = types.StringValue("")
 	}
@@ -739,6 +729,7 @@ func getTemplateValues(ctx context.Context, model *HelmTemplateModel) (map[strin
 
 	return base, logDataValues(ctx, base, model)
 }
+
 func getDataSourceListValue(ctx context.Context, base map[string]interface{}, set SetListValue) diag.Diagnostics {
 	var diags diag.Diagnostics
 

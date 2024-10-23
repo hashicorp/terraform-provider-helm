@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -75,7 +74,7 @@ type HelmReleaseModel struct {
 	Name                     types.String `tfsdk:"name"`
 	Namespace                types.String `tfsdk:"namespace"`
 	PassCredentials          types.Bool   `tfsdk:"pass_credentials"`
-	Postrender               types.List   `tfsdk:"postrender"`
+	Postrender               types.Object `tfsdk:"postrender"`
 	RecreatePods             types.Bool   `tfsdk:"recreate_pods"`
 	Replace                  types.Bool   `tfsdk:"replace"`
 	RenderSubchartNotes      types.Bool   `tfsdk:"render_subchart_notes"`
@@ -511,11 +510,10 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Default:     booldefault.StaticBool(defaultAttributes["wait_for_jobs"].(bool)),
 				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"set": schema.SetNestedBlock{
+			"set": schema.SetNestedAttribute{
 				Description: "Custom values to be merged with the values",
-				NestedObject: schema.NestedBlockObject{
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							Required: true,
@@ -534,9 +532,10 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 				},
 			},
-			"set_list": schema.ListNestedBlock{
+			"set_list": schema.ListNestedAttribute{
 				Description: "Custom sensitive values to be merged with the values",
-				NestedObject: schema.NestedBlockObject{
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							Required: true,
@@ -548,9 +547,10 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 				},
 			},
-			"set_sensitive": schema.SetNestedBlock{
+			"set_sensitive": schema.SetNestedAttribute{
 				Description: "Custom sensitive values to be merged with the values",
-				NestedObject: schema.NestedBlockObject{
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							Required: true,
@@ -568,23 +568,18 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 				},
 			},
-			// single nested
-			"postrender": schema.ListNestedBlock{
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(1),
-				},
+			"postrender": schema.SingleNestedAttribute{
 				Description: "Postrender command config",
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"args": schema.ListAttribute{
-							Optional:    true,
-							Description: "An argument to the post-renderer (can specify multiple)",
-							ElementType: types.StringType,
-						},
-						"binary_path": schema.StringAttribute{
-							Required:    true,
-							Description: "The common binary path",
-						},
+				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"args": schema.ListAttribute{
+						Optional:    true,
+						Description: "An argument to the post-renderer (can specify multiple)",
+						ElementType: types.StringType,
+					},
+					"binary_path": schema.StringAttribute{
+						Required:    true,
+						Description: "The common binary path",
 					},
 				},
 			},
@@ -732,35 +727,29 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 
 	if !state.Postrender.IsNull() {
 		tflog.Debug(ctx, "Postrender is not null")
-		// Extract the list of postrender configurations
-		var postrenderList []postrenderModel
-		postrenderDiags := state.Postrender.ElementsAs(ctx, &postrenderList, false)
+		var postrenderConfig postrenderModel
+		postrenderDiags := state.Postrender.As(ctx, &postrenderConfig, basetypes.ObjectAsOptions{})
 		resp.Diagnostics.Append(postrenderDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		tflog.Debug(ctx, fmt.Sprintf("Postrender list extracted: %+v", postrenderList))
-		// Since postrender is defined as a list but can only have one element, we fetch the first item
-		if len(postrenderList) > 0 {
+		tflog.Debug(ctx, fmt.Sprintf("Postrender config: %+v", postrenderConfig))
 
-			prModel := postrenderList[0]
+		binaryPath := postrenderConfig.BinaryPath.ValueString()
+		argsList := postrenderConfig.Args.Elements()
 
-			binaryPath := prModel.BinaryPath.ValueString()
-			argsList := prModel.Args.Elements()
-
-			var args []string
-			for _, arg := range argsList {
-				args = append(args, arg.(basetypes.StringValue).ValueString())
-			}
-			tflog.Debug(ctx, fmt.Sprintf("Creating post-renderer with binary path: %s and args: %v", binaryPath, args))
-			pr, err := postrender.NewExec(binaryPath, args...)
-			if err != nil {
-				resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
-				return
-			}
-
-			client.PostRenderer = pr
+		var args []string
+		for _, arg := range argsList {
+			args = append(args, arg.(basetypes.StringValue).ValueString())
 		}
+		tflog.Debug(ctx, fmt.Sprintf("Creating post-renderer with binary path: %s and args: %v", binaryPath, args))
+		pr, err := postrender.NewExec(binaryPath, args...)
+		if err != nil {
+			resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
+			return
+		}
+
+		client.PostRenderer = pr
 	}
 
 	rel, err := client.Run(c, values)
@@ -948,35 +937,28 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.Description = plan.Description.ValueString()
 
 	if !plan.Postrender.IsNull() {
-		// Extract the list of postrender configurations
-		var postrenderList []postrenderModel
-		postrenderDiags := plan.Postrender.ElementsAs(ctx, &postrenderList, false)
+		var postrenderConfig postrenderModel
+		postrenderDiags := plan.Postrender.As(ctx, &postrenderConfig, basetypes.ObjectAsOptions{})
 		resp.Diagnostics.Append(postrenderDiags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
-		tflog.Debug(ctx, fmt.Sprintf("Initial postrender values update method: %+v", postrenderList))
+		tflog.Debug(ctx, fmt.Sprintf("Initial postrender values update method: %+v", postrenderConfig))
 
-		// Since postrender is defined as a list but can only have one element, we fetch the first item
-		if len(postrenderList) > 0 {
-			prModel := postrenderList[0]
+		binaryPath := postrenderConfig.BinaryPath.ValueString()
+		argsList := postrenderConfig.Args.Elements()
 
-			binaryPath := prModel.BinaryPath.ValueString()
-			argsList := prModel.Args.Elements()
-
-			var args []string
-			for _, arg := range argsList {
-				args = append(args, arg.(basetypes.StringValue).ValueString())
-			}
-			tflog.Debug(ctx, fmt.Sprintf("Binary path update method: %s, Args: %v", binaryPath, args))
-			pr, err := postrender.NewExec(binaryPath, args...)
-			if err != nil {
-				resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
-				return
-			}
-
-			client.PostRenderer = pr
+		var args []string
+		for _, arg := range argsList {
+			args = append(args, arg.(basetypes.StringValue).ValueString())
 		}
+		tflog.Debug(ctx, fmt.Sprintf("Binary path update method: %s, Args: %v", binaryPath, args))
+		pr, err := postrender.NewExec(binaryPath, args...)
+		if err != nil {
+			resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
+			return
+		}
+		client.PostRenderer = pr
 	}
 	values, valuesDiags := getValues(ctx, &plan)
 	resp.Diagnostics.Append(valuesDiags...)
@@ -1748,31 +1730,28 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		var postRenderer postrender.PostRenderer
 		if !plan.Postrender.IsNull() {
 			// Extract the list of postrender configurations
-			var postrenderList []postrenderModel
-			postrenderDiags := plan.Postrender.ElementsAs(ctx, &postrenderList, false)
+			var postrenderConfig postrenderModel
+			postrenderDiags := plan.Postrender.As(ctx, &postrenderConfig, basetypes.ObjectAsOptions{})
 			resp.Diagnostics.Append(postrenderDiags...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
-			if len(postrenderList) > 0 {
-				prModel := postrenderList[0]
 
-				binaryPath := prModel.BinaryPath.ValueString()
-				argsList := prModel.Args.Elements()
+			binaryPath := postrenderConfig.BinaryPath.ValueString()
+			argsList := postrenderConfig.Args.Elements()
 
-				var args []string
-				for _, arg := range argsList {
-					args = append(args, arg.(basetypes.StringValue).ValueString())
-				}
-
-				pr, err := postrender.NewExec(binaryPath, args...)
-				if err != nil {
-					resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
-					return
-				}
-
-				client.PostRenderer = pr
+			var args []string
+			for _, arg := range argsList {
+				args = append(args, arg.(basetypes.StringValue).ValueString())
 			}
+
+			pr, err := postrender.NewExec(binaryPath, args...)
+			if err != nil {
+				resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
+				return
+			}
+
+			client.PostRenderer = pr
 		}
 		if state == nil {
 			install := action.NewInstall(actionConfig)
