@@ -41,10 +41,9 @@ import (
 )
 
 var (
-	_ resource.Resource                 = &HelmRelease{}
-	_ resource.ResourceWithUpgradeState = &HelmRelease{}
-	_ resource.ResourceWithModifyPlan   = &HelmRelease{}
-	_ resource.ResourceWithImportState  = &HelmRelease{}
+	_ resource.Resource                = &HelmRelease{}
+	_ resource.ResourceWithModifyPlan  = &HelmRelease{}
+	_ resource.ResourceWithImportState = &HelmRelease{}
 )
 
 type HelmRelease struct {
@@ -590,7 +589,6 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				},
 			},
 		},
-		// Indicating schema has undergone changes
 		Version: 1,
 	}
 }
@@ -612,35 +610,6 @@ func (r *HelmRelease) Configure(ctx context.Context, req resource.ConfigureReque
 	}
 	tflog.Debug(ctx, fmt.Sprintf("Configured meta: %+v", meta))
 	r.meta = meta
-}
-
-// maps version 0 state to the upgrade function.
-// If terraform detects data with version 0, we call upgrade to upgrade the state to the current schema version "1"
-func (r *HelmRelease) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{
-		0: {
-			StateUpgrader: stateUpgradeV0toV1,
-		},
-	}
-}
-
-func stateUpgradeV0toV1(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
-	var priorState map[string]interface{}
-	diags := req.State.Get(ctx, &priorState)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if priorState["pass_credentials"] == nil {
-		priorState["pass_credentials"] = false
-	}
-	if priorState["wait_for_jobs"] == nil {
-		priorState["wait_for_jobs"] = false
-	}
-
-	diags = resp.State.Set(ctx, priorState)
-	resp.Diagnostics.Append(diags...)
 }
 
 const sensitiveContentValue = "(sensitive value)"
@@ -1662,19 +1631,6 @@ func checkChartDependencies(ctx context.Context, model *HelmReleaseModel, c *cha
 	}
 	tflog.Debug(ctx, "Chart dependencies are up to date.")
 	return false, diags
-}
-
-func (r *HelmRelease) StateUpgrade(ctx context.Context, version int, state map[string]interface{}, meta interface{}) (map[string]interface{}, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	if state["pass_credentials"] == nil {
-		state["pass_credentials"] = false
-	}
-	if state["wait_for_jobs"] == nil {
-		state["wait_for_jobs"] = false
-	}
-
-	return state, diags
 }
 
 func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
