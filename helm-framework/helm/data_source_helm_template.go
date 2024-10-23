@@ -475,9 +475,9 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		state.Namespace = types.StringValue(defaultNamespace)
 	}
 
-	m := d.meta
+	meta := d.meta
 
-	actionConfig, err := m.GetHelmConfiguration(ctx, state.Namespace.ValueString())
+	actionConfig, err := meta.GetHelmConfiguration(ctx, state.Namespace.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error getting Helm configuration",
@@ -485,7 +485,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		)
 		return
 	}
-	diags := OCIRegistryLogin(ctx, actionConfig, m.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+	diags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
