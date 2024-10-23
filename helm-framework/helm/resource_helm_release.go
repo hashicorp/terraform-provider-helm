@@ -700,7 +700,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	ociDiags := OCIRegistryLogin(ctx, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -927,7 +927,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	ociDiags := OCIRegistryLogin(ctx, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1698,11 +1698,11 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	logID := fmt.Sprintf("[resourceDiff: %s]", plan.Name.ValueString())
 	tflog.Debug(ctx, fmt.Sprintf("%s Start", logID))
 
-	m := r.meta
+	meta := r.meta
 	name := plan.Name.ValueString()
 	namespace := plan.Namespace.ValueString()
 
-	actionConfig, err := m.GetHelmConfiguration(ctx, namespace)
+	actionConfig, err := meta.GetHelmConfiguration(ctx, namespace)
 	if err != nil {
 		resp.Diagnostics.AddError("Error getting Helm configuration", err.Error())
 		return
@@ -1714,7 +1714,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	repositoryUsername := plan.RepositoryUsername.ValueString()
 	repositoryPassword := plan.RepositoryPassword.ValueString()
 	chartName := plan.Chart.ValueString()
-	ociDiags := OCIRegistryLogin(ctx, actionConfig, m.RegistryClient, repositoryURL, chartName, repositoryUsername, repositoryPassword)
+	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, repositoryURL, chartName, repositoryUsername, repositoryPassword)
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1746,20 +1746,20 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	}
 
 	client := action.NewInstall(actionConfig)
-	cpo, chartName, diags := chartPathOptions(&plan, m, &client.ChartPathOptions)
+	cpo, chartName, diags := chartPathOptions(&plan, meta, &client.ChartPathOptions)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	chart, path, diags := getChart(ctx, &plan, m, chartName, cpo)
+	chart, path, diags := getChart(ctx, &plan, meta, chartName, cpo)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	tflog.Debug(ctx, fmt.Sprintf("%s Got chart", logID))
 
-	updated, diags := checkChartDependencies(ctx, &plan, chart, path, m)
+	updated, diags := checkChartDependencies(ctx, &plan, chart, path, meta)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1772,7 +1772,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	}
 
 	if plan.Lint.ValueBool() {
-		diags := resourceReleaseValidate(ctx, &plan, m, cpo)
+		diags := resourceReleaseValidate(ctx, &plan, meta, cpo)
 		if diags.HasError() {
 			resp.Diagnostics.Append(diags...)
 			return
@@ -1780,7 +1780,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	}
 	tflog.Debug(ctx, fmt.Sprintf("%s Release validated", logID))
 
-	if m.ExperimentEnabled("manifest") {
+	if meta.ExperimentEnabled("manifest") {
 		// Check if all necessary values are known
 		if valuesUnknown(plan) {
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
@@ -1887,7 +1887,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			return
 		}
 
-		_, err = getRelease(ctx, m, actionConfig, name)
+		_, err = getRelease(ctx, meta, actionConfig, name)
 		if err == errReleaseNotFound {
 			if len(chart.Metadata.Version) > 0 {
 				plan.Version = types.StringValue(chart.Metadata.Version)

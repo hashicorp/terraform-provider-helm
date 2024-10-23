@@ -44,6 +44,7 @@ type Meta struct {
 	HelmDriver     string
 	// Experimental feature toggles
 	Experiments map[string]bool
+	Mut         sync.Mutex
 }
 
 // Models for our provider helm block
@@ -617,7 +618,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 				return
 			}
 
-			err := OCIRegistryPerformLogin(ctx, meta.RegistryClient, r.URL.ValueString(), r.Username.ValueString(), r.Password.ValueString())
+			err := OCIRegistryPerformLogin(ctx, meta, meta.RegistryClient, r.URL.ValueString(), r.Username.ValueString(), r.Password.ValueString())
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"OCI Registry login failed",
@@ -647,12 +648,7 @@ func (p *HelmProvider) Resources(ctx context.Context) []func() resource.Resource
 	}
 }
 
-var (
-	OCILoginMutex         sync.Mutex
-	loggedInOCIRegistries = make(map[string]string)
-)
-
-func OCIRegistryLogin(ctx context.Context, actionConfig *action.Configuration, registryClient *registry.Client, repository, chartName, username, password string) diag.Diagnostics {
+func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Configuration, registryClient *registry.Client, repository, chartName, username, password string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	actionConfig.RegistryClient = registryClient
@@ -669,7 +665,7 @@ func OCIRegistryLogin(ctx context.Context, actionConfig *action.Configuration, r
 	}
 
 	if username != "" && password != "" {
-		err := OCIRegistryPerformLogin(ctx, registryClient, ociURL, username, password)
+		err := OCIRegistryPerformLogin(ctx, meta, registryClient, ociURL, username, password)
 		if err != nil {
 			diags.AddError(
 				"OCI Registry Login Failed",
@@ -682,15 +678,16 @@ func OCIRegistryLogin(ctx context.Context, actionConfig *action.Configuration, r
 }
 
 // registryClient = client used to comm with the registry, oci urls, un, and pw used for authentication
-func OCIRegistryPerformLogin(ctx context.Context, registryClient *registry.Client, ociURL, username, password string) error {
-	// getting the oci url, and extracting the host.
+func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *registry.Client, ociURL, username, password string) error {
 
+	loggedInOCIRegistries := make(map[string]string)
+	// getting the oci url, and extracting the host.
 	u, err := url.Parse(ociURL)
 	if err != nil {
 		return fmt.Errorf("could not parse OCI registry URL: %v", err)
 	}
-	OCILoginMutex.Lock()
-	defer OCILoginMutex.Unlock()
+	meta.Mut.Lock()
+	defer meta.Mut.Unlock()
 	if _, ok := loggedInOCIRegistries[u.Host]; ok {
 		tflog.Info(ctx, fmt.Sprintf("Already logged into OCI registry %q", u.Host))
 		return nil
