@@ -36,6 +36,7 @@ func New() func() provider.Provider {
 	}
 }
 
+// Meta contains the client configuration for the provider
 type Meta struct {
 	providerData   *HelmProvider
 	Data           *HelmProviderModel
@@ -46,7 +47,7 @@ type Meta struct {
 	Experiments map[string]bool
 }
 
-// Models for our provider helm block
+// HelmProviderModel contains the configuration for the provider
 type HelmProviderModel struct {
 	Debug                types.Bool   `tfsdk:"debug"`
 	PluginsPath          types.String `tfsdk:"plugins_path"`
@@ -60,16 +61,19 @@ type HelmProviderModel struct {
 	Experiments          types.List   `tfsdk:"experiments"`
 }
 
+// ExperimentsConfigModel configures the experiments that are enabled or disabled
 type ExperimentsConfigModel struct {
 	Manifest types.Bool `tfsdk:"manifest"`
 }
 
+// RegistryConfigModel configures an OCI registry
 type RegistryConfigModel struct {
 	URL      types.String `tfsdk:"url"`
 	Username types.String `tfsdk:"username"`
 	Password types.String `tfsdk:"password"`
 }
 
+// KubernetesConfigModel configures a Kubernetes client
 type KubernetesConfigModel struct {
 	Host                  types.String `tfsdk:"host"`
 	Username              types.String `tfsdk:"username"`
@@ -89,6 +93,7 @@ type KubernetesConfigModel struct {
 	// Exec                  types.List   `tfsdk:"exec"`
 }
 
+// ExecConfigModel configures an external command to configure the Kubernetes client
 type ExecConfigModel struct {
 	APIVersion types.String `tfsdk:"api_version"`
 	Command    types.String `tfsdk:"command"`
@@ -96,6 +101,7 @@ type ExecConfigModel struct {
 	Args       types.List   `tfsdk:"args"`
 }
 
+// HelmProvider is the top level provider struct
 type HelmProvider struct {
 	meta *Meta
 }
