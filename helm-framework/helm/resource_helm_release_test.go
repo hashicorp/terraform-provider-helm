@@ -2098,31 +2098,6 @@ func removeSubcharts(chartName string) error {
 	return os.RemoveAll(chartsPath)
 }
 
-// func TestResourceExampleInstanceStateUpgradeV0(t *testing.T) {
-// 	expected := map[string]any{
-// 		"wait_for_jobs":    false,
-// 		"pass_credentials": false,
-// 	}
-// 	states := []map[string]any{
-// 		{
-// 			"wait_for_jobs":    nil,
-// 			"pass_credentials": nil,
-// 		},
-// 		{},
-// 	}
-
-// 	for _, state := range states {
-// 		actual, err := stateUpgradeV0toV1(context.Background(), state, nil)
-// 		if err != nil {
-// 			t.Fatalf("error migrating state: %s", err)
-// 		}
-
-// 		if !reflect.DeepEqual(expected, actual) {
-// 			t.Fatalf("\n\nexpected:\n\n%#v\n\ngot:\n\n%#v\n\n", expected, actual)
-// 		}
-// 	}
-// }
-
 func testAccHelmReleaseSetListValues(resource, ns, name string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
