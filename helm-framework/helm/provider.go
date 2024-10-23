@@ -45,7 +45,7 @@ type Meta struct {
 	HelmDriver     string
 	// Experimental feature toggles
 	Experiments map[string]bool
-	Mut         sync.Mutex
+	Mutex       sync.Mutex
 }
 
 // HelmProviderModel contains the configuration for the provider
@@ -692,8 +692,8 @@ func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *re
 	if err != nil {
 		return fmt.Errorf("could not parse OCI registry URL: %v", err)
 	}
-	meta.Mut.Lock()
-	defer meta.Mut.Unlock()
+	meta.Mutex.Lock()
+	defer meta.Mutex.Unlock()
 	if _, ok := loggedInOCIRegistries[u.Host]; ok {
 		tflog.Info(ctx, fmt.Sprintf("Already logged into OCI registry %q", u.Host))
 		return nil
