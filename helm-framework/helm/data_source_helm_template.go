@@ -46,58 +46,58 @@ type HelmTemplate struct {
 
 // HelmTemplateModel holds the attributes for configuring the Helm chart templates
 type HelmTemplateModel struct {
-	ID                       types.String `tfsdk:"id"`
-	Name                     types.String `tfsdk:"name"`
-	Repository               types.String `tfsdk:"repository"`
-	RepositoryKeyFile        types.String `tfsdk:"repository_key_file"`
-	RepositoryCertFile       types.String `tfsdk:"repository_cert_file"`
-	RepositoryCaFile         types.String `tfsdk:"repository_ca_file"`
-	RepositoryUsername       types.String `tfsdk:"repository_username"`
-	RepositoryPassword       types.String `tfsdk:"repository_password"`
-	PassCredentials          types.Bool   `tfsdk:"pass_credentials"`
+	APIVersions              types.List   `tfsdk:"api_versions"`
+	Atomic                   types.Bool   `tfsdk:"atomic"`
 	Chart                    types.String `tfsdk:"chart"`
-	Version                  types.String `tfsdk:"version"`
+	CreateNamespace          types.Bool   `tfsdk:"create_namespace"`
+	CRDs                     types.List   `tfsdk:"crds"`
+	DependencyUpdate         types.Bool   `tfsdk:"dependency_update"`
+	Description              types.String `tfsdk:"description"`
 	Devel                    types.Bool   `tfsdk:"devel"`
-	Values                   types.List   `tfsdk:"values"`
+	DisableOpenAPIValidation types.Bool   `tfsdk:"disable_openapi_validation"`
+	DisableWebhooks          types.Bool   `tfsdk:"disable_webhooks"`
+	ID                       types.String `tfsdk:"id"`
+	IncludeCrds              types.Bool   `tfsdk:"include_crds"`
+	IsUpgrade                types.Bool   `tfsdk:"is_upgrade"`
+	Keyring                  types.String `tfsdk:"keyring"`
+	KubeVersion              types.String `tfsdk:"kube_version"`
+	Manifest                 types.String `tfsdk:"manifest"`
+	Manifests                types.Map    `tfsdk:"manifests"`
+	Name                     types.String `tfsdk:"name"`
+	Namespace                types.String `tfsdk:"namespace"`
+	Notes                    types.String `tfsdk:"notes"`
+	PassCredentials          types.Bool   `tfsdk:"pass_credentials"`
+	PostRender               types.Object `tfsdk:"postrender"`
+	RenderSubchartNotes      types.Bool   `tfsdk:"render_subchart_notes"`
+	Replace                  types.Bool   `tfsdk:"replace"`
+	Repository               types.String `tfsdk:"repository"`
+	RepositoryCaFile         types.String `tfsdk:"repository_ca_file"`
+	RepositoryCertFile       types.String `tfsdk:"repository_cert_file"`
+	RepositoryKeyFile        types.String `tfsdk:"repository_key_file"`
+	RepositoryPassword       types.String `tfsdk:"repository_password"`
+	RepositoryUsername       types.String `tfsdk:"repository_username"`
+	ResetValues              types.Bool   `tfsdk:"reset_values"`
+	ReuseValues              types.Bool   `tfsdk:"reuse_values"`
 	Set                      types.Set    `tfsdk:"set"`
 	SetList                  types.List   `tfsdk:"set_list"`
 	SetSensitive             types.Set    `tfsdk:"set_sensitive"`
 	SetString                types.Set    `tfsdk:"set_string"`
-	Namespace                types.String `tfsdk:"namespace"`
-	Verify                   types.Bool   `tfsdk:"verify"`
-	Keyring                  types.String `tfsdk:"keyring"`
-	Timeout                  types.Int64  `tfsdk:"timeout"`
-	DisableWebhooks          types.Bool   `tfsdk:"disable_webhooks"`
-	ReuseValues              types.Bool   `tfsdk:"reuse_values"`
-	ResetValues              types.Bool   `tfsdk:"reset_values"`
-	Atomic                   types.Bool   `tfsdk:"atomic"`
+	ShowOnly                 types.List   `tfsdk:"show_only"`
 	SkipCrds                 types.Bool   `tfsdk:"skip_crds"`
 	SkipTests                types.Bool   `tfsdk:"skip_tests"`
-	RenderSubchartNotes      types.Bool   `tfsdk:"render_subchart_notes"`
-	DisableOpenAPIValidation types.Bool   `tfsdk:"disable_openapi_validation"`
-	Wait                     types.Bool   `tfsdk:"wait"`
-	DependencyUpdate         types.Bool   `tfsdk:"dependency_update"`
-	Replace                  types.Bool   `tfsdk:"replace"`
-	Description              types.String `tfsdk:"description"`
-	CreateNamespace          types.Bool   `tfsdk:"create_namespace"`
-	Postrender               types.Object `tfsdk:"postrender"`
-	ApiVersions              types.List   `tfsdk:"api_versions"`
-	IncludeCrds              types.Bool   `tfsdk:"include_crds"`
-	IsUpgrade                types.Bool   `tfsdk:"is_upgrade"`
-	ShowOnly                 types.List   `tfsdk:"show_only"`
+	Timeout                  types.Int64  `tfsdk:"timeout"`
 	Validate                 types.Bool   `tfsdk:"validate"`
-	Manifests                types.Map    `tfsdk:"manifests"`
-	CRDs                     types.List   `tfsdk:"crds"`
-	Manifest                 types.String `tfsdk:"manifest"`
-	Notes                    types.String `tfsdk:"notes"`
-	KubeVersion              types.String `tfsdk:"kube_version"`
+	Values                   types.List   `tfsdk:"values"`
+	Version                  types.String `tfsdk:"version"`
+	Verify                   types.Bool   `tfsdk:"verify"`
+	Wait                     types.Bool   `tfsdk:"wait"`
 }
 
 // SetValue represents the custom value to be merged with the Helm chart values
 type SetValue struct {
 	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
 	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
 }
 
 // SetListValue represents a custom list value to be merged with the Helm chart values.
@@ -110,8 +110,8 @@ type SetListValue struct {
 // SetSensitiveValue represents a custom sensitive value to be merged with the Helm chart values.
 type SetSensitiveValue struct {
 	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
 	Type  types.String `tfsdk:"type"`
+	Value types.String `tfsdk:"value"`
 }
 
 type SetStringValue struct {
@@ -137,132 +137,51 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 	resp.Schema = schema.Schema{
 		Description: "Data source to render Helm chart templates.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-			},
-			"name": schema.StringAttribute{
-				Required:    true,
-				Description: "Release name",
-			},
-			"repository": schema.StringAttribute{
-				Optional:    true,
-				Description: "Repository where to locate the requested chart. If it is a URL the chart is installed without installing the repository.",
-			},
-			"repository_key_file": schema.StringAttribute{
-				Optional:    true,
-				Description: "The repository's cert key file",
-			},
-			"repository_cert_file": schema.StringAttribute{
-				Optional:    true,
-				Description: "The repository's cert file",
-			},
-			"repository_ca_file": schema.StringAttribute{
-				Optional:    true,
-				Description: "The repository's CA file",
-			},
-			"repository_username": schema.StringAttribute{
-				Optional:    true,
-				Description: "Username for HTTP basic authentication",
-			},
-			"repository_password": schema.StringAttribute{
-				Optional:    true,
-				Sensitive:   true,
-				Description: "Password for HTTP basic authentication",
-			},
-			"pass_credentials": schema.BoolAttribute{
-				Optional:    true,
-				Description: "Pass credentials to all domains",
-			},
-			"chart": schema.StringAttribute{
-				Required:    true,
-				Description: "Chart name to be installed. A path may be used.",
-			},
-			"version": schema.StringAttribute{
-				Optional:    true,
-				Computed:    true,
-				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed.",
-			},
-			"devel": schema.BoolAttribute{
-				Optional:    true,
-				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored.",
-			},
-			"values": schema.ListAttribute{
+			"api_versions": schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
-				Description: "List of values in raw yaml format to pass to helm.",
-			},
-			"namespace": schema.StringAttribute{
-				Optional:    true,
-				Description: "Namespace to install the release into.",
-			},
-			"verify": schema.BoolAttribute{
-				Optional:    true,
-				Description: "Verify the package before installing it.",
-			},
-			"keyring": schema.StringAttribute{
-				Optional:    true,
-				Description: "Location of public keys used for verification. Used only if `verify` is true.",
-			},
-			"timeout": schema.Int64Attribute{
-				Optional:    true,
-				Description: "Time in seconds to wait for any individual Kubernetes operation.",
-			},
-			"disable_webhooks": schema.BoolAttribute{
-				Optional:    true,
-				Description: "Prevent hooks from running.",
-			},
-			"reuse_values": schema.BoolAttribute{
-				Optional:    true,
-				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored.",
-			},
-			"reset_values": schema.BoolAttribute{
-				Optional:    true,
-				Description: "When upgrading, reset the values to the ones built into the chart.",
+				Description: "Kubernetes api versions used for Capabilities.APIVersions.",
 			},
 			"atomic": schema.BoolAttribute{
 				Optional:    true,
 				Description: "If set, the installation process purges the chart on fail. The 'wait' flag will be set automatically if 'atomic' is used.",
 			},
-			"skip_crds": schema.BoolAttribute{
-				Optional:    true,
-				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present.",
+			"chart": schema.StringAttribute{
+				Required:    true,
+				Description: "Chart name to be installed. A path may be used.",
 			},
-			"skip_tests": schema.BoolAttribute{
+			"crds": schema.ListAttribute{
 				Optional:    true,
-				Description: "If set, tests will not be rendered. By default, tests are rendered.",
-			},
-			"render_subchart_notes": schema.BoolAttribute{
-				Optional:    true,
-				Description: "If set, render subchart notes along with the parent.",
-			},
-			"disable_openapi_validation": schema.BoolAttribute{
-				Optional:    true,
-				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema.",
-			},
-			"wait": schema.BoolAttribute{
-				Optional:    true,
-				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
-			},
-			"dependency_update": schema.BoolAttribute{
-				Optional:    true,
-				Description: "Run helm dependency update before installing the chart.",
-			},
-			"replace": schema.BoolAttribute{
-				Optional:    true,
-				Description: "Re-use the given name, even if that name is already used. This is unsafe in production.",
-			},
-			"description": schema.StringAttribute{
-				Optional:    true,
-				Description: "Add a custom description.",
+				Computed:    true,
+				ElementType: types.StringType,
+				Description: "List of rendered CRDs from the chart.",
 			},
 			"create_namespace": schema.BoolAttribute{
 				Optional:    true,
 				Description: "Create the namespace if it does not exist.",
 			},
-			"api_versions": schema.ListAttribute{
+			"dependency_update": schema.BoolAttribute{
 				Optional:    true,
-				ElementType: types.StringType,
-				Description: "Kubernetes api versions used for Capabilities.APIVersions.",
+				Description: "Run helm dependency update before installing the chart.",
+			},
+			"description": schema.StringAttribute{
+				Optional:    true,
+				Description: "Add a custom description.",
+			},
+			"devel": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored.",
+			},
+			"disable_openapi_validation": schema.BoolAttribute{
+				Optional:    true,
+				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema.",
+			},
+			"disable_webhooks": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Prevent hooks from running.",
+			},
+			"id": schema.StringAttribute{
+				Computed: true,
 			},
 			"include_crds": schema.BoolAttribute{
 				Optional:    true,
@@ -272,14 +191,18 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Optional:    true,
 				Description: "Set .Release.IsUpgrade instead of .Release.IsInstall.",
 			},
-			"show_only": schema.ListAttribute{
+			"keyring": schema.StringAttribute{
 				Optional:    true,
-				ElementType: types.StringType,
-				Description: "Only show manifests rendered from the given templates.",
+				Description: "Location of public keys used for verification. Used only if `verify` is true.",
 			},
-			"validate": schema.BoolAttribute{
+			"kube_version": schema.StringAttribute{
 				Optional:    true,
-				Description: "Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install.",
+				Description: "Kubernetes version used for Capabilities.KubeVersion.",
+			},
+			"manifest": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Concatenated rendered chart templates. This corresponds to the output of the `helm template` command.",
 			},
 			"manifests": schema.MapAttribute{
 				Optional:    true,
@@ -287,25 +210,78 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				ElementType: types.StringType,
 				Description: "Map of rendered chart templates indexed by the template name.",
 			},
-			"crds": schema.ListAttribute{
-				Optional:    true,
-				Computed:    true,
-				ElementType: types.StringType,
-				Description: "List of rendered CRDs from the chart.",
+			"name": schema.StringAttribute{
+				Required:    true,
+				Description: "Release name",
 			},
-			"manifest": schema.StringAttribute{
+			"namespace": schema.StringAttribute{
 				Optional:    true,
-				Computed:    true,
-				Description: "Concatenated rendered chart templates. This corresponds to the output of the `helm template` command.",
+				Description: "Namespace to install the release into.",
 			},
 			"notes": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
 				Description: "Rendered notes if the chart contains a `NOTES.txt`.",
 			},
-			"kube_version": schema.StringAttribute{
+			"pass_credentials": schema.BoolAttribute{
 				Optional:    true,
-				Description: "Kubernetes version used for Capabilities.KubeVersion.",
+				Description: "Pass credentials to all domains",
+			},
+			"postrender": schema.SingleNestedAttribute{
+				Description: "Postrender command config",
+				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"args": schema.ListAttribute{
+						Optional:    true,
+						Description: "An argument to the post-renderer (can specify multiple)",
+						ElementType: types.StringType,
+					},
+					"binary_path": schema.StringAttribute{
+						Required:    true,
+						Description: "The common binary path",
+					},
+				},
+			},
+			"render_subchart_notes": schema.BoolAttribute{
+				Optional:    true,
+				Description: "If set, render subchart notes along with the parent.",
+			},
+			"replace": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Re-use the given name, even if that name is already used. This is unsafe in production.",
+			},
+			"repository": schema.StringAttribute{
+				Optional:    true,
+				Description: "Repository where to locate the requested chart. If it is a URL the chart is installed without installing the repository.",
+			},
+			"repository_ca_file": schema.StringAttribute{
+				Optional:    true,
+				Description: "The repository's CA file",
+			},
+			"repository_cert_file": schema.StringAttribute{
+				Optional:    true,
+				Description: "The repository's cert file",
+			},
+			"repository_key_file": schema.StringAttribute{
+				Optional:    true,
+				Description: "The repository's cert key file",
+			},
+			"repository_password": schema.StringAttribute{
+				Optional:    true,
+				Sensitive:   true,
+				Description: "Password for HTTP basic authentication",
+			},
+			"repository_username": schema.StringAttribute{
+				Optional:    true,
+				Description: "Username for HTTP basic authentication",
+			},
+			"reset_values": schema.BoolAttribute{
+				Optional:    true,
+				Description: "When upgrading, reset the values to the ones built into the chart.",
+			},
+			"reuse_values": schema.BoolAttribute{
+				Optional:    true,
+				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored.",
 			},
 			"set": schema.SetNestedAttribute{
 				Description: "Custom values to be merged with the values",
@@ -364,20 +340,44 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 					},
 				},
 			},
-			"postrender": schema.SingleNestedAttribute{
-				Description: "Postrender command config",
+			"show_only": schema.ListAttribute{
 				Optional:    true,
-				Attributes: map[string]schema.Attribute{
-					"args": schema.ListAttribute{
-						Optional:    true,
-						Description: "An argument to the post-renderer (can specify multiple)",
-						ElementType: types.StringType,
-					},
-					"binary_path": schema.StringAttribute{
-						Required:    true,
-						Description: "The common binary path",
-					},
-				},
+				ElementType: types.StringType,
+				Description: "Only show manifests rendered from the given templates.",
+			},
+			"skip_crds": schema.BoolAttribute{
+				Optional:    true,
+				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present.",
+			},
+			"skip_tests": schema.BoolAttribute{
+				Optional:    true,
+				Description: "If set, tests will not be rendered. By default, tests are rendered.",
+			},
+			"timeout": schema.Int64Attribute{
+				Optional:    true,
+				Description: "Time in seconds to wait for any individual Kubernetes operation.",
+			},
+			"validate": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install.",
+			},
+			"values": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				Description: "List of values in raw yaml format to pass to helm.",
+			},
+			"verify": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Verify the package before installing it.",
+			},
+			"version": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed.",
+			},
+			"wait": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
 			},
 		},
 	}
@@ -480,8 +480,8 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	actionConfig, err := meta.GetHelmConfiguration(ctx, state.Namespace.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error getting Helm configuration",
-			fmt.Sprintf("Error getting Helm configuration might be: %s", err),
+			"Failed to get Helm configuration",
+			fmt.Sprintf("There was an error retrieving Helm configuration for namespace %q: %s", state.Namespace.ValueString(), err),
 		)
 		return
 	}
@@ -512,8 +512,8 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		parsedVer, err := chartutil.ParseKubeVersion(state.KubeVersion.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Error parsing Kubernetes version",
-				fmt.Sprintf("Couldn't parse Kubernetes version %q: %s", state.KubeVersion.ValueString(), err),
+				"Failed to pase kubernetes version",
+				fmt.Sprintf("The Kubernetes version provided (%q) could not be parsed: %s", state.KubeVersion.ValueString(), err),
 			)
 			return
 		}
@@ -523,8 +523,8 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	chartPath, err := client.ChartPathOptions.LocateChart(state.Chart.ValueString(), cli.New())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error locating chart",
-			fmt.Sprintf("Error locating chart: %s", err),
+			"Failed to locate chart",
+			fmt.Sprintf("Error occurred while locating the Helm chart: %s", err),
 		)
 		return
 	}
