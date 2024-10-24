@@ -1955,7 +1955,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	if len(chart.Metadata.Version) > 0 {
 		plan.Version = types.StringValue(chart.Metadata.Version)
 	} else {
-		plan.Version = types.StringNull()
+		state.Version = types.StringNull()
 	}
 	resp.Plan.Set(ctx, &plan)
 }
