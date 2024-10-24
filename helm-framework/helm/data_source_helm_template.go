@@ -57,7 +57,7 @@ type HelmTemplateModel struct {
 	DisableOpenAPIValidation types.Bool   `tfsdk:"disable_openapi_validation"`
 	DisableWebhooks          types.Bool   `tfsdk:"disable_webhooks"`
 	ID                       types.String `tfsdk:"id"`
-	IncludeCrds              types.Bool   `tfsdk:"include_crds"`
+	IncludeCRDs              types.Bool   `tfsdk:"include_crds"`
 	IsUpgrade                types.Bool   `tfsdk:"is_upgrade"`
 	Keyring                  types.String `tfsdk:"keyring"`
 	KubeVersion              types.String `tfsdk:"kube_version"`
@@ -416,8 +416,8 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 			state.Keyring = types.StringValue("")
 		}
 	}
-	if !state.IncludeCrds.IsNull() || state.IncludeCrds.IsUnknown() {
-		state.IncludeCrds = types.BoolValue(false)
+	if !state.IncludeCRDs.IsNull() || state.IncludeCRDs.IsUnknown() {
+		state.IncludeCRDs = types.BoolValue(false)
 	}
 	if state.IsUpgrade.IsNull() || state.IsUpgrade.IsUnknown() {
 		state.IsUpgrade = types.BoolValue(false)
