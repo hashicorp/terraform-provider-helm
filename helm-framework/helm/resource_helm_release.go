@@ -1842,7 +1842,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
 					// FIXME add diagnostic here
 
-					tflog.Debug(ctx, "cluster was unreachable at create time, marking manifest as computed")
+					resp.Diagnostics.AddError("cluster was unreachable at create time, marking manifest as computed", err.Error())
 					plan.Manifest = types.StringNull()
 					return
 				}
