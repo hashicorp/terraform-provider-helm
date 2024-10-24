@@ -161,7 +161,7 @@ func resourceRelease() *schema.Resource {
 							// TODO: use ValidateDiagFunc once an SDK v2 version of StringInSlice exists.
 							// https://github.com/hashicorp/terraform-plugin-sdk/issues/534
 							ValidateFunc: validation.StringInSlice([]string{
-								"auto", "string",
+								"auto", "string", "literal",
 							}, false),
 						},
 					},
@@ -204,7 +204,7 @@ func resourceRelease() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							ValidateFunc: validation.StringInSlice([]string{
-								"auto", "string",
+								"auto", "string", "literal",
 							}, false),
 						},
 					},
@@ -1392,6 +1392,10 @@ func getValue(base, set map[string]interface{}) error {
 		}
 	case "string":
 		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+			return fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
+		}
+	case "literal":
+		if err := strvals.ParseLiteralInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
 			return fmt.Errorf("failed parsing key %q with value %s, %s", name, value, err)
 		}
 	default:

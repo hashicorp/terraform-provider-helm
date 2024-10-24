@@ -1266,6 +1266,27 @@ func TestGetValuesString(t *testing.T) {
 	}
 }
 
+func TestGetValuesLiteral(t *testing.T) {
+	d := resourceRelease().Data(nil)
+	err := d.Set("set", []interface{}{
+		map[string]interface{}{"name": "foo", "value": "{[]_who", "type": "literal"},
+	})
+	if err != nil {
+		t.Fatalf("error setting values: %s", err)
+		return
+	}
+
+	values, err := getValues(d)
+	if err != nil {
+		t.Fatalf("error getValues: %s", err)
+		return
+	}
+
+	if values["foo"] != "{[]_who" {
+		t.Fatalf("error merging values, expected %q, got %s", "{[]_who", values["foo"])
+	}
+}
+
 func TestUseChartVersion(t *testing.T) {
 
 	type test struct {
