@@ -78,7 +78,6 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 	loader := &clientcmd.ClientConfigLoadingRules{}
 	configPaths := []string{}
 	if m == nil || m.Data == nil || m.Data.Kubernetes.IsNull() || m.Data.Kubernetes.IsUnknown() {
-		fmt.Println("Debug - One or more structural elements are nil")
 		return nil, fmt.Errorf("configuration error: missing required structural data")
 	}
 
@@ -88,7 +87,6 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 	// TODO look into this next
 	diags := m.Data.Kubernetes.ElementsAs(ctx, &kubernetesConfigs, true)
 	if diags.HasError() {
-		fmt.Println("Error extracting Kubernetes config", diags[0])
 		return nil, fmt.Errorf("configuration error: unable to extract Kubernetes config %#v", diags[0])
 	}
 	if len(kubernetesConfigs) > 0 {
@@ -100,7 +98,6 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 	if !kubernetesConfig.ConfigPath.IsNull() {
 		if v := kubernetesConfig.ConfigPath.ValueString(); v != "" {
 			configPaths = []string{v}
-			fmt.Println("Debug - ConfigPath:", kubernetesConfig.ConfigPath.ValueString())
 			tflog.Debug(ctx, "Debug - ConfigPath", map[string]interface{}{"ConfigPath": kubernetesConfig.ConfigPath.ValueString()})
 		}
 	}
@@ -111,11 +108,8 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 	if v := os.Getenv("KUBE_CONFIG_PATHS"); v != "" {
 		configPaths = filepath.SplitList(v)
 	}
-	fmt.Println("Initial configPaths:", configPaths)
 	tflog.Debug(ctx, "Initial configPaths", map[string]interface{}{"configPaths": configPaths})
-	fmt.Println("Debug - loader struct1:", loader)
 	if len(configPaths) > 0 {
-		fmt.Println("Processing config paths:", configPaths)
 		tflog.Debug(ctx, "Processing config paths", map[string]interface{}{
 			"configPaths": configPaths,
 		})
@@ -123,14 +117,12 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		for _, p := range configPaths {
 			path, err := homedir.Expand(p)
 			if err != nil {
-				fmt.Println("Error expanding home directory:", p, "Error:", err)
 				tflog.Error(ctx, "Error expanding home directory", map[string]interface{}{
 					"path":  p,
 					"error": err,
 				})
 				return nil, err
 			}
-			fmt.Println("Using kubeconfig path:", path)
 			tflog.Debug(ctx, "Using kubeconfig", map[string]interface{}{
 				"path": path,
 			})
@@ -148,21 +140,18 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		// Check ConfigContext
 		if !kubernetesConfig.ConfigContext.IsNull() {
 			overrides.CurrentContext = kubernetesConfig.ConfigContext.ValueString()
-			fmt.Println("Setting config context:", overrides.CurrentContext)
 			tflog.Debug(ctx, "Setting config context", map[string]interface{}{
 				"configContext": overrides.CurrentContext,
 			})
 		}
 		if !kubernetesConfig.ConfigContextAuthInfo.IsNull() {
 			overrides.Context.AuthInfo = kubernetesConfig.ConfigContextAuthInfo.ValueString()
-			fmt.Println("Setting config context auth info:", overrides.Context.AuthInfo)
 			tflog.Debug(ctx, "Setting config context auth info", map[string]interface{}{
 				"configContextAuthInfo": overrides.Context.AuthInfo,
 			})
 		}
 		if !kubernetesConfig.ConfigContextCluster.IsNull() {
 			overrides.Context.Cluster = kubernetesConfig.ConfigContextCluster.ValueString()
-			fmt.Println("Setting config context cluster:", overrides.Context.Cluster)
 			tflog.Debug(ctx, "Setting config context cluster", map[string]interface{}{
 				"configContextCluster": overrides.Context.Cluster,
 			})
@@ -172,26 +161,22 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 	// Check and assign remaining fields
 	if !kubernetesConfig.Insecure.IsNull() {
 		overrides.ClusterInfo.InsecureSkipTLSVerify = kubernetesConfig.Insecure.ValueBool()
-		fmt.Println("Setting insecure skip TLS verify:", overrides.ClusterInfo.InsecureSkipTLSVerify)
 		tflog.Debug(ctx, "Setting insecure skip TLS verify", map[string]interface{}{
 			"insecureSkipTLSVerify": overrides.ClusterInfo.InsecureSkipTLSVerify,
 		})
 	}
 	if !kubernetesConfig.TLSServerName.IsNull() {
 		overrides.ClusterInfo.TLSServerName = kubernetesConfig.TLSServerName.ValueString()
-		fmt.Println("Setting TLS server name:", overrides.ClusterInfo.TLSServerName)
 		tflog.Debug(ctx, "Setting TLS server name", map[string]interface{}{
 			"tlsServerName": overrides.ClusterInfo.TLSServerName,
 		})
 	}
 	if !kubernetesConfig.ClusterCACertificate.IsNull() {
 		overrides.ClusterInfo.CertificateAuthorityData = []byte(kubernetesConfig.ClusterCACertificate.ValueString())
-		fmt.Println("Setting cluster CA certificate")
 		tflog.Debug(ctx, "Setting cluster CA certificate")
 	}
 	if !kubernetesConfig.ClientCertificate.IsNull() {
 		overrides.AuthInfo.ClientCertificateData = []byte(kubernetesConfig.ClientCertificate.ValueString())
-		fmt.Println("Setting client certificate")
 		tflog.Debug(ctx, "Setting client certificate")
 	}
 	if !kubernetesConfig.Host.IsNull() && kubernetesConfig.Host.ValueString() != "" {
@@ -200,7 +185,6 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		defaultTLS := hasCA || hasCert || overrides.ClusterInfo.InsecureSkipTLSVerify
 		host, _, err := rest.DefaultServerURL(kubernetesConfig.Host.ValueString(), "", schema.GroupVersion{}, defaultTLS)
 		if err != nil {
-			fmt.Println("Error setting host:", kubernetesConfig.Host.ValueString(), "Error:", err)
 			tflog.Error(ctx, "Error setting host", map[string]interface{}{
 				"host":  kubernetesConfig.Host.ValueString(),
 				"error": err,
@@ -208,7 +192,6 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 			return nil, err
 		}
 		overrides.ClusterInfo.Server = host.String()
-		fmt.Println("Setting host:", overrides.ClusterInfo.Server)
 		tflog.Debug(ctx, "Setting host", map[string]interface{}{
 			"host": overrides.ClusterInfo.Server,
 		})
@@ -216,31 +199,26 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 
 	if !kubernetesConfig.Username.IsNull() {
 		overrides.AuthInfo.Username = kubernetesConfig.Username.ValueString()
-		fmt.Println("Setting username:", overrides.AuthInfo.Username)
 		tflog.Debug(ctx, "Setting username", map[string]interface{}{
 			"username": overrides.AuthInfo.Username,
 		})
 	}
 	if !kubernetesConfig.Password.IsNull() {
 		overrides.AuthInfo.Password = kubernetesConfig.Password.ValueString()
-		fmt.Println("Setting password")
 		tflog.Debug(ctx, "Setting password")
 	}
 	if !kubernetesConfig.ClientKey.IsNull() {
 		overrides.AuthInfo.ClientKeyData = []byte(kubernetesConfig.ClientKey.ValueString())
-		fmt.Println("Setting client key")
 		tflog.Debug(ctx, "Setting client key")
 	}
 	if !kubernetesConfig.Token.IsNull() {
 		overrides.AuthInfo.Token = kubernetesConfig.Token.ValueString()
-		fmt.Println("Setting token:", overrides.AuthInfo.Token)
 		tflog.Debug(ctx, "Setting token", map[string]interface{}{
 			"token": overrides.AuthInfo.Token,
 		})
 	}
 	if !kubernetesConfig.ProxyURL.IsNull() {
 		overrides.ClusterDefaults.ProxyURL = kubernetesConfig.ProxyURL.ValueString()
-		fmt.Println("Setting proxy URL:", overrides.ClusterDefaults.ProxyURL)
 		tflog.Debug(ctx, "Setting proxy URL", map[string]interface{}{
 			"proxyURL": overrides.ClusterDefaults.ProxyURL,
 		})
@@ -282,7 +260,6 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 	overrides.Context.Namespace = "default"
 	if namespace != "" {
 		overrides.Context.Namespace = namespace
-		fmt.Println("Setting namespace:", overrides.Context.Namespace)
 		tflog.Debug(ctx, "Setting namespace", map[string]interface{}{
 			"namespace": overrides.Context.Namespace,
 		})
@@ -292,11 +269,9 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 	burstLimit := int(m.Data.BurstLimit.ValueInt64())
 	client := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
 	if client == nil {
-		fmt.Println("Failed to initialize kubernetes config")
 		tflog.Error(ctx, "Failed to initialize kubernetes config")
 		return nil, fmt.Errorf("failed to initialize kubernetes config")
 	}
-	fmt.Println("Successfully initialized kubernetes config")
 	tflog.Info(ctx, "Successfully initialized kubernetes config")
 	fmt.Printf("ClientConfig: %+v\n", client)
 	fmt.Printf("BurstLimit: %d\n", burstLimit)
