@@ -1458,7 +1458,7 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *relea
 	}
 
 	// Convert the list of ObjectValues to a ListValue
-	metadataList, diag := types.ObjectValue(metadataAttrTypes(), metadata)
+	metadataObject, diag := types.ObjectValue(metadataAttrTypes(), metadata)
 	diags.Append(diag...)
 	if diags.HasError() {
 		tflog.Error(ctx, "Error converting metadata to ListValue", map[string]interface{}{
@@ -1470,8 +1470,8 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *relea
 	}
 
 	// Log metadata after conversion
-	tflog.Debug(ctx, fmt.Sprintf("Metadata after conversion: %+v", metadataList))
-	state.Metadata = metadataList
+	tflog.Debug(ctx, fmt.Sprintf("Metadata after conversion: %+v", metadataObject))
+	state.Metadata = metadataObject
 	return diags
 }
 
@@ -1657,7 +1657,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 	if recomputeMetadata(plan, state) {
 		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
-		plan.Metadata = types.ObjectNull(metadataAttrTypes())
+		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
 	}
 
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
@@ -1670,7 +1670,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 			if oldVersionStr != newVersionStr && newVersionStr != "" {
 				// Setting Metadata to a computed value
-				plan.Metadata = types.ObjectNull(metadataAttrTypes())
+				plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
 			}
 		}
 	}
