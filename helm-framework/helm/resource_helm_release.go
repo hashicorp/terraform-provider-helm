@@ -124,13 +124,15 @@ var defaultAttributes = map[string]interface{}{
 }
 
 type releaseMetaData struct {
-	AppVersion types.String `tfsdk:"app_version"`
-	Chart      types.String `tfsdk:"chart"`
-	Name       types.String `tfsdk:"name"`
-	Namespace  types.String `tfsdk:"namespace"`
-	Revision   types.Int64  `tfsdk:"revision"`
-	Version    types.String `tfsdk:"version"`
-	Values     types.String `tfsdk:"values"`
+	AppVersion    types.String `tfsdk:"app_version"`
+	Chart         types.String `tfsdk:"chart"`
+	Name          types.String `tfsdk:"name"`
+	Namespace     types.String `tfsdk:"namespace"`
+	Revision      types.Int64  `tfsdk:"revision"`
+	Version       types.String `tfsdk:"version"`
+	Values        types.String `tfsdk:"values"`
+	FirstDeployed types.Int64  `tfsdk:"first_deployed"`
+	LastDeployed  types.Int64  `tfsdk:"last_deployed"`
 }
 type setResourceModel struct {
 	Name  types.String `tfsdk:"name"`
@@ -362,6 +364,14 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 						"chart": schema.StringAttribute{
 							Computed:    true,
 							Description: "The name of the chart",
+						},
+						"first_deployed": schema.Int64Attribute{
+							Computed:    true,
+							Description: "FirstDeployed is an int64 which represents timestamp when the release was first deployed.",
+						},
+						"last_deployed": schema.Int64Attribute{
+							Computed:    true,
+							Description: "LastDeployed is an int64 which represents timestamp when the release was last deployed.",
 						},
 						"name": schema.StringAttribute{
 							Computed:    true,
@@ -1439,13 +1449,15 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *relea
 	// Create metadata as a slice of maps
 	metadata := []map[string]attr.Value{
 		{
-			"name":        types.StringValue(r.Name),
-			"revision":    types.Int64Value(int64(r.Version)),
-			"namespace":   types.StringValue(r.Namespace),
-			"chart":       types.StringValue(r.Chart.Metadata.Name),
-			"version":     types.StringValue(r.Chart.Metadata.Version),
-			"app_version": types.StringValue(r.Chart.Metadata.AppVersion),
-			"values":      types.StringValue(values),
+			"name":           types.StringValue(r.Name),
+			"revision":       types.Int64Value(int64(r.Version)),
+			"namespace":      types.StringValue(r.Namespace),
+			"chart":          types.StringValue(r.Chart.Metadata.Name),
+			"version":        types.StringValue(r.Chart.Metadata.Version),
+			"app_version":    types.StringValue(r.Chart.Metadata.AppVersion),
+			"values":         types.StringValue(values),
+			"first_deployed": types.Int64Value(r.Info.FirstDeployed.Unix()),
+			"last_deployed":  types.Int64Value(r.Info.LastDeployed.Unix()),
 		},
 	}
 
@@ -1485,13 +1497,15 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *relea
 
 func metadataAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"name":        types.StringType,
-		"revision":    types.Int64Type,
-		"namespace":   types.StringType,
-		"chart":       types.StringType,
-		"version":     types.StringType,
-		"app_version": types.StringType,
-		"values":      types.StringType,
+		"name":           types.StringType,
+		"revision":       types.Int64Type,
+		"namespace":      types.StringType,
+		"chart":          types.StringType,
+		"version":        types.StringType,
+		"app_version":    types.StringType,
+		"values":         types.StringType,
+		"first_deployed": types.Int64Type,
+		"last_deployed":  types.Int64Type,
 	}
 }
 
