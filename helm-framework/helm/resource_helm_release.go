@@ -70,7 +70,7 @@ type HelmReleaseModel struct {
 	Lint                     types.Bool   `tfsdk:"lint"`
 	Manifest                 types.String `tfsdk:"manifest"`
 	MaxHistory               types.Int64  `tfsdk:"max_history"`
-	Metadata                 types.List   `tfsdk:"metadata"`
+	Metadata                 types.Object `tfsdk:"metadata"`
 	Name                     types.String `tfsdk:"name"`
 	Namespace                types.String `tfsdk:"namespace"`
 	PassCredentials          types.Bool   `tfsdk:"pass_credentials"`
@@ -352,47 +352,45 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Default:     int64default.StaticInt64(defaultAttributes["max_history"].(int64)),
 				Description: "Limit the maximum number of revisions saved per release. Use 0 for no limit",
 			},
-			"metadata": schema.ListNestedAttribute{
+			"metadata": schema.SingleNestedAttribute{
 				Description: "Status of the deployed release.",
 				Computed:    true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"app_version": schema.StringAttribute{
-							Computed:    true,
-							Description: "The version number of the application being deployed",
-						},
-						"chart": schema.StringAttribute{
-							Computed:    true,
-							Description: "The name of the chart",
-						},
-						"first_deployed": schema.Int64Attribute{
-							Computed:    true,
-							Description: "FirstDeployed is an int64 which represents timestamp when the release was first deployed.",
-						},
-						"last_deployed": schema.Int64Attribute{
-							Computed:    true,
-							Description: "LastDeployed is an int64 which represents timestamp when the release was last deployed.",
-						},
-						"name": schema.StringAttribute{
-							Computed:    true,
-							Description: "Name is the name of the release",
-						},
-						"namespace": schema.StringAttribute{
-							Computed:    true,
-							Description: "Namespace is the kubernetes namespace of the release",
-						},
-						"revision": schema.Int64Attribute{
-							Computed:    true,
-							Description: "Version is an int32 which represents the version of the release",
-						},
-						"values": schema.StringAttribute{
-							Computed:    true,
-							Description: "Set of extra values. added to the chart. The sensitive data is cloaked. JSON encoded.",
-						},
-						"version": schema.StringAttribute{
-							Computed:    true,
-							Description: "A SemVer 2 conformant version string of the chart",
-						},
+				Attributes: map[string]schema.Attribute{
+					"app_version": schema.StringAttribute{
+						Computed:    true,
+						Description: "The version number of the application being deployed",
+					},
+					"chart": schema.StringAttribute{
+						Computed:    true,
+						Description: "The name of the chart",
+					},
+					"first_deployed": schema.Int64Attribute{
+						Computed:    true,
+						Description: "FirstDeployed is an int64 which represents timestamp when the release was first deployed.",
+					},
+					"last_deployed": schema.Int64Attribute{
+						Computed:    true,
+						Description: "LastDeployed is an int64 which represents timestamp when the release was last deployed.",
+					},
+					"name": schema.StringAttribute{
+						Computed:    true,
+						Description: "Name is the name of the release",
+					},
+					"namespace": schema.StringAttribute{
+						Computed:    true,
+						Description: "Namespace is the kubernetes namespace of the release",
+					},
+					"revision": schema.Int64Attribute{
+						Computed:    true,
+						Description: "Version is an int32 which represents the version of the release",
+					},
+					"values": schema.StringAttribute{
+						Computed:    true,
+						Description: "Set of extra values. added to the chart. The sensitive data is cloaked. JSON encoded.",
+					},
+					"version": schema.StringAttribute{
+						Computed:    true,
+						Description: "A SemVer 2 conformant version string of the chart",
 					},
 				},
 			},
@@ -1447,38 +1445,20 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *relea
 	}
 
 	// Create metadata as a slice of maps
-	metadata := []map[string]attr.Value{
-		{
-			"name":           types.StringValue(r.Name),
-			"revision":       types.Int64Value(int64(r.Version)),
-			"namespace":      types.StringValue(r.Namespace),
-			"chart":          types.StringValue(r.Chart.Metadata.Name),
-			"version":        types.StringValue(r.Chart.Metadata.Version),
-			"app_version":    types.StringValue(r.Chart.Metadata.AppVersion),
-			"values":         types.StringValue(values),
-			"first_deployed": types.Int64Value(r.Info.FirstDeployed.Unix()),
-			"last_deployed":  types.Int64Value(r.Info.LastDeployed.Unix()),
-		},
-	}
-
-	// Define the object type for metadata
-	metadataObjectType := types.ObjectType{
-		AttrTypes: metadataAttrTypes(),
-	}
-
-	// Convert each metadata map to an ObjectValue
-	var metadataObjects []attr.Value
-	for _, item := range metadata {
-		objVal, err := types.ObjectValue(metadataAttrTypes(), item)
-		if err != nil {
-			diags.AddError("Error creating ObjectValue", fmt.Sprintf("Unable to create ObjectValue: %s", err))
-			return diags
-		}
-		metadataObjects = append(metadataObjects, objVal)
+	metadata := map[string]attr.Value{
+		"name":           types.StringValue(r.Name),
+		"revision":       types.Int64Value(int64(r.Version)),
+		"namespace":      types.StringValue(r.Namespace),
+		"chart":          types.StringValue(r.Chart.Metadata.Name),
+		"version":        types.StringValue(r.Chart.Metadata.Version),
+		"app_version":    types.StringValue(r.Chart.Metadata.AppVersion),
+		"values":         types.StringValue(values),
+		"first_deployed": types.Int64Value(r.Info.FirstDeployed.Unix()),
+		"last_deployed":  types.Int64Value(r.Info.LastDeployed.Unix()),
 	}
 
 	// Convert the list of ObjectValues to a ListValue
-	metadataList, diag := types.ListValue(metadataObjectType, metadataObjects)
+	metadataList, diag := types.ObjectValue(metadataAttrTypes(), metadata)
 	diags.Append(diag...)
 	if diags.HasError() {
 		tflog.Error(ctx, "Error converting metadata to ListValue", map[string]interface{}{
@@ -1677,7 +1657,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 	if recomputeMetadata(plan, state) {
 		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
-		plan.Metadata = types.ListUnknown(types.ObjectType{AttrTypes: metadataAttrTypes()})
+		plan.Metadata = types.ObjectNull(metadataAttrTypes())
 	}
 
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
@@ -1690,9 +1670,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 			if oldVersionStr != newVersionStr && newVersionStr != "" {
 				// Setting Metadata to a computed value
-				plan.Metadata = types.ListUnknown(types.ObjectType{
-					AttrTypes: metadataAttrTypes(),
-				})
+				plan.Metadata = types.ObjectNull(metadataAttrTypes())
 			}
 		}
 	}
