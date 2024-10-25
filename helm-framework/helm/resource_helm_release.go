@@ -174,61 +174,6 @@ func suppressDescription() planmodifier.String {
 	return suppressDescriptionPlanModifier{}
 }
 
-type lintPlanModifier struct {
-	r *HelmRelease
-}
-
-func (m lintPlanModifier) Description(ctx context.Context) string {
-	return "Suppress changes if the new description is an empty string"
-}
-
-func (m lintPlanModifier) MarkdownDescription(ctx context.Context) string {
-	return m.Description(ctx)
-}
-
-func (m lintPlanModifier) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
-	var plan HelmReleaseModel
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	var state *HelmReleaseModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	actionConfig, err := m.r.meta.GetHelmConfiguration(ctx, state.Namespace.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to get Helm configuration", err.Error())
-		return
-	}
-
-	client := action.NewInstall(actionConfig)
-	cpo, _, diags := chartPathOptions(&plan, m.r.meta, &client.ChartPathOptions)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if req.PlanValue.ValueBool() {
-		diags := resourceReleaseValidate(ctx, &plan, m.r.meta, cpo)
-		if diags.HasError() {
-			for _, diag := range diags {
-				resp.Diagnostics.Append(diag)
-			}
-			return
-		}
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("%s Release validated", "LintModifier"))
-}
-
-func lintDescription(r *HelmRelease) planmodifier.Bool {
-	return lintPlanModifier{r: r}
-}
-
 type suppressDevelPlanModifier struct{}
 
 func (m suppressDevelPlanModifier) Description(ctx context.Context) string {
@@ -394,9 +339,6 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Default:     booldefault.StaticBool(defaultAttributes["lint"].(bool)),
 				Description: "Run helm lint when planning",
-				PlanModifiers: []planmodifier.Bool{
-					lintDescription(r),
-				},
 			},
 			"manifest": schema.StringAttribute{
 				Description: "The rendered manifest as JSON.",
@@ -1767,6 +1709,13 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 	}
 
+	if plan.Lint.ValueBool() {
+		diags := resourceReleaseValidate(ctx, &plan, meta, cpo)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+			return
+		}
+	}
 	tflog.Debug(ctx, fmt.Sprintf("%s Release validated", logID))
 
 	if meta.ExperimentEnabled("manifest") {
