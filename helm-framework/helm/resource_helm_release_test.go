@@ -721,7 +721,7 @@ func TestAccResourceRelease_suppressEmptyDescription(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
 				),
 			},
-			// Attempt to update the description to an empty string and now we are verifying the suppression logic
+			// Attempt to update the description to an empty string and verifying the suppression logic
 			{
 				Config: testAccHelmReleaseConfigSuppressEmptyDescription(testResourceName, namespace, name, "1.2.3", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -868,6 +868,18 @@ func testAccHelmReleaseConfigEmptyVersion(resource, ns, name string) string {
 			
 		}
 	`, resource, name, ns, testRepositoryURL)
+}
+func testAccHelmReleaseConfigSuppressEmptyDescription(resource, ns, name, version, description string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = %q
+			repository  = %q
+  			chart       = "test-chart"
+			version     = %q
+		}
+	`, resource, name, ns, description, testRepositoryURL, version)
 }
 
 func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, values []string) string {
