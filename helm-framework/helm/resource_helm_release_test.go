@@ -720,15 +720,13 @@ func TestAccResourceRelease_suppressEmptyDescription(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
 					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
-					// Omitting revision check here
 				),
 			},
-			// Attempt to update the description to an empty string and verifying the suppression logic
+			// Attempt to update the description to an empty string and now we are verifying the suppression logic
 			{
 				Config: testAccHelmReleaseConfigSuppressEmptyDescription(testResourceName, namespace, name, "1.2.3", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
-					// Omitting revision check here as well
 				),
 			},
 		},
