@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -215,35 +216,26 @@ func suppressKeyring() planmodifier.String {
 	return suppressKeyringPlanModifier{}
 }
 
-type NamespacePlanModifier struct{}
-
-func (m NamespacePlanModifier) Description(context.Context) string {
-	return "Sets the namespace value from the HELM_NAMESPACE environment variable or defaults to 'default'."
+func namespaceDefault() defaults.String {
+	return namespaceDefaultValue{}
 }
 
-func (m NamespacePlanModifier) MarkdownDescription(ctx context.Context) string {
-	return m.Description(ctx)
+type namespaceDefaultValue struct{}
+
+func (d namespaceDefaultValue) Description(ctx context.Context) string {
+	return "If namespace is not provided, defaults to HELM_NAMESPACE environment variable or 'default'."
 }
 
-func (m NamespacePlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
-	var namespace types.String
-	diags := req.Plan.GetAttribute(ctx, path.Root("namespace"), &namespace)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+func (d namespaceDefaultValue) MarkdownDescription(ctx context.Context) string {
+	return d.Description(ctx)
+}
+
+func (d namespaceDefaultValue) DefaultString(ctx context.Context, req defaults.StringRequest, resp *defaults.StringResponse) {
+	envNamespace := os.Getenv("HELM_NAMESPACE")
+	if envNamespace == "" {
+		envNamespace = "default"
 	}
-
-	if namespace.IsNull() || namespace.ValueString() == "" {
-		envNamespace := os.Getenv("HELM_NAMESPACE")
-		if envNamespace == "" {
-			envNamespace = "default"
-		}
-		resp.PlanValue = types.StringValue(envNamespace)
-	}
-}
-
-func NewNamespacePlanModifier() planmodifier.String {
-	return &NamespacePlanModifier{}
+	resp.PlanValue = types.StringValue(envNamespace)
 }
 
 func (r *HelmRelease) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -401,12 +393,13 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			"namespace": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
+				Default:  namespaceDefault(),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
-					NewNamespacePlanModifier(),
 				},
 				Description: "Namespace to install the release into",
 			},
+
 			"pass_credentials": schema.BoolAttribute{
 				Optional:    true,
 				Description: "Pass credentials to all domains",
