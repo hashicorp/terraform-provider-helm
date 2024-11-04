@@ -49,7 +49,7 @@ var defaultAttributes = map[string]interface{}{
 	"reset_values":               false,
 	"reuse_values":               false,
 	"recreate_pods":              false,
-	"max_history":                0,
+	"max_history":                10,
 	"skip_crds":                  false,
 	"cleanup_on_fail":            false,
 	"dependency_update":          false,

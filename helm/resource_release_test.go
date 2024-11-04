@@ -311,7 +311,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.imported", "reset_values", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "reuse_values", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "recreate_pods", "false"),
-					resource.TestCheckResourceAttr("helm_release.imported", "max_history", "0"),
+					resource.TestCheckResourceAttr("helm_release.imported", "max_history", "10"),
 					resource.TestCheckResourceAttr("helm_release.imported", "skip_crds", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "cleanup_on_fail", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "dependency_update", "false"),
