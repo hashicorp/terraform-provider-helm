@@ -145,12 +145,6 @@ type set_listResourceModel struct {
 	Value types.List   `tfsdk:"value"`
 }
 
-type set_sensitiveResourceModel struct {
-	Name  types.String `tfsdk:"name"`
-	Type  types.String `tfsdk:"type"`
-	Value types.String `tfsdk:"value"`
-}
-
 type postrenderModel struct {
 	Args       types.List   `tfsdk:"args"`
 	BinaryPath types.String `tfsdk:"binary_path"`
@@ -1180,19 +1174,6 @@ func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string
 	return c, path, diags
 }
 
-func convertSetSensitiveToSetResourceModel(ctx context.Context, sensitive set_sensitiveResourceModel) setResourceModel {
-	tflog.Debug(ctx, fmt.Sprintf("Converting set_sensitiveResourceModel: %+v", sensitive))
-
-	converted := setResourceModel{
-		Name:  sensitive.Name,
-		Value: sensitive.Value,
-		Type:  sensitive.Type,
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Converted to setResourceModel: %+v", converted))
-	return converted
-}
-
 func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
 	base := map[string]interface{}{}
 	var diags diag.Diagnostics
@@ -1269,7 +1250,7 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 	// Processing "set_sensitive" attribute
 	if !model.SetSensitive.IsNull() {
 		tflog.Debug(ctx, "Processing Set_Sensitive attribute")
-		var setSensitiveList []set_sensitiveResourceModel
+		var setSensitiveList []setResourceModel
 		setSensitiveDiags := model.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
 		diags.Append(setSensitiveDiags...)
 		if diags.HasError() {
@@ -1279,8 +1260,7 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 
 		for i, setSensitive := range setSensitiveList {
 			tflog.Debug(ctx, fmt.Sprintf("Processing Set_Sensitive element at index %d: %v", i, setSensitive))
-			setModel := convertSetSensitiveToSetResourceModel(ctx, setSensitive)
-			setSensitiveDiags := getValue(base, setModel)
+			setSensitiveDiags := getValue(base, setSensitive)
 			diags.Append(setSensitiveDiags...)
 			if diags.HasError() {
 				tflog.Debug(ctx, fmt.Sprintf("Error occurred while processing Set_Sensitive element at index %d", i))
@@ -1357,7 +1337,7 @@ func logValues(ctx context.Context, values map[string]interface{}, state *HelmRe
 
 func cloakSetValues(config map[string]interface{}, state *HelmReleaseModel) {
 	if !state.SetSensitive.IsNull() {
-		var setSensitiveList []set_sensitiveResourceModel
+		var setSensitiveList []setResourceModel
 		diags := state.SetSensitive.ElementsAs(context.Background(), &setSensitiveList, false)
 		if diags.HasError() {
 			// Handle diagnostics error
@@ -1493,7 +1473,7 @@ func extractSensitiveValues(state *HelmReleaseModel) map[string]string {
 	sensitiveValues := make(map[string]string)
 
 	if !state.SetSensitive.IsNull() {
-		var setSensitiveList []set_sensitiveResourceModel
+		var setSensitiveList []setResourceModel
 		diags := state.SetSensitive.ElementsAs(context.Background(), &setSensitiveList, false)
 		if diags.HasError() {
 			return sensitiveValues
@@ -1798,7 +1778,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 			valuesMap := make(map[string]string)
 			if !plan.SetSensitive.IsNull() {
-				var setSensitiveList []set_sensitiveResourceModel
+				var setSensitiveList []setResourceModel
 				setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
 				resp.Diagnostics.Append(setSensitiveDiags...)
 				if resp.Diagnostics.HasError() {
@@ -1873,7 +1853,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 		valuesMap := make(map[string]string)
 		if !plan.SetSensitive.IsNull() {
-			var setSensitiveList []set_sensitiveResourceModel
+			var setSensitiveList []setResourceModel
 			setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
 			resp.Diagnostics.Append(setSensitiveDiags...)
 			if resp.Diagnostics.HasError() {
