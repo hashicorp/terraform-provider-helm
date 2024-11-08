@@ -82,8 +82,11 @@ func hashSensitiveValue(v string) string {
 // redactSensitiveValues removes values that appear in `set_sensitive` blocks from the manifest JSON
 func redactSensitiveValues(text string, sensitiveValues map[string]string) string {
 	masked := text
-	for originalValue, hashedValue := range sensitiveValues {
+
+	for originalValue := range sensitiveValues {
+		hashedValue := hashSensitiveValue(originalValue)
 		masked = strings.ReplaceAll(masked, originalValue, hashedValue)
 	}
+
 	return masked
 }
