@@ -81,7 +81,6 @@ type HelmTemplateModel struct {
 	Set                      types.Set    `tfsdk:"set"`
 	SetList                  types.List   `tfsdk:"set_list"`
 	SetSensitive             types.Set    `tfsdk:"set_sensitive"`
-	SetString                types.Set    `tfsdk:"set_string"`
 	ShowOnly                 types.List   `tfsdk:"show_only"`
 	SkipCrds                 types.Bool   `tfsdk:"skip_crds"`
 	SkipTests                types.Bool   `tfsdk:"skip_tests"`
@@ -113,12 +112,6 @@ type SetSensitiveValue struct {
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
 }
-
-type SetStringValue struct {
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
-}
-
 type Postrender struct {
 	BinaryPath types.String `tfsdk:"binary_path"`
 }
