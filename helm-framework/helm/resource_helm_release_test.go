@@ -89,7 +89,6 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 }
 
 // Import state error, type mismatch from set_sensitive
-
 func TestAccResourceRelease_import(t *testing.T) {
 	name := randName("import")
 	namespace := createRandomNamespace(t)
@@ -193,10 +192,12 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 				repository  = %q
 				chart       = "test-chart"
 
-				set {
-					name = %q
-					value = %q
-				}
+				set = [
+					{
+						name  = %q
+						value = %q
+					}
+				]
 			}`, resourceName, releaseName, namespace, testRepositoryURL, randomKey, randomValue),
 			resource.TestCheckResourceAttr(
 				fmt.Sprintf("helm_release.%s", resourceName), "metadata.name", releaseName,
@@ -442,15 +443,16 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 		repository  = %q
 		chart       = "test-chart"
 
-		set {
-			name = "serviceAccount.name"
-			value = "invalid-$%%!-character"
-		}
-
-		set {
-			name = "service.type"
-			value = "ClusterIP"
-		}
+		set = [
+			{
+				name  = "serviceAccount.name"
+				value = "invalid-$%%!-character"
+			},
+			{
+				name  = "service.type"
+				value = "ClusterIP"
+			}
+		]
 	}`, name, namespace, testRepositoryURL)
 
 	fixed := fmt.Sprintf(`
@@ -460,15 +462,16 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 		repository  = %q
 		chart       = "test-chart"
 
-		set {
-			name = "serviceAccount.name"
-			value = "valid-name"
-		}
-
-		set {
-			name = "service.type"
-			value = "ClusterIP"
-		}
+		set = [
+			{
+				name  = "serviceAccount.name"
+				value = "valid-name"
+			},
+			{
+				name  = "service.type"
+				value = "ClusterIP"
+			}
+		]
 	}`, name, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
@@ -492,6 +495,7 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 	name := randName("test-update-existing-failed")
 	namespace := createRandomNamespace(t)
@@ -773,17 +777,17 @@ func TestAccResourceRelease_LocalVersion(t *testing.T) {
 			{
 				Config: config1,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
 				),
 			},
 			{
 				Config: config2,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
 				),
 			},
 		},
@@ -800,15 +804,16 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
   			chart       = "test-chart"
 			version     = %q
 
-			set {
-				name = "foo"
-				value = "bar"
-			}
-
-			set {
-				name = "fizz"
-				value = 1337
-			}
+			set = [
+				{
+					name  = "foo"
+					value = "bar"
+				},
+				{
+					name  = "fizz"
+					value = 1337
+				}
+			]
 		}
 	`, resource, name, ns, testRepositoryURL, version)
 }
@@ -824,15 +829,16 @@ func testAccHelmReleaseConfigConcurrent(resource, ns, name, version string) stri
   			chart       = "test-chart"
 			version     = %q
 
-			set {
-				name = "foo"
-				value = "bar"
-			}
-
-			set {
-				name = "fizz"
-				value = 1337
-			}
+			set = [
+				{
+					name  = "foo"
+					value = "bar"
+				},
+				{
+					name  = "fizz"
+					value = "1337"
+				}
+			]
 		}
 	`, resource, name, ns, testRepositoryURL, version)
 }
@@ -867,7 +873,7 @@ func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, v
 	`, resource, name, ns, testRepositoryURL, chart, version, strings.Join(vals, ","))
 }
 
-func testAccHelmReleaseConfigSensitiveValue(resource, ns, name, chart, version string, key, value string) string {
+func testAccHelmReleaseConfigSensitiveValue(resource, ns, name, chart, version, key, value string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
  			name       = %q
@@ -875,10 +881,13 @@ func testAccHelmReleaseConfigSensitiveValue(resource, ns, name, chart, version s
 			repository = %q
 			chart      = %q
 			version    = %q
-			set_sensitive {
-				name  = %q
-				value = %q
-			  }
+
+			set_sensitive = [
+				{
+					name  = %q
+					value = %q
+				}
+			]
 		}
 	`, resource, name, ns, testRepositoryURL, chart, version, key, value)
 }
@@ -893,15 +902,16 @@ func testAccHelmReleaseConfigSet(resource, ns, name, version, setValue string) s
   			chart       = "test-chart"
 			version     = %q
 
-			set {
-				name = "foo"
-				value = %q
-			}
-
-			set {
-				name = "fizz"
-				value = 1337
-			}
+			set = [
+				{
+					name  = "foo"
+					value = %q
+				},
+				{
+					name  = "fizz"
+					value = 1337
+				}
+			]
 		}
 	`, resource, name, ns, testRepositoryURL, version, setValue)
 }
@@ -1238,22 +1248,25 @@ func testAccHelmReleaseConfigPostrender(resource, ns, name, binaryPath string, a
   			chart       = "test-chart"
 			version     = "1.2.3"
 
-			postrender {
+			postrender = {
 				binary_path = %q
-				args = %s
+				args        = [%s]
 			}
 
-			set {
-				name = "serviceAccount.create"
-				value = false
-			}
-			set {
-				name = "service.port"
-				value = 1337
-			}
+			set = [
+				{
+					name  = "serviceAccount.create"
+					value = false
+				},
+				{
+					name  = "service.port"
+					value = 1337
+				}
+			]
 		}
-	`, resource, name, ns, testRepositoryURL, binaryPath, fmt.Sprintf(`["%s"]`, strings.Join(args, `","`)))
+	`, resource, name, ns, testRepositoryURL, binaryPath, fmt.Sprintf(`"%s"`, strings.Join(args, `", "`)))
 }
+
 func TestAccResourceRelease_LintFailValues(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -1365,7 +1378,7 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 			{
 				Config: testAccHelmReleaseConfigDependency(testResourceName, namespace, name, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),
 				),
@@ -1379,7 +1392,7 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 				Config: testAccHelmReleaseConfigDependencyUpdate(testResourceName, namespace, name, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckHelmReleaseDependencyUpdate(namespace, name, 9),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "2"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),
 				),
@@ -1392,7 +1405,7 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 				},
 				Config: testAccHelmReleaseConfigDependencyUpdateWithLint(testResourceName, namespace, name, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "3"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),
 				),
@@ -1415,8 +1428,8 @@ func TestAccResourceRelease_chartURL(t *testing.T) {
 				Config: testAccHelmReleaseConfig_chartURL(testResourceName, namespace, name, chartURL),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
 				),
 			},
 		},
@@ -1444,8 +1457,8 @@ func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 				Config: testAccHelmReleaseConfig_helm_repo_add(testResourceName, namespace, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
 				),
 			},
 		},
@@ -1503,9 +1516,9 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 			{
 				Config: testAccHelmReleaseConfigManifestExperimentEnabled(testResourceName, namespace, name, "1.2.3"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
 					func(state *terraform.State) error {
 						// FIXME this is bordering on testing the implementation
 						t.Logf("getting JSON manifest for release %q", name)
@@ -1537,7 +1550,6 @@ func getReleaseJSONManifest(ctx context.Context, namespace, name string) (string
 	return jsonManifest, nil
 }
 
-// unsupported block type experiements, might have to change it to a block
 func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 	name := "example"
 	namespace := createRandomNamespace(t)
@@ -1564,6 +1576,7 @@ func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_set_list_chart(t *testing.T) {
 	name := randName("helm-setlist-chart")
 	namespace := createRandomNamespace(t)
@@ -1577,8 +1590,8 @@ func TestAccResourceRelease_set_list_chart(t *testing.T) {
 			{
 				Config: testAccHelmReleaseSetListValues(testResourceName, namespace, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", ""),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.0", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.1", "2"),
@@ -1603,7 +1616,7 @@ func TestAccResourceRelease_update_set_list_chart(t *testing.T) {
 			{
 				Config: testAccHelmReleaseSetListValues(testResourceName, namespace, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", ""),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.0", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.1.value.1", "2"),
@@ -1615,7 +1628,7 @@ func TestAccResourceRelease_update_set_list_chart(t *testing.T) {
 			{
 				Config: testAccHelmReleaseUpdateSetListValues(testResourceName, namespace, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.0", "2"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.1", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "set_list.0.value.#", "2"),
@@ -1749,18 +1762,18 @@ func TestAccResourceRelease_OCI_repository(t *testing.T) {
 			{
 				Config: testAccHelmReleaseConfig_OCI(testResourceName, namespace, name, ociRegistryURL, "1.2.3"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				),
 			},
 			{
 				Config: testAccHelmReleaseConfig_OCI_updated(testResourceName, namespace, name, ociRegistryURL, "1.2.3"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "set.0.name", "replicaCount"),
 					resource.TestCheckResourceAttr("helm_release.test", "set.0.value", "2"),
@@ -1769,9 +1782,9 @@ func TestAccResourceRelease_OCI_repository(t *testing.T) {
 			{
 				Config: testAccHelmReleaseConfig_OCI_chartName(testResourceName, namespace, name, fmt.Sprintf("%s/%s", ociRegistryURL, "test-chart"), "1.2.3"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "chart", fmt.Sprintf("%s/%s", ociRegistryURL, "test-chart")),
 				),
@@ -1799,9 +1812,9 @@ func TestAccResourceRelease_OCI_registry_login(t *testing.T) {
 			{
 				Config: testAccHelmReleaseConfig_OCI_login_provider(os.Getenv("KUBE_CONFIG_PATH"), testResourceName, namespace, name, ociRegistryURL, "1.2.3", "hashicorp", "terraform", "test-chart"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				),
 			},
@@ -1815,7 +1828,7 @@ provider "helm" {
     kubernetes = [{
         config_path = "%s"
     }]
-    registry = [{
+    registries = [{
         url      = "%s"
         username = "%s"
         password = "%s"
@@ -1848,13 +1861,13 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 			{
 				Config: testAccHelmReleaseConfig_OCI_login_multiple(testResourceName, namespace, name, ociRegistryURL, "1.2.3", "hashicorp", "terraform"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test1", "metadata.0.name", name+"1"),
-					resource.TestCheckResourceAttr("helm_release.test1", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test1", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test1", "metadata.name", name+"1"),
+					resource.TestCheckResourceAttr("helm_release.test1", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test1", "metadata.version", "1.2.3"),
 					resource.TestCheckResourceAttr("helm_release.test1", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test2", "metadata.0.name", name+"2"),
-					resource.TestCheckResourceAttr("helm_release.test2", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test2", "metadata.0.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test2", "metadata.name", name+"2"),
+					resource.TestCheckResourceAttr("helm_release.test2", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test2", "metadata.version", "1.2.3"),
 					resource.TestCheckResourceAttr("helm_release.test2", "status", release.StatusDeployed.String()),
 				),
 			},
@@ -1879,18 +1892,18 @@ func TestAccResourceRelease_recomputeMetadata(t *testing.T) {
 			{
 				Config: testAccHelmReleaseRecomputeMetadata(testResourceName, namespace, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.name", name),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.namespace", namespace),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "2.0.0"),
 					resource.TestCheckResourceAttr("helm_release.test", "set.%", "0"),
 				),
 			},
 			{
 				Config: testAccHelmReleaseRecomputeMetadataSet(testResourceName, namespace, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.version", "2.0.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "2.0.0"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "set.0.name", "test"),
 					resource.TestCheckResourceAttr("helm_release.test", "set.0.value", "test"),
@@ -1960,10 +1973,12 @@ func testAccHelmReleaseConfig_OCI_updated(resource, ns, name, repo, version stri
 			version     = %q
 			chart       = "test-chart"
 
-			set { 
-				name = "replicaCount"
-				value = 2
-			}
+			set = [
+				{
+					name  = "replicaCount"
+					value = 2
+				}
+			]
 		}
 	`, resource, name, ns, repo, version)
 }
@@ -1971,9 +1986,12 @@ func testAccHelmReleaseConfig_OCI_updated(resource, ns, name, repo, version stri
 func testAccHelmReleaseConfigManifestExperimentEnabled(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		provider helm {
-			experiments {
-				manifest = true
-			}
+			experiments = [
+				{
+					name  = "manifest"
+					value = true
+				}
+			]
 		}
 		resource "helm_release" "%s" {
  			name        = %q
@@ -1988,28 +2006,40 @@ func testAccHelmReleaseConfigManifestExperimentEnabled(resource, ns, name, versi
 func testAccHelmReleaseConfigManifestUnknownValues(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		provider helm {
-			experiments {
-				manifest = true
-			}
+			experiments = [
+				{
+					name  = "manifest"
+					value = true
+				}
+			]
 		}
+
 		resource "random_string" "random_label" {
-			length           = 16
-			special          = false
+			length  = 16
+			special = false
 		}
+
 		resource "helm_release" "%s" {
  			name        = %q
 			namespace   = %q
 			repository  = %q
 			version     = %q
 			chart       = "test-chart"
-			set {
-				name  = "podAnnotations.random"
-				value = random_string.random_label.result
-			}
-			set_sensitive {
-				name  = "podAnnotations.sensitive"
-				value = random_string.random_label.result
-			}
+			
+			set = [
+				{
+					name  = "podAnnotations.random"
+					value = random_string.random_label.result
+				}
+			]
+			
+			set_sensitive = [
+				{
+					name  = "podAnnotations.sensitive"
+					value = random_string.random_label.result
+				}
+			]
+			
 			values = [<<EOT
 podAnnotations:
   test: ${random_string.random_label.result}
@@ -2027,12 +2057,14 @@ func testAccHelmReleaseConfigDependencyUpdateWithLint(resource, ns, name string,
   			chart       = "./testdata/charts/umbrella-chart"
 
 			dependency_update = %t
-			lint = true
+			lint              = true
 
-			set {
-				name = "fake"
-				value = "fake"
-			}
+			set = [
+				{
+					name  = "fake"
+					value = "fake"
+				}
+			]
 		}
 	`, resource, name, ns, dependencyUpdate)
 }
@@ -2080,10 +2112,12 @@ func testAccHelmReleaseConfigDependencyUpdate(resource, ns, name string, depende
 
 			dependency_update = %t
 
-			set {
-				name = "fake"
-				value = "fake"
-			}
+			set = [
+				{
+					name  = "fake"
+					value = "fake"
+				}
+			]
 		}
 	`, resource, name, ns, dependencyUpdate)
 }
@@ -2101,21 +2135,22 @@ func removeSubcharts(chartName string) error {
 func testAccHelmReleaseSetListValues(resource, ns, name string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
-	 		name        = %q
-			namespace   = %q
-	  		chart       = "./testdata/charts/test-chart-v2"
+	 		name      = %q
+			namespace = %q
+	  		chart     = "./testdata/charts/test-chart-v2"
 
-			set_list {
-				name = "nil_check"
-				value = [""]
-			}
-
-			set_list {
-				name = "set_list_test"
-				value = [1, 2, 3, ""]
-			}
+			set_list = [
+				{
+					name  = "nil_check"
+					value = [""]
+				},
+				{
+					name  = "set_list_test"
+					value = [1, 2, 3, ""]
+				}
+			]
 		}
-`, resource, name, ns)
+	`, resource, name, ns)
 }
 
 func testAccHelmReleaseUpdateSetListValues(resource, ns, name string) string {
@@ -2125,12 +2160,14 @@ func testAccHelmReleaseUpdateSetListValues(resource, ns, name string) string {
 			namespace   = %q
 	  		chart       = "./testdata/charts/test-chart-v2"
 
-			set_list {
-				name = "set_list_test"
-				value = [2, 1]
-			}
+			set_list = [
+				{
+					name  = "set_list_test"
+					value = [2, 1]
+				}
+			]
 		}
-`, resource, name, ns)
+	`, resource, name, ns)
 }
 
 func testAccHelmReleaseRecomputeMetadata(resource, ns, name string) string {
@@ -2155,15 +2192,17 @@ func testAccHelmReleaseRecomputeMetadataSet(resource, ns, name string) string {
 			namespace   = %q
   			chart       = "./testdata/charts/test-chart-v2"
 
-			set {
-				name  = "test"
-				value = "test"
-			}
+			set = [
+				{
+					name  = "test"
+					value = "test"
+				}
+			]
 		}
 
 		resource "local_file" "example" {
-			content  = yamlencode(helm_release.test.metadata)
+			content  = yamlencode(helm_release.%s.metadata)
 			filename = "${path.module}/foo.bar"
 		}
-`, resource, name, ns)
+`, resource, name, ns, resource)
 }

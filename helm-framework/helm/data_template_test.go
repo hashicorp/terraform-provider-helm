@@ -218,7 +218,8 @@ func TestAccDataTemplate_kubeVersion(t *testing.T) {
 func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		data "helm_template" "%s" {
-			show_only	= [""]
+			show_only = [""]
+
  			name        = %q
 			namespace   = %q
 			description = "Test"
@@ -226,15 +227,16 @@ func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) stri
   			chart       = "test-chart"
 			version     = %q
 
-			set {
-				name = "foo"
-				value = "bar"
-			}
-
-			set {
-				name = "fizz"
-				value = 1337
-			}
+			set = [
+				{
+					name  = "foo"
+					value = "bar"
+				},
+				{
+					name  = "fizz"
+					value = 1337
+				}
+			]
 		}
 	`, resource, name, ns, testRepositoryURL, version)
 }
@@ -249,15 +251,16 @@ func testAccDataHelmTemplateConfigTemplates(resource, ns, name, version string) 
   			chart       = "test-chart"
 			version     = %q
 
-			set {
-				name = "foo"
-				value = "bar"
-			}
-
-			set {
-				name = "fizz"
-				value = 1337
-			}
+			set = [
+				{
+					name  = "foo"
+					value = "bar"
+				},
+				{
+					name  = "fizz"
+					value = 1337
+				}
+			]
 
 			show_only = [
 				"templates/configmaps.yaml",
