@@ -5,8 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
+	pathpkg "path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -18,12 +21,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
-	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/downloader"
+	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"k8s.io/helm/pkg/strvals"
@@ -376,14 +381,6 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 	}
 }
 
-func convertStringsToTypesStrings(input []string) []types.String {
-	output := make([]types.String, len(input))
-	for i, v := range input {
-		output[i] = types.StringValue(v)
-	}
-	return output
-}
-
 // Reads the current state of the data template and will update the state with the data fetched
 func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	var state HelmTemplateModel
@@ -470,6 +467,38 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 
 	meta := d.meta
 
+	var apiVersions []string
+	if !state.APIVersions.IsNull() && !state.APIVersions.IsUnknown() {
+		var apiVersionElements []types.String
+		diags := state.APIVersions.ElementsAs(ctx, &apiVersionElements, false)
+		resp.Diagnostics.Append(diags...)
+		if diags.HasError() {
+			return
+		}
+
+		for _, apiVersion := range apiVersionElements {
+			apiVersions = append(apiVersions, apiVersion.ValueString())
+		}
+	}
+
+	var showFiles []string
+
+	if !state.ShowOnly.IsNull() && state.ShowOnly.Elements() != nil {
+		var showOnlyElements []types.String
+		diags := state.ShowOnly.ElementsAs(ctx, &showOnlyElements, false)
+		resp.Diagnostics.Append(diags...)
+		if diags.HasError() {
+			return
+		}
+
+		for _, raw := range showOnlyElements {
+			if raw.IsNull() || raw.ValueString() == "" {
+				continue
+			}
+			showFiles = append(showFiles, raw.ValueString())
+		}
+	}
+
 	actionConfig, err := meta.GetHelmConfiguration(ctx, state.Namespace.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -483,9 +512,48 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		resp.Diagnostics.Append(diags...)
 		return
 	}
-
 	client := action.NewInstall(actionConfig)
+
+	cpo, chartName, cpoDiags := chartPathOptionsModel(&state, meta, &client.ChartPathOptions)
+	resp.Diagnostics.Append(cpoDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	c, chartPath, chartDiags := getChartModel(ctx, &state, meta, chartName, cpo)
+	resp.Diagnostics.Append(chartDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updated, depDiags := checkChartDependenciesModel(ctx, &state, c, chartPath, meta)
+	resp.Diagnostics.Append(depDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	} else if updated {
+		c, err = loader.Load(chartPath)
+		if err != nil {
+			resp.Diagnostics.AddError("Error loading chart", fmt.Sprintf("Could not reload chart after updating dependencies: %s", err))
+			return
+		}
+	}
+
+	values, valuesDiags := getValuesModel(ctx, &state)
+	resp.Diagnostics.Append(valuesDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if err := isChartInstallable(c); err != nil {
+		resp.Diagnostics.AddError("Error checking if chart is installable", fmt.Sprintf("Chart is not installable: %s", err))
+		return
+	}
+	client.ChartPathOptions = *cpo
+	client.ClientOnly = false
 	client.ReleaseName = state.Name.ValueString()
+	client.GenerateName = false
+	client.NameTemplate = ""
+	client.OutputDir = ""
 	client.Namespace = state.Namespace.ValueString()
 	client.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
 	client.Wait = state.Wait.ValueBool()
@@ -499,45 +567,24 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	client.Devel = state.Devel.ValueBool()
 	client.Description = state.Description.ValueString()
 	client.CreateNamespace = state.CreateNamespace.ValueBool()
-	client.ClientOnly = !state.Validate.ValueBool()
 
 	if state.KubeVersion.ValueString() != "" {
 		parsedVer, err := chartutil.ParseKubeVersion(state.KubeVersion.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
-				"Failed to pase kubernetes version",
-				fmt.Sprintf("The Kubernetes version provided (%q) could not be parsed: %s", state.KubeVersion.ValueString(), err),
+				"Failed to parse Kubernetes version",
+				fmt.Sprintf("couldn't parse string %q into kube-version: %s", state.KubeVersion.ValueString(), err),
 			)
 			return
 		}
 		client.KubeVersion = parsedVer
 	}
 
-	chartPath, err := client.ChartPathOptions.LocateChart(state.Chart.ValueString(), cli.New())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to locate chart",
-			fmt.Sprintf("Error occurred while locating the Helm chart: %s", err),
-		)
-		return
-	}
-
-	c, err := loader.Load(chartPath)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error loading chart",
-			fmt.Sprintf("Error loading chart: %s", err),
-		)
-		return
-	}
-
-	values, diags := getTemplateValues(ctx, &state)
-	if diags.HasError() {
-		for _, diag := range diags {
-			resp.Diagnostics.AddError("Error getting values", fmt.Sprintf("%s", diag))
-		}
-		return
-	}
+	client.DryRun = true
+	client.Replace = true
+	client.ClientOnly = !state.Validate.ValueBool()
+	client.APIVersions = chartutil.VersionSet(apiVersions)
+	client.IncludeCRDs = state.IncludeCRDs.ValueBool()
 
 	rel, err := client.Run(c, values)
 	if err != nil {
@@ -558,6 +605,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 			fmt.Fprintf(&manifests, "---\n# Source: %s\n%s\n", m.Path, m.Manifest)
 		}
 	}
+	var manifestsToRender []string
 
 	splitManifests := releaseutil.SplitManifests(manifests.String())
 	manifestsKeys := make([]string, 0, len(splitManifests))
@@ -566,50 +614,73 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	}
 	sort.Sort(releaseutil.BySplitManifestsOrder(manifestsKeys))
 
-	var manifestsToRender []string
-	if !state.ShowOnly.IsNull() && state.ShowOnly.Elements() != nil {
-		for _, raw := range state.ShowOnly.Elements() {
-			if raw.IsNull() {
-				continue
-			}
-			value := raw.(basetypes.StringValue).ValueString()
-			fString := filepath.ToSlash(value)
+	var chartCRDs []string
+	for _, crd := range rel.Chart.CRDObjects() {
+		chartCRDs = append(chartCRDs, string(crd.File.Data))
+	}
+
+	// Mapping of manifest key to manifest template name
+	manifestNamesByKey := make(map[string]string, len(manifestsKeys))
+
+	manifestNameRegex := regexp.MustCompile("# Source: [^/]+/(.+)")
+
+	for _, manifestKey := range manifestsKeys {
+		manifest := splitManifests[manifestKey]
+		submatch := manifestNameRegex.FindStringSubmatch(manifest)
+		if len(submatch) == 0 {
+			continue
+		}
+		manifestName := submatch[1]
+		manifestNamesByKey[manifestKey] = manifestName
+	}
+
+	if len(showFiles) > 0 {
+		for _, f := range showFiles {
 			missing := true
-			for manifestKey, manifestName := range splitManifests {
+			f = filepath.ToSlash(f)
+
+			for manifestKey, manifestName := range manifestNamesByKey {
 				manifestPathSplit := strings.Split(manifestName, "/")
 				manifestPath := strings.Join(manifestPathSplit, "/")
-				if matched, _ := filepath.Match(fString, manifestPath); !matched {
+
+				if matched, _ := filepath.Match(f, manifestPath); !matched {
 					continue
 				}
+
 				manifestsToRender = append(manifestsToRender, manifestKey)
 				missing = false
 			}
+
 			if missing {
 				resp.Diagnostics.AddError(
-					"Error finding template",
-					fmt.Sprintf("Could not find template %q in chart", fString),
+					"Template Not Found",
+					fmt.Sprintf("Could not find template %q in chart", f),
 				)
-				return
 			}
 		}
 	} else {
 		manifestsToRender = manifestsKeys
 	}
 
+	// We need to sort the manifests so the order stays stable when they are
+	// concatenated back together in the computedManifests map
 	sort.Strings(manifestsToRender)
+
+	// Map from rendered manifests to data source output
 	computedManifests := make(map[string]string, 0)
 	computedManifest := &strings.Builder{}
+
 	for _, manifestKey := range manifestsToRender {
 		manifest := splitManifests[manifestKey]
-		manifestName := splitManifests[manifestKey]
+		manifestName := manifestNamesByKey[manifestKey]
+
+		//Manifests
 		computedManifests[manifestName] = fmt.Sprintf("%s---\n%s\n", computedManifests[manifestName], manifest)
+
+		// Manifest bundle
 		fmt.Fprintf(computedManifest, "---\n%s\n", manifest)
 	}
 
-	var chartCRDs []string
-	for _, crd := range rel.Chart.CRDObjects() {
-		chartCRDs = append(chartCRDs, string(crd.File.Data))
-	}
 	// Convert chartCRDs to types.List
 	listElements := make([]attr.Value, len(chartCRDs))
 	for i, crd := range chartCRDs {
@@ -635,68 +706,70 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 
 	state.Manifest = types.StringValue(computedManifest.String())
 	state.Notes = types.StringValue(rel.Info.Notes)
+	state.ID = types.StringValue(state.Name.ValueString())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func getTemplateValues(ctx context.Context, model *HelmTemplateModel) (map[string]interface{}, diag.Diagnostics) {
+func getValuesModel(ctx context.Context, model *HelmTemplateModel) (map[string]interface{}, diag.Diagnostics) {
 	base := map[string]interface{}{}
 	var diags diag.Diagnostics
 
-	// Process "values" field
-	if !model.Values.IsNull() && !model.Values.IsUnknown() {
-		var values []types.String
-		diags = model.Values.ElementsAs(ctx, &values, false)
+	// Process "values" attribute
+	for _, raw := range model.Values.Elements() {
+		if raw.IsNull() {
+			continue
+		}
+
+		value, ok := raw.(types.String)
+		if !ok {
+			diags.AddError("Type Error", fmt.Sprintf("Expected types.String, got %T", raw))
+			return nil, diags
+		}
+
+		values := value.ValueString()
+		if values == "" {
+			continue
+		}
+
+		currentMap := map[string]interface{}{}
+		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+			diags.AddError("Error unmarshaling values", fmt.Sprintf("---> %v %s", err, values))
+			return nil, diags
+		}
+
+		base = mergeMaps(base, currentMap)
+	}
+
+	// Process "set" attribute
+	if !model.Set.IsNull() {
+		var setList []SetValue
+		setDiags := model.Set.ElementsAs(ctx, &setList, false)
+		diags.Append(setDiags...)
 		if diags.HasError() {
 			return nil, diags
 		}
 
-		for _, raw := range values {
-			if raw.IsNull() {
-				continue
-			}
-
-			valueStr := raw.ValueString()
-			if valueStr == "" {
-				continue
-			}
-
-			currentMap := map[string]interface{}{}
-			if err := yaml.Unmarshal([]byte(valueStr), &currentMap); err != nil {
-				diags.AddError("Failed to unmarshal values", fmt.Sprintf("---> %v %s", err, valueStr))
-				return nil, diags
-			}
-
-			base = mergeMaps(base, currentMap)
-		}
-	}
-
-	// Process "set" field
-	if !model.Set.IsNull() && !model.Set.IsUnknown() {
-		var sets []SetValue
-		diags = model.Set.ElementsAs(ctx, &sets, false)
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		for _, raw := range sets {
-			set := raw
-			if err := getDataValue(base, set); err.HasError() {
-				diags.Append(err...)
+		for _, set := range setList {
+			setDiags := applySetValue(base, set)
+			diags.Append(setDiags...)
+			if diags.HasError() {
 				return nil, diags
 			}
 		}
 	}
 
-	// Process "set_list" field
-	if !model.SetList.IsNull() && !model.SetList.IsUnknown() {
+	// Process "set_list" attribute
+	if !model.SetList.IsUnknown() {
 		var setListSlice []SetListValue
-		diags = model.SetList.ElementsAs(ctx, &setListSlice, false)
+		setListDiags := model.SetList.ElementsAs(ctx, &setListSlice, false)
+		diags.Append(setListDiags...)
 		if diags.HasError() {
 			return nil, diags
 		}
+
 		for _, setList := range setListSlice {
-			setListDiags := getDataSourceListValue(ctx, base, setList)
+			setListDiags := applySetListValue(ctx, base, setList)
 			diags.Append(setListDiags...)
 			if diags.HasError() {
 				return nil, diags
@@ -704,15 +777,17 @@ func getTemplateValues(ctx context.Context, model *HelmTemplateModel) (map[strin
 		}
 	}
 
-	// Process "set_sensitive" field
-	if !model.SetSensitive.IsNull() && !model.SetList.IsUnknown() {
+	// Process "set_sensitive" attribute
+	if !model.SetSensitive.IsNull() {
 		var setSensitiveList []SetSensitiveValue
-		diags = model.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
+		setSensitiveDiags := model.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
+		diags.Append(setSensitiveDiags...)
 		if diags.HasError() {
 			return nil, diags
 		}
+
 		for _, setSensitive := range setSensitiveList {
-			setSensitiveDiags := getDataSensitiveValue(base, setSensitive)
+			setSensitiveDiags := applySetSensitiveValue(base, setSensitive)
 			diags.Append(setSensitiveDiags...)
 			if diags.HasError() {
 				return nil, diags
@@ -720,170 +795,10 @@ func getTemplateValues(ctx context.Context, model *HelmTemplateModel) (map[strin
 		}
 	}
 
-	return base, logDataValues(ctx, base, model)
-}
-
-func getDataSourceListValue(ctx context.Context, base map[string]interface{}, set SetListValue) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	name := set.Name.ValueString()
-	listValue := set.Value
-
-	// Check if the list is null or unknown
-	if listValue.IsNull() || listValue.IsUnknown() {
-		return diags
-	}
-
-	// Get the elements from the list
-	elements := listValue.Elements()
-	listStringArray := make([]string, len(elements))
-	for i, v := range elements {
-		listStringArray[i] = v.(basetypes.StringValue).ValueString()
-	}
-
-	nonEmptyListStringArray := make([]string, 0, len(listStringArray))
-	for _, s := range listStringArray {
-		if s != "" {
-			nonEmptyListStringArray = append(nonEmptyListStringArray, s)
-		}
-	}
-	listString := strings.Join(nonEmptyListStringArray, ",")
-	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
-		diags.AddError("Error parsing list value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, listString, err))
-		return diags
-	}
-
-	return diags
-}
-
-func getDataSensitiveValue(base map[string]interface{}, set SetSensitiveValue) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	name := set.Name.ValueString()
-	value := set.Value.ValueString()
-	valueType := set.Type.ValueString()
-
-	switch valueType {
-	case "auto", "":
-		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			diags.AddError("Failed parsing value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
-			return diags
-		}
-	case "string":
-		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			diags.AddError("Failed parsing string value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
-			return diags
-		}
-	default:
-		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type: %s", valueType))
-		return diags
-	}
-	return diags
-}
-
-// For the type SetValue
-func getDataValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	name := set.Name.ValueString()
-	value := set.Value.ValueString()
-	valueType := set.Type.ValueString()
-
-	switch valueType {
-	case "auto", "":
-		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			diags.AddError("Failed parsing value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
-			return diags
-		}
-	case "string":
-		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			diags.AddError("Failed parsing string value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
-			return diags
-		}
-	default:
-		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type: %s", valueType))
-		return diags
-	}
-	return diags
-}
-
-func logDataValues(ctx context.Context, values map[string]interface{}, model *HelmTemplateModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	asJSON, err := json.Marshal(values)
-	if err != nil {
-		diags.AddError("Error marshaling values to JSON", fmt.Sprintf("Failed to marshal values to JSON: %s", err))
-		return diags
-	}
-
-	var c map[string]interface{}
-	err = json.Unmarshal(asJSON, &c)
-	if err != nil {
-		diags.AddError("Error unmarshaling JSON to map", fmt.Sprintf("Failed to unmarshal JSON to map: %s", err))
-		return diags
-	}
-
-	diags.Append(cloakDataSetValues(ctx, c, model)...)
-
-	y, err := yaml.Marshal(c)
-	if err != nil {
-		diags.AddError("Error marshaling map to YAML", fmt.Sprintf("Failed to marshal map to YAML: %s", err))
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("---[ values.yaml ]-----------------------------------\n%s\n", string(y)))
-
-	return diags
-}
-
-func cloakDataSetValues(ctx context.Context, config map[string]interface{}, model *HelmTemplateModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if !model.SetSensitive.IsNull() && !model.SetSensitive.IsUnknown() {
-		var setSensitiveList []SetSensitiveValue
-		diags = model.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
-		if diags.HasError() {
-			return diags
-		}
-
-		for _, set := range setSensitiveList {
-			cloakSetValue(config, set.Name.ValueString())
-		}
-	}
-
-	return diags
-}
-
-func getDataListValue(base map[string]interface{}, set SetListValue) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	name := set.Name.ValueString()
-	listValue := set.Value
-
-	// Check if the list is null or unknown
-	if listValue.IsNull() || listValue.IsUnknown() {
-		return diags
-	}
-
-	// Get the elements from the list
-	elements := listValue.Elements()
-	listStringArray := make([]string, len(elements))
-	for i, v := range elements {
-		listStringArray[i] = v.(basetypes.StringValue).ValueString()
-	}
-
-	nonEmptyListStringArray := make([]string, 0, len(elements))
-	for _, s := range listStringArray {
-		if s != "" {
-			nonEmptyListStringArray = append(nonEmptyListStringArray, s)
-		}
-	}
-	listString := strings.Join(nonEmptyListStringArray, ",")
-	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
-		diags.AddError("Error parsing list value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, listString, err))
-		return diags
-	}
-
-	return diags
+	tflog.Debug(ctx, fmt.Sprintf("Final merged values: %v", base))
+	logDiags := LogValuesModel(ctx, base, model)
+	diags.Append(logDiags...)
+	return base, diags
 }
 
 func isTestHook(h *release.Hook) bool {
@@ -893,4 +808,243 @@ func isTestHook(h *release.Hook) bool {
 		}
 	}
 	return false
+}
+
+func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	chartName := model.Chart.ValueString()
+	repository := model.Repository.ValueString()
+
+	var repositoryURL string
+	if registry.IsOCI(repository) {
+		// LocateChart expects the chart name to contain the full OCI path
+		u, err := url.Parse(repository)
+		if err != nil {
+			diags.AddError("Invalid Repository URL", fmt.Sprintf("Failed to parse repository URL %s: %s", repository, err))
+			return nil, "", diags
+		}
+		u.Path = pathpkg.Join(u.Path, chartName)
+		chartName = u.String()
+	} else {
+		var err error
+		repositoryURL, chartName, err = buildChartNameWithRepository(repository, strings.TrimSpace(chartName))
+		if err != nil {
+			diags.AddError("Error building Chart Name With Repository", fmt.Sprintf("Could not build Chart Name With Repository %s and chart %s: %s", repository, chartName, err))
+			return nil, "", diags
+		}
+	}
+
+	version := model.Version.ValueString()
+
+	cpo.CaFile = model.RepositoryCaFile.ValueString()
+	cpo.CertFile = model.RepositoryCertFile.ValueString()
+	cpo.KeyFile = model.RepositoryKeyFile.ValueString()
+	cpo.Keyring = model.Keyring.ValueString()
+	cpo.RepoURL = repositoryURL
+	cpo.Verify = model.Verify.ValueBool()
+	if !useChartVersion(chartName, cpo.RepoURL) {
+		cpo.Version = version
+	}
+	cpo.Username = model.RepositoryUsername.ValueString()
+	cpo.Password = model.RepositoryPassword.ValueString()
+	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
+
+	return cpo, chartName, diags
+}
+
+func getChartModel(ctx context.Context, model *HelmTemplateModel, meta *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", meta.Settings))
+
+	path, err := cpo.LocateChart(name, meta.Settings)
+	if err != nil {
+		diags.AddError("Error locating chart", fmt.Sprintf("Unable to locate chart %s: %s", name, err))
+		return nil, "", diags
+	}
+
+	c, err := loader.Load(path)
+	if err != nil {
+		diags.AddError("Error loading chart", fmt.Sprintf("Unable to load chart %s: %s", path, err))
+		return nil, "", diags
+	}
+
+	return c, path, diags
+}
+
+func checkChartDependenciesModel(ctx context.Context, model *HelmTemplateModel, c *chart.Chart, path string, meta *Meta) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	p := getter.All(meta.Settings)
+
+	if req := c.Metadata.Dependencies; req != nil {
+		err := action.CheckDependencies(c, req)
+		if err != nil {
+			if model.DependencyUpdate.ValueBool() {
+				man := &downloader.Manager{
+					Out:              os.Stdout,
+					ChartPath:        path,
+					Keyring:          model.Keyring.ValueString(),
+					SkipUpdate:       false,
+					Getters:          p,
+					RepositoryConfig: meta.Settings.RepositoryConfig,
+					RepositoryCache:  meta.Settings.RepositoryCache,
+					Debug:            meta.Settings.Debug,
+				}
+				tflog.Debug(ctx, "Downloading chart dependencies...")
+				if err := man.Update(); err != nil {
+					diags.AddError("Failed to update chart dependencies", fmt.Sprintf("Error: %s", err))
+					return true, diags
+				}
+				return true, diags
+			}
+			diags.AddError("Missing chart dependencies", "Found in Chart.yaml, but missing in charts/ directory.")
+			return false, diags
+		}
+	}
+	tflog.Debug(ctx, "Chart dependencies are up to date.")
+	return false, diags
+}
+
+func applySetValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	name := set.Name.ValueString()
+	value := set.Value.ValueString()
+	valueType := set.Type.ValueString()
+
+	switch valueType {
+	case "auto", "":
+		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+			diags.AddError("Failed parsing value", fmt.Sprintf("Key %q with value %s: %s", name, value, err))
+		}
+	case "string":
+		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+			diags.AddError("Failed parsing string value", fmt.Sprintf("Key %q with value %s: %s", name, value, err))
+		}
+	default:
+		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type: %s", valueType))
+	}
+	return diags
+}
+
+func applySetListValue(ctx context.Context, base map[string]interface{}, setList SetListValue) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	name := setList.Name.ValueString()
+
+	if setList.Value.IsNull() {
+		diags.AddError("Null List Value", "The list value is null.")
+		return diags
+	}
+
+	// Extract elements from the list value
+	elements := setList.Value.Elements()
+
+	listStringArray := make([]string, 0, len(elements))
+	for _, element := range elements {
+		if !element.IsNull() {
+			strValue := element.(types.String).ValueString()
+			listStringArray = append(listStringArray, strValue)
+		}
+	}
+
+	listString := strings.Join(listStringArray, ",")
+
+	// Parse the joined string into the base map
+	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
+		diags.AddError("Error parsing list value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, listString, err))
+		return diags
+	}
+
+	return diags
+}
+
+func applySetSensitiveValue(base map[string]interface{}, setSensitive SetSensitiveValue) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	name := setSensitive.Name.ValueString()
+	value := setSensitive.Value.ValueString()
+	valueType := setSensitive.Type.ValueString()
+
+	switch valueType {
+	case "auto", "":
+		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+			diags.AddError("Failed parsing sensitive value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
+		}
+	case "string":
+		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
+			diags.AddError("Failed parsing sensitive string value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
+		}
+	default:
+		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type for sensitive value: %s", valueType))
+	}
+
+	return diags
+}
+
+func LogValuesModel(ctx context.Context, values map[string]interface{}, state *HelmTemplateModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	asJSON, err := json.Marshal(values)
+	if err != nil {
+		diags.AddError("Error marshaling values to JSON", fmt.Sprintf("Failed to marshal values to JSON: %s", err))
+		return diags
+	}
+
+	var clonedValues map[string]interface{}
+	err = json.Unmarshal(asJSON, &clonedValues)
+	if err != nil {
+		diags.AddError("Error unmarshaling JSON to map", fmt.Sprintf("Failed to unmarshal JSON to map: %s", err))
+		return diags
+	}
+
+	// Apply cloaking or masking for sensitive values
+	cloakSetValuesModel(clonedValues, state)
+
+	// Convert the modified map to YAML for logging purposes
+	yamlData, err := yaml.Marshal(clonedValues)
+	if err != nil {
+		diags.AddError("Error marshaling map to YAML", fmt.Sprintf("Failed to marshal map to YAML: %s", err))
+		return diags
+	}
+
+	// Log the final YAML representation of the values
+	tflog.Debug(ctx, fmt.Sprintf("---[ values.yaml ]-----------------------------------\n%s\n", string(yamlData)))
+
+	return diags
+}
+
+func cloakSetValuesModel(config map[string]interface{}, state *HelmTemplateModel) {
+	if !state.SetSensitive.IsNull() {
+		var setSensitiveList []SetSensitiveValue
+		diags := state.SetSensitive.ElementsAs(context.Background(), &setSensitiveList, false)
+		if diags.HasError() {
+			tflog.Warn(context.Background(), "Error parsing SetSensitive elements", map[string]interface{}{
+				"diagnostics": diags,
+			})
+			return
+		}
+
+		for _, set := range setSensitiveList {
+			cloakSetValueModel(config, set.Name.ValueString())
+		}
+	}
+}
+
+const sensitiveContentModelValue = "(sensitive value)"
+
+func cloakSetValueModel(values map[string]interface{}, valuePath string) {
+	pathKeys := strings.Split(valuePath, ".")
+	sensitiveKey := pathKeys[len(pathKeys)-1]
+	parentPathKeys := pathKeys[:len(pathKeys)-1]
+
+	currentMap := values
+	for _, key := range parentPathKeys {
+		v, ok := currentMap[key].(map[string]interface{})
+		if !ok {
+			return
+		}
+		currentMap = v
+	}
+	currentMap[sensitiveKey] = sensitiveContentModelValue
 }
