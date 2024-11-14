@@ -1,0 +1,3 @@
+```release-note:bug
+`resoure/helm_release`: fix an issue where `postrender.args` is not parsed correctly.
+```
