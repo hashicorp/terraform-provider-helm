@@ -861,15 +861,21 @@ func TestAccResourceRelease_postrender(t *testing.T) {
 				),
 			},
 			{
-				Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "echo", "this will not work!", "Wrong", "Code"),
+				Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "echo", "invalid arguments"),
 				ExpectError: regexp.MustCompile("error validating data"),
 			},
 			{
-				Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "foobardoesnotexist"),
+				Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "binNotFound", ""),
 				ExpectError: regexp.MustCompile("unable to find binary"),
 			},
 			{
 				Config: testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "true", "Hello", "World", "!"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+			{
+				Config: testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "testdata/postrender.sh", "this", "that"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				),
@@ -1534,7 +1540,7 @@ func testAccHelmReleaseConfigPostrender(resource, ns, name, binaryPath string, a
 				value = 1337
 			}
 		}
-	`, resource, name, ns, testRepositoryURL, binaryPath, fmt.Sprintf(`["%s"]`, strings.Join(args, `","`)))
+		`, resource, name, ns, testRepositoryURL, binaryPath, fmt.Sprintf(`["%s"]`, strings.Join(args, `","`)))
 }
 
 func TestAccResourceRelease_LintFailValues(t *testing.T) {
