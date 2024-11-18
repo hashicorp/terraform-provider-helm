@@ -834,7 +834,7 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 		}
 	}
 
-	version := model.Version.ValueString()
+	version := getVersionModel(model)
 
 	cpo.CaFile = model.RepositoryCaFile.ValueString()
 	cpo.CertFile = model.RepositoryCertFile.ValueString()
@@ -850,6 +850,13 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
 
 	return cpo, chartName, diags
+}
+func getVersionModel(model *HelmTemplateModel) string {
+	version := model.Version.ValueString()
+	if version == "" && model.Devel.ValueBool() {
+		return ">0.0.0-0"
+	}
+	return strings.TrimSpace(version)
 }
 
 func getChartModel(ctx context.Context, model *HelmTemplateModel, meta *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
