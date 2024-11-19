@@ -386,6 +386,16 @@ func resourceRelease() *schema.Resource {
 				Description: "The rendered manifest as JSON.",
 				Computed:    true,
 			},
+			"resources": {
+				Type:        schema.TypeMap,
+				Computed:    true,
+				Description: "The kubernetes resources created by this release.",
+				Elem: &schema.Schema{
+					Type:        schema.TypeString,
+					Computed:    true,
+					Description: "The information of a kubernetes resource as JSON.",
+				},
+			},
 			"upgrade_install": {
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -913,6 +923,11 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 	debug("%s upgrade_install is enabled: %t", logID, enableUpgradeStrategy)
 	debug("%s targetVersion for release %s: '%s'", logID, name, targetVersion)
 
+	if !m.ExperimentEnabled("manifest") {
+		d.Clear("manifest")
+		d.Clear("resources")
+	}
+
 	actionConfig, err := m.GetHelmConfiguration(namespace)
 	if err != nil {
 		return err
@@ -1011,6 +1026,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			// but this is not possible with the SDK
 			debug("not all values are known, skipping dry run to render manifest")
 			d.SetNewComputed("manifest")
+			d.SetNewComputed("resources")
 			return d.SetNewComputed("version")
 		}
 
@@ -1070,8 +1086,9 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 					// NOTE it would be nice to return a diagnostic here to warn the user
 					// that we can't generate the diff here because the cluster is not yet
 					// reachable but this is not supported by CustomizeDiffFunc
-					debug(`cluster was unreachable at create time, marking "manifest" as computed`)
-					return d.SetNewComputed("manifest")
+					debug(`cluster was unreachable at create time, marking "manifest" and "resources" as computed`)
+					d.SetNewComputed("manifest")
+					return d.SetNewComputed("resources")
 				}
 				return err
 			}
@@ -1081,6 +1098,9 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 				return err
 			}
 			manifest := redactSensitiveValues(string(jsonManifest), d)
+
+			d.SetNewComputed("resources")
+
 			return d.SetNew("manifest", manifest)
 		}
 
@@ -1091,6 +1111,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 				return d.SetNew("version", chart.Metadata.Version)
 			}
 			d.SetNewComputed("manifest")
+			d.SetNewComputed("resources")
 			return d.SetNewComputed("version")
 		} else if err != nil {
 			return fmt.Errorf("error retrieving old release for a diff: %v", err)
@@ -1130,6 +1151,7 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 			}
 			d.SetNewComputed("version")
 			d.SetNewComputed("manifest")
+			d.SetNewComputed("resources")
 			return nil
 		} else if err != nil {
 			return fmt.Errorf("error running dry run for a diff: %v", err)
@@ -1142,8 +1164,12 @@ func resourceDiff(ctx context.Context, d *schema.ResourceDiff, meta interface{})
 		manifest := redactSensitiveValues(string(jsonManifest), d)
 		d.SetNew("manifest", manifest)
 		debug("%s set manifest: %s", logID, jsonManifest)
-	} else {
-		d.Clear("manifest")
+		resources, err := getDryRunResources(dry, m, d)
+		if err != nil {
+			return err
+		}
+		d.SetNew("resources", resources)
+		debug("%s set resources: %v", logID, resources)
 	}
 
 	// handle possible upgrade_install scenarios when the version attribute is empty
@@ -1211,6 +1237,11 @@ func setReleaseAttributes(d *schema.ResourceData, r *release.Release, meta inter
 		}
 		manifest := redactSensitiveValues(string(jsonManifest), d)
 		d.Set("manifest", manifest)
+		resources, err := getLiveResources(r, m, d)
+		if err != nil {
+			return err
+		}
+		d.Set("resources", resources)
 	}
 
 	return d.Set("metadata", []map[string]interface{}{{
