@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -508,10 +509,22 @@ func OCIRegistryPerformLogin(registryClient *registry.Client, ociURL string, use
 		debug("[INFO] Already logged into OCI registry %q", u.Host)
 		return nil
 	}
-	err = registryClient.Login(u.Host,
-		registry.LoginOptBasicAuth(username, password))
+
+	loginOpts := registry.LoginOptBasicAuth(username, password)
+	err = registryClient.Login(u.Host, loginOpts)
+
+	// Workaround for OSX Keychain rejecting the login request, which can cause
+	// spurious builds on MacOS. See GH-989.
+	if err != nil && strings.Contains(err.Error(), "`The specified item already exists in the keychain.`") {
+		debug("[WARN] Received error %v: %v when logging into registry %v, will try logging out and in again",
+			reflect.TypeOf(err), err, u.Host)
+		err = registryClient.Logout(u.Host)
+		debug("[INFO] Logout operation returned: %v, attempting to log in again", err)
+		err = registryClient.Login(u.Host, loginOpts)
+	}
+
 	if err != nil {
-		return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
+		return fmt.Errorf("could not login to OCI registry %q: %v %v", u.Host, reflect.TypeOf(err), err)
 	}
 	loggedInOCIRegistries[u.Host] = ""
 	debug("[INFO] Logged into OCI registry")
