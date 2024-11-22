@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/url"
 	"os"
 	pathpkg "path"
@@ -1300,20 +1301,8 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 
 func logValues(ctx context.Context, values map[string]interface{}, state *HelmReleaseModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	// Copy array to avoid changing values by the cloak function.
-	asJSON, err := json.Marshal(values)
-	if err != nil {
-		diags.AddError("Error marshaling values to JSON", fmt.Sprintf("Failed to marshal values to JSON: %s", err))
-		return diags
-	}
-
-	var c map[string]interface{}
-	err = json.Unmarshal(asJSON, &c)
-	if err != nil {
-		diags.AddError("Error unmarshaling JSON to map", fmt.Sprintf("Failed to unmarshal JSON to map: %s", err))
-		return diags
-	}
+	//Cloning values map
+	c := maps.Clone(values)
 
 	cloakSetValues(c, state)
 
