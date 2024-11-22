@@ -1,0 +1,109 @@
+apiVersion: v1
+entries:
+  broken-chart:
+  - apiVersion: v2
+    appVersion: 1.2.3
+    created: "2024-06-25T11:56:12.014638-07:00"
+    description: A broken chart for testing the Helm provider
+    digest: df4c598ac4a5ede418f7eb7c4e55d25f676a2515565c5f2e950bce280b25fe67
+    name: broken-chart
+    type: application
+    urls:
+    - broken-chart-1.2.3.tgz
+    version: 1.2.3
+  crds-chart:
+  - apiVersion: v2
+    appVersion: 1.19.5
+    created: "2024-06-25T11:56:12.014888-07:00"
+    description: This is a simple chart to use as a test fixture
+    digest: 8663aaf73fa634cedb82ef11bc413b9d5e8fca0e0a289b19adbd5d20ed5562c2
+    name: crds-chart
+    type: application
+    urls:
+    - crds-chart-1.2.3.tgz
+    version: 1.2.3
+  dependency-bar:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-06-25T11:56:12.015117-07:00"
+    description: A Helm chart for Kubernetes
+    digest: cd282af7f9ba44d0fd3daf7eb5f0e858c4a3a9b98a5b96191ccc30678feb066a
+    name: dependency-bar
+    type: application
+    urls:
+    - dependency-bar-0.1.0.tgz
+    version: 0.1.0
+  dependency-foo:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-06-25T11:56:12.015315-07:00"
+    description: A Helm chart for Kubernetes
+    digest: 95359e711bab808a1c44c782b70a2eb7f48470ff7300277b511abe66bf5cd966
+    name: dependency-foo
+    type: application
+    urls:
+    - dependency-foo-0.1.0.tgz
+    version: 0.1.0
+  failed-deploy:
+  - apiVersion: v2
+    appVersion: 1.2.3
+    created: "2024-06-25T11:56:12.015395-07:00"
+    description: A broken chart for testing the Helm provider
+    digest: 2321c1a9da04b95accf539a1aa73a1d59c61ad434fb20fbdc6d15912f1094dbb
+    name: failed-deploy
+    type: application
+    urls:
+    - failed-deploy-1.2.3.tgz
+    version: 1.2.3
+  kube-version:
+  - apiVersion: v2
+    appVersion: 1.2.3
+    created: "2024-06-25T11:56:12.015526-07:00"
+    description: A chart requiring kube version 1.22 or above
+    digest: ef3c5434d5fac4c51c8d5eb3f30c8ace77a5c8f5d4c14c3206f230f973cb9dfd
+    kubeVersion: '>=1.22.0-0'
+    name: kube-version
+    type: application
+    urls:
+    - kube-version-1.2.3.tgz
+    version: 1.2.3
+  test-chart:
+  - apiVersion: v2
+    appVersion: 1.19.5
+    created: "2024-06-25T11:56:12.015974-07:00"
+    description: This is a simple chart to use as a test fixture
+    digest: 8a5642b0aa2bbee55959be973dcd3ef5a2a048c49f3a9ff572d52ec5eb9e1329
+    name: test-chart
+    type: application
+    urls:
+    - test-chart-2.0.0.tgz
+    version: 2.0.0
+  - apiVersion: v2
+    appVersion: 1.19.5
+    created: "2024-06-25T11:56:12.015728-07:00"
+    description: This is a simple chart to use as a test fixture
+    digest: 52ed52a0a4720e11d95cdd55b8658a802fe721c6fa412e707f0efa5c765782e4
+    name: test-chart
+    type: application
+    urls:
+    - test-chart-1.2.3.tgz
+    version: 1.2.3
+  umbrella-chart:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-06-25T11:56:12.016455-07:00"
+    dependencies:
+    - name: dependency-foo
+      repository: file://../dependency-foo
+      version: 0.x.x
+    - name: dependency-bar
+      repository: file://../dependency-bar
+      version: 0.x.x
+    description: A Helm chart for Kubernetes
+    digest: d4677ee6de53a5f5913596d3a2891585b79aa92b9b41eadc66ac518ac53b80b4
+    name: umbrella-chart
+    type: application
+    urls:
+    - umbrella-chart-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-06-25T11:56:12.014462-07:00"

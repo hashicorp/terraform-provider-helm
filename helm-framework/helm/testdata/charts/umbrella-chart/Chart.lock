@@ -1,0 +1,9 @@
+dependencies:
+- name: dependency-foo
+  repository: file://../dependency-foo
+  version: 0.1.0
+- name: dependency-bar
+  repository: file://../dependency-bar
+  version: 0.1.0
+digest: sha256:eb95e992b458355d1cbc448c9694cadf982a1b82c6b3fe70617d7e39ee071d54
+generated: "2020-12-03T00:30:06.840959-05:00"

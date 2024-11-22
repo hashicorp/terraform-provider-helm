@@ -1,0 +1,7 @@
+apiVersion: v2
+name: kube-version
+description: A chart requiring kube version 1.22 or above
+type: application
+version: 1.2.3
+appVersion: 1.2.3
+kubeVersion: ">=1.22.0-0"
