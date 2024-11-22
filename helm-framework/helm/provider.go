@@ -256,16 +256,15 @@ func kubernetesResourceSchema() map[string]schema.Attribute {
 		},
 		"config_context": schema.StringAttribute{
 			Optional:    true,
-			Description: "Context to use for Kubernetes config.",
+			Description: "Context to choose from the config file. Can be sourced from KUBE_CTX.",
 		},
 		"config_context_auth_info": schema.StringAttribute{
-			Optional: true,
-			// TODO REFERENCE THE DEFAULT DOCUMENTATI
-			Description: "AuthInfo to use for Kubernetes config context.",
+			Optional:    true,
+			Description: "Authentication info context of the kube config (name of the kubeconfig user, --user flag in kubectl). Can be sourced from KUBE_CTX_AUTH_INFO.",
 		},
 		"config_context_cluster": schema.StringAttribute{
 			Optional:    true,
-			Description: "Cluster to use for Kubernetes config context.",
+			Description: "Cluster context of the kube config (name of the kubeconfig cluster, --cluster flag in kubectl). Can be sourced from KUBE_CTX_CLUSTER.",
 		},
 		"token": schema.StringAttribute{
 			Optional:    true,
