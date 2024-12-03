@@ -1141,11 +1141,11 @@ func getVersion(model *HelmReleaseModel) string {
 }
 
 func isChartInstallable(ch *chart.Chart) error {
-	chartType := ch.Metadata.Type
-	if strings.EqualFold(chartType, "library") {
-		return errors.Errorf("library charts are not installable")
+	switch ch.Metadata.Type {
+	case "", "application":
+		return nil
 	}
-	return nil
+	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
 func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
