@@ -732,7 +732,7 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				),
 			},
@@ -1985,14 +1985,12 @@ func testAccHelmReleaseConfig_OCI_updated(resource, ns, name, repo, version stri
 
 func testAccHelmReleaseConfigManifestExperimentEnabled(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
-		provider helm {
-			experiments = [
-				{
-					name  = "manifest"
-					value = true
-				}
-			]
+		provider "helm" {
+			experiments = [{
+				manifest = true
+			}]
 		}
+
 		resource "helm_release" "%s" {
  			name        = %q
 			namespace   = %q
