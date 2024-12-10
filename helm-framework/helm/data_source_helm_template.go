@@ -406,7 +406,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 			state.Keyring = types.StringValue("")
 		}
 	}
-	if !state.IncludeCRDs.IsNull() || state.IncludeCRDs.IsUnknown() {
+	if state.IncludeCRDs.IsNull() || state.IncludeCRDs.IsUnknown() {
 		state.IncludeCRDs = types.BoolValue(false)
 	}
 	if state.IsUpgrade.IsNull() || state.IsUpgrade.IsUnknown() {
@@ -674,7 +674,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		manifest := splitManifests[manifestKey]
 		manifestName := manifestNamesByKey[manifestKey]
 
-		//Manifests
+		// Manifests
 		computedManifests[manifestName] = fmt.Sprintf("%s---\n%s\n", computedManifests[manifestName], manifest)
 
 		// Manifest bundle
@@ -851,6 +851,7 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 
 	return cpo, chartName, diags
 }
+
 func getVersionModel(model *HelmTemplateModel) string {
 	version := model.Version.ValueString()
 	if version == "" && model.Devel.ValueBool() {
