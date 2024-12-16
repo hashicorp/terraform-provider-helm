@@ -1301,7 +1301,7 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 
 func logValues(ctx context.Context, values map[string]interface{}, state *HelmReleaseModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	//Cloning values map
+	// Cloning values map
 	c := maps.Clone(values)
 
 	cloakSetValues(c, state)
@@ -1586,6 +1586,13 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	var config HelmReleaseModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	tflog.Debug(ctx, fmt.Sprintf("Plan state on ModifyPlan: %+v", plan))
 	tflog.Debug(ctx, fmt.Sprintf("Actual state on ModifyPlan: %+v", state))
 
@@ -1858,8 +1865,17 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	if len(chart.Metadata.Version) > 0 {
 		plan.Version = types.StringValue(chart.Metadata.Version)
 	} else {
-		state.Version = types.StringNull()
+		plan.Version = types.StringNull()
 	}
+
+	if !config.Version.IsNull() && !config.Version.Equal(plan.Version) {
+		resp.Diagnostics.AddError(
+			"Planned version different from configured version",
+			fmt.Sprintf(`The version in the configuration is %q but the planned version is %q. 
+You should update the version in your configuration, or remove the version attribute from your configuration.`, config.Version.ValueString(), plan.Version.ValueString()))
+		return
+	}
+
 	resp.Plan.Set(ctx, &plan)
 }
 
