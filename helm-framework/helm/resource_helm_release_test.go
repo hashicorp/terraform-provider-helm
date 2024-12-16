@@ -671,10 +671,8 @@ func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
-				Config: broken,
-				// Talk about what the exact error would be in this case
-				ExpectError: regexp.MustCompile(`Error running apply: exit status 1`),
-				//ExpectNonEmptyPlan: true,
+				Config:      broken,
+				ExpectError: regexp.MustCompile(`namespaces "does-not-exist" not found`),
 			},
 			{
 				Config: fixed,
