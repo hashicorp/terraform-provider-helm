@@ -56,49 +56,49 @@ func NewHelmRelease() resource.Resource {
 }
 
 type HelmReleaseModel struct {
-	Atomic                   types.Bool   `tfsdk:"atomic"`
-	Chart                    types.String `tfsdk:"chart"`
-	CleanupOnFail            types.Bool   `tfsdk:"cleanup_on_fail"`
-	CreateNamespace          types.Bool   `tfsdk:"create_namespace"`
-	DependencyUpdate         types.Bool   `tfsdk:"dependency_update"`
-	Description              types.String `tfsdk:"description"`
-	Devel                    types.Bool   `tfsdk:"devel"`
-	DisableCrdHooks          types.Bool   `tfsdk:"disable_crd_hooks"`
-	DisableOpenapiValidation types.Bool   `tfsdk:"disable_openapi_validation"`
-	DisableWebhooks          types.Bool   `tfsdk:"disable_webhooks"`
-	ForceUpdate              types.Bool   `tfsdk:"force_update"`
-	ID                       types.String `tfsdk:"id"`
-	Keyring                  types.String `tfsdk:"keyring"`
-	Lint                     types.Bool   `tfsdk:"lint"`
-	Manifest                 types.String `tfsdk:"manifest"`
-	MaxHistory               types.Int64  `tfsdk:"max_history"`
-	Metadata                 types.Object `tfsdk:"metadata"`
-	Name                     types.String `tfsdk:"name"`
-	Namespace                types.String `tfsdk:"namespace"`
-	PassCredentials          types.Bool   `tfsdk:"pass_credentials"`
-	Postrender               types.Object `tfsdk:"postrender"`
-	RecreatePods             types.Bool   `tfsdk:"recreate_pods"`
-	Replace                  types.Bool   `tfsdk:"replace"`
-	RenderSubchartNotes      types.Bool   `tfsdk:"render_subchart_notes"`
-	Repository               types.String `tfsdk:"repository"`
-	RepositoryCaFile         types.String `tfsdk:"repository_ca_file"`
-	RepositoryCertFile       types.String `tfsdk:"repository_cert_file"`
-	RepositoryKeyFile        types.String `tfsdk:"repository_key_file"`
-	RepositoryPassword       types.String `tfsdk:"repository_password"`
-	RepositoryUsername       types.String `tfsdk:"repository_username"`
-	ResetValues              types.Bool   `tfsdk:"reset_values"`
-	ReuseValues              types.Bool   `tfsdk:"reuse_values"`
-	Set                      types.Set    `tfsdk:"set"`
-	SetList                  types.List   `tfsdk:"set_list"`
-	SetSensitive             types.Set    `tfsdk:"set_sensitive"`
-	SkipCrds                 types.Bool   `tfsdk:"skip_crds"`
-	Status                   types.String `tfsdk:"status"`
-	Timeout                  types.Int64  `tfsdk:"timeout"`
-	Values                   types.List   `tfsdk:"values"`
-	Verify                   types.Bool   `tfsdk:"verify"`
-	Version                  types.String `tfsdk:"version"`
-	Wait                     types.Bool   `tfsdk:"wait"`
-	WaitForJobs              types.Bool   `tfsdk:"wait_for_jobs"`
+	Atomic                   types.Bool       `tfsdk:"atomic"`
+	Chart                    types.String     `tfsdk:"chart"`
+	CleanupOnFail            types.Bool       `tfsdk:"cleanup_on_fail"`
+	CreateNamespace          types.Bool       `tfsdk:"create_namespace"`
+	DependencyUpdate         types.Bool       `tfsdk:"dependency_update"`
+	Description              types.String     `tfsdk:"description"`
+	Devel                    types.Bool       `tfsdk:"devel"`
+	DisableCrdHooks          types.Bool       `tfsdk:"disable_crd_hooks"`
+	DisableOpenapiValidation types.Bool       `tfsdk:"disable_openapi_validation"`
+	DisableWebhooks          types.Bool       `tfsdk:"disable_webhooks"`
+	ForceUpdate              types.Bool       `tfsdk:"force_update"`
+	ID                       types.String     `tfsdk:"id"`
+	Keyring                  types.String     `tfsdk:"keyring"`
+	Lint                     types.Bool       `tfsdk:"lint"`
+	Manifest                 types.String     `tfsdk:"manifest"`
+	MaxHistory               types.Int64      `tfsdk:"max_history"`
+	Metadata                 types.Object     `tfsdk:"metadata"`
+	Name                     types.String     `tfsdk:"name"`
+	Namespace                types.String     `tfsdk:"namespace"`
+	PassCredentials          types.Bool       `tfsdk:"pass_credentials"`
+	PostRender               *PostRenderModel `tfsdk:"postrender"`
+	RecreatePods             types.Bool       `tfsdk:"recreate_pods"`
+	Replace                  types.Bool       `tfsdk:"replace"`
+	RenderSubchartNotes      types.Bool       `tfsdk:"render_subchart_notes"`
+	Repository               types.String     `tfsdk:"repository"`
+	RepositoryCaFile         types.String     `tfsdk:"repository_ca_file"`
+	RepositoryCertFile       types.String     `tfsdk:"repository_cert_file"`
+	RepositoryKeyFile        types.String     `tfsdk:"repository_key_file"`
+	RepositoryPassword       types.String     `tfsdk:"repository_password"`
+	RepositoryUsername       types.String     `tfsdk:"repository_username"`
+	ResetValues              types.Bool       `tfsdk:"reset_values"`
+	ReuseValues              types.Bool       `tfsdk:"reuse_values"`
+	Set                      types.Set        `tfsdk:"set"`
+	SetList                  types.List       `tfsdk:"set_list"`
+	SetSensitive             types.Set        `tfsdk:"set_sensitive"`
+	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
+	Status                   types.String     `tfsdk:"status"`
+	Timeout                  types.Int64      `tfsdk:"timeout"`
+	Values                   types.List       `tfsdk:"values"`
+	Verify                   types.Bool       `tfsdk:"verify"`
+	Version                  types.String     `tfsdk:"version"`
+	Wait                     types.Bool       `tfsdk:"wait"`
+	WaitForJobs              types.Bool       `tfsdk:"wait_for_jobs"`
 }
 
 var defaultAttributes = map[string]interface{}{
@@ -147,7 +147,7 @@ type set_listResourceModel struct {
 	Value types.List   `tfsdk:"value"`
 }
 
-type postrenderModel struct {
+type PostRenderModel struct {
 	Args       types.List   `tfsdk:"args"`
 	BinaryPath types.String `tfsdk:"binary_path"`
 }
@@ -721,18 +721,9 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.Description = state.Description.ValueString()
 	client.CreateNamespace = state.CreateNamespace.ValueBool()
 
-	if !state.Postrender.IsNull() {
-		tflog.Debug(ctx, "Postrender is not null")
-		var postrenderConfig postrenderModel
-		postrenderDiags := state.Postrender.As(ctx, &postrenderConfig, basetypes.ObjectAsOptions{})
-		resp.Diagnostics.Append(postrenderDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tflog.Debug(ctx, fmt.Sprintf("Postrender config: %+v", postrenderConfig))
-
-		binaryPath := postrenderConfig.BinaryPath.ValueString()
-		argsList := postrenderConfig.Args.Elements()
+	if state.PostRender != nil {
+		binaryPath := state.PostRender.BinaryPath.ValueString()
+		argsList := state.PostRender.Args.Elements()
 
 		var args []string
 		for _, arg := range argsList {
@@ -932,17 +923,9 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 	client.Description = plan.Description.ValueString()
 
-	if !plan.Postrender.IsNull() {
-		var postrenderConfig postrenderModel
-		postrenderDiags := plan.Postrender.As(ctx, &postrenderConfig, basetypes.ObjectAsOptions{})
-		resp.Diagnostics.Append(postrenderDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tflog.Debug(ctx, fmt.Sprintf("Initial postrender values update method: %+v", postrenderConfig))
-
-		binaryPath := postrenderConfig.BinaryPath.ValueString()
-		argsList := postrenderConfig.Args.Elements()
+	if plan.PostRender != nil {
+		binaryPath := plan.PostRender.BinaryPath.ValueString()
+		argsList := plan.PostRender.Args.Elements()
 
 		var args []string
 		for _, arg := range argsList {
@@ -1688,18 +1671,9 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			return
 		}
 
-		var postRenderer postrender.PostRenderer
-		if !plan.Postrender.IsNull() {
-			// Extract the list of postrender configurations
-			var postrenderConfig postrenderModel
-			postrenderDiags := plan.Postrender.As(ctx, &postrenderConfig, basetypes.ObjectAsOptions{})
-			resp.Diagnostics.Append(postrenderDiags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-
-			binaryPath := postrenderConfig.BinaryPath.ValueString()
-			argsList := postrenderConfig.Args.Elements()
+		if plan.PostRender != nil {
+			binaryPath := plan.PostRender.BinaryPath.ValueString()
+			argsList := plan.PostRender.Args.Elements()
 
 			var args []string
 			for _, arg := range argsList {
@@ -1733,7 +1707,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			install.Replace = plan.Replace.ValueBool()
 			install.Description = plan.Description.ValueString()
 			install.CreateNamespace = plan.CreateNamespace.ValueBool()
-			install.PostRenderer = postRenderer
+			install.PostRenderer = client.PostRenderer
 
 			values, diags := getValues(ctx, &plan)
 			resp.Diagnostics.Append(diags...)
@@ -1813,7 +1787,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.MaxHistory = int(plan.MaxHistory.ValueInt64())
 		upgrade.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 		upgrade.Description = plan.Description.ValueString()
-		upgrade.PostRenderer = postRenderer
+		upgrade.PostRenderer = client.PostRenderer
 
 		values, diags := getValues(ctx, &plan)
 		resp.Diagnostics.Append(diags...)
