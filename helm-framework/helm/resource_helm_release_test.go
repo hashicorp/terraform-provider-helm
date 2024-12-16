@@ -740,17 +740,15 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 	})
 }
 
-// Error: Provider produced inconsistent result after apply
-// Reason why is because we need to use the local chart version if the local chart exists rather than using the version that's stated in the conifg
-// So the error is using the version in the config, rather than using the version that's specified in the local chart
-// might be a local chart issue, so look into that as well
-// FAIL
 func TestAccResourceRelease_LocalVersion(t *testing.T) {
+	// NOTE this test confirms that the user is warned if their configured
+	// chart version is different from the version in the chart itself.
+	// Previously Terraform silently allowed this inconsistency, but with
+	// framework Terraform will produce a data inconsistency error.
+
 	name := randName("create-namespace")
 	namespace := randName("helm-created-namespace")
 	defer deleteNamespace(t, namespace)
-
-	// this test ensures that the version is not changed when using a local chart
 
 	config1 := fmt.Sprintf(`
 	resource "helm_release" "test" {
@@ -764,15 +762,13 @@ func TestAccResourceRelease_LocalVersion(t *testing.T) {
 	resource "helm_release" "test" {
 		name             = %q
 		namespace        = %q
-		version 		 = "1.0.0"
+		version 		     = "1.0.0"
 		chart            = "testdata/charts/test-chart"
 		create_namespace = true
 	}`, name, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: config1,
@@ -783,12 +779,8 @@ func TestAccResourceRelease_LocalVersion(t *testing.T) {
 				),
 			},
 			{
-				Config: config2,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
-					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
-				),
+				Config:      config2,
+				ExpectError: regexp.MustCompile(`Planned version different from configured version`),
 			},
 		},
 	})
