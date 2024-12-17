@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/helmpath"
+	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"helm.sh/helm/v3/pkg/repo"
@@ -148,33 +149,29 @@ func TestAccResourceRelease_import(t *testing.T) {
 	})
 }
 
-// ok
-// Provider produced inconsistent result after apply
-// Currently digging into this
-// func TestAccResourceRelease_inconsistentVersionRegression(t *testing.T) {
-// 	// NOTE this is a regression test, see: https://github.com/hashicorp/terraform-provider-helm/issues/1150
-// 	name := randName("basic")
-// 	namespace := createRandomNamespace(t)
-// 	defer deleteNamespace(t, namespace)
+func TestAccResourceRelease_inconsistentVersionRegression(t *testing.T) {
+	// NOTE this is a regression test, see: https://github.com/hashicorp/terraform-provider-helm/issues/1150
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
 
-//		resource.Test(t, resource.TestCase{
-//			//PreCheck:                 func() { testAccPreCheck(t) },
-//			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-//			//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
-//			Steps: []resource.TestStep{
-//				{
-//					Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
-//					Check: resource.ComposeAggregateTestCheckFunc(
-//						resource.TestCheckResourceAttr("helm_release.test", "version", "1.2.3"),
-//					),
-//				},
-//				{
-//					Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
-//					PlanOnly: true,
-//				},
-//			},
-//		})
-//	}
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "version", "v1.2.3"),
+				),
+			},
+			{
+				Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_multiple_releases(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -1162,12 +1159,10 @@ func testAccCheckHelmReleaseDependencyUpdate(namespace string, name string, expe
 	// deleted from the manifest on update.
 
 	return func(s *terraform.State) error {
-		if testMeta == nil {
-			return fmt.Errorf("provider not properly initialized")
-		}
-		ctx := context.Background()
-		actionConfig, err := testMeta.GetHelmConfiguration(ctx, namespace)
-		if err != nil {
+		actionConfig := &action.Configuration{}
+		if err := actionConfig.Init(kube.GetConfig(os.Getenv("KUBE_CONFIG_PATH"), "", namespace), namespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {
+			log.Printf(fmt.Sprintf(format, v...))
+		}); err != nil {
 			return err
 		}
 

@@ -1348,12 +1348,20 @@ func getListValue(ctx context.Context, base map[string]interface{}, set set_list
 	return diags
 }
 
+func versionsEqual(a, b string) bool {
+	return strings.TrimPrefix(a, "v") == strings.TrimPrefix(b, "v")
+}
+
 func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *release.Release, meta *Meta) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Update state with attributes from the helm release
 	state.Name = types.StringValue(r.Name)
-	state.Version = types.StringValue(r.Chart.Metadata.Version)
+	version := r.Chart.Metadata.Version
+	if !versionsEqual(version, state.Version.ValueString()) {
+		state.Version = types.StringValue(version)
+	}
+
 	state.Namespace = types.StringValue(r.Namespace)
 	state.Status = types.StringValue(r.Info.Status.String())
 
@@ -1724,8 +1732,6 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				// as computed to avoid breaking existing configs
 
 				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
-					// FIXME add diagnostic here
-
 					resp.Diagnostics.AddError("cluster was unreachable at create time, marking manifest as computed", err.Error())
 					plan.Manifest = types.StringNull()
 					return
@@ -1843,11 +1849,15 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	}
 
 	if !config.Version.IsNull() && !config.Version.Equal(plan.Version) {
-		resp.Diagnostics.AddError(
-			"Planned version different from configured version",
-			fmt.Sprintf(`The version in the configuration is %q but the planned version is %q. 
-You should update the version in your configuration, or remove the version attribute from your configuration.`, config.Version.ValueString(), plan.Version.ValueString()))
-		return
+		if versionsEqual(config.Version.ValueString(), plan.Version.ValueString()) {
+			plan.Version = config.Version
+		} else {
+			resp.Diagnostics.AddError(
+				"Planned version is different from configured version",
+				fmt.Sprintf(`The version in the configuration is %q but the planned version is %q. 
+You should update the version in your configuration to %[2]q, or remove the version attribute from your configuration.`, config.Version.ValueString(), plan.Version.ValueString()))
+			return
+		}
 	}
 
 	resp.Plan.Set(ctx, &plan)
