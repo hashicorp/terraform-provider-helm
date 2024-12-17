@@ -216,6 +216,7 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 	if client == nil {
 		return nil, fmt.Errorf("failed to initialize kubernetes config")
 	}
+	tflog.Info(ctx, "Successfully initialized kubernetes config")
 	return &KubeConfig{ClientConfig: client, Burst: burstLimit}, nil
 }
 
