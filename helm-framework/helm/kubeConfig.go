@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
-	//clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	// clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // Struct holding k8s client config, burst limit for api requests, and mutex for sync
@@ -273,8 +273,6 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		return nil, fmt.Errorf("failed to initialize kubernetes config")
 	}
 	tflog.Info(ctx, "Successfully initialized kubernetes config")
-	fmt.Printf("ClientConfig: %+v\n", client)
-	fmt.Printf("BurstLimit: %d\n", burstLimit)
 	return &KubeConfig{ClientConfig: client, Burst: burstLimit}, nil
 }
 

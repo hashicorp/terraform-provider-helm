@@ -88,9 +88,9 @@ type HelmReleaseModel struct {
 	RepositoryUsername       types.String     `tfsdk:"repository_username"`
 	ResetValues              types.Bool       `tfsdk:"reset_values"`
 	ReuseValues              types.Bool       `tfsdk:"reuse_values"`
-	Set                      types.Set        `tfsdk:"set"`
+	Set                      types.List       `tfsdk:"set"`
 	SetList                  types.List       `tfsdk:"set_list"`
-	SetSensitive             types.Set        `tfsdk:"set_sensitive"`
+	SetSensitive             types.List       `tfsdk:"set_sensitive"`
 	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
 	Status                   types.String     `tfsdk:"status"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
@@ -506,7 +506,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Default:     booldefault.StaticBool(defaultAttributes["wait_for_jobs"].(bool)),
 				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
 			},
-			"set": schema.SetNestedAttribute{
+			"set": schema.ListNestedAttribute{
 				Description: "Custom values to be merged with the values",
 				Optional:    true,
 				NestedObject: schema.NestedAttributeObject{
@@ -543,7 +543,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 				},
 			},
-			"set_sensitive": schema.SetNestedAttribute{
+			"set_sensitive": schema.ListNestedAttribute{
 				Description: "Custom sensitive values to be merged with the values",
 				Optional:    true,
 				NestedObject: schema.NestedAttributeObject{
@@ -1977,14 +1977,6 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 	state.Description = types.StringValue(release.Info.Description)
 	state.Chart = types.StringValue(release.Chart.Metadata.Name)
 
-	// Set default attributes
-	for key, value := range defaultAttributes {
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(key), value)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-
 	// Set release-specific attributes using the helper function
 	diags := setReleaseAttributes(ctx, &state, release, meta)
 	resp.Diagnostics.Append(diags...)
@@ -1992,15 +1984,49 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 		return
 	}
 
+	// NOTE we can't read the config at import time, we have to set the values to unknown
+	state.Set = types.ListUnknown(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"name":  types.StringType,
+			"type":  types.StringType,
+			"value": types.StringType,
+		},
+	})
+	state.SetSensitive = types.ListUnknown(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"name":  types.StringType,
+			"type":  types.StringType,
+			"value": types.StringType,
+		},
+	})
+	state.SetList = types.ListUnknown(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"name": types.StringType,
+			"value": types.ListType{
+				ElemType: types.StringType,
+			},
+		},
+	})
+	state.Values = types.ListUnknown(types.StringType)
+
 	tflog.Debug(ctx, fmt.Sprintf("Setting final state: %+v", state))
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
+		fmt.Println("DOH")
 		tflog.Error(ctx, "Error setting final state", map[string]interface{}{
 			"state":       state,
 			"diagnostics": diags,
 		})
 		return
+	}
+
+	// Set default attributes
+	for key, value := range defaultAttributes {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(key), value)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 }
 
