@@ -775,7 +775,7 @@ func TestAccResourceRelease_LocalVersion(t *testing.T) {
 			},
 			{
 				Config:      config2,
-				ExpectError: regexp.MustCompile(`Planned version different from configured version`),
+				ExpectError: regexp.MustCompile(`Planned version is different from configured version`),
 			},
 		},
 	})
