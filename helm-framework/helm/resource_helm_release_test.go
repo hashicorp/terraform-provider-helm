@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/helmpath"
+	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"helm.sh/helm/v3/pkg/repo"
@@ -148,33 +149,29 @@ func TestAccResourceRelease_import(t *testing.T) {
 	})
 }
 
-// ok
-// Provider produced inconsistent result after apply
-// Currently digging into this
-// func TestAccResourceRelease_inconsistentVersionRegression(t *testing.T) {
-// 	// NOTE this is a regression test, see: https://github.com/hashicorp/terraform-provider-helm/issues/1150
-// 	name := randName("basic")
-// 	namespace := createRandomNamespace(t)
-// 	defer deleteNamespace(t, namespace)
+func TestAccResourceRelease_inconsistentVersionRegression(t *testing.T) {
+	// NOTE this is a regression test, see: https://github.com/hashicorp/terraform-provider-helm/issues/1150
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
 
-//		resource.Test(t, resource.TestCase{
-//			//PreCheck:                 func() { testAccPreCheck(t) },
-//			ProtoV6ProviderFactories: protoV6ProviderFactories(),
-//			//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
-//			Steps: []resource.TestStep{
-//				{
-//					Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
-//					Check: resource.ComposeAggregateTestCheckFunc(
-//						resource.TestCheckResourceAttr("helm_release.test", "version", "1.2.3"),
-//					),
-//				},
-//				{
-//					Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
-//					PlanOnly: true,
-//				},
-//			},
-//		})
-//	}
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "version", "v1.2.3"),
+				),
+			},
+			{
+				Config:   testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "v1.2.3"),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_multiple_releases(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -671,10 +668,8 @@ func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
-				Config: broken,
-				// Talk about what the exact error would be in this case
-				ExpectError: regexp.MustCompile(`Error running apply: exit status 1`),
-				//ExpectNonEmptyPlan: true,
+				Config:      broken,
+				ExpectError: regexp.MustCompile(`namespaces "does-not-exist" not found`),
 			},
 			{
 				Config: fixed,
@@ -732,7 +727,7 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.0.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				),
 			},
@@ -740,17 +735,15 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 	})
 }
 
-// Error: Provider produced inconsistent result after apply
-// Reason why is because we need to use the local chart version if the local chart exists rather than using the version that's stated in the conifg
-// So the error is using the version in the config, rather than using the version that's specified in the local chart
-// might be a local chart issue, so look into that as well
-// FAIL
 func TestAccResourceRelease_LocalVersion(t *testing.T) {
+	// NOTE this test confirms that the user is warned if their configured
+	// chart version is different from the version in the chart itself.
+	// Previously Terraform silently allowed this inconsistency, but with
+	// framework Terraform will produce a data inconsistency error.
+
 	name := randName("create-namespace")
 	namespace := randName("helm-created-namespace")
 	defer deleteNamespace(t, namespace)
-
-	// this test ensures that the version is not changed when using a local chart
 
 	config1 := fmt.Sprintf(`
 	resource "helm_release" "test" {
@@ -764,15 +757,13 @@ func TestAccResourceRelease_LocalVersion(t *testing.T) {
 	resource "helm_release" "test" {
 		name             = %q
 		namespace        = %q
-		version 		 = "1.0.0"
+		version 		     = "1.0.0"
 		chart            = "testdata/charts/test-chart"
 		create_namespace = true
 	}`, name, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: config1,
@@ -783,12 +774,8 @@ func TestAccResourceRelease_LocalVersion(t *testing.T) {
 				),
 			},
 			{
-				Config: config2,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
-					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
-				),
+				Config:      config2,
+				ExpectError: regexp.MustCompile(`Planned version is different from configured version`),
 			},
 		},
 	})
@@ -1172,12 +1159,10 @@ func testAccCheckHelmReleaseDependencyUpdate(namespace string, name string, expe
 	// deleted from the manifest on update.
 
 	return func(s *terraform.State) error {
-		if testMeta == nil {
-			return fmt.Errorf("provider not properly initialized")
-		}
-		ctx := context.Background()
-		actionConfig, err := testMeta.GetHelmConfiguration(ctx, namespace)
-		if err != nil {
+		actionConfig := &action.Configuration{}
+		if err := actionConfig.Init(kube.GetConfig(os.Getenv("KUBE_CONFIG_PATH"), "", namespace), namespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {
+			log.Printf(fmt.Sprintf(format, v...))
+		}); err != nil {
 			return err
 		}
 
@@ -1985,14 +1970,12 @@ func testAccHelmReleaseConfig_OCI_updated(resource, ns, name, repo, version stri
 
 func testAccHelmReleaseConfigManifestExperimentEnabled(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
-		provider helm {
-			experiments = [
-				{
-					name  = "manifest"
-					value = true
-				}
-			]
+		provider "helm" {
+			experiments = [{
+				manifest = true
+			}]
 		}
+
 		resource "helm_release" "%s" {
  			name        = %q
 			namespace   = %q

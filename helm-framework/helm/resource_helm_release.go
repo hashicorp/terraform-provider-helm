@@ -56,49 +56,49 @@ func NewHelmRelease() resource.Resource {
 }
 
 type HelmReleaseModel struct {
-	Atomic                   types.Bool   `tfsdk:"atomic"`
-	Chart                    types.String `tfsdk:"chart"`
-	CleanupOnFail            types.Bool   `tfsdk:"cleanup_on_fail"`
-	CreateNamespace          types.Bool   `tfsdk:"create_namespace"`
-	DependencyUpdate         types.Bool   `tfsdk:"dependency_update"`
-	Description              types.String `tfsdk:"description"`
-	Devel                    types.Bool   `tfsdk:"devel"`
-	DisableCrdHooks          types.Bool   `tfsdk:"disable_crd_hooks"`
-	DisableOpenapiValidation types.Bool   `tfsdk:"disable_openapi_validation"`
-	DisableWebhooks          types.Bool   `tfsdk:"disable_webhooks"`
-	ForceUpdate              types.Bool   `tfsdk:"force_update"`
-	ID                       types.String `tfsdk:"id"`
-	Keyring                  types.String `tfsdk:"keyring"`
-	Lint                     types.Bool   `tfsdk:"lint"`
-	Manifest                 types.String `tfsdk:"manifest"`
-	MaxHistory               types.Int64  `tfsdk:"max_history"`
-	Metadata                 types.Object `tfsdk:"metadata"`
-	Name                     types.String `tfsdk:"name"`
-	Namespace                types.String `tfsdk:"namespace"`
-	PassCredentials          types.Bool   `tfsdk:"pass_credentials"`
-	Postrender               types.Object `tfsdk:"postrender"`
-	RecreatePods             types.Bool   `tfsdk:"recreate_pods"`
-	Replace                  types.Bool   `tfsdk:"replace"`
-	RenderSubchartNotes      types.Bool   `tfsdk:"render_subchart_notes"`
-	Repository               types.String `tfsdk:"repository"`
-	RepositoryCaFile         types.String `tfsdk:"repository_ca_file"`
-	RepositoryCertFile       types.String `tfsdk:"repository_cert_file"`
-	RepositoryKeyFile        types.String `tfsdk:"repository_key_file"`
-	RepositoryPassword       types.String `tfsdk:"repository_password"`
-	RepositoryUsername       types.String `tfsdk:"repository_username"`
-	ResetValues              types.Bool   `tfsdk:"reset_values"`
-	ReuseValues              types.Bool   `tfsdk:"reuse_values"`
-	Set                      types.Set    `tfsdk:"set"`
-	SetList                  types.List   `tfsdk:"set_list"`
-	SetSensitive             types.Set    `tfsdk:"set_sensitive"`
-	SkipCrds                 types.Bool   `tfsdk:"skip_crds"`
-	Status                   types.String `tfsdk:"status"`
-	Timeout                  types.Int64  `tfsdk:"timeout"`
-	Values                   types.List   `tfsdk:"values"`
-	Verify                   types.Bool   `tfsdk:"verify"`
-	Version                  types.String `tfsdk:"version"`
-	Wait                     types.Bool   `tfsdk:"wait"`
-	WaitForJobs              types.Bool   `tfsdk:"wait_for_jobs"`
+	Atomic                   types.Bool       `tfsdk:"atomic"`
+	Chart                    types.String     `tfsdk:"chart"`
+	CleanupOnFail            types.Bool       `tfsdk:"cleanup_on_fail"`
+	CreateNamespace          types.Bool       `tfsdk:"create_namespace"`
+	DependencyUpdate         types.Bool       `tfsdk:"dependency_update"`
+	Description              types.String     `tfsdk:"description"`
+	Devel                    types.Bool       `tfsdk:"devel"`
+	DisableCrdHooks          types.Bool       `tfsdk:"disable_crd_hooks"`
+	DisableOpenapiValidation types.Bool       `tfsdk:"disable_openapi_validation"`
+	DisableWebhooks          types.Bool       `tfsdk:"disable_webhooks"`
+	ForceUpdate              types.Bool       `tfsdk:"force_update"`
+	ID                       types.String     `tfsdk:"id"`
+	Keyring                  types.String     `tfsdk:"keyring"`
+	Lint                     types.Bool       `tfsdk:"lint"`
+	Manifest                 types.String     `tfsdk:"manifest"`
+	MaxHistory               types.Int64      `tfsdk:"max_history"`
+	Metadata                 types.Object     `tfsdk:"metadata"`
+	Name                     types.String     `tfsdk:"name"`
+	Namespace                types.String     `tfsdk:"namespace"`
+	PassCredentials          types.Bool       `tfsdk:"pass_credentials"`
+	PostRender               *PostRenderModel `tfsdk:"postrender"`
+	RecreatePods             types.Bool       `tfsdk:"recreate_pods"`
+	Replace                  types.Bool       `tfsdk:"replace"`
+	RenderSubchartNotes      types.Bool       `tfsdk:"render_subchart_notes"`
+	Repository               types.String     `tfsdk:"repository"`
+	RepositoryCaFile         types.String     `tfsdk:"repository_ca_file"`
+	RepositoryCertFile       types.String     `tfsdk:"repository_cert_file"`
+	RepositoryKeyFile        types.String     `tfsdk:"repository_key_file"`
+	RepositoryPassword       types.String     `tfsdk:"repository_password"`
+	RepositoryUsername       types.String     `tfsdk:"repository_username"`
+	ResetValues              types.Bool       `tfsdk:"reset_values"`
+	ReuseValues              types.Bool       `tfsdk:"reuse_values"`
+	Set                      types.List       `tfsdk:"set"`
+	SetList                  types.List       `tfsdk:"set_list"`
+	SetSensitive             types.List       `tfsdk:"set_sensitive"`
+	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
+	Status                   types.String     `tfsdk:"status"`
+	Timeout                  types.Int64      `tfsdk:"timeout"`
+	Values                   types.List       `tfsdk:"values"`
+	Verify                   types.Bool       `tfsdk:"verify"`
+	Version                  types.String     `tfsdk:"version"`
+	Wait                     types.Bool       `tfsdk:"wait"`
+	WaitForJobs              types.Bool       `tfsdk:"wait_for_jobs"`
 }
 
 var defaultAttributes = map[string]interface{}{
@@ -147,7 +147,7 @@ type set_listResourceModel struct {
 	Value types.List   `tfsdk:"value"`
 }
 
-type postrenderModel struct {
+type PostRenderModel struct {
 	Args       types.List   `tfsdk:"args"`
 	BinaryPath types.String `tfsdk:"binary_path"`
 }
@@ -506,7 +506,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Default:     booldefault.StaticBool(defaultAttributes["wait_for_jobs"].(bool)),
 				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
 			},
-			"set": schema.SetNestedAttribute{
+			"set": schema.ListNestedAttribute{
 				Description: "Custom values to be merged with the values",
 				Optional:    true,
 				NestedObject: schema.NestedAttributeObject{
@@ -543,7 +543,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 				},
 			},
-			"set_sensitive": schema.SetNestedAttribute{
+			"set_sensitive": schema.ListNestedAttribute{
 				Description: "Custom sensitive values to be merged with the values",
 				Optional:    true,
 				NestedObject: schema.NestedAttributeObject{
@@ -721,18 +721,9 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.Description = state.Description.ValueString()
 	client.CreateNamespace = state.CreateNamespace.ValueBool()
 
-	if !state.Postrender.IsNull() {
-		tflog.Debug(ctx, "Postrender is not null")
-		var postrenderConfig postrenderModel
-		postrenderDiags := state.Postrender.As(ctx, &postrenderConfig, basetypes.ObjectAsOptions{})
-		resp.Diagnostics.Append(postrenderDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tflog.Debug(ctx, fmt.Sprintf("Postrender config: %+v", postrenderConfig))
-
-		binaryPath := postrenderConfig.BinaryPath.ValueString()
-		argsList := postrenderConfig.Args.Elements()
+	if state.PostRender != nil {
+		binaryPath := state.PostRender.BinaryPath.ValueString()
+		argsList := state.PostRender.Args.Elements()
 
 		var args []string
 		for _, arg := range argsList {
@@ -932,17 +923,9 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 	client.Description = plan.Description.ValueString()
 
-	if !plan.Postrender.IsNull() {
-		var postrenderConfig postrenderModel
-		postrenderDiags := plan.Postrender.As(ctx, &postrenderConfig, basetypes.ObjectAsOptions{})
-		resp.Diagnostics.Append(postrenderDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tflog.Debug(ctx, fmt.Sprintf("Initial postrender values update method: %+v", postrenderConfig))
-
-		binaryPath := postrenderConfig.BinaryPath.ValueString()
-		argsList := postrenderConfig.Args.Elements()
+	if plan.PostRender != nil {
+		binaryPath := plan.PostRender.BinaryPath.ValueString()
+		argsList := plan.PostRender.Args.Elements()
 
 		var args []string
 		for _, arg := range argsList {
@@ -1141,11 +1124,11 @@ func getVersion(model *HelmReleaseModel) string {
 }
 
 func isChartInstallable(ch *chart.Chart) error {
-	chartType := ch.Metadata.Type
-	if strings.EqualFold(chartType, "library") {
-		return errors.Errorf("library charts are not installable")
+	switch ch.Metadata.Type {
+	case "", "application":
+		return nil
 	}
-	return nil
+	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
 func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
@@ -1301,7 +1284,7 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 
 func logValues(ctx context.Context, values map[string]interface{}, state *HelmReleaseModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	//Cloning values map
+	// Cloning values map
 	c := maps.Clone(values)
 
 	cloakSetValues(c, state)
@@ -1365,12 +1348,20 @@ func getListValue(ctx context.Context, base map[string]interface{}, set set_list
 	return diags
 }
 
+func versionsEqual(a, b string) bool {
+	return strings.TrimPrefix(a, "v") == strings.TrimPrefix(b, "v")
+}
+
 func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *release.Release, meta *Meta) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Update state with attributes from the helm release
 	state.Name = types.StringValue(r.Name)
-	state.Version = types.StringValue(r.Chart.Metadata.Version)
+	version := r.Chart.Metadata.Version
+	if !versionsEqual(version, state.Version.ValueString()) {
+		state.Version = types.StringValue(version)
+	}
+
 	state.Namespace = types.StringValue(r.Namespace)
 	state.Status = types.StringValue(r.Info.Status.String())
 
@@ -1586,6 +1577,13 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	var config HelmReleaseModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	tflog.Debug(ctx, fmt.Sprintf("Plan state on ModifyPlan: %+v", plan))
 	tflog.Debug(ctx, fmt.Sprintf("Actual state on ModifyPlan: %+v", state))
 
@@ -1681,18 +1679,9 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			return
 		}
 
-		var postRenderer postrender.PostRenderer
-		if !plan.Postrender.IsNull() {
-			// Extract the list of postrender configurations
-			var postrenderConfig postrenderModel
-			postrenderDiags := plan.Postrender.As(ctx, &postrenderConfig, basetypes.ObjectAsOptions{})
-			resp.Diagnostics.Append(postrenderDiags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-
-			binaryPath := postrenderConfig.BinaryPath.ValueString()
-			argsList := postrenderConfig.Args.Elements()
+		if plan.PostRender != nil {
+			binaryPath := plan.PostRender.BinaryPath.ValueString()
+			argsList := plan.PostRender.Args.Elements()
 
 			var args []string
 			for _, arg := range argsList {
@@ -1726,7 +1715,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			install.Replace = plan.Replace.ValueBool()
 			install.Description = plan.Description.ValueString()
 			install.CreateNamespace = plan.CreateNamespace.ValueBool()
-			install.PostRenderer = postRenderer
+			install.PostRenderer = client.PostRenderer
 
 			values, diags := getValues(ctx, &plan)
 			resp.Diagnostics.Append(diags...)
@@ -1743,8 +1732,6 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				// as computed to avoid breaking existing configs
 
 				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
-					// FIXME add diagnostic here
-
 					resp.Diagnostics.AddError("cluster was unreachable at create time, marking manifest as computed", err.Error())
 					plan.Manifest = types.StringNull()
 					return
@@ -1806,7 +1793,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.MaxHistory = int(plan.MaxHistory.ValueInt64())
 		upgrade.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 		upgrade.Description = plan.Description.ValueString()
-		upgrade.PostRenderer = postRenderer
+		upgrade.PostRenderer = client.PostRenderer
 
 		values, diags := getValues(ctx, &plan)
 		resp.Diagnostics.Append(diags...)
@@ -1858,8 +1845,21 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	if len(chart.Metadata.Version) > 0 {
 		plan.Version = types.StringValue(chart.Metadata.Version)
 	} else {
-		state.Version = types.StringNull()
+		plan.Version = types.StringNull()
 	}
+
+	if !config.Version.IsNull() && !config.Version.Equal(plan.Version) {
+		if versionsEqual(config.Version.ValueString(), plan.Version.ValueString()) {
+			plan.Version = config.Version
+		} else {
+			resp.Diagnostics.AddError(
+				"Planned version is different from configured version",
+				fmt.Sprintf(`The version in the configuration is %q but the planned version is %q. 
+You should update the version in your configuration to %[2]q, or remove the version attribute from your configuration.`, config.Version.ValueString(), plan.Version.ValueString()))
+			return
+		}
+	}
+
 	resp.Plan.Set(ctx, &plan)
 }
 
@@ -1987,14 +1987,6 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 	state.Description = types.StringValue(release.Info.Description)
 	state.Chart = types.StringValue(release.Chart.Metadata.Name)
 
-	// Set default attributes
-	for key, value := range defaultAttributes {
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(key), value)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-
 	// Set release-specific attributes using the helper function
 	diags := setReleaseAttributes(ctx, &state, release, meta)
 	resp.Diagnostics.Append(diags...)
@@ -2002,15 +1994,49 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 		return
 	}
 
+	// NOTE we can't read the config at import time, we have to set the values to unknown
+	state.Set = types.ListUnknown(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"name":  types.StringType,
+			"type":  types.StringType,
+			"value": types.StringType,
+		},
+	})
+	state.SetSensitive = types.ListUnknown(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"name":  types.StringType,
+			"type":  types.StringType,
+			"value": types.StringType,
+		},
+	})
+	state.SetList = types.ListUnknown(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"name": types.StringType,
+			"value": types.ListType{
+				ElemType: types.StringType,
+			},
+		},
+	})
+	state.Values = types.ListUnknown(types.StringType)
+
 	tflog.Debug(ctx, fmt.Sprintf("Setting final state: %+v", state))
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
+		fmt.Println("DOH")
 		tflog.Error(ctx, "Error setting final state", map[string]interface{}{
 			"state":       state,
 			"diagnostics": diags,
 		})
 		return
+	}
+
+	// Set default attributes
+	for key, value := range defaultAttributes {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(key), value)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 }
 
