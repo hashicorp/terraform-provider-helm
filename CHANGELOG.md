@@ -1,3 +1,13 @@
+## 2.17.0 (Dec 19, 2024)
+
+ENHANCEMENT:
+
+* `resource/helm_release`: the dry-run option is now set to `server` to execute any chart lookups against the server during the plan stage. [[GH-1335](https://github.com/hashicorp/terraform-provider-helm/issues/1335)]
+
+BUG FIXES:
+
+* `resource/helm_release`: fix an issue where `postrender.args` is not parsed correctly. [[GH-1534](https://github.com/hashicorp/terraform-provider-helm/issues/1534)]
+
 ## 2.16.1 (Oct 15, 2024)
 
 BUG FIXES:
