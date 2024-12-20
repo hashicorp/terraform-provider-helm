@@ -34,7 +34,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `force_update` (Boolean) Force resource update through delete/recreate if needed. Defaults to `false`.
 - `keyring` (String) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`.
 - `lint` (Boolean) Run helm lint when planning. Defaults to `false`.
-- `max_history` (Number) Limit the maximum number of revisions saved per release. Use 0 for no limit. Defaults to 0 (no limit).
+- `max_history` (Number) Limit the maximum number of revisions saved per release. Use 0 for no limit. Defaults to 10.
 - `namespace` (String) Namespace to install the release into. Defaults to `default`.
 - `pass_credentials` (Boolean) Pass credentials to all domains. Defaults to `false`.
 - `postrender` (Block List, Max: 1) Postrender command configuration. (see [below for nested schema](#nestedblock--postrender))
