@@ -298,6 +298,14 @@ func execSchema() map[string]schema.Attribute {
 		},
 	}
 }
+func execSchemaAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"api_version": types.StringType,
+		"command":     types.StringType,
+		"args":        types.ListType{ElemType: types.StringType},
+		"env":         types.MapType{ElemType: types.StringType},
+	}
+}
 
 /////////////////////     					END OF SCHEMA CREATION           ///////////////////////////////
 
@@ -503,6 +511,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		"config_context_cluster":   types.StringType,
 		"token":                    types.StringType,
 		"proxy_url":                types.StringType,
+		"exec":                     types.ObjectType{AttrTypes: execSchemaAttrTypes()},
 	}, map[string]attr.Value{
 		"host":                     types.StringValue(kubeHost),
 		"username":                 types.StringValue(kubeUser),
@@ -519,6 +528,12 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		"config_context_cluster":   types.StringValue(kubeConfigContextCluster),
 		"token":                    types.StringValue(kubeToken),
 		"proxy_url":                types.StringValue(kubeProxy),
+		"exec": types.ObjectValueMust(execSchemaAttrTypes(), map[string]attr.Value{
+			"api_version": types.StringValue(kubernetesConfig.Exec.APIVersion.ValueString()),
+			"command":     types.StringValue(kubernetesConfig.Exec.Command.ValueString()),
+			"args":        types.ListValueMust(types.StringType, kubernetesConfig.Exec.Args.Elements()),
+			"env":         types.MapValueMust(types.StringType, kubernetesConfig.Exec.Env.Elements()),
+		}),
 	})
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

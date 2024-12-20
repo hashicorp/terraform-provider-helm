@@ -81,13 +81,31 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		return nil, fmt.Errorf("configuration error: missing required structural data")
 	}
 
-	// Get the Kubernetes configuration as an object
+	tflog.Debug(ctx, "Raw Kubernetes Data before conversion", map[string]interface{}{
+		"KubernetesData": m.Data.Kubernetes,
+	})
+
+	// Needing to get the Kubernetes configuration as an obj
 	var kubernetesConfig KubernetesConfigModel
 	diags := m.Data.Kubernetes.As(ctx, &kubernetesConfig, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
-		fmt.Println("Error extracting Kubernetes config", diags[0])
+		for _, d := range diags {
+			tflog.Error(ctx, "Kubernetes config conversion error", map[string]interface{}{
+				"summary": d.Summary(),
+				"detail":  d.Detail(),
+			})
+		}
+		// Log raw data from this > m.Data.Kubernetes for comparison purposes
+		tflog.Debug(ctx, "Raw Kubernetes Data", map[string]interface{}{
+			"data": m.Data.Kubernetes,
+		})
 		return nil, fmt.Errorf("configuration error: unable to extract Kubernetes config")
 	}
+
+	// Log the fully populated KubernetesConfigModel for debugging purposes
+	tflog.Debug(ctx, "Populated KubernetesConfigModel", map[string]interface{}{
+		"KubernetesConfigModel": kubernetesConfig,
+	})
 
 	// Check ConfigPath
 	tflog.Debug(ctx, "Debug - m.Data.Kubernetes", map[string]interface{}{"Kubernetes": m.Data.Kubernetes})
@@ -182,9 +200,10 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		args := execConfig.Args.Elements()
 		env := execConfig.Env.Elements()
 		exec := &clientcmdapi.ExecConfig{
-			APIVersion: execConfig.APIVersion.ValueString(),
-			Command:    execConfig.Command.ValueString(),
-			Args:       expandStringSlice(args),
+			APIVersion:      execConfig.APIVersion.ValueString(),
+			Command:         execConfig.Command.ValueString(),
+			Args:            expandStringSlice(args),
+			InteractiveMode: clientcmdapi.IfAvailableExecInteractiveMode,
 		}
 
 		for k, v := range env {
