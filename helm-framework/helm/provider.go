@@ -244,10 +244,11 @@ func kubernetesResourceSchema() map[string]schema.Attribute {
 			Description: "Path to the kube config file. Can be set with KUBE_CONFIG_PATH.",
 			Validators: []validator.String{
 				stringvalidator.ConflictsWith(
-					path.Root("kubernetes").AtListIndex(0).AtName("config_paths").Expression(),
+					path.Root("kubernetes").AtName("config_paths").Expression(),
 				),
 			},
 		},
+
 		"config_context": schema.StringAttribute{
 			Optional:    true,
 			Description: "Context to choose from the config file. Can be sourced from KUBE_CTX.",
