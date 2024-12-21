@@ -95,24 +95,12 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 				"detail":  d.Detail(),
 			})
 		}
-		// Log raw data from this > m.Data.Kubernetes for comparison purposes
-		tflog.Debug(ctx, "Raw Kubernetes Data", map[string]interface{}{
-			"data": m.Data.Kubernetes,
-		})
 		return nil, fmt.Errorf("configuration error: unable to extract Kubernetes config")
 	}
-
-	// Log the fully populated KubernetesConfigModel for debugging purposes
-	tflog.Debug(ctx, "Populated KubernetesConfigModel", map[string]interface{}{
-		"KubernetesConfigModel": kubernetesConfig,
-	})
-
 	// Check ConfigPath
-	tflog.Debug(ctx, "Debug - m.Data.Kubernetes", map[string]interface{}{"Kubernetes": m.Data.Kubernetes})
 	if !kubernetesConfig.ConfigPath.IsNull() {
 		if v := kubernetesConfig.ConfigPath.ValueString(); v != "" {
 			configPaths = []string{v}
-			tflog.Debug(ctx, "Debug - ConfigPath", map[string]interface{}{"ConfigPath": kubernetesConfig.ConfigPath.ValueString()})
 		}
 	}
 	if !kubernetesConfig.ConfigPaths.IsNull() {
@@ -195,25 +183,32 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		overrides.ClusterDefaults.ProxyURL = kubernetesConfig.ProxyURL.ValueString()
 	}
 
-	execConfig := kubernetesConfig.Exec
-	if !execConfig.APIVersion.IsNull() || !execConfig.Command.IsNull() || !execConfig.Args.IsNull() || !execConfig.Env.IsNull() {
-		args := execConfig.Args.Elements()
-		env := execConfig.Env.Elements()
-		exec := &clientcmdapi.ExecConfig{
-			APIVersion:      execConfig.APIVersion.ValueString(),
-			Command:         execConfig.Command.ValueString(),
-			Args:            expandStringSlice(args),
-			InteractiveMode: clientcmdapi.IfAvailableExecInteractiveMode,
-		}
+	if kubernetesConfig.Exec != nil {
+		execConfig := kubernetesConfig.Exec
+		if !execConfig.APIVersion.IsNull() && !execConfig.Command.IsNull() {
+			args := []string{}
+			if !execConfig.Args.IsNull() && !execConfig.Args.IsUnknown() {
+				args = expandStringSlice(execConfig.Args.Elements())
+			}
 
-		for k, v := range env {
-			exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: k, Value: v.(types.String).ValueString()})
+			env := []clientcmdapi.ExecEnvVar{}
+			if !execConfig.Env.IsNull() && !execConfig.Env.IsUnknown() {
+				for k, v := range execConfig.Env.Elements() {
+					env = append(env, clientcmdapi.ExecEnvVar{
+						Name:  k,
+						Value: v.(types.String).ValueString(),
+					})
+				}
+			}
+
+			overrides.AuthInfo.Exec = &clientcmdapi.ExecConfig{
+				APIVersion:      execConfig.APIVersion.ValueString(),
+				Command:         execConfig.Command.ValueString(),
+				Args:            args,
+				Env:             env,
+				InteractiveMode: clientcmdapi.IfAvailableExecInteractiveMode,
+			}
 		}
-		overrides.AuthInfo.Exec = exec
-	}
-	overrides.Context.Namespace = "default"
-	if namespace != "" {
-		overrides.Context.Namespace = namespace
 	}
 
 	burstLimit := int(m.Data.BurstLimit.ValueInt64())

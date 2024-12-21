@@ -75,22 +75,22 @@ type RegistryConfigModel struct {
 
 // KubernetesConfigModel configures a Kubernetes client
 type KubernetesConfigModel struct {
-	Host                  types.String    `tfsdk:"host"`
-	Username              types.String    `tfsdk:"username"`
-	Password              types.String    `tfsdk:"password"`
-	Insecure              types.Bool      `tfsdk:"insecure"`
-	TLSServerName         types.String    `tfsdk:"tls_server_name"`
-	ClientCertificate     types.String    `tfsdk:"client_certificate"`
-	ClientKey             types.String    `tfsdk:"client_key"`
-	ClusterCACertificate  types.String    `tfsdk:"cluster_ca_certificate"`
-	ConfigPaths           types.List      `tfsdk:"config_paths"`
-	ConfigPath            types.String    `tfsdk:"config_path"`
-	ConfigContext         types.String    `tfsdk:"config_context"`
-	ConfigContextAuthInfo types.String    `tfsdk:"config_context_auth_info"`
-	ConfigContextCluster  types.String    `tfsdk:"config_context_cluster"`
-	Token                 types.String    `tfsdk:"token"`
-	ProxyURL              types.String    `tfsdk:"proxy_url"`
-	Exec                  ExecConfigModel `tfsdk:"exec"`
+	Host                  types.String     `tfsdk:"host"`
+	Username              types.String     `tfsdk:"username"`
+	Password              types.String     `tfsdk:"password"`
+	Insecure              types.Bool       `tfsdk:"insecure"`
+	TLSServerName         types.String     `tfsdk:"tls_server_name"`
+	ClientCertificate     types.String     `tfsdk:"client_certificate"`
+	ClientKey             types.String     `tfsdk:"client_key"`
+	ClusterCACertificate  types.String     `tfsdk:"cluster_ca_certificate"`
+	ConfigPaths           types.List       `tfsdk:"config_paths"`
+	ConfigPath            types.String     `tfsdk:"config_path"`
+	ConfigContext         types.String     `tfsdk:"config_context"`
+	ConfigContextAuthInfo types.String     `tfsdk:"config_context_auth_info"`
+	ConfigContextCluster  types.String     `tfsdk:"config_context_cluster"`
+	Token                 types.String     `tfsdk:"token"`
+	ProxyURL              types.String     `tfsdk:"proxy_url"`
+	Exec                  *ExecConfigModel `tfsdk:"exec"`
 }
 
 // ExecConfigModel configures an external command to configure the Kubernetes client
@@ -494,7 +494,20 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		manifestExperiment = experimentsConfig.Manifest.ValueBool()
 	}
 
-	// Create a list of KubernetesConfigModel
+	var execAttrValue attr.Value = types.ObjectNull(execSchemaAttrTypes())
+
+	if kubernetesConfig.Exec != nil {
+		// Check if `api_version` and `command` are set (since they're required fields)
+		if !kubernetesConfig.Exec.APIVersion.IsNull() && !kubernetesConfig.Exec.Command.IsNull() {
+			execAttrValue = types.ObjectValueMust(execSchemaAttrTypes(), map[string]attr.Value{
+				"api_version": types.StringValue(kubernetesConfig.Exec.APIVersion.ValueString()),
+				"command":     types.StringValue(kubernetesConfig.Exec.Command.ValueString()),
+				"args":        types.ListValueMust(types.StringType, kubernetesConfig.Exec.Args.Elements()),
+				"env":         types.MapValueMust(types.StringType, kubernetesConfig.Exec.Env.Elements()),
+			})
+		}
+	}
+
 	kubernetesConfigObjectValue, diags := types.ObjectValue(map[string]attr.Type{
 		"host":                     types.StringType,
 		"username":                 types.StringType,
@@ -528,12 +541,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		"config_context_cluster":   types.StringValue(kubeConfigContextCluster),
 		"token":                    types.StringValue(kubeToken),
 		"proxy_url":                types.StringValue(kubeProxy),
-		"exec": types.ObjectValueMust(execSchemaAttrTypes(), map[string]attr.Value{
-			"api_version": types.StringValue(kubernetesConfig.Exec.APIVersion.ValueString()),
-			"command":     types.StringValue(kubernetesConfig.Exec.Command.ValueString()),
-			"args":        types.ListValueMust(types.StringType, kubernetesConfig.Exec.Args.Elements()),
-			"env":         types.MapValueMust(types.StringType, kubernetesConfig.Exec.Env.Elements()),
-		}),
+		"exec":                     execAttrValue,
 	})
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
