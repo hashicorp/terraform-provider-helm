@@ -705,6 +705,33 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 		},
 	})
 }
+func TestAccResourceRelease_suppressEmptyDescription(t *testing.T) {
+	name := randName("suppress-empty")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			// Step 1: Setting a non-empty description, in the config
+			{
+				Config: testAccHelmReleaseConfigSuppressEmptyDescription(testResourceName, namespace, name, "1.2.3", "Test"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
+				),
+			},
+			// Attempt to update the description to an empty string and verifying the suppression logic
+			{
+				Config: testAccHelmReleaseConfigSuppressEmptyDescription(testResourceName, namespace, name, "1.2.3", ""),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_createNamespace(t *testing.T) {
 	name := randName("create-namespace")
 	namespace := randName("helm-created-namespace")
@@ -841,6 +868,18 @@ func testAccHelmReleaseConfigEmptyVersion(resource, ns, name string) string {
 			
 		}
 	`, resource, name, ns, testRepositoryURL)
+}
+func testAccHelmReleaseConfigSuppressEmptyDescription(resource, ns, name, version, description string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = %q
+			repository  = %q
+  			chart       = "test-chart"
+			version     = %q
+		}
+	`, resource, name, ns, description, testRepositoryURL, version)
 }
 
 func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, values []string) string {
