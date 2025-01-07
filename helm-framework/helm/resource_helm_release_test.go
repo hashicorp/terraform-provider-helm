@@ -478,7 +478,7 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:             malformed,
-				ExpectError:        regexp.MustCompile("invalid resource name"),
+				ExpectError:        regexp.MustCompile(`invalid\s+resource\s+name`),
 				ExpectNonEmptyPlan: true,
 			},
 			{
