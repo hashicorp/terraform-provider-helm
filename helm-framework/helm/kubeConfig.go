@@ -9,8 +9,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
-	//"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/mitchellh/go-homedir"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
-	//clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // Struct holding k8s client config, burst limit for api requests, and mutex for sync
@@ -81,24 +81,26 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		return nil, fmt.Errorf("configuration error: missing required structural data")
 	}
 
-	// Extract the first element from the Kubernetes list
-	var kubernetesConfig KubernetesConfigModel
-	var kubernetesConfigs []KubernetesConfigModel
-	// TODO look into this next
-	diags := m.Data.Kubernetes.ElementsAs(ctx, &kubernetesConfigs, true)
-	if diags.HasError() {
-		return nil, fmt.Errorf("configuration error: unable to extract Kubernetes config %#v", diags[0])
-	}
-	if len(kubernetesConfigs) > 0 {
-		kubernetesConfig = kubernetesConfigs[0]
-	}
+	tflog.Debug(ctx, "Raw Kubernetes Data before conversion", map[string]interface{}{
+		"KubernetesData": m.Data.Kubernetes,
+	})
 
+	// Needing to get the Kubernetes configuration as an obj
+	var kubernetesConfig KubernetesConfigModel
+	diags := m.Data.Kubernetes.As(ctx, &kubernetesConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		for _, d := range diags {
+			tflog.Error(ctx, "Kubernetes config conversion error", map[string]interface{}{
+				"summary": d.Summary(),
+				"detail":  d.Detail(),
+			})
+		}
+		return nil, fmt.Errorf("configuration error: unable to extract Kubernetes config")
+	}
 	// Check ConfigPath
-	tflog.Debug(ctx, "Debug - m.Data.Kubernetes", map[string]interface{}{"Kubernetes": m.Data.Kubernetes})
 	if !kubernetesConfig.ConfigPath.IsNull() {
 		if v := kubernetesConfig.ConfigPath.ValueString(); v != "" {
 			configPaths = []string{v}
-			tflog.Debug(ctx, "Debug - ConfigPath", map[string]interface{}{"ConfigPath": kubernetesConfig.ConfigPath.ValueString()})
 		}
 	}
 	if !kubernetesConfig.ConfigPaths.IsNull() {
@@ -109,10 +111,8 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		configPaths = filepath.SplitList(v)
 	}
 	tflog.Debug(ctx, "Initial configPaths", map[string]interface{}{"configPaths": configPaths})
+
 	if len(configPaths) > 0 {
-		tflog.Debug(ctx, "Processing config paths", map[string]interface{}{
-			"configPaths": configPaths,
-		})
 		expandedPaths := []string{}
 		for _, p := range configPaths {
 			path, err := homedir.Expand(p)
@@ -123,9 +123,6 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 				})
 				return nil, err
 			}
-			tflog.Debug(ctx, "Using kubeconfig", map[string]interface{}{
-				"path": path,
-			})
 			expandedPaths = append(expandedPaths, path)
 		}
 		if len(expandedPaths) == 1 {
@@ -133,51 +130,31 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		} else {
 			loader.Precedence = expandedPaths
 		}
-		tflog.Debug(ctx, "Debug - loader struct2", map[string]interface{}{
-			"loader": loader,
-		})
 
 		// Check ConfigContext
 		if !kubernetesConfig.ConfigContext.IsNull() {
 			overrides.CurrentContext = kubernetesConfig.ConfigContext.ValueString()
-			tflog.Debug(ctx, "Setting config context", map[string]interface{}{
-				"configContext": overrides.CurrentContext,
-			})
 		}
 		if !kubernetesConfig.ConfigContextAuthInfo.IsNull() {
 			overrides.Context.AuthInfo = kubernetesConfig.ConfigContextAuthInfo.ValueString()
-			tflog.Debug(ctx, "Setting config context auth info", map[string]interface{}{
-				"configContextAuthInfo": overrides.Context.AuthInfo,
-			})
 		}
 		if !kubernetesConfig.ConfigContextCluster.IsNull() {
 			overrides.Context.Cluster = kubernetesConfig.ConfigContextCluster.ValueString()
-			tflog.Debug(ctx, "Setting config context cluster", map[string]interface{}{
-				"configContextCluster": overrides.Context.Cluster,
-			})
 		}
 	}
 
 	// Check and assign remaining fields
 	if !kubernetesConfig.Insecure.IsNull() {
 		overrides.ClusterInfo.InsecureSkipTLSVerify = kubernetesConfig.Insecure.ValueBool()
-		tflog.Debug(ctx, "Setting insecure skip TLS verify", map[string]interface{}{
-			"insecureSkipTLSVerify": overrides.ClusterInfo.InsecureSkipTLSVerify,
-		})
 	}
 	if !kubernetesConfig.TLSServerName.IsNull() {
 		overrides.ClusterInfo.TLSServerName = kubernetesConfig.TLSServerName.ValueString()
-		tflog.Debug(ctx, "Setting TLS server name", map[string]interface{}{
-			"tlsServerName": overrides.ClusterInfo.TLSServerName,
-		})
 	}
 	if !kubernetesConfig.ClusterCACertificate.IsNull() {
 		overrides.ClusterInfo.CertificateAuthorityData = []byte(kubernetesConfig.ClusterCACertificate.ValueString())
-		tflog.Debug(ctx, "Setting cluster CA certificate")
 	}
 	if !kubernetesConfig.ClientCertificate.IsNull() {
 		overrides.AuthInfo.ClientCertificateData = []byte(kubernetesConfig.ClientCertificate.ValueString())
-		tflog.Debug(ctx, "Setting client certificate")
 	}
 	if !kubernetesConfig.Host.IsNull() && kubernetesConfig.Host.ValueString() != "" {
 		hasCA := len(overrides.ClusterInfo.CertificateAuthorityData) != 0
@@ -185,96 +162,60 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		defaultTLS := hasCA || hasCert || overrides.ClusterInfo.InsecureSkipTLSVerify
 		host, _, err := rest.DefaultServerURL(kubernetesConfig.Host.ValueString(), "", schema.GroupVersion{}, defaultTLS)
 		if err != nil {
-			tflog.Error(ctx, "Error setting host", map[string]interface{}{
-				"host":  kubernetesConfig.Host.ValueString(),
-				"error": err,
-			})
 			return nil, err
 		}
 		overrides.ClusterInfo.Server = host.String()
-		tflog.Debug(ctx, "Setting host", map[string]interface{}{
-			"host": overrides.ClusterInfo.Server,
-		})
 	}
 
 	if !kubernetesConfig.Username.IsNull() {
 		overrides.AuthInfo.Username = kubernetesConfig.Username.ValueString()
-		tflog.Debug(ctx, "Setting username", map[string]interface{}{
-			"username": overrides.AuthInfo.Username,
-		})
 	}
 	if !kubernetesConfig.Password.IsNull() {
 		overrides.AuthInfo.Password = kubernetesConfig.Password.ValueString()
-		tflog.Debug(ctx, "Setting password")
 	}
 	if !kubernetesConfig.ClientKey.IsNull() {
 		overrides.AuthInfo.ClientKeyData = []byte(kubernetesConfig.ClientKey.ValueString())
-		tflog.Debug(ctx, "Setting client key")
 	}
 	if !kubernetesConfig.Token.IsNull() {
 		overrides.AuthInfo.Token = kubernetesConfig.Token.ValueString()
-		tflog.Debug(ctx, "Setting token", map[string]interface{}{
-			"token": overrides.AuthInfo.Token,
-		})
 	}
 	if !kubernetesConfig.ProxyURL.IsNull() {
 		overrides.ClusterDefaults.ProxyURL = kubernetesConfig.ProxyURL.ValueString()
-		tflog.Debug(ctx, "Setting proxy URL", map[string]interface{}{
-			"proxyURL": overrides.ClusterDefaults.ProxyURL,
-		})
 	}
 
-	// Extract the first element from the Exec list
-	// var execConfig *ExecConfigModel
-	// if !kubernetesConfig.Exec.IsUnknown() {
-	// 	var execConfigs []ExecConfigModel
-	// 	diags := kubernetesConfig.Exec.ElementsAs(ctx, &execConfigs, false)
-	// 	if diags.HasError() {
-	// 		fmt.Println("Error extracting Exec config")
-	// 		return nil, fmt.Errorf("configuration error: unable to extract Exec config")
-	// 	}
-	// 	if len(execConfigs) > 0 {
-	// 		execConfig = &execConfigs[0]
-	// 	}
-	// }
+	if kubernetesConfig.Exec != nil {
+		execConfig := kubernetesConfig.Exec
+		if !execConfig.APIVersion.IsNull() && !execConfig.Command.IsNull() {
+			args := []string{}
+			if !execConfig.Args.IsNull() && !execConfig.Args.IsUnknown() {
+				args = expandStringSlice(execConfig.Args.Elements())
+			}
 
-	// if execConfig != nil {
-	// 	args := execConfig.Args.Elements()
-	// 	env := execConfig.Env.Elements()
+			env := []clientcmdapi.ExecEnvVar{}
+			if !execConfig.Env.IsNull() && !execConfig.Env.IsUnknown() {
+				for k, v := range execConfig.Env.Elements() {
+					env = append(env, clientcmdapi.ExecEnvVar{
+						Name:  k,
+						Value: v.(types.String).ValueString(),
+					})
+				}
+			}
 
-	// 	exec := &clientcmdapi.ExecConfig{
-	// 		APIVersion: execConfig.ApiVersion.ValueString(),
-	// 		Command:    execConfig.Command.ValueString(),
-	// 		Args:       expandStringSlice(args),
-	// 	}
-	// 	for k, v := range env {
-	// 		exec.Env = append(exec.Env, clientcmdapi.ExecEnvVar{Name: k, Value: v.(basetypes.StringValue).ValueString()})
-	// 	}
-	// 	overrides.AuthInfo.Exec = exec
-	// 	fmt.Println("Setting exec configuration:", exec)
-	// 	tflog.Debug(ctx, "Setting exec configuration", map[string]interface{}{
-	// 		"execConfig": exec,
-	// 	})
-	// }
-
-	overrides.Context.Namespace = "default"
-	if namespace != "" {
-		overrides.Context.Namespace = namespace
-		tflog.Debug(ctx, "Setting namespace", map[string]interface{}{
-			"namespace": overrides.Context.Namespace,
-		})
+			overrides.AuthInfo.Exec = &clientcmdapi.ExecConfig{
+				APIVersion:      execConfig.APIVersion.ValueString(),
+				Command:         execConfig.Command.ValueString(),
+				Args:            args,
+				Env:             env,
+				InteractiveMode: clientcmdapi.IfAvailableExecInteractiveMode,
+			}
+		}
 	}
 
-	// Creating the k8s client config, using the loaded and overrides.
 	burstLimit := int(m.Data.BurstLimit.ValueInt64())
 	client := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
 	if client == nil {
-		tflog.Error(ctx, "Failed to initialize kubernetes config")
 		return nil, fmt.Errorf("failed to initialize kubernetes config")
 	}
-	tflog.Info(ctx, "Successfully initialized kubernetes config")
-	fmt.Printf("ClientConfig: %+v\n", client)
-	fmt.Printf("BurstLimit: %d\n", burstLimit)
 	return &KubeConfig{ClientConfig: client, Burst: burstLimit}, nil
 }
 
