@@ -1994,22 +1994,21 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 		return
 	}
 
-	// NOTE we can't read the config at import time, we have to set the values to unknown
-	state.Set = types.ListUnknown(types.ObjectType{
+	state.Set = types.ListNull(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"name":  types.StringType,
 			"type":  types.StringType,
 			"value": types.StringType,
 		},
 	})
-	state.SetSensitive = types.ListUnknown(types.ObjectType{
+	state.SetSensitive = types.ListNull(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"name":  types.StringType,
 			"type":  types.StringType,
 			"value": types.StringType,
 		},
 	})
-	state.SetList = types.ListUnknown(types.ObjectType{
+	state.SetList = types.ListNull(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"name": types.StringType,
 			"value": types.ListType{
@@ -2017,7 +2016,7 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 			},
 		},
 	})
-	state.Values = types.ListUnknown(types.StringType)
+	state.Values = types.ListNull(types.StringType)
 
 	tflog.Debug(ctx, fmt.Sprintf("Setting final state: %+v", state))
 	diags = resp.State.Set(ctx, &state)
