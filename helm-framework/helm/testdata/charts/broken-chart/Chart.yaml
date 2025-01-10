@@ -1,6 +1,0 @@
-apiVersion: v2
-name: broken-chart
-description: A broken chart for testing the Helm provider
-type: application
-version: 1.2.3
-appVersion: 1.2.3

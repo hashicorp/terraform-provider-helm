@@ -1,528 +1,719 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package helm
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/go-cty/cty"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
-	"helm.sh/helm/v3/pkg/helmpath"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/storage/driver"
-
-	// Import to initialize client auth plugins.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-// Meta is the meta information structure for the provider
+var _ provider.Provider = &HelmProvider{}
+
+func New() func() provider.Provider {
+	return func() provider.Provider {
+		return &HelmProvider{}
+	}
+}
+
+// Meta contains the client configuration for the provider
 type Meta struct {
-	data           *schema.ResourceData
+	providerData   *HelmProvider
+	Data           *HelmProviderModel
 	Settings       *cli.EnvSettings
 	RegistryClient *registry.Client
 	HelmDriver     string
-
-	// Used to lock some operations
-	sync.Mutex
-
 	// Experimental feature toggles
-	experiments map[string]bool
+	Experiments map[string]bool
+	Mutex       sync.Mutex
 }
 
-// Provider returns the provider schema to Terraform.
-func Provider() *schema.Provider {
-	p := &schema.Provider{
-		Schema: map[string]*schema.Schema{
-			"debug": {
-				Type:        schema.TypeBool,
-				Optional:    true,
+// HelmProviderModel contains the configuration for the provider
+type HelmProviderModel struct {
+	Debug                types.Bool   `tfsdk:"debug"`
+	PluginsPath          types.String `tfsdk:"plugins_path"`
+	RegistryConfigPath   types.String `tfsdk:"registry_config_path"`
+	RepositoryConfigPath types.String `tfsdk:"repository_config_path"`
+	RepositoryCache      types.String `tfsdk:"repository_cache"`
+	HelmDriver           types.String `tfsdk:"helm_driver"`
+	BurstLimit           types.Int64  `tfsdk:"burst_limit"`
+	Kubernetes           types.Object `tfsdk:"kubernetes"`
+	Registries           types.List   `tfsdk:"registries"`
+	Experiments          types.List   `tfsdk:"experiments"`
+}
+
+// ExperimentsConfigModel configures the experiments that are enabled or disabled
+type ExperimentsConfigModel struct {
+	Manifest types.Bool `tfsdk:"manifest"`
+}
+
+// RegistryConfigModel configures an OCI registry
+type RegistryConfigModel struct {
+	URL      types.String `tfsdk:"url"`
+	Username types.String `tfsdk:"username"`
+	Password types.String `tfsdk:"password"`
+}
+
+// KubernetesConfigModel configures a Kubernetes client
+type KubernetesConfigModel struct {
+	Host                  types.String     `tfsdk:"host"`
+	Username              types.String     `tfsdk:"username"`
+	Password              types.String     `tfsdk:"password"`
+	Insecure              types.Bool       `tfsdk:"insecure"`
+	TLSServerName         types.String     `tfsdk:"tls_server_name"`
+	ClientCertificate     types.String     `tfsdk:"client_certificate"`
+	ClientKey             types.String     `tfsdk:"client_key"`
+	ClusterCACertificate  types.String     `tfsdk:"cluster_ca_certificate"`
+	ConfigPaths           types.List       `tfsdk:"config_paths"`
+	ConfigPath            types.String     `tfsdk:"config_path"`
+	ConfigContext         types.String     `tfsdk:"config_context"`
+	ConfigContextAuthInfo types.String     `tfsdk:"config_context_auth_info"`
+	ConfigContextCluster  types.String     `tfsdk:"config_context_cluster"`
+	Token                 types.String     `tfsdk:"token"`
+	ProxyURL              types.String     `tfsdk:"proxy_url"`
+	Exec                  *ExecConfigModel `tfsdk:"exec"`
+}
+
+// ExecConfigModel configures an external command to configure the Kubernetes client
+type ExecConfigModel struct {
+	APIVersion types.String `tfsdk:"api_version"`
+	Command    types.String `tfsdk:"command"`
+	Env        types.Map    `tfsdk:"env"`
+	Args       types.List   `tfsdk:"args"`
+}
+
+// HelmProvider is the top level provider struct
+type HelmProvider struct {
+	meta *Meta
+}
+
+func (p *HelmProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "helm"
+}
+
+// ///////////////////////            	START OF SCHEMA CREATION               ///////////////////////////////
+// Defines attributes that are avaiable in the provider
+func (p *HelmProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Description: "Schema to define attributes that are available in the provider",
+		Attributes: map[string]schema.Attribute{
+			"debug": schema.BoolAttribute{
 				Description: "Debug indicates whether or not Helm is running in Debug mode.",
-				DefaultFunc: schema.EnvDefaultFunc("HELM_DEBUG", false),
-			},
-			"plugins_path": {
-				Type:        schema.TypeString,
 				Optional:    true,
+			},
+			"plugins_path": schema.StringAttribute{
 				Description: "The path to the helm plugins directory",
-				DefaultFunc: schema.EnvDefaultFunc("HELM_PLUGINS", helmpath.DataPath("plugins")),
-			},
-			"registry_config_path": {
-				Type:        schema.TypeString,
 				Optional:    true,
+			},
+			"registry_config_path": schema.StringAttribute{
 				Description: "The path to the registry config file",
-				DefaultFunc: schema.EnvDefaultFunc("HELM_REGISTRY_CONFIG", helmpath.ConfigPath("registry.json")),
-			},
-			"repository_config_path": {
-				Type:        schema.TypeString,
 				Optional:    true,
+			},
+			"repository_config_path": schema.StringAttribute{
 				Description: "The path to the file containing repository names and URLs",
-				DefaultFunc: schema.EnvDefaultFunc("HELM_REPOSITORY_CONFIG", helmpath.ConfigPath("repositories.yaml")),
-			},
-			"repository_cache": {
-				Type:        schema.TypeString,
 				Optional:    true,
+			},
+			"repository_cache": schema.StringAttribute{
 				Description: "The path to the file containing cached repository indexes",
-				DefaultFunc: schema.EnvDefaultFunc("HELM_REPOSITORY_CACHE", helmpath.CachePath("repository")),
-			},
-			"helm_driver": {
-				Type:        schema.TypeString,
 				Optional:    true,
+			},
+			"helm_driver": schema.StringAttribute{
 				Description: "The backend storage driver. Values are: configmap, secret, memory, sql",
-				DefaultFunc: schema.EnvDefaultFunc("HELM_DRIVER", "secret"),
-				ValidateDiagFunc: func(val interface{}, key cty.Path) (diags diag.Diagnostics) {
-					drivers := []string{
-						strings.ToLower(driver.MemoryDriverName),
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf(strings.ToLower(driver.MemoryDriverName),
 						strings.ToLower(driver.ConfigMapsDriverName),
 						strings.ToLower(driver.SecretsDriverName),
-						strings.ToLower(driver.SQLDriverName),
-					}
-
-					v := strings.ToLower(val.(string))
-
-					for _, d := range drivers {
-						if d == v {
-							return
-						}
-					}
-					return diag.Diagnostics{
-						{
-							Severity: diag.Error,
-							Summary:  fmt.Sprintf("Invalid storage driver: %v used for helm_driver", v),
-							Detail:   fmt.Sprintf("Helm backend storage driver must be set to one of the following values: %v", strings.Join(drivers, ", ")),
-						},
-					}
+						strings.ToLower(driver.SQLDriverName)),
 				},
 			},
-			"burst_limit": {
-				Type:        schema.TypeInt,
+
+			"burst_limit": schema.Int64Attribute{
 				Optional:    true,
-				Default:     100,
 				Description: "Helm burst limit. Increase this if you have a cluster with many CRDs",
 			},
-			"kubernetes": {
-				Type:        schema.TypeList,
-				MaxItems:    1,
+			"kubernetes": schema.SingleNestedAttribute{
 				Optional:    true,
-				Description: "Kubernetes configuration.",
-				Elem:        kubernetesResource(),
+				Description: "Kubernetes Configuration",
+				Attributes:  kubernetesResourceSchema(),
 			},
-			"registry": {
-				Type:        schema.TypeList,
+			"registries": schema.ListNestedAttribute{
 				Optional:    true,
 				Description: "RegistryClient configuration.",
-				Elem:        registryResource(),
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: registriesResourceSchema(),
+				},
 			},
-			"experiments": {
-				Type:        schema.TypeList,
-				MaxItems:    1,
+			"experiments": schema.ListNestedAttribute{
 				Optional:    true,
 				Description: "Enable and disable experimental features.",
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"manifest": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							DefaultFunc: func() (interface{}, error) {
-								if v := os.Getenv("TF_X_HELM_MANIFEST"); v != "" {
-									vv, err := strconv.ParseBool(v)
-									if err != nil {
-										return false, err
-									}
-									return vv, nil
-								}
-								return false, nil
-							},
-							Description: "Enable full diff by storing the rendered manifest in the state. This has similar limitations as when using helm install --dry-run. See https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#install-a-crd-declaration-before-using-the-resource",
-						},
-					},
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: experimentsSchema(),
 				},
 			},
 		},
-		ResourcesMap: map[string]*schema.Resource{
-			"helm_release": resourceRelease(),
-		},
-		DataSourcesMap: map[string]*schema.Resource{
-			"helm_template": dataTemplate(),
+	}
+}
+
+func experimentsSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"manifest": schema.BoolAttribute{
+			Optional:    true,
+			Description: "Enable full diff by storing the rendered manifest in the state.",
 		},
 	}
-	p.ConfigureProvider = func(ctx context.Context, req schema.ConfigureProviderRequest, res *schema.ConfigureProviderResponse) {
-		if req.DeferralAllowed && !req.ResourceData.GetRawConfig().IsWhollyKnown() {
-			res.Deferred = &schema.Deferred{
-				Reason: schema.DeferredReasonProviderConfigUnknown,
-			}
+}
+
+func registriesResourceSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"url": schema.StringAttribute{
+			Required:    true,
+			Description: "OCI URL in form of oci://host:port or oci://host",
+		},
+		"username": schema.StringAttribute{
+			Required:    true,
+			Description: "The username to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
+		},
+		"password": schema.StringAttribute{
+			Required:    true,
+			Description: "The password to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
+		},
+	}
+}
+
+func kubernetesResourceSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"host": schema.StringAttribute{
+			Optional:    true,
+			Description: "The hostname (in form of URI) of kubernetes master",
+		},
+		"username": schema.StringAttribute{
+			Optional:    true,
+			Description: "The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint",
+		},
+		"password": schema.StringAttribute{
+			Optional:    true,
+			Description: "The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint.",
+		},
+		"insecure": schema.BoolAttribute{
+			Optional:    true,
+			Description: "Whether server should be accessed without verifying the TLS certificate.",
+		},
+		"tls_server_name": schema.StringAttribute{
+			Optional:    true,
+			Description: "Server name passed to the server for SNI and is used in the client to check server certificates against.",
+		},
+		"client_certificate": schema.StringAttribute{
+			Optional:    true,
+			Description: "PEM-encoded client certificate for TLS authentication.",
+		},
+		"client_key": schema.StringAttribute{
+			Optional:    true,
+			Description: "PEM-encoded client certificate key for TLS authentication.",
+		},
+		"cluster_ca_certificate": schema.StringAttribute{
+			Optional:    true,
+			Description: "PEM-encoded root certificates bundle for TLS authentication.",
+		},
+		"config_paths": schema.ListAttribute{
+			Optional:    true,
+			ElementType: types.StringType,
+			Description: "A list of paths to kube config files. Can be set with KUBE_CONFIG_PATHS environment variable.",
+		},
+		"config_path": schema.StringAttribute{
+			Optional:    true,
+			Description: "Path to the kube config file. Can be set with KUBE_CONFIG_PATH.",
+			Validators: []validator.String{
+				stringvalidator.ConflictsWith(
+					path.Root("kubernetes").AtName("config_paths").Expression(),
+				),
+			},
+		},
+
+		"config_context": schema.StringAttribute{
+			Optional:    true,
+			Description: "Context to choose from the config file. Can be sourced from KUBE_CTX.",
+		},
+		"config_context_auth_info": schema.StringAttribute{
+			Optional:    true,
+			Description: "Authentication info context of the kube config (name of the kubeconfig user, --user flag in kubectl). Can be sourced from KUBE_CTX_AUTH_INFO.",
+		},
+		"config_context_cluster": schema.StringAttribute{
+			Optional:    true,
+			Description: "Cluster context of the kube config (name of the kubeconfig cluster, --cluster flag in kubectl). Can be sourced from KUBE_CTX_CLUSTER.",
+		},
+		"token": schema.StringAttribute{
+			Optional:    true,
+			Description: "Token to authenticate a service account.",
+		},
+		"proxy_url": schema.StringAttribute{
+			Optional:    true,
+			Description: "URL to the proxy to be used for all API requests.",
+		},
+		"exec": schema.SingleNestedAttribute{
+			Optional:    true,
+			Description: "Exec configuration for Kubernetes authentication",
+			Attributes:  execSchema(),
+		},
+	}
+}
+
+func execSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"api_version": schema.StringAttribute{
+			Required:    true,
+			Description: "API version for the exec plugin.",
+		},
+		"command": schema.StringAttribute{
+			Required:    true,
+			Description: "Command to run for Kubernetes exec plugin",
+		},
+		"env": schema.MapAttribute{
+			Optional:    true,
+			ElementType: types.StringType,
+			Description: "Environment variables for the exec plugin",
+		},
+		"args": schema.ListAttribute{
+			Optional:    true,
+			ElementType: types.StringType,
+			Description: "Arguments for the exec plugin",
+		},
+	}
+}
+func execSchemaAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"api_version": types.StringType,
+		"command":     types.StringType,
+		"args":        types.ListType{ElemType: types.StringType},
+		"env":         types.MapType{ElemType: types.StringType},
+	}
+}
+
+/////////////////////     					END OF SCHEMA CREATION           ///////////////////////////////
+
+// Setting up the provider, anything we need to get the provider running, probbaly authentication. like the api
+func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	pluginsPath := os.Getenv("HELM_PLUGINS_PATH")
+	registryConfigPath := os.Getenv("HELM_REGISTRY_CONFIG_PATH")
+	repositoryConfigPath := os.Getenv("HELM_REPOSITORY_CONFIG_PATH")
+	repositoryCache := os.Getenv("HELM_REPOSITORY_CACHE")
+	helmDriver := os.Getenv("HELM_DRIVER")
+	burstLimitStr := os.Getenv("HELM_BURST_LIMIT")
+	kubeHost := os.Getenv("KUBE_HOST")
+	kubeUser := os.Getenv("KUBE_USER")
+	kubePassword := os.Getenv("KUBE_PASSWORD")
+	kubeInsecureStr := os.Getenv("KUBE_INSECURE")
+	kubeTLSServerName := os.Getenv("KUBE_TLS_SERVER_NAME")
+	kubeClientCert := os.Getenv("KUBE_CLIENT_CERT_DATA")
+	kubeClientKey := os.Getenv("KUBE_CLIENT_KEY_DATA")
+	kubeCaCert := os.Getenv("KUBE_CLUSTER_CA_CERT_DATA")
+	kubeConfigPaths := os.Getenv("KUBE_CONFIG_PATHS")
+	kubeConfigPath := os.Getenv("KUBE_CONFIG_PATH")
+	kubeConfigContext := os.Getenv("KUBE_CTX")
+	kubeConfigContextAuthInfo := os.Getenv("KUBE_CTX_AUTH_INFO")
+	kubeConfigContextCluster := os.Getenv("KUBE_CTX_CLUSTER")
+	kubeToken := os.Getenv("KUBE_TOKEN")
+	kubeProxy := os.Getenv("KUBE_PROXY")
+
+	// Initialize the HelmProviderModel with values from the config
+	var config HelmProviderModel
+	diags := req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !config.PluginsPath.IsNull() {
+		pluginsPath = config.PluginsPath.ValueString()
+	}
+	if !config.RegistryConfigPath.IsNull() {
+		registryConfigPath = config.RegistryConfigPath.ValueString()
+	}
+	if !config.RepositoryConfigPath.IsNull() {
+		repositoryConfigPath = config.RepositoryConfigPath.ValueString()
+	}
+	if !config.RepositoryCache.IsNull() {
+		repositoryCache = config.RepositoryCache.ValueString()
+	}
+	if !config.HelmDriver.IsNull() {
+		helmDriver = config.HelmDriver.ValueString()
+	}
+	var burstLimit int64
+	if burstLimitStr != "" {
+		var err error
+		burstLimit, err = strconv.ParseInt(burstLimitStr, 10, 64)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Invalid burst limit",
+				fmt.Sprintf("Invalid burst limit value: %s", burstLimitStr),
+			)
+			return
 		}
-		res.Meta, res.Diagnostics = providerConfigure(req.ResourceData, p.TerraformVersion)
 	}
-	return p
-}
-
-func registryResource() *schema.Resource {
-	return &schema.Resource{
-		Schema: map[string]*schema.Schema{
-			"url": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "OCI URL in form of oci://host:port or oci://host",
-			},
-			"username": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "The username to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
-			},
-			"password": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "The password to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
-			},
-		},
+	if !config.BurstLimit.IsNull() {
+		burstLimit = config.BurstLimit.ValueInt64()
 	}
-}
-
-func kubernetesResource() *schema.Resource {
-	return &schema.Resource{
-		Schema: map[string]*schema.Schema{
-			"host": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_HOST", ""),
-				Description: "The hostname (in form of URI) of Kubernetes master.",
-			},
-			"username": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_USER", ""),
-				Description: "The username to use for HTTP basic authentication when accessing the Kubernetes master endpoint.",
-			},
-			"password": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_PASSWORD", ""),
-				Description: "The password to use for HTTP basic authentication when accessing the Kubernetes master endpoint.",
-			},
-			"insecure": {
-				Type:        schema.TypeBool,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_INSECURE", false),
-				Description: "Whether server should be accessed without verifying the TLS certificate.",
-			},
-			"tls_server_name": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_TLS_SERVER_NAME", ""),
-				Description: "Server name passed to the server for SNI and is used in the client to check server certificates against.",
-			},
-			"client_certificate": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLIENT_CERT_DATA", ""),
-				Description: "PEM-encoded client certificate for TLS authentication.",
-			},
-			"client_key": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLIENT_KEY_DATA", ""),
-				Description: "PEM-encoded client certificate key for TLS authentication.",
-			},
-			"cluster_ca_certificate": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_CLUSTER_CA_CERT_DATA", ""),
-				Description: "PEM-encoded root certificates bundle for TLS authentication.",
-			},
-			"config_paths": {
-				Type:        schema.TypeList,
-				Elem:        &schema.Schema{Type: schema.TypeString},
-				Optional:    true,
-				Description: "A list of paths to kube config files. Can be set with KUBE_CONFIG_PATHS environment variable.",
-			},
-			"config_path": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				DefaultFunc:   schema.EnvDefaultFunc("KUBE_CONFIG_PATH", nil),
-				Description:   "Path to the kube config file. Can be set with KUBE_CONFIG_PATH.",
-				ConflictsWith: []string{"kubernetes.0.config_paths"},
-			},
-			"config_context": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX", ""),
-			},
-			"config_context_auth_info": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX_AUTH_INFO", ""),
-				Description: "",
-			},
-			"config_context_cluster": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_CTX_CLUSTER", ""),
-				Description: "",
-			},
-			"token": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_TOKEN", ""),
-				Description: "Token to authenticate an service account",
-			},
-			"proxy_url": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "URL to the proxy to be used for all API requests",
-				DefaultFunc: schema.EnvDefaultFunc("KUBE_PROXY_URL", ""),
-			},
-			"exec": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"api_version": {
-							Type:     schema.TypeString,
-							Required: true,
-							ValidateDiagFunc: func(val interface{}, key cty.Path) (diags diag.Diagnostics) {
-								apiVersion := val.(string)
-								if apiVersion == "client.authentication.k8s.io/v1alpha1" {
-									return diag.Diagnostics{{
-										Severity: diag.Warning,
-										Summary:  "v1alpha1 of the client authentication API has been removed, use v1beta1 or above",
-										Detail:   "v1alpha1 of the client authentication API is removed in Kubernetes client versions 1.24 and above. You may need to update your exec plugin to use the latest version.",
-									}}
-								}
-								return
-							},
-						},
-						"command": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"env": {
-							Type:     schema.TypeMap,
-							Optional: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
-						"args": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
-					},
-				},
-				Description: "",
-			},
-		},
-	}
-}
-
-func providerConfigure(d *schema.ResourceData, terraformVersion string) (interface{}, diag.Diagnostics) {
-	m := &Meta{
-		data: d,
-		experiments: map[string]bool{
-			"manifest": d.Get("experiments.0.manifest").(bool),
-		},
+	var kubeInsecure bool
+	if kubeInsecureStr != "" {
+		var err error
+		kubeInsecure, err = strconv.ParseBool(kubeInsecureStr)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Invalid insecure value",
+				fmt.Sprintf("Invalid insecure value: %s", kubeInsecureStr),
+			)
+			return
+		}
 	}
 
-	log.Println("[DEBUG] Experiments enabled:", m.GetEnabledExperiments())
+	var kubernetesConfig KubernetesConfigModel
+	if !config.Kubernetes.IsNull() && !config.Kubernetes.IsUnknown() {
+		diags := req.Config.GetAttribute(ctx, path.Root("kubernetes"), &kubernetesConfig)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
 
+	if !kubernetesConfig.Insecure.IsNull() {
+		kubeInsecure = kubernetesConfig.Insecure.ValueBool()
+	}
+	var kubeConfigPathsList []attr.Value
+	if !kubernetesConfig.Host.IsNull() {
+		kubeHost = kubernetesConfig.Host.ValueString()
+	}
+	if !kubernetesConfig.Username.IsNull() {
+		kubeUser = kubernetesConfig.Username.ValueString()
+	}
+	if !kubernetesConfig.Password.IsNull() {
+		kubePassword = kubernetesConfig.Password.ValueString()
+	}
+	if !kubernetesConfig.TLSServerName.IsNull() {
+		kubeTLSServerName = kubernetesConfig.TLSServerName.ValueString()
+	}
+	if !kubernetesConfig.ClientCertificate.IsNull() {
+		kubeClientCert = kubernetesConfig.ClientCertificate.ValueString()
+	}
+	if !kubernetesConfig.ClientKey.IsNull() {
+		kubeClientKey = kubernetesConfig.ClientKey.ValueString()
+	}
+	if !kubernetesConfig.ClusterCACertificate.IsNull() {
+		kubeCaCert = kubernetesConfig.ClusterCACertificate.ValueString()
+	}
+	if kubeConfigPaths != "" {
+		for _, path := range filepath.SplitList(kubeConfigPaths) {
+			kubeConfigPathsList = append(kubeConfigPathsList, types.StringValue(path))
+		}
+	}
+	if !kubernetesConfig.ConfigPaths.IsNull() {
+		var paths []string
+		diags = kubernetesConfig.ConfigPaths.ElementsAs(ctx, &paths, false)
+		resp.Diagnostics.Append(diags...)
+		for _, path := range paths {
+			kubeConfigPathsList = append(kubeConfigPathsList, types.StringValue(path))
+		}
+	}
+	if !kubernetesConfig.ConfigPath.IsNull() {
+		kubeConfigPath = kubernetesConfig.ConfigPath.ValueString()
+	}
+	if !kubernetesConfig.ConfigContext.IsNull() {
+		kubeConfigContext = kubernetesConfig.ConfigContext.ValueString()
+	}
+	if !kubernetesConfig.ConfigContextAuthInfo.IsNull() {
+		kubeConfigContextAuthInfo = kubernetesConfig.ConfigContextAuthInfo.ValueString()
+	}
+	if !kubernetesConfig.ConfigContextCluster.IsNull() {
+		kubeConfigContextCluster = kubernetesConfig.ConfigContextCluster.ValueString()
+	}
+	if !kubernetesConfig.Token.IsNull() {
+		kubeToken = kubernetesConfig.Token.ValueString()
+	}
+	if !kubernetesConfig.ProxyURL.IsNull() {
+		kubeProxy = kubernetesConfig.ProxyURL.ValueString()
+	}
+	tflog.Debug(ctx, "Config values after overrides", map[string]interface{}{
+		"config": config,
+	})
+	debug := os.Getenv("HELM_DEBUG") == "true" || config.Debug.ValueBool()
 	settings := cli.New()
-	settings.Debug = d.Get("debug").(bool)
-
-	if v, ok := d.GetOk("plugins_path"); ok {
-		settings.PluginsDirectory = v.(string)
+	settings.Debug = debug
+	if pluginsPath != "" {
+		settings.PluginsDirectory = pluginsPath
+	}
+	if registryConfigPath != "" {
+		settings.RegistryConfig = registryConfigPath
+	}
+	if repositoryConfigPath != "" {
+		settings.RepositoryConfig = repositoryConfigPath
+	}
+	if repositoryCache != "" {
+		settings.RepositoryCache = repositoryCache
+	}
+	tflog.Debug(ctx, "Helm settings initialized", map[string]interface{}{
+		"settings": settings,
+	})
+	kubeConfigPathsListValue, diags := types.ListValue(types.StringType, kubeConfigPathsList)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	if v, ok := d.GetOk("registry_config_path"); ok {
-		settings.RegistryConfig = v.(string)
+	var experimentsConfig ExperimentsConfigModel
+	if !config.Experiments.IsNull() && !config.Experiments.IsUnknown() {
+		var experimentsConfigs []ExperimentsConfigModel
+		diags := config.Experiments.ElementsAs(ctx, &experimentsConfigs, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if len(experimentsConfigs) > 0 {
+			experimentsConfig = experimentsConfigs[0]
+		}
 	}
 
-	if v, ok := d.GetOk("repository_config_path"); ok {
-		settings.RepositoryConfig = v.(string)
+	manifestExperiment := false
+	if !experimentsConfig.Manifest.IsNull() {
+		manifestExperiment = experimentsConfig.Manifest.ValueBool()
 	}
 
-	if v, ok := d.GetOk("repository_cache"); ok {
-		settings.RepositoryCache = v.(string)
+	var execAttrValue attr.Value = types.ObjectNull(execSchemaAttrTypes())
+
+	if kubernetesConfig.Exec != nil {
+		// Check if `api_version` and `command` are set (since they're required fields)
+		if !kubernetesConfig.Exec.APIVersion.IsNull() && !kubernetesConfig.Exec.Command.IsNull() {
+			execAttrValue = types.ObjectValueMust(execSchemaAttrTypes(), map[string]attr.Value{
+				"api_version": types.StringValue(kubernetesConfig.Exec.APIVersion.ValueString()),
+				"command":     types.StringValue(kubernetesConfig.Exec.Command.ValueString()),
+				"args":        types.ListValueMust(types.StringType, kubernetesConfig.Exec.Args.Elements()),
+				"env":         types.MapValueMust(types.StringType, kubernetesConfig.Exec.Env.Elements()),
+			})
+		}
 	}
 
-	m.Settings = settings
-
-	if v, ok := d.GetOk("helm_driver"); ok {
-		m.HelmDriver = v.(string)
+	kubernetesConfigObjectValue, diags := types.ObjectValue(map[string]attr.Type{
+		"host":                     types.StringType,
+		"username":                 types.StringType,
+		"password":                 types.StringType,
+		"insecure":                 types.BoolType,
+		"tls_server_name":          types.StringType,
+		"client_certificate":       types.StringType,
+		"client_key":               types.StringType,
+		"cluster_ca_certificate":   types.StringType,
+		"config_paths":             types.ListType{ElemType: types.StringType},
+		"config_path":              types.StringType,
+		"config_context":           types.StringType,
+		"config_context_auth_info": types.StringType,
+		"config_context_cluster":   types.StringType,
+		"token":                    types.StringType,
+		"proxy_url":                types.StringType,
+		"exec":                     types.ObjectType{AttrTypes: execSchemaAttrTypes()},
+	}, map[string]attr.Value{
+		"host":                     types.StringValue(kubeHost),
+		"username":                 types.StringValue(kubeUser),
+		"password":                 types.StringValue(kubePassword),
+		"insecure":                 types.BoolValue(kubeInsecure),
+		"tls_server_name":          types.StringValue(kubeTLSServerName),
+		"client_certificate":       types.StringValue(kubeClientCert),
+		"client_key":               types.StringValue(kubeClientKey),
+		"cluster_ca_certificate":   types.StringValue(kubeCaCert),
+		"config_paths":             kubeConfigPathsListValue,
+		"config_path":              types.StringValue(kubeConfigPath),
+		"config_context":           types.StringValue(kubeConfigContext),
+		"config_context_auth_info": types.StringValue(kubeConfigContextAuthInfo),
+		"config_context_cluster":   types.StringValue(kubeConfigContextCluster),
+		"token":                    types.StringValue(kubeToken),
+		"proxy_url":                types.StringValue(kubeProxy),
+		"exec":                     execAttrValue,
+	})
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	if registryClient, err := registry.NewClient(); err == nil {
-		m.RegistryClient = registryClient
-		for _, r := range d.Get("registry").([]interface{}) {
-			if v, ok := r.(map[string]interface{}); ok {
-				err := OCIRegistryPerformLogin(m.RegistryClient, v["url"].(string), v["username"].(string), v["password"].(string))
-				if err != nil {
-					return nil, diag.FromErr(err)
-				}
+	// Create a list of ExperimentsConfigModel
+	experimentsConfigList := []attr.Value{
+		types.ObjectValueMust(map[string]attr.Type{
+			"manifest": types.BoolType,
+		}, map[string]attr.Value{
+			"manifest": types.BoolValue(manifestExperiment),
+		}),
+	}
+	experimentsConfigListValue, diags := types.ListValue(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"manifest": types.BoolType,
+		},
+	}, experimentsConfigList)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	meta := &Meta{
+		Data: &HelmProviderModel{
+			Debug:                types.BoolValue(debug),
+			PluginsPath:          types.StringValue(pluginsPath),
+			RegistryConfigPath:   types.StringValue(registryConfigPath),
+			RepositoryConfigPath: types.StringValue(repositoryConfigPath),
+			RepositoryCache:      types.StringValue(repositoryCache),
+			HelmDriver:           types.StringValue(helmDriver),
+			BurstLimit:           types.Int64Value(burstLimit),
+			Kubernetes:           kubernetesConfigObjectValue,
+			Experiments:          experimentsConfigListValue,
+		},
+		Settings:   settings,
+		HelmDriver: helmDriver,
+		Experiments: map[string]bool{
+			"manifest": manifestExperiment,
+		},
+	}
+	registryClient, err := registry.NewClient()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Registry client initialization failed",
+			fmt.Sprintf("Unable to create Helm registry client: %s", err),
+		)
+		return
+	}
+
+	meta.RegistryClient = registryClient
+	if !config.Registries.IsUnknown() {
+		var registryConfigs []RegistryConfigModel
+		diags := config.Registries.ElementsAs(ctx, &registryConfigs, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		for _, r := range registryConfigs {
+			if r.URL.IsNull() || r.Username.IsNull() || r.Password.IsNull() {
+				resp.Diagnostics.AddError(
+					"OCI Registry login failed",
+					"Registry URL, Username, or Password is null",
+				)
+				return
+			}
+
+			err := OCIRegistryPerformLogin(ctx, meta, meta.RegistryClient, r.URL.ValueString(), r.Username.ValueString(), r.Password.ValueString())
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"OCI Registry login failed",
+					err.Error(),
+				)
+				return
 			}
 		}
+	} else {
+		tflog.Debug(ctx, "No registry configurations found")
 	}
+	resp.DataSourceData = meta
+	resp.ResourceData = meta
 
-	return m, nil
+	tflog.Debug(ctx, "Configure method completed successfully")
 }
 
-var k8sPrefix = "kubernetes.0."
-
-func k8sGetOk(d *schema.ResourceData, key string) (interface{}, bool) {
-	value, ok := d.GetOk(k8sPrefix + key)
-
-	// For boolean attributes the zero value is Ok
-	switch value.(type) {
-	case bool:
-		// TODO: replace deprecated GetOkExists with SDK v2 equivalent
-		// https://github.com/hashicorp/terraform-plugin-sdk/pull/350
-		value, ok = d.GetOkExists(k8sPrefix + key)
+func (p *HelmProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+		NewHelmTemplate,
 	}
+}
 
-	// fix: DefaultFunc is not being triggered on TypeList
-	s := kubernetesResource().Schema[key]
-	if !ok && s.DefaultFunc != nil {
-		value, _ = s.DefaultFunc()
-
-		switch v := value.(type) {
-		case string:
-			ok = len(v) != 0
-		case bool:
-			ok = v
-		}
+func (p *HelmProvider) Resources(ctx context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+		NewHelmRelease,
 	}
-
-	return value, ok
 }
 
-func k8sGet(d *schema.ResourceData, key string) interface{} {
-	value, _ := k8sGetOk(d, key)
-	return value
-}
+func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Configuration, registryClient *registry.Client, repository, chartName, username, password string) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-func expandStringSlice(s []interface{}) []string {
-	result := make([]string, len(s), len(s))
-	for k, v := range s {
-		// Handle the Terraform parser bug which turns empty strings in lists to nil.
-		if v == nil {
-			result[k] = ""
-		} else {
-			result[k] = v.(string)
-		}
-	}
-	return result
-}
-
-// ExperimentEnabled returns true it the named experiment is enabled
-func (m *Meta) ExperimentEnabled(name string) bool {
-	return m.experiments[name]
-}
-
-// GetEnabledExperiments returns a list of the experimental features that are enabled
-func (m *Meta) GetEnabledExperiments() []string {
-	enabled := []string{}
-	for k, v := range m.experiments {
-		if v {
-			enabled = append(enabled, k)
-		}
-	}
-	return enabled
-}
-
-// GetHelmConfiguration will return a new Helm configuration
-func (m *Meta) GetHelmConfiguration(namespace string) (*action.Configuration, error) {
-	m.Lock()
-	defer m.Unlock()
-	debug("[INFO] GetHelmConfiguration start")
-	actionConfig := new(action.Configuration)
-
-	kc, err := newKubeConfig(m.data, &namespace)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := actionConfig.Init(kc, namespace, m.HelmDriver, debug); err != nil {
-		return nil, err
-	}
-
-	debug("[INFO] GetHelmConfiguration success")
-	return actionConfig, nil
-}
-
-// dataGetter lets us call Get on both schema.ResourceDiff and schema.ResourceData
-type dataGetter interface {
-	Get(key string) interface{}
-}
-
-// loggedInOCIRegistries is used to make sure we log into a registry only
-// once if it is used across multiple resources concurrently
-var loggedInOCIRegistries map[string]string = map[string]string{}
-var OCILoginMutex sync.Mutex
-
-// OCIRegistryLogin logs into the registry if needed
-func OCIRegistryLogin(actionConfig *action.Configuration, d dataGetter, m *Meta) error {
-	registryClient := m.RegistryClient
 	actionConfig.RegistryClient = registryClient
 
-	// log in to the registry if necessary
-	repository := d.Get("repository").(string)
-	chartName := d.Get("chart").(string)
 	var ociURL string
 	if registry.IsOCI(repository) {
 		ociURL = repository
 	} else if registry.IsOCI(chartName) {
 		ociURL = chartName
 	}
+
 	if ociURL == "" {
-		return nil
+		return diags
 	}
 
-	username := d.Get("repository_username").(string)
-	password := d.Get("repository_password").(string)
 	if username != "" && password != "" {
-		return OCIRegistryPerformLogin(registryClient, ociURL, username, password)
+		err := OCIRegistryPerformLogin(ctx, meta, registryClient, ociURL, username, password)
+		if err != nil {
+			diags.AddError(
+				"OCI Registry Login Failed",
+				fmt.Sprintf("Failed to log in to OCI registry %q: %s", ociURL, err.Error()),
+			)
+		}
 	}
 
-	return nil
+	return diags
 }
 
-// OCIRegistryPerformLogin creates an OCI registry client and logs into the registry if needed
-func OCIRegistryPerformLogin(registryClient *registry.Client, ociURL string, username string, password string) error {
+// registryClient = client used to comm with the registry, oci urls, un, and pw used for authentication
+func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *registry.Client, ociURL, username, password string) error {
+
+	loggedInOCIRegistries := make(map[string]string)
+	// getting the oci url, and extracting the host.
 	u, err := url.Parse(ociURL)
 	if err != nil {
 		return fmt.Errorf("could not parse OCI registry URL: %v", err)
 	}
-
-	OCILoginMutex.Lock()
-	defer OCILoginMutex.Unlock()
+	meta.Mutex.Lock()
+	defer meta.Mutex.Unlock()
 	if _, ok := loggedInOCIRegistries[u.Host]; ok {
-		debug("[INFO] Already logged into OCI registry %q", u.Host)
+		tflog.Info(ctx, fmt.Sprintf("Already logged into OCI registry %q", u.Host))
 		return nil
 	}
-	err = registryClient.Login(u.Host,
-		registry.LoginOptBasicAuth(username, password))
+	// Now we perform the login, with the provided username and password by calling the login method
+	err = registryClient.Login(u.Host, registry.LoginOptBasicAuth(username, password))
 	if err != nil {
 		return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
 	}
 	loggedInOCIRegistries[u.Host] = ""
-	debug("[INFO] Logged into OCI registry")
-
+	tflog.Info(ctx, fmt.Sprintf("Logged into OCI registry %q", u.Host))
 	return nil
 }
 
-func debug(format string, a ...interface{}) {
-	log.Printf("[DEBUG] %s", fmt.Sprintf(format, a...))
-}
+// GetHelmConfiguration retrieves the Helm configuration for a given namespace
+func (m *Meta) GetHelmConfiguration(ctx context.Context, namespace string) (*action.Configuration, error) {
+	if m == nil {
+		tflog.Error(ctx, "Meta is nil")
+		return nil, fmt.Errorf("Meta is nil")
+	}
 
-func warn(format string, a ...interface{}) {
-	log.Printf("[WARN] %s", fmt.Sprintf(format, a...))
+	tflog.Info(context.Background(), "[INFO] GetHelmConfiguration start")
+	actionConfig := new(action.Configuration)
+	kc, err := m.NewKubeConfig(ctx, namespace)
+	if err != nil {
+		return nil, err
+	}
+	if err := actionConfig.Init(kc, namespace, m.HelmDriver, func(format string, v ...interface{}) {
+		tflog.Info(context.Background(), fmt.Sprintf(format, v...))
+	}); err != nil {
+		return nil, err
+	}
+	tflog.Info(context.Background(), "[INFO] GetHelmConfiguration success")
+	// returning the initializing action.Configuration object
+	return actionConfig, nil
 }

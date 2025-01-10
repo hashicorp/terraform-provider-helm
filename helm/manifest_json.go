@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package helm
 
 import (
@@ -9,8 +6,6 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/sha3"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,29 +73,19 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 	return string(b), nil
 }
 
-// hashSensitiveValue creates a hash of a sensitive value and returns the string
-// "(sensitive value xxxxxxxx)". We have to do this because Terraform's sensitive
-// value feature can't reach inside a text string and would supress the entire
-// manifest if we marked it as sensitive. This allows us to redact the value while
-// still being able to surface that something has changed so it appears in the diff.
 func hashSensitiveValue(v string) string {
 	hash := make([]byte, 8)
 	sha3.ShakeSum256(hash, []byte(v))
 	return fmt.Sprintf("(sensitive value %x)", hash)
 }
 
-// redactSensitiveValues removes values that appear in `set_sensitive` blocks from
-// the manifest JSON
-func redactSensitiveValues(text string, d resourceGetter) string {
+// redactSensitiveValues removes values that appear in `set_sensitive` blocks from the manifest JSON
+func redactSensitiveValues(text string, sensitiveValues map[string]string) string {
 	masked := text
 
-	for _, v := range d.Get("set_sensitive").(*schema.Set).List() {
-		vv := v.(map[string]interface{})
-
-		if sensitiveValue, ok := vv["value"].(string); ok {
-			h := hashSensitiveValue(sensitiveValue)
-			masked = strings.ReplaceAll(masked, sensitiveValue, h)
-		}
+	for originalValue := range sensitiveValues {
+		hashedValue := hashSensitiveValue(originalValue)
+		masked = strings.ReplaceAll(masked, originalValue, hashedValue)
 	}
 
 	return masked
