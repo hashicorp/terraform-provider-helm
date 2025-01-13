@@ -140,16 +140,21 @@ data "helm_template" "mariadb_instance" {
   chart   = "mariadb"
   version = "7.1.0"
 
-  set {
-    name  = "service.port"
-    value = "13306"
-  }
+  set = [
+    {
+      name  = "service.port"
+      value = "13306"
+    }
+  ]
 
-  set_sensitive {
-    name = "rootUser.password"
-    value = "s3cr3t!"
-  }
+  set_sensitive = [
+    {
+      name  = "rootUser.password"
+      value = "s3cr3t!"
+    }
+  ]
 }
+
 
 resource "local_file" "mariadb_manifests" {
   for_each = data.helm_template.mariadb_instance.manifests
@@ -188,17 +193,22 @@ data "helm_template" "mariadb_instance" {
     "templates/master-statefulset.yaml",
     "templates/master-svc.yaml",
   ]
-  
-  set {
-    name  = "service.port"
-    value = "13306"
-  }
 
-  set_sensitive {
-    name = "rootUser.password"
-    value = "s3cr3t!"
-  }
+  set = [
+    {
+      name  = "service.port"
+      value = "13306"
+    }
+  ]
+
+  set_sensitive = [
+    {
+      name  = "rootUser.password"
+      value = "s3cr3t!"
+    }
+  ]
 }
+
 
 resource "local_file" "mariadb_manifests" {
   for_each = data.helm_template.mariadb_instance.manifests
