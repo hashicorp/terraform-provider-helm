@@ -205,10 +205,8 @@ The provider takes an `experiments` block that allows you enable experimental fe
 
 ```terraform
 provider "helm" {
-  experiments = [
-    {
-      manifest = true
-    }
-  ]
+  experiments = {
+    manifest = true
+  }
 }
 ```

@@ -52,16 +52,16 @@ type Meta struct {
 
 // HelmProviderModel contains the configuration for the provider
 type HelmProviderModel struct {
-	Debug                types.Bool   `tfsdk:"debug"`
-	PluginsPath          types.String `tfsdk:"plugins_path"`
-	RegistryConfigPath   types.String `tfsdk:"registry_config_path"`
-	RepositoryConfigPath types.String `tfsdk:"repository_config_path"`
-	RepositoryCache      types.String `tfsdk:"repository_cache"`
-	HelmDriver           types.String `tfsdk:"helm_driver"`
-	BurstLimit           types.Int64  `tfsdk:"burst_limit"`
-	Kubernetes           types.Object `tfsdk:"kubernetes"`
-	Registries           types.List   `tfsdk:"registries"`
-	Experiments          types.List   `tfsdk:"experiments"`
+	Debug                types.Bool              `tfsdk:"debug"`
+	PluginsPath          types.String            `tfsdk:"plugins_path"`
+	RegistryConfigPath   types.String            `tfsdk:"registry_config_path"`
+	RepositoryConfigPath types.String            `tfsdk:"repository_config_path"`
+	RepositoryCache      types.String            `tfsdk:"repository_cache"`
+	HelmDriver           types.String            `tfsdk:"helm_driver"`
+	BurstLimit           types.Int64             `tfsdk:"burst_limit"`
+	Kubernetes           types.Object            `tfsdk:"kubernetes"`
+	Registries           types.List              `tfsdk:"registries"`
+	Experiments          *ExperimentsConfigModel `tfsdk:"experiments"`
 }
 
 // ExperimentsConfigModel configures the experiments that are enabled or disabled
@@ -302,6 +302,7 @@ func execSchema() map[string]schema.Attribute {
 		},
 	}
 }
+
 func execSchemaAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"api_version": types.StringType,
@@ -480,22 +481,9 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	var experimentsConfig ExperimentsConfigModel
-	if !config.Experiments.IsNull() && !config.Experiments.IsUnknown() {
-		var experimentsConfigs []ExperimentsConfigModel
-		diags := config.Experiments.ElementsAs(ctx, &experimentsConfigs, false)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		if len(experimentsConfigs) > 0 {
-			experimentsConfig = experimentsConfigs[0]
-		}
-	}
-
 	manifestExperiment := false
-	if !experimentsConfig.Manifest.IsNull() {
-		manifestExperiment = experimentsConfig.Manifest.ValueBool()
+	if config.Experiments != nil {
+		manifestExperiment = config.Experiments.Manifest.ValueBool()
 	}
 
 	var execAttrValue attr.Value = types.ObjectNull(execSchemaAttrTypes())
@@ -675,7 +663,6 @@ func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Conf
 
 // registryClient = client used to comm with the registry, oci urls, un, and pw used for authentication
 func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *registry.Client, ociURL, username, password string) error {
-
 	loggedInOCIRegistries := make(map[string]string)
 	// getting the oci url, and extracting the host.
 	u, err := url.Parse(ociURL)

@@ -7,6 +7,8 @@ description: |-
 
 # Upgrading to v3.0.0 of the Helm provider
 
+
+
 This guide covers the changes introduced in v3.0.0 of the Helm provider and what you may need to do to upgrade your configuration.
 
 ## Changes in v3.0.0
@@ -73,8 +75,8 @@ provider "helm" {
 
 **What Changed?**
 
-- `kubernetes` is now a single nested object using `{ ... }`.
-- `registry` blocks have been replaced by a `registries` list.
+- `kubernetes` is now a single nested object attribute using `{ ... }`.
+- `registry` blocks have been replaced by a `registries` list attribute.
 
 #### Experiments Configuration (experiments)
 
@@ -94,17 +96,15 @@ provider "helm" {
 
 ```hcl
 provider "helm" {
-  experiments = [
-    {
-      manifest = true
-    }
-  ]
+  experiments = {
+    manifest = true
+  }
 }
 ```
 
 **What Changed?**
 
-- `experiments` is now a single nested object using `[ { ... } ]`.
+- `experiments` is now a single nested object attribute using `{ ... }`.
 
 ### Changes to helm_release Resource
 
