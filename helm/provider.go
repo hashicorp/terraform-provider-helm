@@ -540,24 +540,6 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	// Create a list of ExperimentsConfigModel
-	experimentsConfigList := []attr.Value{
-		types.ObjectValueMust(map[string]attr.Type{
-			"manifest": types.BoolType,
-		}, map[string]attr.Value{
-			"manifest": types.BoolValue(manifestExperiment),
-		}),
-	}
-	experimentsConfigListValue, diags := types.ListValue(types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"manifest": types.BoolType,
-		},
-	}, experimentsConfigList)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	meta := &Meta{
 		Data: &HelmProviderModel{
 			Debug:                types.BoolValue(debug),
@@ -568,7 +550,9 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			HelmDriver:           types.StringValue(helmDriver),
 			BurstLimit:           types.Int64Value(burstLimit),
 			Kubernetes:           kubernetesConfigObjectValue,
-			Experiments:          experimentsConfigListValue,
+			Experiments: &ExperimentsConfigModel{
+				Manifest: types.BoolValue(manifestExperiment),
+			},
 		},
 		Settings:   settings,
 		HelmDriver: helmDriver,
