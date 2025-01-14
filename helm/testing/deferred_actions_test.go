@@ -19,7 +19,7 @@ import (
 )
 
 var providerFactory = map[string]func() (tfprotov6.ProviderServer, error){
-	"helm": providerserver.NewProtocol6WithError(helm.New()()),
+	"helm": providerserver.NewProtocol6WithError(helm.New("version")()),
 }
 
 func TestAccDeferredActions_basic(t *testing.T) {

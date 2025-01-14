@@ -44,13 +44,12 @@ var (
 var providerFactory map[string]func() (tfprotov6.ProviderServer, error)
 
 func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
-
 	if len(providerFactory) != 0 {
 		return providerFactory
 	}
 
 	providerFactory = map[string]func() (tfprotov6.ProviderServer, error){
-		"helm": providerserver.NewProtocol6WithError(New()()),
+		"helm": providerserver.NewProtocol6WithError(New("test")()),
 	}
 
 	return providerFactory
@@ -58,7 +57,6 @@ func protoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, err
 
 func TestMain(m *testing.M) {
 	home, err := ioutil.TempDir(os.TempDir(), "helm")
-
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +122,7 @@ func TestMain(m *testing.M) {
 // todo
 func TestProvider(t *testing.T) {
 	ctx := context.Background()
-	provider := New()()
+	provider := New("test")()
 
 	// Create the provider server
 	providerServer, err := createProviderServer(provider)
@@ -141,7 +139,6 @@ func TestProvider(t *testing.T) {
 	if hasError(validateResponse.Diagnostics) {
 		t.Fatalf("Provider config validation failed, diagnostics: %v", validateResponse.Diagnostics)
 	}
-
 }
 
 func createProviderServer(provider provider.Provider) (tfprotov6.ProviderServer, error) {
@@ -154,7 +151,6 @@ func createProviderServer(provider provider.Provider) (tfprotov6.ProviderServer,
 }
 
 func buildChartRepository() {
-
 	if _, err := os.Stat(testRepositoryDir); os.IsNotExist(err) {
 		os.Mkdir(testRepositoryDir, os.ModePerm)
 	}
@@ -268,7 +264,7 @@ func testAccPreCheck(t *testing.T) {
 
 	ctx := context.TODO()
 
-	provider := New()()
+	provider := New("test")()
 
 	// Create and configure the ProviderServer
 	_, err := createAndConfigureProviderServer(provider, ctx)
