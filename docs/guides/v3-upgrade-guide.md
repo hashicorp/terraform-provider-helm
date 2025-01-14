@@ -27,6 +27,7 @@ The Helm provider has been migrated from the legacy [Terraform Plugin SDKv2](htt
 The `kubernetes` block has been updated to a single nested object.
 
 **Old SDKv2 Configuration:**
+
 ```hcl
 provider "helm" {
   kubernetes {
@@ -48,6 +49,7 @@ provider "helm" {
 ```
 
 **New Plugin Framework Configuration:**
+
 ```hcl
 provider "helm" {
   kubernetes = {
@@ -70,6 +72,7 @@ provider "helm" {
 ```
 
 **What Changed?**
+
 - `kubernetes` is now a single nested object using `{ ... }`.
 - `registry` blocks have been replaced by a `registries` list.
 
@@ -78,6 +81,7 @@ provider "helm" {
 The `experiments` block has been updated to a list of nested objects.
 
 **Old SDKv2 Configuration:**
+
 ```hcl
 provider "helm" {
   experiments {
@@ -87,6 +91,7 @@ provider "helm" {
 ```
 
 **New Plugin Framework Configuration:**
+
 ```hcl
 provider "helm" {
   experiments = [
@@ -98,6 +103,7 @@ provider "helm" {
 ```
 
 **What Changed?**
+
 - `experiments` is now a single nested object using `[ { ... } ]`.
 
 ### Changes to helm_release Resource
@@ -107,6 +113,7 @@ provider "helm" {
 Attributes  `set`, `set_list`, and `set_sensitive` are now represented as lists of nested objects instead of individual blocks.
 
 **Old SDKv2 Configuration:**
+
 ```hcl
 resource "helm_release" "nginx_ingress" {
   name       = "nginx-ingress-controller"
@@ -132,6 +139,7 @@ resource "helm_release" "nginx_ingress" {
 ```
 
 **New Plugin Framework Configuration:**
+
 ```hcl
 resource "helm_release" "nginx_ingress" {
   name       = "nginx-ingress-controller"
@@ -163,6 +171,7 @@ resource "helm_release" "nginx_ingress" {
 ```
 
 **What Changed?**
+
 - `set`, `set_list`, and `set_sensitive` is now a list of nested objects using `[ { ... } ]`.
 
 ### Changes to helm_template Data Source
@@ -172,6 +181,7 @@ resource "helm_release" "nginx_ingress" {
 Attributes  `set`, `set_list`, and `set_sensitive` are now represented as lists of nested objects instead of individual blocks.
 
 **Old SDKv2 Configuration:**
+
 ```hcl
 data "helm_template" "example" {
   name       = "my-release"
@@ -197,6 +207,7 @@ data "helm_template" "example" {
 ```
 
 **New Plugin Framework Configuration:**
+
 ```hcl
 data "helm_template" "example" {
   name       = "my-release"
@@ -228,4 +239,5 @@ data "helm_template" "example" {
 ```
 
 **What Changed?**
+
 - `set`, `set_list`, and `set_sensitive` is now a list of nested objects using `[ { ... } ]`.

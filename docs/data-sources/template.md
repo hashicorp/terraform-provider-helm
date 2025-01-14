@@ -229,3 +229,4 @@ output "mariadb_instance_notes" {
   value = data.helm_template.mariadb_instance.notes
 }
 ```
+
