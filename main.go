@@ -13,10 +13,8 @@ import (
 	"k8s.io/klog"
 )
 
-var (
-	// Example version string that can be overwritten by a release process
-	version string = "dev"
-)
+// Example version string that can be overwritten by a release process
+var Version string = "dev"
 
 func main() {
 	var debug bool
@@ -40,7 +38,7 @@ func main() {
 		opts.Debug = true
 	}
 
-	serveErr := providerserver.Serve(context.Background(), helm.New(), opts)
+	serveErr := providerserver.Serve(context.Background(), helm.New(Version), opts)
 	if serveErr != nil {
 		log.Fatal(serveErr.Error())
 	}

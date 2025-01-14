@@ -32,9 +32,11 @@ import (
 
 var _ provider.Provider = &HelmProvider{}
 
-func New() func() provider.Provider {
+func New(version string) func() provider.Provider {
 	return func() provider.Provider {
-		return &HelmProvider{}
+		return &HelmProvider{
+			version: version,
+		}
 	}
 }
 
@@ -106,11 +108,13 @@ type ExecConfigModel struct {
 
 // HelmProvider is the top level provider struct
 type HelmProvider struct {
-	meta *Meta
+	meta    *Meta
+	version string
 }
 
 func (p *HelmProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "helm"
+	resp.Version = p.version
 }
 
 // ///////////////////////            	START OF SCHEMA CREATION               ///////////////////////////////
