@@ -170,12 +170,10 @@ func (p *HelmProvider) Schema(ctx context.Context, req provider.SchemaRequest, r
 					Attributes: registriesResourceSchema(),
 				},
 			},
-			"experiments": schema.ListNestedAttribute{
+			"experiments": schema.SingleNestedAttribute{
 				Optional:    true,
 				Description: "Enable and disable experimental features.",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: experimentsSchema(),
-				},
+				Attributes:  experimentsSchema(),
 			},
 		},
 	}
