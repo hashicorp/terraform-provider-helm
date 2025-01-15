@@ -1974,9 +1974,9 @@ func testAccHelmReleaseConfig_OCI_updated(resource, ns, name, repo, version stri
 func testAccHelmReleaseConfigManifestExperimentEnabled(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		provider "helm" {
-			experiments = [{
+			experiments = {
 				manifest = true
-			}]
+			}
 		}
 
 		resource "helm_release" "%s" {
@@ -1992,12 +1992,9 @@ func testAccHelmReleaseConfigManifestExperimentEnabled(resource, ns, name, versi
 func testAccHelmReleaseConfigManifestUnknownValues(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		provider helm {
-			experiments = [
-				{
-					name  = "manifest"
-					value = true
-				}
-			]
+			experiments = {
+				manifest = true
+			}
 		}
 
 		resource "random_string" "random_label" {
