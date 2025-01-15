@@ -57,6 +57,7 @@ jobs:
       env:
         KUBE_CONFIG_PATH: ${{ env.KUBECONFIG }}
         TF_ACC_TERRAFORM_VERSION: ${{ matrix.terraform_version }}
+        TF_ACC_TEMP_DIR: ${{ runner.temp }}
         TESTARGS: "-parallel 1"
       run: |
         make testacc
