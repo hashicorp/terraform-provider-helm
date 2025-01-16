@@ -14,7 +14,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -225,35 +224,28 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 	})
 }
 
-func TestAccResourceRelease_concurrent(t *testing.T) {
-	wg := sync.WaitGroup{}
-	wg.Add(10)
-	for i := 0; i < 10; i++ {
-		go func(name string) {
-			t.Logf("Starting goroutine - namespace: %s", name)
-			defer wg.Done()
-			namespace := createRandomNamespace(t)
-			defer deleteNamespace(t, namespace)
-			resource.Test(t, resource.TestCase{
-				//PreCheck:                 func() { testAccPreCheck(t) },
-				ProtoV6ProviderFactories: protoV6ProviderFactories(),
-				//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
-				Steps: []resource.TestStep{
-					{
-						Config: testAccHelmReleaseConfigConcurrent(name, namespace, name, "1.2.3"),
-						Check: func(s *terraform.State) error {
-							if len(s.RootModule().Resources) != 10 {
-								return fmt.Errorf("Test should have created 10 resources from one tfconfig.")
-							}
-							return nil
-						},
-					},
+func TestAccResourceRelease_parallel(t *testing.T) {
+	// NOTE this test assumes that terraform apply will
+	// be run with the default of -parallelism=10
+	name := randName("parallel")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resourceCount := 20
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigParallel(name, resourceCount, namespace, name, "1.2.3"),
+				Check: func(s *terraform.State) error {
+					if len(s.RootModule().Resources) != resourceCount {
+						return fmt.Errorf("Test should have created %d resources from one tfconfig.", resourceCount)
+					}
+					return nil
 				},
-			})
-			t.Logf("Finishing goroutine - namespace: %s", name)
-		}(fmt.Sprintf("concurrent-%d-%s", i, acctest.RandString(10)))
-	}
-	wg.Wait()
+			},
+		},
+	})
 }
 func TestAccResourceRelease_update(t *testing.T) {
 	name := randName("update")
@@ -808,15 +800,15 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	`, resource, name, ns, testRepositoryURL, version)
 }
 
-func testAccHelmReleaseConfigConcurrent(resource, ns, name, version string) string {
+func testAccHelmReleaseConfigParallel(resource string, count int, ns, name, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
-			count       = 10
+			count       = %d
  			name        = "%s-${count.index}"
 			namespace   = %q
 			description = "Test"
 			repository  = %q
-  			chart       = "test-chart"
+  		chart       = "test-chart"
 			version     = %q
 
 			set = [
@@ -830,7 +822,7 @@ func testAccHelmReleaseConfigConcurrent(resource, ns, name, version string) stri
 				}
 			]
 		}
-	`, resource, name, ns, testRepositoryURL, version)
+	`, resource, count, name, ns, testRepositoryURL, version)
 }
 
 // Changed version = "", due to changes in the framework. Will look into later!
@@ -1993,9 +1985,9 @@ func testAccHelmReleaseConfigManifestUnknownValues(resource, ns, name, version s
 	return fmt.Sprintf(`
 		provider helm {
 			experiments = {
-				manifest = true
-			}
-		}
+					manifest = true
+		  }
+    }
 
 		resource "random_string" "random_label" {
 			length  = 16
