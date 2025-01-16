@@ -32,7 +32,7 @@ information.
 
 ```hcl
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     config_path = "~/.kube/config"
   }
 }
@@ -40,13 +40,15 @@ provider "helm" {
 resource "helm_release" "nginx_ingress" {
   name       = "nginx-ingress-controller"
 
-  repository = "https://charts.bitnami.com/bitnami"
+  repository = "oci://registry-1.docker.io/bitnamicharts"
   chart      = "nginx-ingress-controller"
 
-  set {
+  set = [
+    {
     name  = "service.type"
     value = "ClusterIP"
-  }
+    }
+  ]
 }
 ```
 
