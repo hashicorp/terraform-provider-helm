@@ -1,3 +1,9 @@
+## 3.0.0-pre1 (Jan 16, 2025)
+
+* This pre-release migrates ports the provider project from `terraform-plugin-sdk/v2` to `terraform-plugin-framework` [[GH-1379](https://github.com/hashicorp/terraform-provider-helm/pull/1379)]
+
+Please refer to the [migration guide](./docs/guides/v3-upgrade-guide.md).
+
 ## 2.17.0 (Dec 19, 2024)
 
 ENHANCEMENT:
