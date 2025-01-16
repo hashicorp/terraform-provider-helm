@@ -6,7 +6,8 @@ package testing
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
@@ -17,10 +18,8 @@ import (
 	"github.com/hashicorp/terraform-provider-helm/helm"
 )
 
-var providerFactory = map[string]func() (tfprotov5.ProviderServer, error){
-	"helm": func() (tfprotov5.ProviderServer, error) {
-		return helm.Provider().GRPCProvider(), nil
-	},
+var providerFactory = map[string]func() (tfprotov6.ProviderServer, error){
+	"helm": providerserver.NewProtocol6WithError(helm.New("version")()),
 }
 
 func TestAccDeferredActions_basic(t *testing.T) {
@@ -34,7 +33,7 @@ func TestAccDeferredActions_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
-				ProtoV5ProviderFactories: providerFactory,
+				ProtoV6ProviderFactories: providerFactory,
 				ConfigDirectory: func(tscr config.TestStepConfigRequest) string {
 					return "config-da-basic"
 				},
@@ -56,7 +55,7 @@ func TestAccDeferredActions_basic(t *testing.T) {
 				},
 			},
 			{
-				ProtoV5ProviderFactories: providerFactory,
+				ProtoV6ProviderFactories: providerFactory,
 				ConfigDirectory: func(tscr config.TestStepConfigRequest) string {
 					return "config-da-basic"
 				},

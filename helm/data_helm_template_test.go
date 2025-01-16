@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccDataTemplate_basic(t *testing.T) {
@@ -18,8 +18,7 @@ func TestAccDataTemplate_basic(t *testing.T) {
 	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{{
 			Config: testAccDataHelmTemplateConfigBasic(testResourceName, namespace, name, "1.2.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -43,8 +42,7 @@ func TestAccDataTemplate_crds(t *testing.T) {
 	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{{
 			Config: testAccDataHelmTemplateCRDs(testResourceName, namespace, name, "1.2.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -181,8 +179,7 @@ data:
 `, name)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{{
 			Config: testAccDataHelmTemplateConfigTemplates(testResourceName, namespace, name, "1.2.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -201,40 +198,32 @@ func TestAccDataTemplate_kubeVersion(t *testing.T) {
 
 	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
 
-	// No kube version set, will fail as v1.20.0.
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{{
 			Config:      testAccDataHelmTemplateKubeVersionNoVersionSet(testResourceName, namespace, name, "1.2.3"),
 			ExpectError: regexp.MustCompile("chart requires kubeVersion.*"),
 		}},
 	})
 
-	// Kube Version set but for a to low version.
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{{
 			Config:      testAccDataHelmTemplateKubeVersion(testResourceName, namespace, name, "1.2.3", "1.18.0"),
 			ExpectError: regexp.MustCompile("chart requires kubeVersion.*"),
 		}},
 	})
 
-	// Kube Version set but not parsable.
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{{
 			Config:      testAccDataHelmTemplateKubeVersion(testResourceName, namespace, name, "1.2.3", "abcdef"),
 			ExpectError: regexp.MustCompile(`couldn't parse string "abcdef" into kube-version`),
 		}},
 	})
 
-	// Kube Version set and above the min version.
 	resource.Test(t, resource.TestCase{
-		PreCheck:  func() { testAccPreCheck(t) },
-		Providers: testAccProviders,
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{{
 			Config: testAccDataHelmTemplateKubeVersion(testResourceName, namespace, name, "1.2.3", "1.22.0"),
 			Check: resource.ComposeAggregateTestCheckFunc(
@@ -249,7 +238,8 @@ func TestAccDataTemplate_kubeVersion(t *testing.T) {
 func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		data "helm_template" "%s" {
-			show_only	= [""]
+			show_only = [""]
+
  			name        = %q
 			namespace   = %q
 			description = "Test"
@@ -257,15 +247,16 @@ func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) stri
   			chart       = "test-chart"
 			version     = %q
 
-			set {
-				name = "foo"
-				value = "bar"
-			}
-
-			set {
-				name = "fizz"
-				value = 1337
-			}
+			set = [
+				{
+					name  = "foo"
+					value = "bar"
+				},
+				{
+					name  = "fizz"
+					value = 1337
+				}
+			]
 		}
 	`, resource, name, ns, testRepositoryURL, version)
 }
@@ -280,15 +271,16 @@ func testAccDataHelmTemplateConfigTemplates(resource, ns, name, version string) 
   			chart       = "test-chart"
 			version     = %q
 
-			set {
-				name = "foo"
-				value = "bar"
-			}
-
-			set {
-				name = "fizz"
-				value = 1337
-			}
+			set = [
+				{
+					name  = "foo"
+					value = "bar"
+				},
+				{
+					name  = "fizz"
+					value = 1337
+				}
+			]
 
 			show_only = [
 				"templates/configmaps.yaml",

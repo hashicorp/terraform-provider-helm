@@ -15,7 +15,6 @@ ifneq ($(origin TRAVIS_TAG), undefined)
 	BRANCH := $(TRAVIS_TAG)
 	VERSION := $(TRAVIS_TAG)
 endif
-
 # For changelog generation, default the last release to the last tag on
 # any branch, and this release to just be the current branch we're on.
 LAST_RELEASE?=$$(git describe --tags $$(git rev-list --tags --max-count=1))

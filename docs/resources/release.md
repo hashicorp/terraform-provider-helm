@@ -144,25 +144,24 @@ resource "helm_release" "example" {
   chart      = "redis"
   version    = "6.0.1"
 
-  values = [
-    "${file("values.yaml")}"
+  set = [
+    {
+      name  = "cluster.enabled"
+      value = "true"
+    },
+    {
+      name  = "metrics.enabled"
+      value = "true"
+    }
   ]
 
-  set {
-    name  = "cluster.enabled"
-    value = "true"
-  }
-
-  set {
-    name  = "metrics.enabled"
-    value = "true"
-  }
-
-  set {
-    name  = "service.annotations.prometheus\\.io/port"
-    value = "9127"
-    type  = "string"
-  }
+  set = [
+    {
+      name  = "service.annotations.prometheus\\.io/port"
+      value = "9127"
+      type  = "string"
+    }
+  ]
 }
 ```
 
@@ -194,16 +193,17 @@ Provider supports grabbing charts from an OCI repository:
 
 ```terraform
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     config_path = "~/.kube/config"
   }
 
-  # localhost registry with password protection
-  registry {
-    url = "oci://localhost:5000"
-    username = "username"
-    password = "password"
-  }
+  registries = [
+    {
+      url      = "oci://localhost:5000"
+      username = "username"
+      password = "password"
+    }
+  ]
 }
 
 resource "helm_release" "example" {
@@ -295,17 +295,21 @@ The `set`, `set_list`, and `set_sensitive` blocks support:
 Since Terraform Utilizes HCL as well as Helm using the Helm Template Language, it's necessary to escape the `{}`, `[]`, `.`, and `,` characters twice in order for it to be parsed. `name` should also be set to the `value path`, and `value` is the desired value that will be set.
 
 ```terraform
-set {
-  name  = "grafana.ingress.annotations.alb\\.ingress\\.kubernetes\\.io/group\\.name"
-  value = "shared-ingress"
-}
+set = [
+  {
+    name  = "grafana.ingress.annotations.alb\\.ingress\\.kubernetes\\.io/group\\.name"
+    value = "shared-ingress"
+  }
+]
 ```
 
 ```terraform
-set_list {
-  name  = "hashicorp"
-  value = ["terraform", "nomad", "vault"]
-}
+set_list = [
+  {
+    name  = "hashicorp"
+    value = ["terraform", "nomad", "vault"]
+  }
+]
 ```
 
 ```terraform
@@ -316,10 +320,13 @@ controller:
 ```
 
 ```terraform
-set {
+set = [
+  {
     name  = "controller.pod.annotations.status\\.kubernetes\\.io/restart-on-failure"
     value = "\\{\"timeout\": \"30s\"\\}"
-}
+  }
+]
+
 ```
 
 The `postrender` block supports two attributes:

@@ -1,0 +1,3 @@
+```release-note:dependency
+Provider project ported from `terraform-plugin-sdk/v2` to `terraform-plugin-framework`
+```
