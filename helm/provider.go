@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -68,7 +69,7 @@ type HelmProviderModel struct {
 
 // ExperimentsConfigModel configures the experiments that are enabled or disabled
 type ExperimentsConfigModel struct {
-	Manifest types.Bool `tfsdk:"manifest"`
+	Manifest jsontypes.Normalized `tfsdk:"manifest"`
 }
 
 // RegistryConfigModel configures an OCI registry
@@ -181,7 +182,8 @@ func (p *HelmProvider) Schema(ctx context.Context, req provider.SchemaRequest, r
 
 func experimentsSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"manifest": schema.BoolAttribute{
+		"manifest": schema.StringAttribute{
+			CustomType:  jsontypes.NormalizedType{},
 			Optional:    true,
 			Description: "Enable full diff by storing the rendered manifest in the state.",
 		},
@@ -489,9 +491,9 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		return
 	}
 
-	manifestExperiment := false
-	if config.Experiments != nil {
-		manifestExperiment = config.Experiments.Manifest.ValueBool()
+	manifestExperiment := jsontypes.Normalized{}
+	if config.Experiments != nil && !config.Experiments.Manifest.IsNull() {
+		manifestExperiment = config.Experiments.Manifest
 	}
 
 	var execAttrValue attr.Value = types.ObjectNull(execSchemaAttrTypes())
@@ -559,13 +561,13 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			BurstLimit:           types.Int64Value(burstLimit),
 			Kubernetes:           kubernetesConfigObjectValue,
 			Experiments: &ExperimentsConfigModel{
-				Manifest: types.BoolValue(manifestExperiment),
+				Manifest: manifestExperiment,
 			},
 		},
 		Settings:   settings,
 		HelmDriver: helmDriver,
 		Experiments: map[string]bool{
-			"manifest": manifestExperiment,
+			"manifest": !manifestExperiment.IsNull(),
 		},
 	}
 	registryClient, err := registry.NewClient()
