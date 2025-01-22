@@ -64,7 +64,7 @@ For further details on the `helm template` command, refer to the [Helm documenta
 - `validate` (Boolean) Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install
 - `values` (List of String) List of values in raw yaml format to pass to helm.
 - `verify` (Boolean) Verify the package before installing it.Defaults to `false`.
-- `version` (String) Specify the exact chart version to install. If this is not specified, the latest version is installed.
+- `version` (String) Specify the exact chart version to install. If this is not specified, the latest version is installed. `helm_release` will not automatically grab the latest release, version must explicitly upgraded when upgrading an installed chart.
 - `wait` (Boolean) Will wait until all resources are in a ready state before marking the release as successful.Defaults to `true`.
 
 ### Read-Only
