@@ -2040,6 +2040,13 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 		return
 	}
 
+	var timeouts timeouts.Value
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("timeouts"), &timeouts)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.Timeouts = timeouts
+
 	state.Set = types.ListNull(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"name":  types.StringType,

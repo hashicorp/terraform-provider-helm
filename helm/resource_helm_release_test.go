@@ -157,7 +157,6 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 	})
 }
 
-// Import state error, type mismatch from set_sensitive
 func TestAccResourceRelease_import(t *testing.T) {
 	name := randName("import")
 	namespace := createRandomNamespace(t)
