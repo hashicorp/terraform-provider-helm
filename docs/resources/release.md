@@ -86,12 +86,11 @@ Optional:
 Required:
 
 - `name` (String)
-- `value` (String)
 
 Optional:
 
 - `type` (String)
-
+- `value` (String)
 
 <a id="nestedblock--set_list"></a>
 ### Nested Schema for `set_list`

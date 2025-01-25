@@ -540,7 +540,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 							Required: true,
 						},
 						"value": schema.ListAttribute{
-							Optional:    true,
+							Required:    true,
 							ElementType: types.StringType,
 						},
 					},
