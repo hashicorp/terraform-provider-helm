@@ -293,7 +293,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 							Required: true,
 						},
 						"value": schema.StringAttribute{
-							Required: true,
+							Optional: true,
 						},
 						"type": schema.StringAttribute{
 							Optional: true,
@@ -311,7 +311,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
-							Required: true,
+							Optional: true,
 						},
 						"value": schema.ListAttribute{
 							Required:    true,

@@ -1,0 +1,3 @@
+```release-note:bug
+change `set.value` && `set_list.value` to optional instead of required
+```

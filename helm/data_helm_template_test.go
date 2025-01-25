@@ -235,6 +235,24 @@ func TestAccDataTemplate_kubeVersion(t *testing.T) {
 	})
 }
 
+func TestAccDataTemplate_configSetNull(t *testing.T) {
+	name := randName("basic")
+	namespace := randName(testNamespacePrefix)
+
+	datasourceAddress := fmt.Sprintf("data.helm_template.%s", testResourceName)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{{
+			Config: testAccDataHelmTemplateConfigNullSet(testResourceName, namespace, name, "1.2.3"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				checkResourceAttrNotSet(datasourceAddress, "set.0.value"),
+				checkResourceAttrNotSet(datasourceAddress, "set.1.value"),
+			),
+		}},
+	})
+}
+
 func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		data "helm_template" "%s" {
@@ -279,6 +297,34 @@ func testAccDataHelmTemplateConfigTemplates(resource, ns, name, version string) 
 				{
 					name  = "fizz"
 					value = 1337
+				}
+			]
+
+			show_only = [
+				"templates/configmaps.yaml",
+				""
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccDataHelmTemplateConfigNullSet(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		data "helm_template" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+  			chart       = "test-chart"
+			version     = %q
+
+			set = [
+				{
+					name  = "foo"
+				},
+				{
+					name  = "fizz"
+					value = null
 				}
 			]
 

@@ -518,7 +518,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 							Required: true,
 						},
 						"value": schema.StringAttribute{
-							Required: true,
+							Optional: true,
 						},
 						"type": schema.StringAttribute{
 							Optional: true,
