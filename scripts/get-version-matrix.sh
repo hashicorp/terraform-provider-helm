@@ -10,7 +10,7 @@ function get_latest_version() {
                 sort -V -r | head -1 
     else
         echo "Error: Failed to connect to GitHub API" >&2
-        return 1
+        exit 1
     fi
 }
 
