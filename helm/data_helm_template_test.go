@@ -235,6 +235,21 @@ func TestAccDataTemplate_kubeVersion(t *testing.T) {
 	})
 }
 
+func TestAccDataTemplate_insecure(t *testing.T) {
+	name := randName("insecure")
+	namespace := randName(testNamespacePrefix)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{{
+			Config: testAccDataHelmTemplateInsecure(testResourceName, namespace, name, "1.2.3"),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fmt.Sprintf("data.helm_template.%s", testResourceName), "insecure", "true"),
+			),
+		}},
+	})
+}
+
 func testAccDataHelmTemplateConfigBasic(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		data "helm_template" "%s" {
@@ -327,6 +342,19 @@ func testAccDataHelmTemplateCRDs(resource, ns, name, version string) string {
   			chart        = "crds-chart"
 			include_crds = true
 			version      = %q
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccDataHelmTemplateInsecure(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		data "helm_template" "%s" {
+			name        = %q
+			namespace   = %q
+			repository  = %q
+			chart       = "test-chart"
+			version     = %q
+			insecure    = true
 		}
 	`, resource, name, ns, testRepositoryURL, version)
 }

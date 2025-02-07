@@ -2181,3 +2181,35 @@ func testAccHelmReleaseRecomputeMetadataSet(resource, ns, name string) string {
 		}
 `, resource, name, ns, resource)
 }
+
+func TestAccResourceRelease_insecure(t *testing.T) {
+	name := randName("insecure")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigInsecure(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "insecure", "true"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigInsecure(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+        resource "helm_release" "%s" {
+            name        = %q
+            namespace   = %q
+            repository  = %q
+            chart       = "test-chart"
+            version     = %q
+            insecure    = true
+        }
+    `, resource, name, ns, testRepositoryURL, version)
+}
