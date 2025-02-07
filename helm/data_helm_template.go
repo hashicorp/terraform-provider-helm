@@ -98,6 +98,7 @@ type HelmTemplateModel struct {
 	Version                  types.String     `tfsdk:"version"`
 	Verify                   types.Bool       `tfsdk:"verify"`
 	Wait                     types.Bool       `tfsdk:"wait"`
+	Insecure                 types.Bool       `tfsdk:"insecure"`
 }
 
 // SetValue represents the custom value to be merged with the Helm chart values
@@ -380,6 +381,10 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Optional:    true,
 				Description: "Will wait until all resources are in a ready state before marking the release as successful.",
 			},
+			"insecure": schema.BoolAttribute{
+				Optional:    true,
+				Description: "If set to true, the helm client will not verify the SSL certificate of the chart repository.",
+			},
 		},
 	}
 }
@@ -466,6 +471,9 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 			defaultNamespace = "default"
 		}
 		state.Namespace = types.StringValue(defaultNamespace)
+	}
+	if state.Insecure.IsNull() || state.Insecure.IsUnknown() {
+		state.Insecure = types.BoolValue(false)
 	}
 
 	meta := d.meta
@@ -570,6 +578,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	client.Devel = state.Devel.ValueBool()
 	client.Description = state.Description.ValueString()
 	client.CreateNamespace = state.CreateNamespace.ValueBool()
+	client.InsecureSkipTLSverify = state.Insecure.ValueBool()
 
 	if state.KubeVersion.ValueString() != "" {
 		parsedVer, err := chartutil.ParseKubeVersion(state.KubeVersion.ValueString())
@@ -851,6 +860,7 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 	cpo.Username = model.RepositoryUsername.ValueString()
 	cpo.Password = model.RepositoryPassword.ValueString()
 	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
+	cpo.InsecureSkipTLSverify = model.Insecure.ValueBool()
 
 	return cpo, chartName, diags
 }
