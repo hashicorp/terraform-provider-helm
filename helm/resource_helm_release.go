@@ -102,6 +102,7 @@ type HelmReleaseModel struct {
 	Version                  types.String     `tfsdk:"version"`
 	Wait                     types.Bool       `tfsdk:"wait"`
 	WaitForJobs              types.Bool       `tfsdk:"wait_for_jobs"`
+	Insecure                 types.Bool       `tfsdk:"insecure"`
 }
 
 var defaultAttributes = map[string]interface{}{
@@ -126,6 +127,7 @@ var defaultAttributes = map[string]interface{}{
 	"verify":                     false,
 	"wait":                       true,
 	"wait_for_jobs":              false,
+	"insecure":                   false,
 }
 
 type releaseMetaData struct {
@@ -509,6 +511,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Default:     booldefault.StaticBool(defaultAttributes["wait_for_jobs"].(bool)),
 				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
 			},
+			"insecure": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(defaultAttributes["insecure"].(bool)),
+				Description: "If set to true, the helm client will not verify the SSL certificate of the chart repository.",
+			},
 			"set": schema.ListNestedAttribute{
 				Description: "Custom values to be merged with the values",
 				Optional:    true,
@@ -723,6 +731,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.Replace = state.Replace.ValueBool()
 	client.Description = state.Description.ValueString()
 	client.CreateNamespace = state.CreateNamespace.ValueBool()
+	client.InsecureSkipTLSverify = state.Insecure.ValueBool()
 
 	if state.PostRender != nil {
 		binaryPath := state.PostRender.BinaryPath.ValueString()
@@ -925,6 +934,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.MaxHistory = int(plan.MaxHistory.ValueInt64())
 	client.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 	client.Description = plan.Description.ValueString()
+	client.InsecureSkipTLSverify = plan.Insecure.ValueBool()
 
 	if plan.PostRender != nil {
 		binaryPath := plan.PostRender.BinaryPath.ValueString()
@@ -1083,7 +1093,7 @@ func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPath
 	cpo.Username = model.RepositoryUsername.ValueString()
 	cpo.Password = model.RepositoryPassword.ValueString()
 	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
-
+	cpo.InsecureSkipTLSverify = model.Insecure.ValueBool()
 	return cpo, chartName, diags
 }
 
@@ -1719,6 +1729,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			install.Description = plan.Description.ValueString()
 			install.CreateNamespace = plan.CreateNamespace.ValueBool()
 			install.PostRenderer = client.PostRenderer
+			install.InsecureSkipTLSverify = plan.Insecure.ValueBool()
 
 			values, diags := getValues(ctx, &plan)
 			resp.Diagnostics.Append(diags...)
@@ -1797,7 +1808,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 		upgrade.Description = plan.Description.ValueString()
 		upgrade.PostRenderer = client.PostRenderer
-
+		upgrade.InsecureSkipTLSverify = plan.Insecure.ValueBool()
 		values, diags := getValues(ctx, &plan)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
