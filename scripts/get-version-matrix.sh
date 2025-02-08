@@ -23,4 +23,4 @@ v1_7=$(get_latest_version v1.7) || exit 1
 v1_9=$(get_latest_version v1.9) || exit 1
 
 # Construct the matrix
-echo "matrix=[$v1_0, $v1_3, $v1_5, $v1_7, $v1_9]"
+echo "matrix=[$v1_0, $v1_3, $v1_5, $v1_7, $v1_9]" >> "$GITHUB_OUTPUT"
