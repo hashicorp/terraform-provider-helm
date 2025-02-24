@@ -531,6 +531,29 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 		},
 	})
 }
+func TestAccResourceRelease_SetNull(t *testing.T) {
+	name := randName("test-update-set-value")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	// Ensure that value is null
+	resource.Test(t, resource.TestCase{
+		//PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigSetNull(
+					testResourceName, namespace, name, "1.2.3",
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkResourceAttrNotSet("helm_release.test", "set.0.value"),
+					checkResourceAttrNotSet("helm_release.test", "set.1.value"),
+				),
+			},
+		},
+	})
+}
 func TestAccResourceRelease_updateSetValue(t *testing.T) {
 	name := randName("test-update-set-value")
 	namespace := createRandomNamespace(t)
@@ -602,6 +625,26 @@ func checkResourceAttrExists(name, key string) resource.TestCheckFunc {
 		return fmt.Errorf("%s: Attribute '%s' expected to be set", name, key)
 	}
 }
+func checkResourceAttrNotSet(name, key string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		ms := s.RootModule()
+		rs, ok := ms.Resources[name]
+		if !ok {
+			return fmt.Errorf("Not found: %s in %s", name, ms.Path)
+		}
+
+		is := rs.Primary
+		if is == nil {
+			return fmt.Errorf("No primary instance: %s in %s", name, ms.Path)
+		}
+
+		if _, ok := is.Attributes[key]; !ok {
+			return nil // Success - attribute does not exist
+		}
+		return fmt.Errorf("%s: Attribute '%s' exists but was expected to be unset", name, key)
+	}
+}
+
 func TestAccResourceRelease_postrender(t *testing.T) {
 	// TODO: Add Test Fixture to return real YAML here
 
@@ -896,6 +939,29 @@ func testAccHelmReleaseConfigSet(resource, ns, name, version, setValue string) s
 			]
 		}
 	`, resource, name, ns, testRepositoryURL, version, setValue)
+}
+
+func testAccHelmReleaseConfigSetNull(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+  			chart       = "test-chart"
+			version     = %q
+
+			set = [
+				{
+					name  = "foo"
+					value = null
+				},
+				{
+					name  = "fizz"
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
 }
 
 // func TestGetValues(t *testing.T) {
