@@ -50,6 +50,8 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
 - `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
 - `set` (Block Set) Custom values to be merged with the values. (see [below for nested schema](#nestedblock--set))
+- `set_wo` (Attribute List) Custom values to be merged with the values. This is the same as "set" but write-only. (see [below for nested schema](#nestedblock--set))
+- `set_wo_revision` (Number) The current revision of the write-only "set_wo" attribute. Incrementing this integer value will cause Terraform to update the write-only value.`  
 - `set_list` (Block List) Custom list values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
 - `set_sensitive` (Block Set) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_sensitive))
 - `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.

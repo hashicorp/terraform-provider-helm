@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -91,6 +92,8 @@ type HelmReleaseModel struct {
 	RepositoryUsername       types.String     `tfsdk:"repository_username"`
 	ResetValues              types.Bool       `tfsdk:"reset_values"`
 	ReuseValues              types.Bool       `tfsdk:"reuse_values"`
+	SetWO                    types.List       `tfsdk:"set_wo"`
+	SetWORevision            types.Int64      `tfsdk:"set_wo_revision"`
 	Set                      types.List       `tfsdk:"set"`
 	SetList                  types.List       `tfsdk:"set_list"`
 	SetSensitive             types.List       `tfsdk:"set_sensitive"`
@@ -531,6 +534,37 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 				},
 			},
+			"set_wo": schema.ListNestedAttribute{
+				Description: "Custom values to be merged with the values",
+				Optional:    true,
+				WriteOnly:   true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Required:  true,
+							WriteOnly: true,
+						},
+						"value": schema.StringAttribute{
+							Required:  true,
+							WriteOnly: true,
+						},
+						"type": schema.StringAttribute{
+							Optional:  true,
+							WriteOnly: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("auto", "string"),
+							},
+						},
+					},
+				},
+			},
+			"set_wo_revision": schema.Int64Attribute{
+				Optional:    true,
+				Description: `The current revision of the write-only "set_wo" attribute. Incrementing this integer value will cause Terraform to update the write-only value.`,
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+				},
+			},
 			"set_list": schema.ListNestedAttribute{
 				Description: "Custom sensitive values to be merged with the values",
 				Optional:    true,
@@ -649,6 +683,12 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	var config HelmReleaseModel
+	diags = req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Plan state on Create: %+v", state))
 
@@ -698,6 +738,17 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	resp.Diagnostics.Append(valuesDiags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if config.SetWORevision.ValueInt64() > 0 {
+		woValues, woDiags := getWriteOnlyValues(ctx, &config)
+		resp.Diagnostics.Append(woDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if len(woValues) > 0 {
+			values = mergeMaps(values, woValues)
+		}
 	}
 
 	err = isChartInstallable(c)
@@ -863,6 +914,13 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
+	var config HelmReleaseModel
+	diags = req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	logID := fmt.Sprintf("[resourceReleaseUpdate: %s]", state.Name.ValueString())
 	tflog.Debug(ctx, fmt.Sprintf("%s Started", logID))
 
@@ -946,6 +1004,16 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	resp.Diagnostics.Append(valuesDiags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+	if plan.SetWORevision.ValueInt64() > state.SetWORevision.ValueInt64() {
+		woValues, woDiags := getWriteOnlyValues(ctx, &config)
+		resp.Diagnostics.Append(woDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if len(woValues) > 0 {
+			values = mergeMaps(values, woValues)
+		}
 	}
 
 	name := plan.Name.ValueString()
@@ -1152,6 +1220,30 @@ func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string
 	}
 
 	return c, path, diags
+}
+
+func getWriteOnlyValues(ctx context.Context, model *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
+	base := map[string]interface{}{}
+	diags := diag.Diagnostics{}
+
+	if !model.SetWO.IsUnknown() && !model.SetWO.IsNull() {
+		tflog.Debug(ctx, "Processing SetWO attribute")
+		var setvals []setResourceModel
+		setDiags := model.SetWO.ElementsAs(ctx, &setvals, false)
+		diags.Append(setDiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		for _, set := range setvals {
+			setDiags := getValue(base, set)
+			diags.Append(setDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+	}
+
+	return base, diags
 }
 
 func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
@@ -1400,6 +1492,14 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *relea
 		state.Manifest = types.StringValue(manifest)
 	}
 
+	// NOTE Don't retrieve values if write-only is being used.
+	// It is not possible to pick out which values are write-only
+	// at read time because write-only values are ephemeral
+	valuesstr := types.StringValue("{}")
+	if state.SetWORevision.ValueInt64() <= 0 {
+		valuesstr = types.StringValue(values)
+	}
+
 	// Create metadata as a slice of maps
 	metadata := map[string]attr.Value{
 		"name":           types.StringValue(r.Name),
@@ -1408,7 +1508,7 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *relea
 		"chart":          types.StringValue(r.Chart.Metadata.Name),
 		"version":        types.StringValue(r.Chart.Metadata.Version),
 		"app_version":    types.StringValue(r.Chart.Metadata.AppVersion),
-		"values":         types.StringValue(values),
+		"values":         valuesstr,
 		"first_deployed": types.Int64Value(r.Info.FirstDeployed.Unix()),
 		"last_deployed":  types.Int64Value(r.Info.LastDeployed.Unix()),
 	}
@@ -1998,6 +2098,13 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 	}
 
 	state.Set = types.ListNull(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"name":  types.StringType,
+			"type":  types.StringType,
+			"value": types.StringType,
+		},
+	})
+	state.SetWO = types.ListNull(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"name":  types.StringType,
 			"type":  types.StringType,

@@ -17,9 +17,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/helmpath"
@@ -35,9 +37,9 @@ func TestAccResourceRelease_basic(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
@@ -64,6 +66,41 @@ func TestAccResourceRelease_basic(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceRelease_set_wo(t *testing.T) {
+	name := randName("writeonly")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
+			// FIXME use const from terraform-plugin-testing once v1.11.0 is released.
+			tfversion.SkipBelow(version.Must(version.NewVersion("1.11.0"))),
+		},
+		// PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfig_set_wo(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "set_wo_revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.values", "{}"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseConfig_set_wo2(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "set_wo_revision", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.values", "{}"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_emptyVersion(t *testing.T) {
 	name := randName("basic")
 	namespace := createRandomNamespace(t)
@@ -71,9 +108,9 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 
 	resourceName := "helm_release.test"
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigEmptyVersion(testResourceName, namespace, name),
@@ -98,9 +135,9 @@ func TestAccResourceRelease_import(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
@@ -210,9 +247,9 @@ func TestAccResourceRelease_multiple_releases(t *testing.T) {
 		config += releaseConfig
 	}
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -247,15 +284,16 @@ func TestAccResourceRelease_parallel(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_update(t *testing.T) {
 	name := randName("update")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
@@ -278,15 +316,16 @@ func TestAccResourceRelease_update(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 	name := randName("test-empty-values-list")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigValues(
@@ -301,15 +340,16 @@ func TestAccResourceRelease_emptyValuesList(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_updateValues(t *testing.T) {
 	name := randName("test-update-values")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigValues(
@@ -334,15 +374,16 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_cloakValues(t *testing.T) {
 	name := randName("test-update-values")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigSensitiveValue(
@@ -358,15 +399,16 @@ func TestAccResourceRelease_cloakValues(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 	name := randName("test-update-multiple-values")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigValues(
@@ -393,13 +435,14 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_repository_url(t *testing.T) {
 	name := randName("test-repository-url")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
@@ -423,6 +466,7 @@ func TestAccResourceRelease_repository_url(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	name := randName("test-update-after-fail")
 	namespace := createRandomNamespace(t)
@@ -467,9 +511,9 @@ func TestAccResourceRelease_updateAfterFail(t *testing.T) {
 	}`, name, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config:             malformed,
@@ -494,9 +538,9 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigValues(
@@ -531,6 +575,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_SetNull(t *testing.T) {
 	name := randName("test-update-set-value")
 	namespace := createRandomNamespace(t)
@@ -538,9 +583,9 @@ func TestAccResourceRelease_SetNull(t *testing.T) {
 
 	// Ensure that value is null
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigSetNull(
@@ -554,6 +599,7 @@ func TestAccResourceRelease_SetNull(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_updateSetValue(t *testing.T) {
 	name := randName("test-update-set-value")
 	namespace := createRandomNamespace(t)
@@ -563,9 +609,9 @@ func TestAccResourceRelease_updateSetValue(t *testing.T) {
 	// use checkResourceAttrExists rather than testCheckResourceAttrSet as the latter also checks if the value is not ""
 	// and the default for 'type' is an empty string when not explicitly set.
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigSet(
@@ -588,15 +634,16 @@ func TestAccResourceRelease_updateSetValue(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_validation(t *testing.T) {
 	invalidName := "this-helm-release-name-is-longer-than-53-characters-long"
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccHelmReleaseConfigBasic(testResourceName, namespace, invalidName, "1.2.3"),
@@ -625,6 +672,7 @@ func checkResourceAttrExists(name, key string) resource.TestCheckFunc {
 		return fmt.Errorf("%s: Attribute '%s' expected to be set", name, key)
 	}
 }
+
 func checkResourceAttrNotSet(name, key string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		ms := s.RootModule()
@@ -652,9 +700,9 @@ func TestAccResourceRelease_postrender(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "echo"),
@@ -679,6 +727,7 @@ func TestAccResourceRelease_postrender(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 	name := randName("test-namespace-does-not-exist")
 	namespace := createRandomNamespace(t)
@@ -701,9 +750,9 @@ func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 	}`, name, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config:      broken,
@@ -718,6 +767,7 @@ func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_invalidName(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -731,9 +781,9 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 	}`, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config:             broken,
@@ -743,6 +793,7 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_createNamespace(t *testing.T) {
 	name := randName("create-namespace")
 	namespace := randName("helm-created-namespace")
@@ -758,9 +809,9 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 	}`, name, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: config,
@@ -830,6 +881,52 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 			version     = %q
 
 			set = [
+				{
+					name  = "foo"
+					value = "bar"
+				},
+				{
+					name  = "fizz"
+					value = 1337
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccHelmReleaseConfig_set_wo(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+  		chart       = "test-chart"
+			version     = %q
+
+			set_wo_revision = 1
+			set_wo = [
+				{
+					name  = "foo"
+					value = "bar"
+				},
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccHelmReleaseConfig_set_wo2(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+  		chart       = "test-chart"
+			version     = %q
+
+			set_wo_revision = 2
+			set_wo = [
 				{
 					name  = "foo"
 					value = "bar"
@@ -1032,7 +1129,6 @@ func testAccHelmReleaseConfigSetNull(resource, ns, name, version string) string 
 // }
 
 func TestUseChartVersion(t *testing.T) {
-
 	type test struct {
 		chartPath       string
 		repositoryURL   string
@@ -1063,7 +1159,7 @@ func TestUseChartVersion(t *testing.T) {
 	}
 }
 
-//check for unit test documentation
+// check for unit test documentation
 // func TestGetListValues(t *testing.T) {
 // 	ctx := context.Background()
 
@@ -1174,9 +1270,9 @@ func testAccPreCheckHelmRepositoryDestroy(t *testing.T, name string) {
 	settings := testMeta.Settings
 
 	rc := settings.RepositoryConfig
-	//settings := testAccProvider.Meta().(*Meta).Settings
+	// settings := testAccProvider.Meta().(*Meta).Settings
 
-	//rc := settings.RepositoryConfig
+	// rc := settings.RepositoryConfig
 
 	r, err := repo.LoadFile(rc)
 
@@ -1185,7 +1281,7 @@ func testAccPreCheckHelmRepositoryDestroy(t *testing.T, name string) {
 		return
 	}
 
-	if err := r.WriteFile(rc, 0644); err != nil {
+	if err := r.WriteFile(rc, 0o644); err != nil {
 		t.Fatalf("Failed to write repositories file: %s", err)
 	}
 
@@ -1330,9 +1426,9 @@ func TestAccResourceRelease_LintFailValues(t *testing.T) {
 	}`, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config:             broken,
@@ -1343,6 +1439,7 @@ func TestAccResourceRelease_LintFailValues(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_LintFailChart(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
@@ -1357,9 +1454,9 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 	}`, namespace, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config:             broken,
@@ -1370,6 +1467,7 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_FailedDeployFailsApply(t *testing.T) {
 	name := randName("test-failed-deploy-fails-apply")
 	namespace := createRandomNamespace(t)
@@ -1383,9 +1481,9 @@ func TestAccResourceRelease_FailedDeployFailsApply(t *testing.T) {
 	}`, name, testRepositoryURL)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config:   failed,
@@ -1413,9 +1511,9 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccHelmReleaseConfigDependency(testResourceName, namespace, name, false),
@@ -1459,6 +1557,7 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_chartURL(t *testing.T) {
 	name := randName("chart-url")
 	namespace := createRandomNamespace(t)
@@ -1466,9 +1565,9 @@ func TestAccResourceRelease_chartURL(t *testing.T) {
 
 	chartURL := fmt.Sprintf("%s/%s", testRepositoryURL, "test-chart-1.2.3.tgz")
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfig_chartURL(testResourceName, namespace, name, chartURL),
@@ -1481,6 +1580,7 @@ func TestAccResourceRelease_chartURL(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 	name := randName("helm-repo-add")
 	namespace := createRandomNamespace(t)
@@ -1495,9 +1595,9 @@ func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 	}
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfig_helm_repo_add(testResourceName, namespace, name),
@@ -1510,15 +1610,16 @@ func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_delete_regression(t *testing.T) {
 	name := randName("outside-delete")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
@@ -1557,7 +1658,7 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 		//testAccPreCheck(t)
 		//},
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigManifestExperimentEnabled(testResourceName, namespace, name, "1.2.3"),
@@ -1579,6 +1680,7 @@ func TestAccResourceRelease_manifest(t *testing.T) {
 		},
 	})
 }
+
 func getReleaseJSONManifest(ctx context.Context, namespace, name string) (string, error) {
 	// Execute the Helm command to get the release manifest
 	cmd := exec.CommandContext(ctx, "helm", "get", "manifest", "--namespace", namespace, name)
@@ -1611,7 +1713,7 @@ func TestAccResourceRelease_manifestUnknownValues(t *testing.T) {
 				Source: "hashicorp/random",
 			},
 		},
-		//CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			// NOTE this is a regression test to apply a configuration which supplies
 			// unknown values to the release at plan time, we simply expected to test here
@@ -1629,9 +1731,9 @@ func TestAccResourceRelease_set_list_chart(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseSetListValues(testResourceName, namespace, name),
@@ -1649,15 +1751,16 @@ func TestAccResourceRelease_set_list_chart(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_update_set_list_chart(t *testing.T) {
 	name := randName("helm-setlist-chart")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseSetListValues(testResourceName, namespace, name),
@@ -1790,6 +1893,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 		}
 	}
 }
+
 func TestAccResourceRelease_OCI_repository(t *testing.T) {
 	name := randName("oci")
 	namespace := createRandomNamespace(t)
@@ -1803,7 +1907,7 @@ func TestAccResourceRelease_OCI_repository(t *testing.T) {
 		//	testAccPreCheck(t)
 		//},
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfig_OCI(testResourceName, namespace, name, ociRegistryURL, "1.2.3"),
@@ -1853,7 +1957,7 @@ func TestAccResourceRelease_OCI_registry_login(t *testing.T) {
 		//	testAccPreCheck(t)
 		//},
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfig_OCI_login_provider(os.Getenv("KUBE_CONFIG_PATH"), testResourceName, namespace, name, ociRegistryURL, "1.2.3", "hashicorp", "terraform", "test-chart"),
@@ -1889,6 +1993,7 @@ resource "helm_release" "%s" {
     chart       = "%s"
 }`, kubeconfig, repo, username, password, resource, name, ns, version, repo, chart)
 }
+
 func TestAccResourceRelease_OCI_login(t *testing.T) {
 	name := randName("oci")
 	namespace := createRandomNamespace(t)
@@ -1902,7 +2007,7 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 		//testAccPreCheck(t)
 		//},
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		//CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfig_OCI_login_multiple(testResourceName, namespace, name, ociRegistryURL, "1.2.3", "hashicorp", "terraform"),
@@ -1920,20 +2025,21 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 		},
 	})
 }
+
 func TestAccResourceRelease_recomputeMetadata(t *testing.T) {
 	name := randName("basic")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
-		//PreCheck:                 func() { testAccPreCheck(t) },
+		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"local": {
 				Source: "hashicorp/local",
 			},
 		},
-		//CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
+		// CheckDestroy: testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseRecomputeMetadata(testResourceName, namespace, name),
@@ -1962,6 +2068,7 @@ func TestAccResourceRelease_recomputeMetadata(t *testing.T) {
 		},
 	})
 }
+
 func testAccHelmReleaseConfig_OCI(resource, ns, name, repo, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
