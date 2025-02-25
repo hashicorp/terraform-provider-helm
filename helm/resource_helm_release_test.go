@@ -64,6 +64,72 @@ func TestAccResourceRelease_basic(t *testing.T) {
 		},
 	})
 }
+
+func TestAccResourceRelease_Timeouts(t *testing.T) {
+	name := randName("timeouts")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigWithTimeouts(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.app_version", "1.19.5"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseConfigWithTimeouts(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "description", "Test"),
+				),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigWithTimeouts(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+  			chart       = "test-chart"
+			version     = %q
+
+			timeouts = {
+				create = "30s"
+				read   = "30s"
+				update = "30s"
+				delete = "30s"
+			}
+
+			set = [
+				{
+					name  = "foo"
+					value = "bar"
+				},
+				{
+					name  = "fizz"
+					value = 1337
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
 func TestAccResourceRelease_emptyVersion(t *testing.T) {
 	name := randName("basic")
 	namespace := createRandomNamespace(t)
@@ -91,7 +157,6 @@ func TestAccResourceRelease_emptyVersion(t *testing.T) {
 	})
 }
 
-// Import state error, type mismatch from set_sensitive
 func TestAccResourceRelease_import(t *testing.T) {
 	name := randName("import")
 	namespace := createRandomNamespace(t)
