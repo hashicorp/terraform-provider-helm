@@ -17,9 +17,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/helmpath"
@@ -71,6 +73,10 @@ func TestAccResourceRelease_set_wo(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	resource.Test(t, resource.TestCase{
+		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
+			// FIXME use const from terraform-plugin-testing once v1.11.0 is released.
+			tfversion.SkipBelow(version.Must(version.NewVersion("1.11.0"))),
+		},
 		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
