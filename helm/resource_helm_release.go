@@ -2104,6 +2104,13 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 			"value": types.StringType,
 		},
 	})
+	state.SetWO = types.ListNull(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"name":  types.StringType,
+			"type":  types.StringType,
+			"value": types.StringType,
+		},
+	})
 	state.SetSensitive = types.ListNull(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"name":  types.StringType,
