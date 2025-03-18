@@ -22,8 +22,8 @@ This provider allows you to install and manage [Helm Charts](https://artifacthub
 
 ## Requirements
 
--	[Terraform](https://www.terraform.io/downloads.html) v0.12.x
--	[Go](https://golang.org/doc/install) v1.18.x (to build the provider plugin)
+-	[Terraform](https://www.terraform.io/downloads.html) v1.x.x
+-	[Go](https://golang.org/doc/install) v1.22.x (to build the provider plugin)
 
 ## Getting Started
 
