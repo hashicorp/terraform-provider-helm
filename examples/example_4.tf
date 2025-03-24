@@ -1,5 +1,5 @@
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     host     = "https://cluster_endpoint:port"
 
     client_certificate     = file("~/.kube/client-cert.pem")
