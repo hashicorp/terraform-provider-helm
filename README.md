@@ -6,7 +6,6 @@
 
 
 - [Documentation](https://www.terraform.io/docs/providers/helm/index.html)
-- [Mailing list](http://groups.google.com/group/terraform-tool)
 - [#terraform-providers in Kubernetes Slack](https://kubernetes.slack.com/messages/CJY6ATQH4) ([Sign up here](http://slack.k8s.io/))
 
 This is the [Helm](https://github.com/kubernetes/helm) provider for [Terraform](https://www.terraform.io/).
@@ -22,8 +21,8 @@ This provider allows you to install and manage [Helm Charts](https://artifacthub
 
 ## Requirements
 
--	[Terraform](https://www.terraform.io/downloads.html) v0.12.x
--	[Go](https://golang.org/doc/install) v1.18.x (to build the provider plugin)
+-	[Terraform](https://www.terraform.io/downloads.html) v1.x.x
+-	[Go](https://golang.org/doc/install) v1.22.x (to build the provider plugin)
 
 ## Getting Started
 
