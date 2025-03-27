@@ -996,6 +996,7 @@ func applySetSensitiveValue(base map[string]interface{}, setSensitive SetSensiti
 func LogValuesModel(ctx context.Context, values map[string]interface{}, state *HelmTemplateModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
+	// Note: Use json to do a deep clone of the values map so we don't modify the original when cloaking sensitive values
 	asJSON, err := json.Marshal(values)
 	if err != nil {
 		diags.AddError("Error marshaling values to JSON", fmt.Sprintf("Failed to marshal values to JSON: %s", err))
