@@ -329,6 +329,39 @@ func deleteNamespace(t *testing.T, namespace string) {
 	}
 }
 
+func createRandomConfigMap(t *testing.T, namespace string) string {
+	if !accTest {
+		t.Skip("TF_ACC=1 not set")
+		return ""
+	}
+
+	name := fmt.Sprintf("%s-%s", testNamespacePrefix, acctest.RandString(10))
+	cm := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	_, err := client.CoreV1().ConfigMaps(namespace).Create(context.TODO(), cm, metav1.CreateOptions{})
+	if err != nil {
+		t.Fatalf("Could not create test configmap %q in namespace %q: %s", name, namespace, err)
+	}
+	return name
+}
+
+func getConfigMap(t *testing.T, namespace, name string) *v1.ConfigMap {
+	if !accTest {
+		t.Skip("TF_ACC=1 not set")
+		return nil
+	}
+
+	cm, err := client.CoreV1().ConfigMaps(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Could not fetch test configmap %q from namespace %q: %s", name, namespace, err)
+	}
+	return cm
+}
+
 func randName(prefix string) string {
 	return fmt.Sprintf("%s-%s", prefix, acctest.RandString(10))
 }

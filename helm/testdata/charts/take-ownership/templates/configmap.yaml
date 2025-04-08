@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Values.configMap }}"
+  namespace: "{{ .Values.configMapNamespace }}"
+  labels:
+    {{- include "take-ownership.labels" . | nindent 4 }}
+data:
+  ownership: "taken"
