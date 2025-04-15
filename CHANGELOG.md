@@ -1,3 +1,14 @@
+## 3.0.0-pre2 (Feb 27, 2025)
+
+FEATURES:
+
+* `helm_release`: Add `set_wo` write-only attribute [[GH-1592](https://github.com/hashicorp/terraform-provider-helm/issues/1592)]
+
+BUG FIXES:
+
+* change `set.value` && `set_list.value` to optional instead of required [[GH-1572](https://github.com/hashicorp/terraform-provider-helm/issues/1572)]
+
+
 ## 3.0.0-pre1 (Jan 16, 2025)
 
 * This pre-release migrates ports the provider project from `terraform-plugin-sdk/v2` to `terraform-plugin-framework` [[GH-1379](https://github.com/hashicorp/terraform-provider-helm/pull/1379)]

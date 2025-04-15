@@ -50,6 +50,8 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
 - `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
 - `set` (Block Set) Custom values to be merged with the values. (see [below for nested schema](#nestedblock--set))
+- `set_wo` (Attribute List) Custom values to be merged with the values. This is the same as "set" but write-only. (see [below for nested schema](#nestedblock--set))
+- `set_wo_revision` (Number) The current revision of the write-only "set_wo" attribute. Incrementing this integer value will cause Terraform to update the write-only value.`  
 - `set_list` (Block List) Custom list values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
 - `set_sensitive` (Block Set) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_sensitive))
 - `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
@@ -86,12 +88,11 @@ Optional:
 Required:
 
 - `name` (String)
-- `value` (String)
 
 Optional:
 
 - `type` (String)
-
+- `value` (String)
 
 <a id="nestedblock--set_list"></a>
 ### Nested Schema for `set_list`
@@ -289,7 +290,7 @@ resource "helm_release" "example" {
 The `set`, `set_list`, and `set_sensitive` blocks support:
 
 * `name` - (Required) full name of the variable to be set.
-* `value` - (Required) value of the variable to be set.
+* `value` - (Required; Optional for `set`) value of the variable to be set.
 * `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
 
 Since Terraform Utilizes HCL as well as Helm using the Helm Template Language, it's necessary to escape the `{}`, `[]`, `.`, and `,` characters twice in order for it to be parsed. `name` should also be set to the `value path`, and `value` is the desired value that will be set.

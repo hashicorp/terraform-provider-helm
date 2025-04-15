@@ -6,15 +6,19 @@ data "helm_template" "mariadb_instance" {
   chart   = "mariadb"
   version = "7.1.0"
 
-  set {
-    name  = "service.port"
-    value = "13306"
-  }
+  set = [
+    {
+      name  = "service.port"
+      value = "13306"
+    }
+  ]
 
-  set_sensitive {
-    name = "rootUser.password"
-    value = "s3cr3t!"
-  }
+  set_sensitive = [
+    {
+      name  = "rootUser.password"
+      value = "s3cr3t!"
+    }
+  ]
 }
 
 resource "local_file" "mariadb_manifests" {
