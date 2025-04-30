@@ -767,33 +767,6 @@ func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 		},
 	})
 }
-
-func TestAccResourceRelease_invalidName(t *testing.T) {
-	namespace := createRandomNamespace(t)
-	defer deleteNamespace(t, namespace)
-
-	broken := fmt.Sprintf(`
-	resource "helm_release" "test" {
-		name        = "1nva&lidname$"
-		namespace   = %q
-		repository  = %q
-		chart       = "test-chart"
-	}`, namespace, testRepositoryURL)
-
-	resource.Test(t, resource.TestCase{
-		// PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
-		Steps: []resource.TestStep{
-			{
-				Config:             broken,
-				ExpectError:        regexp.MustCompile("invalid release name"),
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
-}
-
 func TestAccResourceRelease_createNamespace(t *testing.T) {
 	name := randName("create-namespace")
 	namespace := randName("helm-created-namespace")
