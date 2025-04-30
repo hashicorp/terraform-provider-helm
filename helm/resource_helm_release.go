@@ -1684,7 +1684,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			resp.Diagnostics.AddError(
 				"Invalid Helm Release Name",
 				fmt.Sprintf(
-					"Release name %q is invalid. Must match regex %s and be no longer than 53 characters.",
+					"Release name %q is invalid. Must match regex %s",
 					name,
 					helmReleaseNameRegexp.String(),
 				),
