@@ -823,7 +823,7 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 		},
 	})
 }
-func TestAccResourceRelease_invalidReleaseName(t *testing.T) {
+func TestAccResourceRelease_planValidationInvalidName(t *testing.T) {
 	invalidNames := []string{
 		"invalid_helm_release_name",
 		"ThisHelmRelease",
@@ -837,7 +837,7 @@ func TestAccResourceRelease_invalidReleaseName(t *testing.T) {
 				ProtoV6ProviderFactories: protoV6ProviderFactories(),
 				Steps: []resource.TestStep{
 					{
-						Config:      testAccHelmReleaseConfigInvalidName(testResourceName, namespace, name),
+						Config:      testAccHelmReleaseConfigInvalidNamePlan(testResourceName, namespace, name),
 						PlanOnly:    true,
 						ExpectError: regexp.MustCompile(`Invalid Helm Release Name`),
 					},
@@ -917,7 +917,7 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 	`, resource, name, ns, testRepositoryURL, version)
 }
 
-func testAccHelmReleaseConfigInvalidName(resource, ns, name string) string {
+func testAccHelmReleaseConfigInvalidNamePlan(resource, ns, name string) string {
 	return fmt.Sprintf(`
         resource "helm_release" "%s" {
             name       = %q
