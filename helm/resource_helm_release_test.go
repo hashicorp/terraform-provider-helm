@@ -181,6 +181,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.imported", "dependency_update", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "replace", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "disable_openapi_validation", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "disable_scheme_validation", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "create_namespace", "false"),
 				),
 			},
