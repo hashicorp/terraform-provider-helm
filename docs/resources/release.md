@@ -55,6 +55,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `set_list` (Block List) Custom list values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
 - `set_sensitive` (Block Set) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_sensitive))
 - `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
+- `take_ownership` (Boolean) If set, ignore checks for Helm annotations and take ownership of the resources.
 - `timeout` (Number) Time in seconds to wait for any individual kubernetes operation. Defaults to 300 seconds.
 - `upgrade_install` (Boolean) If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' note in the provider documentation. Defaults to `false`.
 - `values` (List of String) List of values in raw yaml format to pass to helm.
