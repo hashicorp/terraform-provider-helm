@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"maps"
 	"net/url"
 	"os"
 	pathpkg "path"
@@ -1379,18 +1378,33 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 
 func logValues(ctx context.Context, values map[string]interface{}, state *HelmReleaseModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	// Cloning values map
-	c := maps.Clone(values)
 
-	cloakSetValues(c, state)
+	// Note: Use json to do a deep clone of the values map so we don't modify the original when cloaking sensitive values
+	asJSON, err := json.Marshal(values)
+	if err != nil {
+		diags.AddError("Error marshaling values to JSON", fmt.Sprintf("Failed to marshal values to JSON: %s", err))
+		return diags
+	}
 
-	y, err := yaml.Marshal(c)
+	var clonedValues map[string]interface{}
+	err = json.Unmarshal(asJSON, &clonedValues)
+	if err != nil {
+		diags.AddError("Error unmarshaling JSON to map", fmt.Sprintf("Failed to unmarshal JSON to map: %s", err))
+		return diags
+	}
+
+	// Apply cloaking or masking for sensitive values
+	cloakSetValues(clonedValues, state)
+
+	// Convert the modified map to YAML for logging purposes
+	yamlData, err := yaml.Marshal(clonedValues)
 	if err != nil {
 		diags.AddError("Error marshaling map to YAML", fmt.Sprintf("Failed to marshal map to YAML: %s", err))
 		return diags
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("---[ values.yaml ]-----------------------------------\n%s\n", string(y)))
+	// Log the final YAML representation of the values
+	tflog.Debug(ctx, fmt.Sprintf("---[ values.yaml ]-----------------------------------\n%s\n", string(yamlData)))
 
 	return diags
 }
