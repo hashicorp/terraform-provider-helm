@@ -1,0 +1,3 @@
+```release-note:feature
+`helm_release`: Add support for ResourceIdentity.
+```
