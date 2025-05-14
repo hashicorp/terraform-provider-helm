@@ -457,6 +457,16 @@ func TestAccResourceRelease_identity(t *testing.T) {
 					statecheck.ExpectIdentityValue("helm_release.test", tfjsonpath.New("release_name"), knownvalue.StringExact(name)),
 				},
 			},
+			{
+				ResourceName:    "helm_release.test",
+				ImportState:     true,
+				ImportStateKind: resource.ImportBlockWithResourceIdentity,
+
+				// NOTE the import call can't set the values for "repository", or "set"
+				// so we expect that when using an import block it will produce an update
+				// plan rather than a no-op.
+				ExpectError: regexp.MustCompile("expected a no-op import operation"),
+			},
 		},
 	})
 }
