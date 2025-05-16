@@ -20,7 +20,10 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
@@ -431,6 +434,38 @@ func TestAccResourceRelease_updateMultipleValues(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.values", "{\"foo\":\"baz\"}"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRelease_identity(t *testing.T) {
+	name := randName("basic")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
+			tfversion.SkipBelow(tfversion.Version1_12_0),
+		},
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigBasic("test", namespace, name, "1.2.3"),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectIdentityValue("helm_release.test", tfjsonpath.New("namespace"), knownvalue.StringExact(namespace)),
+					statecheck.ExpectIdentityValue("helm_release.test", tfjsonpath.New("release_name"), knownvalue.StringExact(name)),
+				},
+			},
+			{
+				ResourceName:    "helm_release.test",
+				ImportState:     true,
+				ImportStateKind: resource.ImportBlockWithResourceIdentity,
+
+				// NOTE the import call can't set the values for "repository", or "set"
+				// so we expect that when using an import block it will produce an update
+				// plan rather than a no-op.
+				ExpectError: regexp.MustCompile("expected a no-op import operation"),
 			},
 		},
 	})
