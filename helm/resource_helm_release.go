@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	pathpkg "path"
+	"regexp"
 	"strings"
 	"time"
 
@@ -1700,6 +1701,8 @@ func checkChartDependencies(ctx context.Context, model *HelmReleaseModel, c *cha
 	return false, diags
 }
 
+var helmReleaseNameRegexp = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
+
 func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
 		// resource is being destroyed
@@ -1709,6 +1712,20 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+	if !plan.Name.IsNull() {
+		name := plan.Name.ValueString()
+		if !helmReleaseNameRegexp.MatchString(name) {
+			resp.Diagnostics.AddError(
+				"Invalid Helm Release Name",
+				fmt.Sprintf(
+					"Release name %q is invalid. Must match regex %s",
+					name,
+					helmReleaseNameRegexp.String(),
+				),
+			)
+			return
+		}
 	}
 	var state *HelmReleaseModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
