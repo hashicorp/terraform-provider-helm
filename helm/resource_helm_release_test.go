@@ -1822,6 +1822,28 @@ func TestAccResourceRelease_update_set_list_chart(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_literalSet(t *testing.T) {
+	name := randName("literal-set")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigSetLiteral(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.values", "{\"nested\":{\"a\":true,\"b\":1337}}"),
+				),
+			},
+		},
+	})
+}
+
 func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
@@ -2388,4 +2410,24 @@ func testAccHelmReleaseRecomputeMetadataSet(resource, ns, name string) string {
 			filename = "${path.module}/foo.bar"
 		}
 `, resource, name, ns, resource)
+}
+func testAccHelmReleaseConfigSetLiteral(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+			chart       = "test-chart"
+			version     = %q
+
+			set = [
+				{
+					name  = "nested"
+					value = "{ \"a\": true, \"b\": 1337 }"
+					type  = "literal"
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
 }
