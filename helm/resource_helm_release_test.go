@@ -2389,3 +2389,60 @@ func testAccHelmReleaseRecomputeMetadataSet(resource, ns, name string) string {
 		}
 `, resource, name, ns, resource)
 }
+
+func testAccHelmReleaseConfigTakeOwnership(resource, ns, name, version, configmap string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+  			chart       = "take-ownership"
+			version     = %q
+
+			take_ownership = true
+
+			set = [
+				{
+					name  = "configMap"
+					value = %q
+				},
+				{
+					name  = "configMapNamespace"
+					value = %q
+				},
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version, configmap, ns)
+}
+
+func testAccCheckConfigMapUpdated(t *testing.T, namespace, name string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		cm := getConfigMap(t, namespace, name)
+
+		if d, ok := cm.Data["ownership"]; !ok || d != "taken" {
+			return fmt.Errorf("configmap contents were not updated")
+		}
+		return nil
+	}
+}
+
+func TestAccResourceRelease_takeOwnership(t *testing.T) {
+	name := randName("take-ownership")
+	namespace := createRandomNamespace(t)
+	configmap := createRandomConfigMap(t, namespace)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigTakeOwnership(testResourceName, namespace, name, "1.0.0", configmap),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(fmt.Sprintf("helm_release.%s", testResourceName), "status", release.StatusDeployed.String()),
+					testAccCheckConfigMapUpdated(t, namespace, configmap),
+				),
+			},
+		},
+	})
+}
