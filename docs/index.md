@@ -104,7 +104,7 @@ provider "helm" {
 You can also configure the host, basic auth credentials, and client certificate authentication explicitly or through environment variables.
 
 ```terraform
-provider "helm" = {
+provider "helm" {
   kubernetes {
     host     = "https://cluster_endpoint:port"
 
