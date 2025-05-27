@@ -48,17 +48,11 @@ import (
 )
 
 var (
-<<<<<<< HEAD
-	_ resource.Resource                = &HelmRelease{}
-	_ resource.ResourceWithModifyPlan  = &HelmRelease{}
-	_ resource.ResourceWithImportState = &HelmRelease{}
-	_ resource.ResourceWithIdentity    = &HelmRelease{}
-=======
 	_ resource.Resource                 = &HelmRelease{}
 	_ resource.ResourceWithModifyPlan   = &HelmRelease{}
 	_ resource.ResourceWithImportState  = &HelmRelease{}
+	_ resource.ResourceWithIdentity     = &HelmRelease{}
 	_ resource.ResourceWithUpgradeState = &HelmRelease{}
->>>>>>> a7dca5a72 (Add upgradestate logic, and tests)
 )
 
 type HelmRelease struct {
