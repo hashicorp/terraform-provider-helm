@@ -299,7 +299,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 							Optional: true,
 							Computed: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string"),
+								stringvalidator.OneOf("auto", "string", "literal"),
 							},
 						},
 					},
@@ -335,7 +335,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 						"type": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string"),
+								stringvalidator.OneOf("auto", "string", "literal"),
 							},
 						},
 					},
@@ -931,6 +931,17 @@ func applySetValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
 	case "string":
 		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
 			diags.AddError("Failed parsing string value", fmt.Sprintf("Key %q with value %s: %s", name, value, err))
+		}
+	case "literal":
+		var literal interface{}
+		if err := yaml.Unmarshal([]byte(fmt.Sprintf("%s: %s", name, value)), &literal); err != nil {
+			diags.AddError("Failed parsing literal value", fmt.Sprintf("Key %q with literal value %s: %s", name, value, err))
+			return diags
+		}
+		if m, ok := literal.(map[string]interface{}); ok {
+			base[name] = m[name]
+		} else {
+			base[name] = literal
 		}
 	default:
 		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type: %s", valueType))

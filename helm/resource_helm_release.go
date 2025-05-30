@@ -20,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults"
@@ -28,6 +29,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -49,6 +51,7 @@ var (
 	_ resource.Resource                = &HelmRelease{}
 	_ resource.ResourceWithModifyPlan  = &HelmRelease{}
 	_ resource.ResourceWithImportState = &HelmRelease{}
+	_ resource.ResourceWithIdentity    = &HelmRelease{}
 )
 
 type HelmRelease struct {
@@ -57,6 +60,11 @@ type HelmRelease struct {
 
 func NewHelmRelease() resource.Resource {
 	return &HelmRelease{}
+}
+
+type HelmReleaseIdentityModel struct {
+	Namespace   types.String `tfsdk:"namespace"`
+	ReleaseName types.String `tfsdk:"release_name"`
 }
 
 type HelmReleaseModel struct {
@@ -528,7 +536,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 							Computed: true,
 							Default:  stringdefault.StaticString(""),
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string"),
+								stringvalidator.OneOf("auto", "string", "literal"),
 							},
 						},
 					},
@@ -595,7 +603,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 						"type": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string"),
+								stringvalidator.OneOf("auto", "string", "literal"),
 							},
 						},
 					},
@@ -618,6 +626,21 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			},
 		},
 		Version: 1,
+	}
+}
+
+func (r *HelmRelease) IdentitySchema(ctx context.Context, req resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {
+	resp.IdentitySchema = identityschema.Schema{
+		Version: 1,
+		Attributes: map[string]identityschema.Attribute{
+			"namespace": identityschema.StringAttribute{
+				// use "default" if not specified
+				OptionalForImport: true,
+			},
+			"release_name": identityschema.StringAttribute{
+				RequiredForImport: true,
+			},
+		},
 	}
 }
 
@@ -716,18 +739,18 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	c, path, chartDiags := getChart(ctx, &state, meta, chartName, cpo)
+	c, cpath, chartDiags := getChart(ctx, &state, meta, chartName, cpo)
 	resp.Diagnostics.Append(chartDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	updated, depDiags := checkChartDependencies(ctx, &state, c, path, meta)
+	updated, depDiags := checkChartDependencies(ctx, &state, c, cpath, meta)
 	resp.Diagnostics.Append(depDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	} else if updated {
-		c, err = loader.Load(path)
+		c, err = loader.Load(cpath)
 		if err != nil {
 			resp.Diagnostics.AddError("Error loading chart", fmt.Sprintf("Could not load chart: %s", err))
 			return
@@ -810,7 +833,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 			return
 		}
 
-		diags := setReleaseAttributes(ctx, &state, rel, meta)
+		diags := setReleaseAttributes(ctx, &state, resp.Identity, rel, meta)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -822,7 +845,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	diags = setReleaseAttributes(ctx, &state, rel, meta)
+	diags = setReleaseAttributes(ctx, &state, resp.Identity, rel, meta)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -885,7 +908,7 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
-	diags = setReleaseAttributes(ctx, &state, release, meta)
+	diags = setReleaseAttributes(ctx, &state, resp.Identity, release, meta)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		resp.Diagnostics.AddError(
@@ -896,6 +919,9 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -1023,7 +1049,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	diags = setReleaseAttributes(ctx, &plan, release, meta)
+	diags = setReleaseAttributes(ctx, &plan, resp.Identity, release, meta)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1370,6 +1396,18 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 			diags.AddError("Failed parsing string value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
 			return diags
 		}
+	case "literal":
+		var literal interface{}
+		if err := yaml.Unmarshal([]byte(fmt.Sprintf("%s: %s", name, value)), &literal); err != nil {
+			diags.AddError("Failed parsing literal value", fmt.Sprintf("Key %q with literal value %s: %s", name, value, err))
+			return diags
+		}
+
+		if m, ok := literal.(map[string]interface{}); ok {
+			base[name] = m[name]
+		} else {
+			base[name] = literal
+		}
 	default:
 		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type: %s", valueType))
 		return diags
@@ -1447,7 +1485,7 @@ func versionsEqual(a, b string) bool {
 	return strings.TrimPrefix(a, "v") == strings.TrimPrefix(b, "v")
 }
 
-func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *release.Release, meta *Meta) diag.Diagnostics {
+func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity *tfsdk.ResourceIdentity, r *release.Release, meta *Meta) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Update state with attributes from the helm release
@@ -1461,6 +1499,15 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, r *relea
 	state.Status = types.StringValue(r.Info.Status.String())
 
 	state.ID = types.StringValue(r.Name)
+
+	rid := HelmReleaseIdentityModel{
+		Namespace:   types.StringValue(r.Namespace),
+		ReleaseName: types.StringValue(r.Name),
+	}
+	diags = identity.Set(ctx, rid)
+	if diags.HasError() {
+		return diags
+	}
 
 	// Cloak sensitive values in the release config
 	cloakSetValues(r.Config, state)
@@ -2049,13 +2096,30 @@ func resultToError(r *action.LintResult) error {
 }
 
 func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	namespace, name, err := parseImportIdentifier(req.ID)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Unable to parse import identifier",
-			fmt.Sprintf("Unable to parse identifier %s: %s", req.ID, err),
-		)
-		return
+	var namespace, name string
+	if req.ID != "" {
+		tflog.Debug(ctx, "Using ID string for import")
+		var err error
+		namespace, name, err = parseImportIdentifier(req.ID)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Unable to parse import identifier",
+				fmt.Sprintf("Unable to parse identifier %s: %s", req.ID, err),
+			)
+			return
+		}
+	} else {
+		tflog.Debug(ctx, "Using Resource Identity for Import")
+		rid := HelmReleaseIdentityModel{
+			Namespace: types.StringValue("default"),
+		}
+		diags := req.Identity.Get(ctx, &rid)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		namespace = rid.Namespace.ValueString()
+		name = rid.ReleaseName.ValueString()
 	}
 
 	meta := r.meta
@@ -2091,7 +2155,7 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 	state.Chart = types.StringValue(release.Chart.Metadata.Name)
 
 	// Set release-specific attributes using the helper function
-	diags := setReleaseAttributes(ctx, &state, release, meta)
+	diags := setReleaseAttributes(ctx, &state, resp.Identity, release, meta)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
