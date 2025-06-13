@@ -107,6 +107,7 @@ type HelmReleaseModel struct {
 	SetSensitive             types.List       `tfsdk:"set_sensitive"`
 	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
 	Status                   types.String     `tfsdk:"status"`
+	TakeOwnership            types.Bool       `tfsdk:"take_ownership"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
 	Values                   types.List       `tfsdk:"values"`
 	Verify                   types.Bool       `tfsdk:"verify"`
@@ -133,6 +134,7 @@ var defaultAttributes = map[string]interface{}{
 	"reset_values":               false,
 	"reuse_values":               false,
 	"skip_crds":                  false,
+	"take_ownership":             false,
 	"timeout":                    int64(300),
 	"verify":                     false,
 	"wait":                       true,
@@ -486,6 +488,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Description: "Status of the release",
 			},
+			"take_ownership": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Default: booldefault.StaticBool(defaultAttributes["take_ownership"].(bool)),
+				Description: "Allow helm to adopt existing resources",
+			},
 			"timeout": schema.Int64Attribute{
 				Optional:    true,
 				Computed:    true,
@@ -797,6 +805,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.Replace = state.Replace.ValueBool()
 	client.Description = state.Description.ValueString()
 	client.CreateNamespace = state.CreateNamespace.ValueBool()
+	client.TakeOwnership = state.TakeOwnership.ValueBool()
 
 	if state.PostRender != nil {
 		binaryPath := state.PostRender.BinaryPath.ValueString()
@@ -1009,6 +1018,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.MaxHistory = int(plan.MaxHistory.ValueInt64())
 	client.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 	client.Description = plan.Description.ValueString()
+	client.TakeOwnership = plan.TakeOwnership.ValueBool()
 
 	if plan.PostRender != nil {
 		binaryPath := plan.PostRender.BinaryPath.ValueString()
@@ -1865,6 +1875,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			install.Replace = plan.Replace.ValueBool()
 			install.Description = plan.Description.ValueString()
 			install.CreateNamespace = plan.CreateNamespace.ValueBool()
+			install.TakeOwnership = plan.TakeOwnership.ValueBool()
 			install.PostRenderer = client.PostRenderer
 
 			values, diags := getValues(ctx, &plan)
@@ -1943,6 +1954,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.MaxHistory = int(plan.MaxHistory.ValueInt64())
 		upgrade.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 		upgrade.Description = plan.Description.ValueString()
+		upgrade.TakeOwnership = plan.TakeOwnership.ValueBool()
 		upgrade.PostRenderer = client.PostRenderer
 
 		values, diags := getValues(ctx, &plan)
