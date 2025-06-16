@@ -139,7 +139,7 @@ resource "helm_release" "test" {
     args        = ["%s", "%s"]
   }
 
-  wait = falsecle
+  wait = false
 }
 `, name, namespace, binaryPath, args[0], args[1]),
 				//Checking if strucuture of postrender has been migrated to plugin framework strucuture
