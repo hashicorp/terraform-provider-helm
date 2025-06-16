@@ -48,10 +48,11 @@ import (
 )
 
 var (
-	_ resource.Resource                = &HelmRelease{}
-	_ resource.ResourceWithModifyPlan  = &HelmRelease{}
-	_ resource.ResourceWithImportState = &HelmRelease{}
-	_ resource.ResourceWithIdentity    = &HelmRelease{}
+	_ resource.Resource                 = &HelmRelease{}
+	_ resource.ResourceWithModifyPlan   = &HelmRelease{}
+	_ resource.ResourceWithImportState  = &HelmRelease{}
+	_ resource.ResourceWithIdentity     = &HelmRelease{}
+	_ resource.ResourceWithUpgradeState = &HelmRelease{}
 )
 
 type HelmRelease struct {
@@ -149,6 +150,7 @@ type releaseMetaData struct {
 	Values        types.String `tfsdk:"values"`
 	FirstDeployed types.Int64  `tfsdk:"first_deployed"`
 	LastDeployed  types.Int64  `tfsdk:"last_deployed"`
+	Notes         types.String `tfsdk:"notes"`
 }
 type setResourceModel struct {
 	Name  types.String `tfsdk:"name"`
@@ -257,6 +259,9 @@ func (r *HelmRelease) Metadata(ctx context.Context, req resource.MetadataRequest
 	resp.TypeName = req.ProviderTypeName + "_release"
 }
 
+func (r *HelmRelease) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	return r.buildUpgradeStateMap(ctx)
+}
 func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Schema to define attributes that are available in the resource",
@@ -380,6 +385,10 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 					"namespace": schema.StringAttribute{
 						Computed:    true,
 						Description: "Namespace is the kubernetes namespace of the release",
+					},
+					"notes": schema.StringAttribute{
+						Computed:    true,
+						Description: "Notes is the description of the deployed release, rendered from templates.",
 					},
 					"revision": schema.Int64Attribute{
 						Computed:    true,
@@ -625,13 +634,13 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				},
 			},
 		},
-		Version: 1,
+		Version: 2,
 	}
 }
 
 func (r *HelmRelease) IdentitySchema(ctx context.Context, req resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {
 	resp.IdentitySchema = identityschema.Schema{
-		Version: 1,
+		Version: 0,
 		Attributes: map[string]identityschema.Attribute{
 			"namespace": identityschema.StringAttribute{
 				// use "default" if not specified
@@ -1558,6 +1567,7 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		"values":         valuesstr,
 		"first_deployed": types.Int64Value(r.Info.FirstDeployed.Unix()),
 		"last_deployed":  types.Int64Value(r.Info.LastDeployed.Unix()),
+		"notes":          types.StringValue(r.Info.Notes),
 	}
 
 	// Convert the list of ObjectValues to a ListValue
@@ -1589,6 +1599,7 @@ func metadataAttrTypes() map[string]attr.Type {
 		"values":         types.StringType,
 		"first_deployed": types.Int64Type,
 		"last_deployed":  types.Int64Type,
+		"notes":          types.StringType,
 	}
 }
 
