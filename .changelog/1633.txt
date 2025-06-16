@@ -1,0 +1,3 @@
+```release-note:enhancement
+`helm_release`: Add `UpgradeState` logic to support migration from SDKv2 to Plugin Framework
+```
