@@ -1,3 +1,34 @@
+## 3.0.0 (Jun 18, 2025)
+
+This release migrates ports the provider project from `terraform-plugin-sdk/v2` to `terraform-plugin-framework` [[GH-1379](https://github.com/hashicorp/terraform-provider-helm/pull/1379)]
+
+Please refer to the [migration guide](./docs/guides/v3-upgrade-guide.md).
+
+BREAKING CHANGES:
+
+- **Blocks to Nested Objects**: Blocks like `kubernetes`, `registry`, and `experiments` are now represented as nested objects.
+- **List Syntax for Nested Attributes**: Attributes like `set`, `set_list`, and `set_sensitive` in `helm_release` and `helm_template` are now lists of nested objects instead of blocks
+- The new framework code uses [Terraform Plugin Protocol Version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) which is compatible with Terraform versions 1.0 and aboove. Users of earlier versions of Terraform can continue to use the Helm provider by pinning their configuration to the 2.x version.
+
+FEATURES:
+
+* Add `"literal"` as a supported `type` for the `set` block [[GH-1615](https://github.com/hashicorp/terraform-provider-helm/issues/1615)]
+
+* `helm_release`: Add support for ResourceIdentity. [[GH-1625](https://github.com/hashicorp/terraform-provider-helm/issues/1625)]
+
+* `helm_release`: Add `set_wo` write-only attribute [[GH-1592](https://github.com/hashicorp/terraform-provider-helm/issues/1592)]
+
+ENHANCEMENT:
+
+* `helm_release`: Add `UpgradeState` logic to support migration from SDKv2 to Plugin Framework [[GH-1633](https://github.com/hashicorp/terraform-provider-helm/issues/1633)]
+* update helm dependency to v3.17.2 [[GH-1608](https://github.com/hashicorp/terraform-provider-helm/issues/1608)]
+
+BUG FIXES:
+
+* `helm_release`: Fix namespace behaviour for dependency charts in non-default namespaces [[GH-1583](https://github.com/hashicorp/terraform-provider-helm/issues/1583)]
+
+* change `set.value` && `set_list.value` to optional instead of required [[GH-1572](https://github.com/hashicorp/terraform-provider-helm/issues/1572)]
+
 ## 3.0.0-pre2 (Feb 27, 2025)
 
 FEATURES:
