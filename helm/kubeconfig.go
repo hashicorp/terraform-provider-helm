@@ -143,6 +143,8 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		}
 		if !kubernetesConfig.ConfigContextCluster.IsNull() {
 			overrides.Context.Cluster = kubernetesConfig.ConfigContextCluster.ValueString()
+			// Enforces configured release namespace
+			overrides.Context.Namespace = namespace
 		}
 	}
 

@@ -32,6 +32,9 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"helm.sh/helm/v3/pkg/repo"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func TestAccResourceRelease_basic(t *testing.T) {
@@ -1378,6 +1381,50 @@ func testAccCheckHelmReleaseDependencyUpdate(namespace string, name string, expe
 	}
 }
 
+func testAccCheckHelmReleaseResourceNamespace(namespace string, name string) resource.TestCheckFunc {
+	// Ensures all resources in a release are in the same requested namespace. Including dependency resources.
+
+	return func(s *terraform.State) error {
+		actionConfig := &action.Configuration{}
+		if err := actionConfig.Init(kube.GetConfig(os.Getenv("KUBE_CONFIG_PATH"), "", namespace), namespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {
+			log.Printf(fmt.Sprintf(format, v...))
+		}); err != nil {
+			return err
+		}
+
+		status := action.NewStatus(actionConfig)
+		status.ShowResources = true
+
+		res, err := status.Run(name)
+
+		if res == nil {
+			return fmt.Errorf("release %q not found", name)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		for _, resources := range res.Info.Resources {
+			for _, resource := range resources {
+				innerObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(resource)
+				if err != nil {
+					return fmt.Errorf("unable to decode runtime object %s, with error: %s", resource, err)
+				}
+
+				u := unstructured.Unstructured{Object: innerObj}
+
+				// Skip check for resources that are not bound to namespaces
+				if ns := u.GetNamespace(); ns != "" && ns != namespace {
+					return fmt.Errorf("expected namespace %s, but got %v", namespace, ns)
+				}
+			}
+		}
+
+		return nil
+	}
+}
+
 func testAccCheckHelmReleaseDestroy(namespace string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		log.Printf("testMeta before checking: %+v\n", testMeta)
@@ -1557,6 +1604,7 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 			{
 				Config: testAccHelmReleaseConfigDependency(testResourceName, namespace, name, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckHelmReleaseResourceNamespace(namespace, name),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),
@@ -1570,6 +1618,7 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 				},
 				Config: testAccHelmReleaseConfigDependencyUpdate(testResourceName, namespace, name, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckHelmReleaseResourceNamespace(namespace, name),
 					testAccCheckHelmReleaseDependencyUpdate(namespace, name, 9),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "2"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
@@ -1584,6 +1633,7 @@ func TestAccResourceRelease_dependency(t *testing.T) {
 				},
 				Config: testAccHelmReleaseConfigDependencyUpdateWithLint(testResourceName, namespace, name, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckHelmReleaseResourceNamespace(namespace, name),
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "3"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.test", "dependency_update", "true"),
