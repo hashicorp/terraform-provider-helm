@@ -1,0 +1,4 @@
+```release-note:bug
+`helm_release`: Fix namespace behaviour for dependency charts in non-default namespaces
+```
+
