@@ -81,6 +81,66 @@ resource "helm_release" "test" {
 	})
 }
 
+func TestAccHelmRelease_Upgrade_values(t *testing.T) {
+	// regression test, see: https://github.com/hashicorp/terraform-provider-helm/issues/1637
+
+	name := randName("upgrade")
+	namespace := "default"
+	resourceName := "helm_release.test"
+
+	resource.ParallelTest(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"helm": {
+						Source:            "hashicorp/helm",
+						VersionConstraint: "=2.17.0",
+					},
+				},
+				Config: fmt.Sprintf(`
+resource "helm_release" "test" {
+  name       = "%s"
+  namespace  = "%s"
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "nginx"
+  version    = "15.0.0"
+  wait       = false
+  values     = [
+<<EOF
+foo: bar
+EOF
+  ]
+}
+`, name, namespace),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "values.0", "foo: bar\n"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Config: fmt.Sprintf(`
+resource "helm_release" "test" {
+  name       = "%s"
+  namespace  = "%s"
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "nginx"
+  version    = "15.0.0"
+  wait       = false
+  values     = [
+<<EOF
+foo: bar
+EOF
+	]
+}
+`, name, namespace),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "values.0", "foo: bar\n"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccHelmRelease_Upgrade_PostrenderStructure(t *testing.T) {
 	name := randName("upgrade-pr")
 	namespace := "default"
@@ -142,7 +202,7 @@ resource "helm_release" "test" {
   wait = false
 }
 `, name, namespace, binaryPath, args[0], args[1]),
-				//Checking if strucuture of postrender has been migrated to plugin framework strucuture
+				// Checking if strucuture of postrender has been migrated to plugin framework strucuture
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "postrender.binary_path", binaryPath),
 					resource.TestCheckResourceAttr(resourceName, "postrender.args.#", "2"),

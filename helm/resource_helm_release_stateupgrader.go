@@ -103,7 +103,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 						"status":                     tftypes.String,
 						"timeout":                    tftypes.Number,
 						"upgrade_install":            tftypes.String,
-						"values":                     tftypes.String,
+						"values":                     tftypes.List{ElementType: tftypes.String},
 						"verify":                     tftypes.Bool,
 						"version":                    tftypes.String,
 						"wait":                       tftypes.Bool,
@@ -111,7 +111,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 					},
 				}
 
-				//Unmarshalling the old raw state as old type
+				// Unmarshalling the old raw state as old type
 				oldRawValue, err := req.RawState.Unmarshal(oldType)
 				if err != nil {
 					resp.Diagnostics.AddError("Failed to unmarshal prior state", err.Error())
@@ -249,7 +249,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 						"set_wo_revision":            tftypes.Number,
 						"status":                     tftypes.String,
 						"timeout":                    tftypes.Number,
-						"values":                     tftypes.String,
+						"values":                     tftypes.List{ElementType: tftypes.String},
 						"verify":                     tftypes.Bool,
 						"version":                    tftypes.String,
 						"wait":                       tftypes.Bool,
@@ -315,7 +315,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 					resp.Diagnostics.AddError("Failed to construct upgraded state", err.Error())
 					return
 				}
-				//Providing a message to the user, informing there state has been migrated to the current framework strucuture
+				// Providing a message to the user, informing there state has been migrated to the current framework strucuture
 				resp.Diagnostics.AddWarning("UpgradeState Triggered", "Successfully migrated state from SDKv2 to Plugin Framework")
 
 				resp.DynamicValue = &dv

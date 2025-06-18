@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: Fix wrong type for "values" field in v3 state upgrader
+```
