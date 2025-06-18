@@ -1,3 +1,12 @@
+## 3.0.1 (Jun 18, 2025)
+
+This is a hotfix release.
+
+HOTFIX:
+
+- `helm_release`: Fix state upgrader code to use correct type for "values" attribute. [[GH-1638](https://github.com/hashicorp/terraform-provider-helm/pull/1638)]
+ 
+
 ## 3.0.0 (Jun 18, 2025)
 
 This release migrates ports the provider project from `terraform-plugin-sdk/v2` to `terraform-plugin-framework` [[GH-1379](https://github.com/hashicorp/terraform-provider-helm/pull/1379)]
