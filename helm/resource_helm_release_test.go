@@ -33,6 +33,7 @@ import (
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"helm.sh/helm/v3/pkg/repo"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -386,20 +387,41 @@ func TestAccResourceRelease_cloakValues(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
+	secretKey := "cloakedData.cloaked"
+	secretValue := "foobar"
+
 	resource.Test(t, resource.TestCase{
-		// PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccHelmReleaseConfigSensitiveValue(
-					testResourceName, namespace, name, "test-chart", "1.2.3", "foo", "bar",
+					testResourceName, namespace, name, "test-chart", "1.2.3", secretKey, secretValue,
 				),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.values",
-						"{\"foo\":\"(sensitive value)\"}"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.values", `{"cloakedData":{"cloaked":"(sensitive value)"}}`),
+					func(s *terraform.State) error {
+						c, err := createKubernetesClient()
+						if err != nil {
+							return err
+						}
+
+						res, err := c.CoreV1().Secrets(namespace).Get(context.Background(), fmt.Sprintf("%s-test-chart", name), v1.GetOptions{})
+						if err != nil {
+							return err
+						}
+
+						v, ok := res.Data["cloaked"]
+						if !ok {
+							return fmt.Errorf("expected %q but secret value was nil", secretValue)
+						}
+
+						if string(v) != secretValue {
+							return fmt.Errorf("expected secret value to be %q but got %q", secretValue, v)
+						}
+						return nil
+					},
 				),
 			},
 		},
@@ -1036,8 +1058,8 @@ func testAccHelmReleaseConfigValues(resource, ns, name, chart, version string, v
 func testAccHelmReleaseConfigSensitiveValue(resource, ns, name, chart, version, key, value string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
- 			name       = %q
 			namespace  = %q
+ 			name       = %q
 			repository = %q
 			chart      = %q
 			version    = %q
@@ -1049,7 +1071,7 @@ func testAccHelmReleaseConfigSensitiveValue(resource, ns, name, chart, version, 
 				}
 			]
 		}
-	`, resource, name, ns, testRepositoryURL, chart, version, key, value)
+	`, resource, ns, name, testRepositoryURL, chart, version, key, value)
 }
 
 func testAccHelmReleaseConfigSet(resource, ns, name, version, setValue string) string {
@@ -2461,6 +2483,7 @@ func testAccHelmReleaseRecomputeMetadataSet(resource, ns, name string) string {
 		}
 `, resource, name, ns, resource)
 }
+
 func testAccHelmReleaseConfigSetLiteral(resource, ns, name, version string) string {
 	return fmt.Sprintf(`
 		resource "helm_release" "%s" {
