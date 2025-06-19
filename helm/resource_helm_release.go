@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"maps"
 	"net/url"
 	"os"
 	pathpkg "path"
@@ -1424,10 +1423,28 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 	return diags
 }
 
+// deepCloneMap creates a deep copy of a map[string]interface{}
+func deepCloneMap(m map[string]interface{}) map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+
+	clone := make(map[string]interface{}, len(m))
+	for k, v := range m {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			clone[k] = deepCloneMap(val)
+		default:
+			clone[k] = v
+		}
+	}
+	return clone
+}
+
 func logValues(ctx context.Context, values map[string]interface{}, state *HelmReleaseModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-	// Cloning values map
-	c := maps.Clone(values)
+	// Deep cloning values map to avoid modifying the original
+	c := deepCloneMap(values)
 
 	cloakSetValues(c, state)
 
@@ -1519,10 +1536,12 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 	}
 
 	// Cloak sensitive values in the release config
-	cloakSetValues(r.Config, state)
 	values := "{}"
 	if r.Config != nil {
-		v, err := json.Marshal(r.Config)
+		// Deep clone the config to avoid modifying the original
+		configClone := deepCloneMap(r.Config)
+		cloakSetValues(configClone, state)
+		v, err := json.Marshal(configClone)
 		if err != nil {
 			diags.AddError(
 				"Error marshaling values",
