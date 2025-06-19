@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: Fix shallow clone bug causing nested sensitive values to be redacted in the k8s API
+```
