@@ -261,6 +261,7 @@ func (r *HelmRelease) Metadata(ctx context.Context, req resource.MetadataRequest
 func (r *HelmRelease) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return r.buildUpgradeStateMap(ctx)
 }
+
 func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Schema to define attributes that are available in the resource",
@@ -295,6 +296,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			},
 			"description": schema.StringAttribute{
 				Optional:    true,
+				Computed:    true,
 				Description: "Add a custom description",
 				PlanModifiers: []planmodifier.String{
 					suppressDescription(),
