@@ -1,0 +1,4 @@
+```release-note:bug
+`helm_release`: Fix postrender being run when binaryPath is nil
+```
+

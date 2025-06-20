@@ -261,6 +261,7 @@ func (r *HelmRelease) Metadata(ctx context.Context, req resource.MetadataRequest
 func (r *HelmRelease) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return r.buildUpgradeStateMap(ctx)
 }
+
 func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Schema to define attributes that are available in the resource",
@@ -810,18 +811,20 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		binaryPath := state.PostRender.BinaryPath.ValueString()
 		argsList := state.PostRender.Args.Elements()
 
-		var args []string
-		for _, arg := range argsList {
-			args = append(args, arg.(basetypes.StringValue).ValueString())
-		}
-		tflog.Debug(ctx, fmt.Sprintf("Creating post-renderer with binary path: %s and args: %v", binaryPath, args))
-		pr, err := postrender.NewExec(binaryPath, args...)
-		if err != nil {
-			resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
-			return
-		}
+		if binaryPath != "" {
+			var args []string
+			for _, arg := range argsList {
+				args = append(args, arg.(basetypes.StringValue).ValueString())
+			}
+			tflog.Debug(ctx, fmt.Sprintf("Creating post-renderer with binary path: %s and args: %v", binaryPath, args))
+			pr, err := postrender.NewExec(binaryPath, args...)
+			if err != nil {
+				resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
+				return
+			}
 
-		client.PostRenderer = pr
+			client.PostRenderer = pr
+		}
 	}
 
 	rel, err := client.Run(c, values)
@@ -1022,17 +1025,19 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 		binaryPath := plan.PostRender.BinaryPath.ValueString()
 		argsList := plan.PostRender.Args.Elements()
 
-		var args []string
-		for _, arg := range argsList {
-			args = append(args, arg.(basetypes.StringValue).ValueString())
+		if binaryPath != "" {
+			var args []string
+			for _, arg := range argsList {
+				args = append(args, arg.(basetypes.StringValue).ValueString())
+			}
+			tflog.Debug(ctx, fmt.Sprintf("Binary path update method: %s, Args: %v", binaryPath, args))
+			pr, err := postrender.NewExec(binaryPath, args...)
+			if err != nil {
+				resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
+				return
+			}
+			client.PostRenderer = pr
 		}
-		tflog.Debug(ctx, fmt.Sprintf("Binary path update method: %s, Args: %v", binaryPath, args))
-		pr, err := postrender.NewExec(binaryPath, args...)
-		if err != nil {
-			resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
-			return
-		}
-		client.PostRenderer = pr
 	}
 	values, valuesDiags := getValues(ctx, &plan)
 	resp.Diagnostics.Append(valuesDiags...)
@@ -1863,18 +1868,20 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			binaryPath := plan.PostRender.BinaryPath.ValueString()
 			argsList := plan.PostRender.Args.Elements()
 
-			var args []string
-			for _, arg := range argsList {
-				args = append(args, arg.(basetypes.StringValue).ValueString())
-			}
+			if binaryPath != "" {
+				var args []string
+				for _, arg := range argsList {
+					args = append(args, arg.(basetypes.StringValue).ValueString())
+				}
 
-			pr, err := postrender.NewExec(binaryPath, args...)
-			if err != nil {
-				resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
-				return
-			}
+				pr, err := postrender.NewExec(binaryPath, args...)
+				if err != nil {
+					resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
+					return
+				}
 
-			client.PostRenderer = pr
+				client.PostRenderer = pr
+			}
 		}
 		if state == nil {
 			install := action.NewInstall(actionConfig)
