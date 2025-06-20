@@ -77,3 +77,6 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+cloakedData: 
+  cloaked: secret

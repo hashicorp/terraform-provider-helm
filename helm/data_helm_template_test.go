@@ -22,11 +22,12 @@ func TestAccDataTemplate_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Config: testAccDataHelmTemplateConfigBasic(testResourceName, namespace, name, "1.2.3"),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "5"),
+				resource.TestCheckResourceAttr(datasourceAddress, "manifests.%", "6"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/deployment.yaml"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/service.yaml"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/serviceaccount.yaml"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/configmaps.yaml"),
+				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/secrets.yaml"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifests.templates/tests/test-connection.yaml"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "manifest"),
 				resource.TestCheckResourceAttrSet(datasourceAddress, "notes"),
