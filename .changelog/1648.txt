@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: Fix description field causing inconsistent plan 
+```
