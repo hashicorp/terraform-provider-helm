@@ -200,7 +200,7 @@ func (m suppressDevelPlanModifier) MarkdownDescription(ctx context.Context) stri
 func (m suppressDevelPlanModifier) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
 	var version types.String
 	req.Plan.GetAttribute(ctx, path.Root("version"), &version)
-	if !version.IsNull() && version.ValueString() != "" {
+	if !version.IsNull() && version.ValueString() != "" && req.ConfigValue.IsNull() {
 		resp.PlanValue = req.StateValue
 	}
 }
