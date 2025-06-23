@@ -344,7 +344,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	kubeConfigContextAuthInfo := os.Getenv("KUBE_CTX_AUTH_INFO")
 	kubeConfigContextCluster := os.Getenv("KUBE_CTX_CLUSTER")
 	kubeToken := os.Getenv("KUBE_TOKEN")
-	kubeProxy := os.Getenv("KUBE_PROXY")
+	kubeProxy := os.Getenv("KUBE_PROXY_URL")
 
 	// Initialize the HelmProviderModel with values from the config
 	var config HelmProviderModel
