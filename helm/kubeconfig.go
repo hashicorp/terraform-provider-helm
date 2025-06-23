@@ -143,8 +143,6 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		}
 		if !kubernetesConfig.ConfigContextCluster.IsNull() {
 			overrides.Context.Cluster = kubernetesConfig.ConfigContextCluster.ValueString()
-			// Enforces configured release namespace
-			overrides.Context.Namespace = namespace
 		}
 	}
 
@@ -214,6 +212,11 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 				InteractiveMode: clientcmdapi.IfAvailableExecInteractiveMode,
 			}
 		}
+	}
+
+	overrides.Context.Namespace = "default"
+	if namespace != "" {
+		overrides.Context.Namespace = namespace
 	}
 
 	burstLimit := int(m.Data.BurstLimit.ValueInt64())

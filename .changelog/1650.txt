@@ -1,0 +1,4 @@
+```release-note:bug
+`provider`: Fix namespace override logic in Kubernetes client initialization
+```
+
