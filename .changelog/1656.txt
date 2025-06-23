@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: Fix plan error when `devel = false` is set and `version` is provided
+```
