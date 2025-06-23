@@ -1,3 +1,16 @@
+## 3.0.2 (Jun 23, 2025)
+
+This is a patch release that fixes a number of bugs discovered in the v3.x.x release. 
+
+BUG FIXES:
+
+* `helm_release`: Fix description field causing inconsistent plan [[GH-1648](https://github.com/hashicorp/terraform-provider-helm/issues/1648)]
+* `helm_release`: Fix plan error when `devel = false` is set and `version` is provided [[GH-1656](https://github.com/hashicorp/terraform-provider-helm/issues/1656)]
+* `helm_release`: Fix postrender being run when binaryPath is nil [[GH-1649](https://github.com/hashicorp/terraform-provider-helm/issues/1649)]
+* `helm_release`: Fix shallow clone bug causing nested sensitive values to be redacted in the k8s API [[GH-1644](https://github.com/hashicorp/terraform-provider-helm/issues/1644)]
+* `provider`: Fix namespace override logic in Kubernetes client initialization [[GH-1650](https://github.com/hashicorp/terraform-provider-helm/issues/1650)]
+* `provider`: Restore support for the `KUBE_PROXY_URL` environment variable [[GH-1655](https://github.com/hashicorp/terraform-provider-helm/issues/1655)]
+
 ## 3.0.1 (Jun 18, 2025)
 
 This is a hotfix release.
