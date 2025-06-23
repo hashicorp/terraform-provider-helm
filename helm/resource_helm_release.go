@@ -296,6 +296,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			},
 			"description": schema.StringAttribute{
 				Optional:    true,
+				Computed:    true,
 				Description: "Add a custom description",
 				PlanModifiers: []planmodifier.String{
 					suppressDescription(),
