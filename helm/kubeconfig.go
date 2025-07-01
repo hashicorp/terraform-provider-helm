@@ -30,6 +30,7 @@ import (
 type KubeConfig struct {
 	ClientConfig clientcmd.ClientConfig
 	Burst        int
+	QPS          float32
 	sync.Mutex
 }
 
@@ -47,6 +48,7 @@ func (k *KubeConfig) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, er
 	}
 
 	config.Burst = k.Burst
+	config.QPS = k.QPS
 	return memory.NewMemCacheClient(discovery.NewDiscoveryClientForConfigOrDie(config)), nil
 }
 
@@ -220,12 +222,13 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 	}
 
 	burstLimit := int(m.Data.BurstLimit.ValueInt64())
+	qps := float32(m.Data.QPS.ValueFloat64())
 	client := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, overrides)
 	if client == nil {
 		return nil, fmt.Errorf("failed to initialize kubernetes config")
 	}
 	tflog.Info(ctx, "Successfully initialized kubernetes config")
-	return &KubeConfig{ClientConfig: client, Burst: burstLimit}, nil
+	return &KubeConfig{ClientConfig: client, Burst: burstLimit, QPS: qps}, nil
 }
 
 func expandStringSlice(input []attr.Value) []string {
