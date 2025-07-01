@@ -30,7 +30,7 @@ BREAKING CHANGES:
 
 - **Blocks to Nested Objects**: Blocks like `kubernetes`, `registry`, and `experiments` are now represented as nested objects.
 - **List Syntax for Nested Attributes**: Attributes like `set`, `set_list`, and `set_sensitive` in `helm_release` and `helm_template` are now lists of nested objects instead of blocks
-- The new framework code uses [Terraform Plugin Protocol Version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) which is compatible with Terraform versions 1.0 and aboove. Users of earlier versions of Terraform can continue to use the Helm provider by pinning their configuration to the 2.x version.
+- The new framework code uses [Terraform Plugin Protocol Version 6](https://developer.hashicorp.com/terraform/plugin/terraform-plugin-protocol#protocol-version-6) which is compatible with Terraform versions 1.0 and above. Users of earlier versions of Terraform can continue to use the Helm provider by pinning their configuration to the 2.x version.
 
 FEATURES:
 
