@@ -14,7 +14,7 @@ resource "kind_cluster" "demo" {
 }
 
 provider "helm" {
-  kubernetes = {
+  kubernetes {
     host                   = kind_cluster.demo.endpoint
     cluster_ca_certificate = kind_cluster.demo.cluster_ca_certificate
     client_certificate     = kind_cluster.demo.client_certificate
