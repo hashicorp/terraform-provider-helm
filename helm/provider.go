@@ -64,6 +64,7 @@ type HelmProviderModel struct {
 	Kubernetes           types.Object            `tfsdk:"kubernetes"`
 	Registries           types.List              `tfsdk:"registries"`
 	Experiments          *ExperimentsConfigModel `tfsdk:"experiments"`
+	QPS                  types.Float64           `tfsdk:"qps"`
 }
 
 // ExperimentsConfigModel configures the experiments that are enabled or disabled
@@ -174,6 +175,10 @@ func (p *HelmProvider) Schema(ctx context.Context, req provider.SchemaRequest, r
 				Optional:    true,
 				Description: "Enable and disable experimental features.",
 				Attributes:  experimentsSchema(),
+			},
+			"qps": schema.Float64Attribute{
+				Description: "Queries per second used when communicating with the Kubernetes API. Can be used to avoid throttling.",
+				Optional:    true,
 			},
 		},
 	}
@@ -345,6 +350,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	kubeConfigContextCluster := os.Getenv("KUBE_CTX_CLUSTER")
 	kubeToken := os.Getenv("KUBE_TOKEN")
 	kubeProxy := os.Getenv("KUBE_PROXY_URL")
+	qpsStr := os.Getenv("HELM_QPS")
 
 	// Initialize the HelmProviderModel with values from the config
 	var config HelmProviderModel
@@ -395,6 +401,22 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			)
 			return
 		}
+	}
+	var qps float64
+	if qpsStr != "" {
+		var err error
+		qps, err = strconv.ParseFloat(qpsStr, 64)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Invalid QPS value",
+				fmt.Sprintf("Invalid QPS value: %s", qpsStr),
+			)
+			return
+		}
+
+	}
+	if !config.QPS.IsNull() {
+		qps = config.QPS.ValueFloat64()
 	}
 
 	var kubernetesConfig KubernetesConfigModel
@@ -556,6 +578,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			RepositoryConfigPath: types.StringValue(repositoryConfigPath),
 			RepositoryCache:      types.StringValue(repositoryCache),
 			HelmDriver:           types.StringValue(helmDriver),
+			QPS:                  types.Float64Value(qps),
 			BurstLimit:           types.Int64Value(burstLimit),
 			Kubernetes:           kubernetesConfigObjectValue,
 			Experiments: &ExperimentsConfigModel{
