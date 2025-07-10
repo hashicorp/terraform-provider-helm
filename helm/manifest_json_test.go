@@ -4,7 +4,7 @@
 package helm
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,9 +21,9 @@ func TestConvertYAMLManifestToJSON(t *testing.T) {
 }
 
 func readTestFile(t *testing.T, path string) string {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	return string(b)
 }

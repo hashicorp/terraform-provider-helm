@@ -1337,7 +1337,7 @@ func testAccPreCheckHelmRepositoryDestroy(t *testing.T, name string) {
 	r, err := repo.LoadFile(rc)
 
 	if isNotExist(err) || len(r.Repositories) == 0 || !r.Remove(name) {
-		t.Log(fmt.Sprintf("no repo named %q found, nothing to do", name))
+		t.Logf("no repo named %q found, nothing to do", name)
 		return
 	}
 
@@ -1354,7 +1354,7 @@ func testAccPreCheckHelmRepositoryDestroy(t *testing.T, name string) {
 		t.Fatalf("error printing stdout: %v", err)
 	}
 
-	t.Log(fmt.Sprintf("%q has been removed from your repositories\n", name))
+	t.Logf("%q has been removed from your repositories\n", name)
 }
 
 func isNotExist(err error) bool {
@@ -1378,7 +1378,7 @@ func testAccCheckHelmReleaseDependencyUpdate(namespace string, name string, expe
 	return func(s *terraform.State) error {
 		actionConfig := &action.Configuration{}
 		if err := actionConfig.Init(kube.GetConfig(os.Getenv("KUBE_CONFIG_PATH"), "", namespace), namespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {
-			log.Printf(fmt.Sprintf(format, v...))
+			log.Printf(format, v...)
 		}); err != nil {
 			return err
 		}
@@ -1409,7 +1409,7 @@ func testAccCheckHelmReleaseResourceNamespace(namespace string, name string) res
 	return func(s *terraform.State) error {
 		actionConfig := &action.Configuration{}
 		if err := actionConfig.Init(kube.GetConfig(os.Getenv("KUBE_CONFIG_PATH"), "", namespace), namespace, os.Getenv("HELM_DRIVER"), func(format string, v ...interface{}) {
-			log.Printf(fmt.Sprintf(format, v...))
+			log.Printf(format, v...)
 		}); err != nil {
 			return err
 		}
