@@ -2036,7 +2036,9 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		plan.Version = types.StringNull()
 	}
 
-	if !config.Version.IsNull() && !config.Version.Equal(plan.Version) {
+	if config.Version.IsUnknown() {
+		plan.Version = config.Version
+	} else if !config.Version.IsNull() && !config.Version.Equal(plan.Version) {
 		if versionsEqual(config.Version.ValueString(), plan.Version.ValueString()) {
 			plan.Version = config.Version
 		} else {
