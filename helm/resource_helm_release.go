@@ -2116,7 +2116,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 	tflog.Debug(ctx, fmt.Sprintf("%s Done", logID))
 
-	if plan.UpgradeInstall.ValueBool() && plan.Version.IsNull() {
+	if plan.UpgradeInstall.ValueBool() && config.Version.IsNull() {
 		tflog.Debug(ctx, fmt.Sprintf("%s upgrade_install is enabled and version attribute is empty", logID))
 
 		installedVersion, err := getInstalledReleaseVersion(ctx, meta, actionConfig, name)
@@ -2124,6 +2124,8 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			resp.Diagnostics.AddError("Failed to check installed release version", err.Error())
 			return
 		}
+
+		// panic(fmt.Sprintf("installed version: %q", installedVersion))
 
 		if installedVersion != "" {
 			tflog.Debug(ctx, fmt.Sprintf("%s setting version to installed version %s", logID, installedVersion))
@@ -2135,23 +2137,23 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			tflog.Debug(ctx, fmt.Sprintf("%s setting version to computed", logID))
 			plan.Version = types.StringNull()
 		}
-	}
-
-	if len(chart.Metadata.Version) > 0 {
-		plan.Version = types.StringValue(chart.Metadata.Version)
 	} else {
-		plan.Version = types.StringNull()
-	}
-
-	if !config.Version.IsNull() && !config.Version.Equal(plan.Version) {
-		if versionsEqual(config.Version.ValueString(), plan.Version.ValueString()) {
-			plan.Version = config.Version
+		if len(chart.Metadata.Version) > 0 {
+			plan.Version = types.StringValue(chart.Metadata.Version)
 		} else {
-			resp.Diagnostics.AddError(
-				"Planned version is different from configured version",
-				fmt.Sprintf(`The version in the configuration is %q but the planned version is %q. 
+			plan.Version = types.StringNull()
+		}
+
+		if !config.Version.IsNull() && !config.Version.Equal(plan.Version) {
+			if versionsEqual(config.Version.ValueString(), plan.Version.ValueString()) {
+				plan.Version = config.Version
+			} else {
+				resp.Diagnostics.AddError(
+					"Planned version is different from configured version",
+					fmt.Sprintf(`The version in the configuration is %q but the planned version is %q. 
 You should update the version in your configuration to %[2]q, or remove the version attribute from your configuration.`, config.Version.ValueString(), plan.Version.ValueString()))
-			return
+				return
+			}
 		}
 	}
 
