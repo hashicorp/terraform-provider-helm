@@ -706,6 +706,58 @@ resource "helm_release" "%s" {
 `, resource, name, ns, testRepositoryURL, version)
 }
 
+func TestAccResourceRelease_upgradeInstall_warmstart_no_version(t *testing.T) {
+	versions := []string{"1.2.3", "2.0.0"}
+
+	for _, version := range versions {
+		name := randName("warm-noversion")
+		namespace := createRandomNamespace(t)
+		defer deleteNamespace(t, namespace)
+
+		cmd := exec.Command("helm", "install", name, "test-chart",
+			"--repo", testRepositoryURL,
+			"--version", version,
+			"-n", namespace, "--create-namespace")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("failed to preinstall release: %s\n%s", err, out)
+		}
+
+		resource.Test(t, resource.TestCase{
+			ProtoV6ProviderFactories: protoV6ProviderFactories(),
+			Steps: []resource.TestStep{
+				{
+					Config: testAccHelmReleaseWarmstartNoVersion(testResourceName, namespace, name),
+					Check: resource.ComposeAggregateTestCheckFunc(
+						resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "2"),
+						resource.TestCheckResourceAttr("helm_release.test", "metadata.version", version),
+						resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					),
+				},
+			},
+		})
+	}
+}
+
+func testAccHelmReleaseWarmstartNoVersion(resource, ns, name string) string {
+	return fmt.Sprintf(`
+resource "helm_release" "%s" {
+  name             = %q
+  namespace        = %q
+  chart            = "test-chart"
+  repository       = %q
+  description      = "Test"
+  upgrade_install  = true
+
+  set = [
+    {
+      name  = "foo"
+      value = "bar"
+    }
+  ]
+}
+`, resource, name, ns, testRepositoryURL)
+}
+
 func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 	name := randName("test-update-existing-failed")
 	namespace := createRandomNamespace(t)
