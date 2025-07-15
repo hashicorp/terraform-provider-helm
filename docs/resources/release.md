@@ -153,10 +153,7 @@ resource "helm_release" "example" {
     {
       name  = "metrics.enabled"
       value = "true"
-    }
-  ]
-
-  set = [
+    },
     {
       name  = "service.annotations.prometheus\\.io/port"
       value = "9127"
