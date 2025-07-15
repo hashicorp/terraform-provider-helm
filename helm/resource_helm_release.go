@@ -2125,8 +2125,6 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			return
 		}
 
-		// panic(fmt.Sprintf("installed version: %q", installedVersion))
-
 		if installedVersion != "" {
 			tflog.Debug(ctx, fmt.Sprintf("%s setting version to installed version %s", logID, installedVersion))
 			plan.Version = types.StringValue(installedVersion)
