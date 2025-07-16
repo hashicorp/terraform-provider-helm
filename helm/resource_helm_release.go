@@ -36,7 +36,6 @@ import (
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
-
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/postrender"
@@ -108,6 +107,7 @@ type HelmReleaseModel struct {
 	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
 	Status                   types.String     `tfsdk:"status"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
+	UpgradeInstall           types.Bool       `tfsdk:"upgrade_install"`
 	Values                   types.List       `tfsdk:"values"`
 	Verify                   types.Bool       `tfsdk:"verify"`
 	Version                  types.String     `tfsdk:"version"`
@@ -137,6 +137,7 @@ var defaultAttributes = map[string]interface{}{
 	"verify":                     false,
 	"wait":                       true,
 	"wait_for_jobs":              false,
+	"upgrade_install":            false,
 }
 
 type releaseMetaData struct {
@@ -619,6 +620,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 				},
 			},
+			"upgrade_install": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(defaultAttributes["upgrade_install"].(bool)),
+				Description: "If true, the provider will install the release at the specified version even if a release not controlled by the provider is present. This is equivalent to running 'helm upgrade --install'. WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' note in the provider documentation. Defaults to `false`.",
+			},
 			"postrender": schema.SingleNestedAttribute{
 				Description: "Postrender command config",
 				Optional:    true,
@@ -707,6 +714,25 @@ func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 		out[k] = v
 	}
 	return out
+}
+
+func getInstalledReleaseVersion(ctx context.Context, m *Meta, cfg *action.Configuration, name string) (string, error) {
+	logID := fmt.Sprintf("[getInstalledReleaseVersion: %s]", name)
+	histClient := action.NewHistory(cfg)
+	histClient.Max = 1
+
+	hist, err := histClient.Run(name)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			tflog.Debug(ctx, fmt.Sprintf("%s Chart %s is not yet installed", logID, name))
+			return "", nil
+		}
+		return "", err
+	}
+
+	installedVersion := hist[0].Chart.Metadata.Version
+	tflog.Debug(ctx, fmt.Sprintf("%s Chart %s is installed as release %s", logID, name, installedVersion))
+	return installedVersion, nil
 }
 
 func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -808,27 +834,87 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.Description = state.Description.ValueString()
 	client.CreateNamespace = state.CreateNamespace.ValueBool()
 
-	if state.PostRender != nil {
-		binaryPath := state.PostRender.BinaryPath.ValueString()
-		argsList := state.PostRender.Args.Elements()
+	var releaseAlreadyExists bool
+	var installedVersion string
+	var rel *release.Release
 
-		if binaryPath != "" {
-			var args []string
-			for _, arg := range argsList {
-				args = append(args, arg.(basetypes.StringValue).ValueString())
-			}
-			tflog.Debug(ctx, fmt.Sprintf("Creating post-renderer with binary path: %s and args: %v", binaryPath, args))
-			pr, err := postrender.NewExec(binaryPath, args...)
-			if err != nil {
-				resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
-				return
-			}
+	releaseName := state.Name.ValueString()
 
-			client.PostRenderer = pr
+	if state.UpgradeInstall.ValueBool() {
+		tflog.Debug(ctx, fmt.Sprintf("Checking if %q is already installed", releaseName))
+
+		ver, err := getInstalledReleaseVersion(ctx, meta, actionConfig, releaseName)
+		if err != nil {
+			resp.Diagnostics.AddError("Error checking installed release", fmt.Sprintf("Failed to determine if release exists: %s", err))
+			return
+		}
+		installedVersion = ver
+		if installedVersion != "" {
+			tflog.Debug(ctx, fmt.Sprintf("Release %q is installed (version: %s)", releaseName, installedVersion))
+			releaseAlreadyExists = true
+		} else {
+			tflog.Debug(ctx, fmt.Sprintf("Release %q is not installed", releaseName))
 		}
 	}
 
-	rel, err := client.Run(c, values)
+	if state.UpgradeInstall.ValueBool() && releaseAlreadyExists {
+		tflog.Debug(ctx, fmt.Sprintf("Upgrade-installing chart %q", releaseName))
+
+		upgradeClient := action.NewUpgrade(actionConfig)
+		upgradeClient.ChartPathOptions = *cpo
+		upgradeClient.DryRun = false
+		upgradeClient.DisableHooks = state.DisableWebhooks.ValueBool()
+		upgradeClient.Wait = state.Wait.ValueBool()
+		upgradeClient.Devel = state.Devel.ValueBool()
+		upgradeClient.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
+		upgradeClient.Namespace = state.Namespace.ValueString()
+		upgradeClient.Atomic = state.Atomic.ValueBool()
+		upgradeClient.SkipCRDs = state.SkipCrds.ValueBool()
+		upgradeClient.SubNotes = state.RenderSubchartNotes.ValueBool()
+		upgradeClient.DisableOpenAPIValidation = state.DisableOpenapiValidation.ValueBool()
+		upgradeClient.Description = state.Description.ValueString()
+
+		if state.PostRender != nil {
+			binaryPath := state.PostRender.BinaryPath.ValueString()
+			argsList := state.PostRender.Args.Elements()
+			if binaryPath != "" {
+				var args []string
+				for _, arg := range argsList {
+					args = append(args, arg.(basetypes.StringValue).ValueString())
+				}
+				pr, err := postrender.NewExec(binaryPath, args...)
+				if err != nil {
+					resp.Diagnostics.AddError("Post-render Error", fmt.Sprintf("Could not create post-renderer: %s", err))
+					return
+				}
+				upgradeClient.PostRenderer = pr
+			}
+		}
+
+		rel, err = upgradeClient.Run(releaseName, c, values)
+	} else {
+		tflog.Debug(ctx, fmt.Sprintf("Installing chart %q", releaseName))
+		if state.PostRender != nil {
+			binaryPath := state.PostRender.BinaryPath.ValueString()
+			argsList := state.PostRender.Args.Elements()
+
+			if binaryPath != "" {
+				var args []string
+				for _, arg := range argsList {
+					args = append(args, arg.(basetypes.StringValue).ValueString())
+				}
+				tflog.Debug(ctx, fmt.Sprintf("Creating post-renderer with binary path: %s and args: %v", binaryPath, args))
+				pr, err := postrender.NewExec(binaryPath, args...)
+				if err != nil {
+					resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
+					return
+				}
+
+				client.PostRenderer = pr
+			}
+		}
+		rel, err = client.Run(c, values)
+	}
 	if err != nil && rel == nil {
 		resp.Diagnostics.AddError("installation failed", err.Error())
 		return
@@ -2030,21 +2116,42 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 	tflog.Debug(ctx, fmt.Sprintf("%s Done", logID))
 
-	if len(chart.Metadata.Version) > 0 {
-		plan.Version = types.StringValue(chart.Metadata.Version)
-	} else {
-		plan.Version = types.StringNull()
-	}
+	if plan.UpgradeInstall.ValueBool() && config.Version.IsNull() {
+		tflog.Debug(ctx, fmt.Sprintf("%s upgrade_install is enabled and version attribute is empty", logID))
 
-	if !config.Version.IsNull() && !config.Version.Equal(plan.Version) {
-		if versionsEqual(config.Version.ValueString(), plan.Version.ValueString()) {
-			plan.Version = config.Version
-		} else {
-			resp.Diagnostics.AddError(
-				"Planned version is different from configured version",
-				fmt.Sprintf(`The version in the configuration is %q but the planned version is %q. 
-You should update the version in your configuration to %[2]q, or remove the version attribute from your configuration.`, config.Version.ValueString(), plan.Version.ValueString()))
+		installedVersion, err := getInstalledReleaseVersion(ctx, meta, actionConfig, name)
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to check installed release version", err.Error())
 			return
+		}
+
+		if installedVersion != "" {
+			tflog.Debug(ctx, fmt.Sprintf("%s setting version to installed version %s", logID, installedVersion))
+			plan.Version = types.StringValue(installedVersion)
+		} else if len(chart.Metadata.Version) > 0 {
+			tflog.Debug(ctx, fmt.Sprintf("%s setting version to chart version %s", logID, chart.Metadata.Version))
+			plan.Version = types.StringValue(chart.Metadata.Version)
+		} else {
+			tflog.Debug(ctx, fmt.Sprintf("%s setting version to computed", logID))
+			plan.Version = types.StringNull()
+		}
+	} else {
+		if len(chart.Metadata.Version) > 0 {
+			plan.Version = types.StringValue(chart.Metadata.Version)
+		} else {
+			plan.Version = types.StringNull()
+		}
+
+		if !config.Version.IsNull() && !config.Version.Equal(plan.Version) {
+			if versionsEqual(config.Version.ValueString(), plan.Version.ValueString()) {
+				plan.Version = config.Version
+			} else {
+				resp.Diagnostics.AddError(
+					"Planned version is different from configured version",
+					fmt.Sprintf(`The version in the configuration is %q but the planned version is %q. 
+You should update the version in your configuration to %[2]q, or remove the version attribute from your configuration.`, config.Version.ValueString(), plan.Version.ValueString()))
+				return
+			}
 		}
 	}
 
