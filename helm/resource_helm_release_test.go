@@ -170,6 +170,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 
 					// Default values
 					resource.TestCheckResourceAttr("helm_release.imported", "verify", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "take_ownership", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "timeout", "300"),
 					resource.TestCheckResourceAttr("helm_release.imported", "wait", "true"),
 					resource.TestCheckResourceAttr("helm_release.imported", "wait_for_jobs", "true"),

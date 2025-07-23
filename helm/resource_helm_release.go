@@ -106,6 +106,7 @@ type HelmReleaseModel struct {
 	SetSensitive             types.List       `tfsdk:"set_sensitive"`
 	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
 	Status                   types.String     `tfsdk:"status"`
+	TakeOwnership            types.Bool       `tfsdk:"take_ownership"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
 	UpgradeInstall           types.Bool       `tfsdk:"upgrade_install"`
 	Values                   types.List       `tfsdk:"values"`
@@ -133,6 +134,7 @@ var defaultAttributes = map[string]interface{}{
 	"reset_values":               false,
 	"reuse_values":               false,
 	"skip_crds":                  false,
+	"take_ownership":             false,
 	"timeout":                    int64(300),
 	"verify":                     false,
 	"wait":                       true,
@@ -497,6 +499,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Description: "Status of the release",
 			},
+			"take_ownership": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+				Description: "If set, Helm will take ownership of resources not already annotated by this release. Useful for migrations or recovery.",
+			},
 			"timeout": schema.Int64Attribute{
 				Optional:    true,
 				Computed:    true,
@@ -823,6 +831,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.WaitForJobs = state.WaitForJobs.ValueBool()
 	client.Devel = state.Devel.ValueBool()
 	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
+	client.TakeOwnership = state.TakeOwnership.ValueBool()
 	client.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
 	client.Namespace = state.Namespace.ValueString()
 	client.ReleaseName = state.Name.ValueString()
@@ -1091,6 +1100,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 
 	client.Devel = plan.Devel.ValueBool()
 	client.Namespace = plan.Namespace.ValueString()
+	client.TakeOwnership = plan.TakeOwnership.ValueBool()
 	client.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
 	client.Wait = plan.Wait.ValueBool()
 	client.WaitForJobs = plan.WaitForJobs.ValueBool()
@@ -1979,6 +1989,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			install.WaitForJobs = plan.WaitForJobs.ValueBool()
 			install.Devel = plan.Devel.ValueBool()
 			install.DependencyUpdate = plan.DependencyUpdate.ValueBool()
+			install.TakeOwnership = plan.TakeOwnership.ValueBool()
 			install.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
 			install.Namespace = plan.Namespace.ValueString()
 			install.ReleaseName = plan.Name.ValueString()
@@ -2053,6 +2064,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.ChartPathOptions = *cpo
 		upgrade.Devel = plan.Devel.ValueBool()
 		upgrade.Namespace = plan.Namespace.ValueString()
+		upgrade.TakeOwnership = plan.TakeOwnership.ValueBool()
 		upgrade.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
 		upgrade.Wait = plan.Wait.ValueBool()
 		upgrade.DryRun = true
