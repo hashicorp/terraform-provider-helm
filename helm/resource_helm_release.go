@@ -502,7 +502,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			"take_ownership": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				Default:     booldefault.StaticBool(defaultAttributes["take_ownership"].(bool)),
 				Description: "If set, Helm will take ownership of resources not already annotated by this release. Useful for migrations or recovery.",
 			},
 			"timeout": schema.Int64Attribute{

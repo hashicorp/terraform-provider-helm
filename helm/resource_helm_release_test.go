@@ -1730,7 +1730,6 @@ func TestAccResourceRelease_takeOwnership(t *testing.T) {
 				),
 			},
 			{
-				// Ensure no diff on second apply
 				Config: testAccHelmReleaseConfigWithTakeOwnership(testResourceName, namespace, name, "1.2.3", true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "take_ownership", "true"),
