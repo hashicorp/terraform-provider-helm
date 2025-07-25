@@ -170,6 +170,7 @@ func TestAccResourceRelease_import(t *testing.T) {
 
 					// Default values
 					resource.TestCheckResourceAttr("helm_release.imported", "verify", "false"),
+					resource.TestCheckResourceAttr("helm_release.imported", "take_ownership", "false"),
 					resource.TestCheckResourceAttr("helm_release.imported", "timeout", "300"),
 					resource.TestCheckResourceAttr("helm_release.imported", "wait", "true"),
 					resource.TestCheckResourceAttr("helm_release.imported", "wait_for_jobs", "true"),
@@ -1708,6 +1709,54 @@ func TestAccResourceRelease_LintFailValues(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceRelease_takeOwnership(t *testing.T) {
+	name := randName("takeownership")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigWithTakeOwnership(testResourceName, namespace, name, "1.2.3", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "take_ownership", "true"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+			{
+				Config: testAccHelmReleaseConfigWithTakeOwnership(testResourceName, namespace, name, "1.2.3", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "take_ownership", "true"),
+				),
+			},
+		},
+	})
+}
+func testAccHelmReleaseConfigWithTakeOwnership(resource, ns, name, version string, takeOwnership bool) string {
+	return fmt.Sprintf(`
+resource "helm_release" "%s" {
+  name            = %q
+  namespace       = %q
+  chart           = "test-chart"
+  repository      = %q
+  version         = %q
+  description     = "Test"
+  take_ownership  = %t
+
+  set = [
+    {
+      name  = "foo"
+      value = "bar"
+    }
+  ]
+}
+`, resource, name, ns, testRepositoryURL, version, takeOwnership)
 }
 
 func TestAccResourceRelease_LintFailChart(t *testing.T) {
