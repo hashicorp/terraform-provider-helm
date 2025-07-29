@@ -2082,6 +2082,129 @@ func TestAccResourceRelease_literalSet(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_jsonSet(t *testing.T) {
+	name := randName("json-set")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigSetJSON(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.values", "{\"nested\":{\"a\":true,\"b\":[1,2,3]}}"),
+				),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigSetJSON(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			description = "Test JSON set"
+			repository  = %q
+			chart       = "test-chart"
+			version     = %q
+
+			set = [
+				{
+					name  = "nested"
+					value = jsonencode({ a = true, b = [1, 2, 3] })
+					type  = "json"
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
+// Testing missing closing bracket json input
+func TestAccResourceRelease_jsonSetInvalid(t *testing.T) {
+	name := randName("json-set-invalid")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccHelmReleaseConfigSetJSONInvalid(testResourceName, namespace, name, "1.2.3"),
+				ExpectError: regexp.MustCompile(`Failed parsing JSON value`),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigSetJSONInvalid(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			description = "Test Invalid JSON Set"
+			repository  = %q
+			chart       = "test-chart"
+			version     = %q
+			set = [
+				{
+					name  = "nested"
+					value = "{ \"a\": true, \"b\": [1, 2 " 
+					type  = "json"
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func TestAccResourceRelease_jsonSetMergeError(t *testing.T) {
+	name := randName("json-set-merge-error")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccHelmReleaseConfigSetJSONMergeError(testResourceName, namespace, name, "1.2.3"),
+				ExpectError: regexp.MustCompile(`Cannot merge JSON into an non-object path`),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigSetJSONMergeError(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			description = "Test JSON Merge Error"
+			repository  = %q
+			chart       = "test-chart"
+			version     = %q
+			set = [
+				// set "nested" as a primitive string in this example
+				{
+					name  = "nested"
+					value = "\"not-an-object\""
+					type  = "json"
+				},
+				// Then, attempting to set the "nested.key" which expects "nested" to be an object
+				{
+					name  = "nested.key"
+					value = "{ \"x\": 42 }"
+					type  = "json"
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
+}
+
 func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {

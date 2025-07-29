@@ -288,7 +288,7 @@ The `set`, `set_list`, and `set_sensitive` blocks support:
 
 * `name` - (Required) full name of the variable to be set.
 * `value` - (Required; Optional for `set`) value of the variable to be set.
-* `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
+* `type` - (Optional) type of the variable to be set. Valid options are `auto`, `string` and `json`.
 
 Since Terraform Utilizes HCL as well as Helm using the Helm Template Language, it's necessary to escape the `{}`, `[]`, `.`, and `,` characters twice in order for it to be parsed. `name` should also be set to the `value path`, and `value` is the desired value that will be set.
 
