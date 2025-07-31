@@ -1416,8 +1416,8 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 	if !model.Set.IsNull() {
 		tflog.Debug(ctx, "Processing Set attribute")
 		var setList []setResourceModel
-		setDiags := model.Set.ElementsAs(ctx, &setList, false)
-		diags.Append(setDiags...)
+		diags.Append(model.Set.ElementsAs(ctx, &setList, false)...)
+		diags.Append(validateNoDuplicateSetNames(setList)...)
 		if diags.HasError() {
 			return nil, diags
 		}
@@ -2395,4 +2395,28 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 		return true
 	}
 	return false
+}
+
+// validateNoDuplicateSetNames checks for duplicate names in set blocks and returns
+// an error diagnostic if any are found.
+func validateNoDuplicateSetNames(setList []setResourceModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+	seenNames := make(map[string]int)
+
+	for i, set := range setList {
+		name := set.Name.ValueString()
+
+		if prevIndex, seen := seenNames[name]; seen {
+			diags.AddError(
+				"Duplicate value name in set",
+				fmt.Sprintf("The name '%s' is specified multiple times in 'set' blocks (at indices %d and %d). "+
+					"Each name should only be specified once.", name, prevIndex, i),
+			)
+			return diags
+		}
+
+		seenNames[name] = i
+	}
+
+	return diags
 }

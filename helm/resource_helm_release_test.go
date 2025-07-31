@@ -862,6 +862,25 @@ func TestAccResourceRelease_updateSetValue(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_duplicateSetNames(t *testing.T) {
+	name := randName("test-duplicate-set-names")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				// Config with duplicate set names should fail
+				Config: testAccHelmReleaseConfigDuplicateSetNames(
+					testResourceName, namespace, name, "1.2.3",
+				),
+				ExpectError: regexp.MustCompile("Duplicate value name in set"),
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_validation(t *testing.T) {
 	invalidName := "this-helm-release-name-is-longer-than-53-characters-long"
 	namespace := createRandomNamespace(t)
@@ -1263,6 +1282,34 @@ func testAccHelmReleaseConfigSet(resource, ns, name, version, setValue string) s
 			]
 		}
 	`, resource, name, ns, testRepositoryURL, version, setValue)
+}
+
+func testAccHelmReleaseConfigDuplicateSetNames(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+			chart       = "test-chart"
+			version     = %q
+
+			set = [
+				{
+					name  = "foo"
+					value = "bar"
+				},
+				{
+					name  = "fizz"
+					value = "buzz"
+				},
+				{
+					name  = "foo"
+					value = "different value"
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version)
 }
 
 func testAccHelmReleaseConfigSetNull(resource, ns, name, version string) string {
