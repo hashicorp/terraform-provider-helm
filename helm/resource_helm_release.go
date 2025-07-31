@@ -831,7 +831,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.WaitForJobs = plan.WaitForJobs.ValueBool()
 	client.Devel = plan.Devel.ValueBool()
 	client.DependencyUpdate = plan.DependencyUpdate.ValueBool()
-  client.TakeOwnership = plan.TakeOwnership.ValueBool()
+	client.TakeOwnership = plan.TakeOwnership.ValueBool()
 	client.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
 	client.Namespace = plan.Namespace.ValueString()
 	client.ReleaseName = plan.Name.ValueString()
