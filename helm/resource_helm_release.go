@@ -736,8 +736,8 @@ func getInstalledReleaseVersion(ctx context.Context, m *Meta, cfg *action.Config
 }
 
 func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var state HelmReleaseModel
-	diags := req.Plan.Get(ctx, &state)
+	var plan HelmReleaseModel
+	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -749,39 +749,39 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Plan state on Create: %+v", state))
+	tflog.Debug(ctx, fmt.Sprintf("Plan state on Create: %+v", plan))
 
 	meta := r.meta
 	if meta == nil {
 		resp.Diagnostics.AddError("Initialization Error", "Meta instance is not initialized")
 		return
 	}
-	namespace := state.Namespace.ValueString()
+	namespace := plan.Namespace.ValueString()
 	actionConfig, err := meta.GetHelmConfiguration(ctx, namespace)
 	if err != nil {
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, plan.Repository.ValueString(), plan.Chart.ValueString(), plan.RepositoryUsername.ValueString(), plan.RepositoryPassword.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	client := action.NewInstall(actionConfig)
-	cpo, chartName, cpoDiags := chartPathOptions(&state, meta, &client.ChartPathOptions)
+	cpo, chartName, cpoDiags := chartPathOptions(&plan, meta, &client.ChartPathOptions)
 	resp.Diagnostics.Append(cpoDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	c, cpath, chartDiags := getChart(ctx, &state, meta, chartName, cpo)
+	c, cpath, chartDiags := getChart(ctx, &plan, meta, chartName, cpo)
 	resp.Diagnostics.Append(chartDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	updated, depDiags := checkChartDependencies(ctx, &state, c, cpath, meta)
+	updated, depDiags := checkChartDependencies(ctx, &plan, c, cpath, meta)
 	resp.Diagnostics.Append(depDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -793,7 +793,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		}
 	}
 
-	values, valuesDiags := getValues(ctx, &state)
+	values, valuesDiags := getValues(ctx, &plan)
 	resp.Diagnostics.Append(valuesDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -818,29 +818,29 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 
 	client.ClientOnly = false
 	client.DryRun = false
-	client.DisableHooks = state.DisableWebhooks.ValueBool()
-	client.Wait = state.Wait.ValueBool()
-	client.WaitForJobs = state.WaitForJobs.ValueBool()
-	client.Devel = state.Devel.ValueBool()
-	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
-	client.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
-	client.Namespace = state.Namespace.ValueString()
-	client.ReleaseName = state.Name.ValueString()
-	client.Atomic = state.Atomic.ValueBool()
-	client.SkipCRDs = state.SkipCrds.ValueBool()
-	client.SubNotes = state.RenderSubchartNotes.ValueBool()
-	client.DisableOpenAPIValidation = state.DisableOpenapiValidation.ValueBool()
-	client.Replace = state.Replace.ValueBool()
-	client.Description = state.Description.ValueString()
-	client.CreateNamespace = state.CreateNamespace.ValueBool()
+	client.DisableHooks = plan.DisableWebhooks.ValueBool()
+	client.Wait = plan.Wait.ValueBool()
+	client.WaitForJobs = plan.WaitForJobs.ValueBool()
+	client.Devel = plan.Devel.ValueBool()
+	client.DependencyUpdate = plan.DependencyUpdate.ValueBool()
+	client.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
+	client.Namespace = plan.Namespace.ValueString()
+	client.ReleaseName = plan.Name.ValueString()
+	client.Atomic = plan.Atomic.ValueBool()
+	client.SkipCRDs = plan.SkipCrds.ValueBool()
+	client.SubNotes = plan.RenderSubchartNotes.ValueBool()
+	client.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
+	client.Replace = plan.Replace.ValueBool()
+	client.Description = plan.Description.ValueString()
+	client.CreateNamespace = plan.CreateNamespace.ValueBool()
 
 	var releaseAlreadyExists bool
 	var installedVersion string
 	var rel *release.Release
 
-	releaseName := state.Name.ValueString()
+	releaseName := plan.Name.ValueString()
 
-	if state.UpgradeInstall.ValueBool() {
+	if plan.UpgradeInstall.ValueBool() {
 		tflog.Debug(ctx, fmt.Sprintf("Checking if %q is already installed", releaseName))
 
 		ver, err := getInstalledReleaseVersion(ctx, meta, actionConfig, releaseName)
@@ -857,26 +857,26 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		}
 	}
 
-	if state.UpgradeInstall.ValueBool() && releaseAlreadyExists {
+	if plan.UpgradeInstall.ValueBool() && releaseAlreadyExists {
 		tflog.Debug(ctx, fmt.Sprintf("Upgrade-installing chart %q", releaseName))
 
 		upgradeClient := action.NewUpgrade(actionConfig)
 		upgradeClient.ChartPathOptions = *cpo
 		upgradeClient.DryRun = false
-		upgradeClient.DisableHooks = state.DisableWebhooks.ValueBool()
-		upgradeClient.Wait = state.Wait.ValueBool()
-		upgradeClient.Devel = state.Devel.ValueBool()
-		upgradeClient.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
-		upgradeClient.Namespace = state.Namespace.ValueString()
-		upgradeClient.Atomic = state.Atomic.ValueBool()
-		upgradeClient.SkipCRDs = state.SkipCrds.ValueBool()
-		upgradeClient.SubNotes = state.RenderSubchartNotes.ValueBool()
-		upgradeClient.DisableOpenAPIValidation = state.DisableOpenapiValidation.ValueBool()
-		upgradeClient.Description = state.Description.ValueString()
+		upgradeClient.DisableHooks = plan.DisableWebhooks.ValueBool()
+		upgradeClient.Wait = plan.Wait.ValueBool()
+		upgradeClient.Devel = plan.Devel.ValueBool()
+		upgradeClient.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
+		upgradeClient.Namespace = plan.Namespace.ValueString()
+		upgradeClient.Atomic = plan.Atomic.ValueBool()
+		upgradeClient.SkipCRDs = plan.SkipCrds.ValueBool()
+		upgradeClient.SubNotes = plan.RenderSubchartNotes.ValueBool()
+		upgradeClient.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
+		upgradeClient.Description = plan.Description.ValueString()
 
-		if state.PostRender != nil {
-			binaryPath := state.PostRender.BinaryPath.ValueString()
-			argsList := state.PostRender.Args.Elements()
+		if plan.PostRender != nil {
+			binaryPath := plan.PostRender.BinaryPath.ValueString()
+			argsList := plan.PostRender.Args.Elements()
 			if binaryPath != "" {
 				var args []string
 				for _, arg := range argsList {
@@ -894,9 +894,9 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		rel, err = upgradeClient.Run(releaseName, c, values)
 	} else {
 		tflog.Debug(ctx, fmt.Sprintf("Installing chart %q", releaseName))
-		if state.PostRender != nil {
-			binaryPath := state.PostRender.BinaryPath.ValueString()
-			argsList := state.PostRender.Args.Elements()
+		if plan.PostRender != nil {
+			binaryPath := plan.PostRender.BinaryPath.ValueString()
+			argsList := plan.PostRender.Args.Elements()
 
 			if binaryPath != "" {
 				var args []string
@@ -921,7 +921,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	if err != nil && rel != nil {
-		exists, existsDiags := resourceReleaseExists(ctx, state.Name.ValueString(), state.Namespace.ValueString(), meta)
+		exists, existsDiags := resourceReleaseExists(ctx, plan.Name.ValueString(), plan.Namespace.ValueString(), meta)
 		resp.Diagnostics.Append(existsDiags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -931,7 +931,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 			return
 		}
 
-		diags := setReleaseAttributes(ctx, &state, resp.Identity, rel, meta)
+		diags := setReleaseAttributes(ctx, &plan, resp.Identity, rel, meta)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -943,13 +943,13 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	diags = setReleaseAttributes(ctx, &state, resp.Identity, rel, meta)
+	diags = setReleaseAttributes(ctx, &plan, resp.Identity, rel, meta)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
