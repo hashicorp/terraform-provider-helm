@@ -192,7 +192,7 @@ Provider supports grabbing charts from an OCI repository:
 
 ```terraform
 provider "helm" {
-  kubernetes = {
+  kubernetes {
     config_path = "~/.kube/config"
   }
 

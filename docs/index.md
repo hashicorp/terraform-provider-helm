@@ -23,7 +23,7 @@ Try the [hands-on tutorial](https://learn.hashicorp.com/tutorials/terraform/helm
 
 ```terraform
 provider "helm" {
-  kubernetes = {
+  kubernetes {
     config_path = "~/.kube/config"
   }
 
@@ -80,7 +80,7 @@ The easiest way is to supply a path to your kubeconfig file using the `config_pa
 
 ```terraform
 provider "helm" {
-  kubernetes = {
+  kubernetes {
     config_path = "~/.kube/config"
   }
 }
@@ -90,7 +90,7 @@ The provider also supports multiple paths in the same way that kubectl does usin
 
 ```terraform
 provider "helm" {
-  kubernetes = {
+  kubernetes {
     config_paths = [
       "/path/to/config_a.yaml",
       "/path/to/config_b.yaml"
@@ -127,7 +127,7 @@ Some cloud providers have short-lived authentication tokens that can expire rela
 
 ```terraform
 provider "helm" {
-  kubernetes = {
+  kubernetes {
     host                   = var.cluster_endpoint
     cluster_ca_certificate = base64decode(var.cluster_ca_cert)
     exec = {
@@ -143,7 +143,7 @@ For example, to [authenticate with GKE](https://registry.terraform.io/providers/
 
 ```terraform
 provider "helm" {
-    kubernetes = {
+    kubernetes {
         host  = "https://${data.google_container_cluster.my_cluster.endpoint}"
         token = data.google_client_config.provider.access_token
         cluster_ca_certificate = base64decode(
