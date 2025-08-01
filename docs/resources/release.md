@@ -60,7 +60,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `upgrade_install` (Boolean) If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' note in the provider documentation. Defaults to `false`.
 - `values` (List of String) List of values in raw yaml format to pass to helm.
 - `verify` (Boolean) Verify the package before installing it.Defaults to `false`.
-- `version` (String) Specify the exact chart version to install. If this is not specified, the latest version is installed.
+- `version` (String) Specify the exact chart version to install. If this is not specified, the latest version is installed. `helm_release` will not automatically grab the latest release, version must explicitly upgraded when upgrading an installed chart.
 - `wait` (Boolean) Will wait until all resources are in a ready state before marking the release as successful. Defaults to `true`.
 - `wait_for_jobs` (Boolean) If wait is enabled, will wait until all Jobs have been completed before marking the release as successful. Defaults to `false``.
 
