@@ -2728,7 +2728,7 @@ func testAccHelmReleaseConfigSetLiteral(resource, ns, name, version string) stri
 // getTestKubeClient returns a Helm kube client for the given namespace.
 func getTestKubeClientPF(t *testing.T, namespace string) *kube.Client {
 	t.Helper()
-	meta := testMeta // Ensure you capture testMeta from the framework provider init
+	meta := testMeta
 	if meta == nil {
 		t.Fatalf("provider meta is nil")
 	}
@@ -2807,7 +2807,7 @@ func patchDeploymentPF(t *testing.T, namespace, name string, patchBytes []byte) 
 		if err != nil {
 			t.Fatalf("failed to patch deployment: %v", err)
 		}
-		// Wait for rollout
+		// Waiting for rollout
 		for {
 			dep, err := client.AppsV1().Deployments(namespace).Get(context.Background(), name, v1.GetOptions{})
 			if err != nil {

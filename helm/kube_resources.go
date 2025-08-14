@@ -137,7 +137,6 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 			return nil, diags
 		}
 
-		// Reset transient metadata fields
 		accessor.SetUID(types.UID(""))
 		accessor.SetCreationTimestamp(metav1.Time{})
 		accessor.SetResourceVersion("")
@@ -149,14 +148,12 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 			return nil, diags
 		}
 
-		// No resourceGetter: redactSensitiveValues replaced with a no-op or direct use if needed.
 		mappedObjects[key] = string(objJSON)
 		tflog.Debug(ctx, "Mapped runtime object", map[string]interface{}{"key": key})
 	}
 	return mappedObjects, diags
 }
 
-// mapResources builds resources from a manifest and maps them using mapRuntimeObjects.
 func mapResources(ctx context.Context, actionConfig *action.Configuration, r *release.Release, f func(*resource.Info) (runtime.Object, error)) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
