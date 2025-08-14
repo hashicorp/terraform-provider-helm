@@ -88,6 +88,7 @@ type HelmReleaseModel struct {
 	Namespace                types.String     `tfsdk:"namespace"`
 	PassCredentials          types.Bool       `tfsdk:"pass_credentials"`
 	PostRender               *PostRenderModel `tfsdk:"postrender"`
+	Resources                types.Map        `tfsdk:"resources"`
 	RecreatePods             types.Bool       `tfsdk:"recreate_pods"`
 	Replace                  types.Bool       `tfsdk:"replace"`
 	RenderSubchartNotes      types.Bool       `tfsdk:"render_subchart_notes"`
@@ -488,6 +489,11 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored",
 				Default:     booldefault.StaticBool(defaultAttributes["reuse_values"].(bool)),
+			},
+			"resources": schema.MapAttribute{
+				Description: "The kubernetes resources created by this release.",
+				Computed:    true,
+				ElementType: types.StringType,
 			},
 			"skip_crds": schema.BoolAttribute{
 				Optional:    true,
@@ -1615,7 +1621,6 @@ func versionsEqual(a, b string) bool {
 
 func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity *tfsdk.ResourceIdentity, r *release.Release, meta *Meta) diag.Diagnostics {
 	var diags diag.Diagnostics
-
 	// Update state with attributes from the helm release
 	state.Name = types.StringValue(r.Name)
 	version := r.Chart.Metadata.Version
@@ -1667,6 +1672,22 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		sensitiveValues := extractSensitiveValues(state)
 		manifest := redactSensitiveValues(string(jsonManifest), sensitiveValues)
 		state.Manifest = types.StringValue(manifest)
+
+		resources, resDiags := getLiveResources(ctx, r, meta)
+		diags.Append(resDiags...)
+
+		if !resDiags.HasError() {
+			resMap, resConvDiags := mapToTerraformStringMap(ctx, resources)
+			diags.Append(resConvDiags...)
+
+			if resConvDiags.HasError() {
+				state.Resources = types.MapValueMust(types.StringType, map[string]attr.Value{})
+			} else {
+				state.Resources = resMap
+			}
+		} else {
+			state.Resources = types.MapValueMust(types.StringType, map[string]attr.Value{})
+		}
 	}
 
 	// NOTE Don't retrieve values if write-only is being used.
@@ -1707,6 +1728,14 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 	tflog.Debug(ctx, fmt.Sprintf("Metadata after conversion: %+v", metadataObject))
 	state.Metadata = metadataObject
 	return diags
+}
+
+func mapToTerraformStringMap(ctx context.Context, m map[string]string) (types.Map, diag.Diagnostics) {
+	valueMap := make(map[string]attr.Value)
+	for k, v := range m {
+		valueMap[k] = types.StringValue(v)
+	}
+	return types.MapValue(types.StringType, valueMap)
 }
 
 func metadataAttrTypes() map[string]attr.Type {
@@ -1958,6 +1987,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
 			plan.Manifest = types.StringNull()
 			plan.Version = types.StringNull()
+			plan.Resources = types.MapNull(types.StringType)
 			return
 		}
 
@@ -2045,6 +2075,14 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 			manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
 			plan.Manifest = types.StringValue(manifest)
+			resources, resDiags := getDryRunResources(ctx, dry, meta)
+			resp.Diagnostics.Append(resDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
+			resp.Diagnostics.Append(diags...)
+			resp.Plan.Set(ctx, &plan)
 			return
 		}
 
@@ -2054,6 +2092,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				plan.Version = types.StringValue(chart.Metadata.Version)
 			}
 			plan.Manifest = types.StringNull()
+			plan.Resources = types.MapNull(types.StringType)
 			return
 		} else if err != nil {
 			resp.Diagnostics.AddError("Error retrieving old release for a diff", err.Error())
@@ -2095,6 +2134,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 			plan.Version = types.StringNull()
 			plan.Manifest = types.StringNull()
+			plan.Resources = types.MapNull(types.StringType)
 			return
 		} else if err != nil {
 			resp.Diagnostics.AddError("Error running dry run for a diff", err.Error())
@@ -2121,6 +2161,17 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 		manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
 		plan.Manifest = types.StringValue(manifest)
+		resources, resDiags := getDryRunResources(ctx, dry, meta)
+		resp.Diagnostics.Append(resDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
 	} else {
 		plan.Manifest = types.StringNull()

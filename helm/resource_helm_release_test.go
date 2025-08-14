@@ -4,7 +4,9 @@
 package helm
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -32,10 +34,13 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"helm.sh/helm/v3/pkg/repo"
-
+	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	runtimeresource "k8s.io/cli-runtime/pkg/resource"
 )
 
 func TestAccResourceRelease_basic(t *testing.T) {
@@ -2718,4 +2723,187 @@ func testAccHelmReleaseConfigSetLiteral(resource, ns, name, version string) stri
 			]
 		}
 	`, resource, name, ns, testRepositoryURL, version)
+}
+
+// getTestKubeClient returns a Helm kube client for the given namespace.
+func getTestKubeClientPF(t *testing.T, namespace string) *kube.Client {
+	t.Helper()
+	meta := testMeta // Ensure you capture testMeta from the framework provider init
+	if meta == nil {
+		t.Fatalf("provider meta is nil")
+	}
+	actionConfig, err := meta.GetHelmConfiguration(context.Background(), namespace)
+	if err != nil {
+		t.Fatalf("failed to get Helm configuration: %v", err)
+	}
+	client, err := getKubeClient(actionConfig)
+	if err != nil {
+		t.Fatalf("failed to get kube client: %v", err)
+	}
+	return client
+}
+
+// getReleaseJSONResourcesPF retrieves live Kubernetes resources from a Helm release and returns them as JSON.
+func getReleaseJSONResourcesPF(t *testing.T, namespace, name string) map[string]string {
+	kc := getTestKubeClientPF(t, namespace)
+
+	cmd := exec.Command("helm", "--kubeconfig", os.Getenv("KUBE_CONFIG_PATH"), "get", "manifest", "--namespace", namespace, name)
+	manifest, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("failed to get manifest for release %s/%s: %v", namespace, name, err)
+	}
+
+	resources, err := kc.Build(bytes.NewBuffer(manifest), false)
+	if err != nil {
+		t.Fatalf("failed to build resources: %v", err)
+	}
+
+	var objects []runtime.Object
+	err = resources.Visit(func(i *runtimeresource.Info, err error) error {
+		if err != nil {
+			return err
+		}
+		gvk := i.Object.GetObjectKind().GroupVersionKind()
+		obj, err := kc.Factory.NewBuilder().
+			Unstructured().
+			NamespaceParam(i.Namespace).DefaultNamespace().
+			ResourceNames(gvk.GroupKind().String(), i.Name).
+			Flatten().
+			Do().
+			Object()
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		objects = append(objects, obj)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("error visiting resources: %v", err)
+	}
+
+	ctx := context.Background()
+	result, diags := mapRuntimeObjects(ctx, kc, objects)
+	if diags.HasError() {
+		t.Fatalf("failed to map runtime objects: %v", diags)
+	}
+
+	return result
+}
+
+// patchDeploymentPF patches a Deployment resource and waits until it stabilizes.
+func patchDeploymentPF(t *testing.T, namespace, name string, patchBytes []byte) func() {
+	return func() {
+		kc := getTestKubeClientPF(t, namespace)
+		client, err := kc.Factory.KubernetesClientSet()
+		if err != nil {
+			t.Fatalf("failed to create kubernetes clientset: %v", err)
+		}
+		_, err = client.AppsV1().Deployments(namespace).Patch(
+			context.Background(), name, types.StrategicMergePatchType,
+			patchBytes, v1.PatchOptions{})
+		if err != nil {
+			t.Fatalf("failed to patch deployment: %v", err)
+		}
+		// Wait for rollout
+		for {
+			dep, err := client.AppsV1().Deployments(namespace).Get(context.Background(), name, v1.GetOptions{})
+			if err != nil {
+				t.Fatalf("failed to get deployment: %v", err)
+			}
+			if dep.Status.UpdatedReplicas == *dep.Spec.Replicas &&
+				dep.Status.AvailableReplicas == *dep.Spec.Replicas &&
+				dep.Status.Replicas == *dep.Spec.Replicas {
+				break
+			}
+			time.Sleep(5 * time.Second)
+		}
+	}
+}
+
+func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
+	name := randName("serverdiff")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	config := testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3")
+	fullName := fmt.Sprintf("%s-test-chart", name)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			// Initial deploy and verify resources
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					func(state *terraform.State) error {
+						t.Logf("fetching live JSON resources for %s/%s", namespace, name)
+						r := getReleaseJSONResourcesPF(t, namespace, name)
+						return checkResourceAttrMap("helm_release.test", "resources", r)(state)
+					},
+				),
+			},
+			// Patch deployment to 2 replicas, then restore (expect generation increment)
+			{
+				PreConfig: patchDeploymentPF(t, namespace, fullName, []byte(`{"spec":{"replicas":2}}`)),
+				Config:    config,
+				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, fullName, 1, 3),
+			},
+		},
+	})
+}
+
+func checkResourceAttrMap(resourceName, key string, expected map[string]string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceName)
+		}
+		attrs := rs.Primary.Attributes
+
+		// Check count
+		countKey := fmt.Sprintf("%s.%%", key)
+		if got := attrs[countKey]; got != strconv.Itoa(len(expected)) {
+			return fmt.Errorf("expected %d entries in %q but got %s", len(expected), key, got)
+		}
+
+		// Check each resource attr
+		for k, v := range expected {
+			attrKey := fmt.Sprintf("%s.%s", key, k)
+			if got, ok := attrs[attrKey]; !ok || got != v {
+				return fmt.Errorf("expected %s=%q but got %q", attrKey, v, got)
+			}
+		}
+		return nil
+	}
+}
+
+func checkDeploymentReplicasAndGeneration(resourceName, namespace, deploymentName string, replicas int32, generation int64) resource.TestCheckFunc {
+	deploymentKey := fmt.Sprintf("resources.deployment.apps/v1/%s/%s", namespace, deploymentName)
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceName)
+		}
+		val, ok := rs.Primary.Attributes[deploymentKey]
+		if !ok {
+			return fmt.Errorf("attribute %s not found in state", deploymentKey)
+		}
+
+		var deployment appsv1.Deployment
+		if err := json.Unmarshal([]byte(val), &deployment); err != nil {
+			return fmt.Errorf("failed to unmarshal deployment JSON: %w", err)
+		}
+		if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas != replicas {
+			return fmt.Errorf("expected replicas=%d but got %v", replicas, deployment.Spec.Replicas)
+		}
+		if deployment.Generation != generation {
+			return fmt.Errorf("expected generation=%d but got %d", generation, deployment.Generation)
+		}
+		return nil
+	}
 }
