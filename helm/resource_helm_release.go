@@ -2175,6 +2175,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
 	} else {
 		plan.Manifest = types.StringNull()
+		plan.Resources = types.MapNull(types.StringType)
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("%s Done", logID))
