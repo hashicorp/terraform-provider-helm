@@ -2728,19 +2728,28 @@ func testAccHelmReleaseConfigSetLiteral(resource, ns, name, version string) stri
 // getTestKubeClient returns a Helm kube client for the given namespace.
 func getTestKubeClientPF(t *testing.T, namespace string) *kube.Client {
 	t.Helper()
-	meta := testMeta
-	if meta == nil {
-		t.Fatalf("provider meta is nil")
+
+	kubeconfig := os.Getenv("KUBE_CONFIG_PATH")
+	if kubeconfig == "" {
+		t.Fatal("KUBE_CONFIG_PATH must be set for acceptance tests")
 	}
-	actionConfig, err := meta.GetHelmConfiguration(context.Background(), namespace)
-	if err != nil {
-		t.Fatalf("failed to get Helm configuration: %v", err)
+
+	actionConfig := &action.Configuration{}
+	if err := actionConfig.Init(
+		kube.GetConfig(kubeconfig, "", namespace),
+		namespace,
+		os.Getenv("HELM_DRIVER"),
+		t.Logf,
+	); err != nil {
+		t.Fatalf("init Helm action configuration: %v", err)
 	}
+
 	client, err := getKubeClient(actionConfig)
 	if err != nil {
-		t.Fatalf("failed to get kube client: %v", err)
+		t.Fatalf("get kube client: %v", err)
 	}
 	return client
+
 }
 
 // getReleaseJSONResourcesPF retrieves live Kubernetes resources from a Helm release and returns them as JSON.
@@ -2789,7 +2798,6 @@ func getReleaseJSONResourcesPF(t *testing.T, namespace, name string) map[string]
 	if diags.HasError() {
 		t.Fatalf("failed to map runtime objects: %v", diags)
 	}
-
 	return result
 }
 
@@ -2803,7 +2811,8 @@ func patchDeploymentPF(t *testing.T, namespace, name string, patchBytes []byte) 
 		}
 		_, err = client.AppsV1().Deployments(namespace).Patch(
 			context.Background(), name, types.StrategicMergePatchType,
-			patchBytes, v1.PatchOptions{})
+			patchBytes, v1.PatchOptions{},
+		)
 		if err != nil {
 			t.Fatalf("failed to patch deployment: %v", err)
 		}
@@ -2828,13 +2837,18 @@ func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	config := testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3")
+	provider := `
+provider "helm" {
+  experiments = { manifest = true }
+}
+`
+
+	config := provider + testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3")
 	fullName := fmt.Sprintf("%s-test-chart", name)
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		Steps: []resource.TestStep{
-			// Initial deploy and verify resources
 			{
 				Config: config,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -2847,7 +2861,6 @@ func TestAccResourceRelease_manifestServerDiff(t *testing.T) {
 					},
 				),
 			},
-			// Patch deployment to 2 replicas, then restore (expect generation increment)
 			{
 				PreConfig: patchDeploymentPF(t, namespace, fullName, []byte(`{"spec":{"replicas":2}}`)),
 				Config:    config,
