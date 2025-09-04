@@ -137,13 +137,11 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 			return nil, diags
 		}
 
-		// volatile metadata always removed
 		accessor.SetUID(types.UID(""))
 		accessor.SetCreationTimestamp(metav1.Time{})
 		accessor.SetResourceVersion("")
 		accessor.SetManagedFields(nil)
 
-		// >>> unify cleanup at the choke point <<<
 		umap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 		if err != nil {
 			diags.AddError("Unstructured Conversion Error", err.Error())

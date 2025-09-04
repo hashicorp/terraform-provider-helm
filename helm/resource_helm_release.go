@@ -2455,15 +2455,12 @@ func isInternalAnno(key string) bool {
 	}
 	host := u.Hostname()
 
-	// allow some known external prefixes to remain (examples)
 	if host == "app.kubernetes.io" || host == "service.beta.kubernetes.io" {
 		return false
 	}
-	// internal *.kubernetes.io (and .k8s.io, just in case)
 	if strings.HasSuffix(host, "kubernetes.io") || strings.HasSuffix(host, "k8s.io") {
 		return true
 	}
-	// server-generated DaemonSet thing
 	if strings.Contains(key, "deprecated.daemonset.template.generation") {
 		return true
 	}
@@ -2490,7 +2487,6 @@ func stripServerSideAnnotations(obj map[string]any) {
 	}
 }
 
-// Always remove Helm meta annotations (dry-run usually lacks them; live adds them)
 func stripHelmMetaAnnotations(obj map[string]any) {
 	md, _ := obj["metadata"].(map[string]any)
 	if md == nil {
@@ -2513,14 +2509,12 @@ func stripHelmMetaAnnotations(obj map[string]any) {
 	}
 }
 
-// Remove fields that commonly differ; keep metadata.generation
 func stripVolatileFields(obj map[string]any) {
 	if md, _ := obj["metadata"].(map[string]any); md != nil {
 		delete(md, "managedFields")
 		delete(md, "resourceVersion")
 		delete(md, "uid")
 		delete(md, "creationTimestamp")
-		// keep "generation"
 	}
 
 	// Service fields assigned by API server
@@ -2532,7 +2526,6 @@ func stripVolatileFields(obj map[string]any) {
 	}
 }
 
-// Historical tweak: drop managed-by label only for Secrets
 func stripSecretManagedByLabel(obj map[string]any) {
 	if kind, _ := obj["kind"].(string); kind != "Secret" {
 		return
@@ -2552,7 +2545,6 @@ func stripSecretManagedByLabel(obj map[string]any) {
 	}
 }
 
-// If "status" exists, force it to null; don't add if missing
 func coerceStatusToNull(obj map[string]any) {
 	if _, ok := obj["status"]; ok {
 		obj["status"] = nil
@@ -2560,8 +2552,8 @@ func coerceStatusToNull(obj map[string]any) {
 }
 
 func normalizeK8sObject(obj map[string]any) {
-	stripServerSideAnnotations(obj) // internal k8s junk
-	stripHelmMetaAnnotations(obj)   // meta.helm.sh/* on ALL kinds
+	stripServerSideAnnotations(obj)
+	stripHelmMetaAnnotations(obj)
 	stripVolatileFields(obj)
 	stripSecretManagedByLabel(obj)
 	coerceStatusToNull(obj)
