@@ -2476,7 +2476,6 @@ func stripServerSideAnnotations(obj map[string]any) {
 	if ann == nil {
 		return
 	}
-
 	for k := range ann {
 		if isInternalAnno(k) {
 			delete(ann, k)
@@ -2496,15 +2495,12 @@ func stripHelmMetaAnnotations(obj map[string]any) {
 	if ann == nil {
 		return
 	}
-
-	changed := false
 	for k := range ann {
 		if strings.HasPrefix(k, "meta.helm.sh/") {
 			delete(ann, k)
-			changed = true
 		}
 	}
-	if changed && len(ann) == 0 {
+	if len(ann) == 0 {
 		delete(md, "annotations")
 	}
 }
@@ -2538,17 +2534,19 @@ func stripSecretManagedByLabel(obj map[string]any) {
 	if labels == nil {
 		return
 	}
-
 	delete(labels, "app.kubernetes.io/managed-by")
 	if len(labels) == 0 {
 		delete(md, "labels")
 	}
 }
 
-func coerceStatusToNull(obj map[string]any) {
-	if _, ok := obj["status"]; ok {
+func normalizeStatus(obj map[string]any) {
+	kind, _ := obj["kind"].(string)
+	if kind == "Deployment" {
 		obj["status"] = nil
+		return
 	}
+	delete(obj, "status")
 }
 
 func normalizeK8sObject(obj map[string]any) {
@@ -2556,5 +2554,5 @@ func normalizeK8sObject(obj map[string]any) {
 	stripHelmMetaAnnotations(obj)
 	stripVolatileFields(obj)
 	stripSecretManagedByLabel(obj)
-	coerceStatusToNull(obj)
+	normalizeStatus(obj)
 }

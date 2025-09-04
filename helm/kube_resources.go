@@ -108,7 +108,6 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 	for _, obj := range objects {
 		gvk := obj.GetObjectKind().GroupVersionKind()
 
-		// Handle Secret redaction
 		if gvk.Kind == "Secret" {
 			secret := &corev1.Secret{}
 			if err := scheme.Scheme.Convert(obj, secret, nil); err != nil {
@@ -142,6 +141,15 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 		accessor.SetResourceVersion("")
 		accessor.SetManagedFields(nil)
 
+		if ta, err := apimeta.TypeAccessor(obj); err == nil {
+			if ta.GetKind() == "" {
+				ta.SetKind(gvk.Kind)
+			}
+			if ta.GetAPIVersion() == "" {
+				ta.SetAPIVersion(gvk.GroupVersion().String())
+			}
+		}
+
 		umap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
 		if err != nil {
 			diags.AddError("Unstructured Conversion Error", err.Error())
@@ -149,6 +157,7 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 		}
 		normalizeK8sObject(umap)
 
+		// Marshal back to JSON for the state
 		objJSON, err := json.Marshal(umap)
 		if err != nil {
 			diags.AddError("Marshal Error", err.Error())
@@ -158,6 +167,7 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 		mappedObjects[key] = string(objJSON)
 		tflog.Debug(ctx, "Mapped runtime object", map[string]interface{}{"key": key})
 	}
+
 	return mappedObjects, diags
 }
 
