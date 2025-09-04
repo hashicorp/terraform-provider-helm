@@ -2448,3 +2448,121 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 	}
 	return false
 }
+func isInternalAnno(key string) bool {
+	u, err := url.Parse("//" + key)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+
+	// allow some known external prefixes to remain (examples)
+	if host == "app.kubernetes.io" || host == "service.beta.kubernetes.io" {
+		return false
+	}
+	// internal *.kubernetes.io (and .k8s.io, just in case)
+	if strings.HasSuffix(host, "kubernetes.io") || strings.HasSuffix(host, "k8s.io") {
+		return true
+	}
+	// server-generated DaemonSet thing
+	if strings.Contains(key, "deprecated.daemonset.template.generation") {
+		return true
+	}
+	return false
+}
+
+func stripServerSideAnnotations(obj map[string]any) {
+	md, _ := obj["metadata"].(map[string]any)
+	if md == nil {
+		return
+	}
+	ann, _ := md["annotations"].(map[string]any)
+	if ann == nil {
+		return
+	}
+
+	for k := range ann {
+		if isInternalAnno(k) {
+			delete(ann, k)
+		}
+	}
+	if len(ann) == 0 {
+		delete(md, "annotations")
+	}
+}
+
+// Always remove Helm meta annotations (dry-run usually lacks them; live adds them)
+func stripHelmMetaAnnotations(obj map[string]any) {
+	md, _ := obj["metadata"].(map[string]any)
+	if md == nil {
+		return
+	}
+	ann, _ := md["annotations"].(map[string]any)
+	if ann == nil {
+		return
+	}
+
+	changed := false
+	for k := range ann {
+		if strings.HasPrefix(k, "meta.helm.sh/") {
+			delete(ann, k)
+			changed = true
+		}
+	}
+	if changed && len(ann) == 0 {
+		delete(md, "annotations")
+	}
+}
+
+// Remove fields that commonly differ; keep metadata.generation
+func stripVolatileFields(obj map[string]any) {
+	if md, _ := obj["metadata"].(map[string]any); md != nil {
+		delete(md, "managedFields")
+		delete(md, "resourceVersion")
+		delete(md, "uid")
+		delete(md, "creationTimestamp")
+		// keep "generation"
+	}
+
+	// Service fields assigned by API server
+	if kind, _ := obj["kind"].(string); kind == "Service" {
+		if spec, _ := obj["spec"].(map[string]any); spec != nil {
+			delete(spec, "clusterIP")
+			delete(spec, "clusterIPs")
+		}
+	}
+}
+
+// Historical tweak: drop managed-by label only for Secrets
+func stripSecretManagedByLabel(obj map[string]any) {
+	if kind, _ := obj["kind"].(string); kind != "Secret" {
+		return
+	}
+	md, _ := obj["metadata"].(map[string]any)
+	if md == nil {
+		return
+	}
+	labels, _ := md["labels"].(map[string]any)
+	if labels == nil {
+		return
+	}
+
+	delete(labels, "app.kubernetes.io/managed-by")
+	if len(labels) == 0 {
+		delete(md, "labels")
+	}
+}
+
+// If "status" exists, force it to null; don't add if missing
+func coerceStatusToNull(obj map[string]any) {
+	if _, ok := obj["status"]; ok {
+		obj["status"] = nil
+	}
+}
+
+func normalizeK8sObject(obj map[string]any) {
+	stripServerSideAnnotations(obj) // internal k8s junk
+	stripHelmMetaAnnotations(obj)   // meta.helm.sh/* on ALL kinds
+	stripVolatileFields(obj)
+	stripSecretManagedByLabel(obj)
+	coerceStatusToNull(obj)
+}

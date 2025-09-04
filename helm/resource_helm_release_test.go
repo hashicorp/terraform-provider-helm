@@ -2798,7 +2798,26 @@ func getReleaseJSONResourcesPF(t *testing.T, namespace, name string) map[string]
 	if diags.HasError() {
 		t.Fatalf("failed to map runtime objects: %v", diags)
 	}
-	return result
+
+	// IMPORTANT: mirror provider cleanup (normalizeK8sObject) so tests compare like-for-like.
+	cleaned := make(map[string]string, len(result))
+	for k, v := range result {
+		var obj map[string]any
+		if err := json.Unmarshal([]byte(v), &obj); err != nil {
+			// if we somehow can't unmarshal, fall back to raw
+			cleaned[k] = v
+			continue
+		}
+		normalizeK8sObject(obj) // strips server-side + Helm meta (per kind), redacts, etc.
+		b, err := json.Marshal(obj)
+		if err != nil {
+			cleaned[k] = v
+			continue
+		}
+		cleaned[k] = string(b)
+	}
+
+	return cleaned
 }
 
 // patchDeploymentPF patches a Deployment resource and waits until it stabilizes.

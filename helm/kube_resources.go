@@ -137,12 +137,21 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 			return nil, diags
 		}
 
+		// volatile metadata always removed
 		accessor.SetUID(types.UID(""))
 		accessor.SetCreationTimestamp(metav1.Time{})
 		accessor.SetResourceVersion("")
 		accessor.SetManagedFields(nil)
 
-		objJSON, err := json.Marshal(obj)
+		// >>> unify cleanup at the choke point <<<
+		umap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(obj)
+		if err != nil {
+			diags.AddError("Unstructured Conversion Error", err.Error())
+			return nil, diags
+		}
+		normalizeK8sObject(umap)
+
+		objJSON, err := json.Marshal(umap)
 		if err != nil {
 			diags.AddError("Marshal Error", err.Error())
 			return nil, diags
@@ -205,7 +214,7 @@ func getLiveResources(ctx context.Context, r *release.Release, m *Meta) (map[str
 		diags.AddError("Kube Client Error", err.Error())
 		return nil, diags
 	}
-	resources, resDiags := mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
+	rawResources, resDiags := mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
 		gvk := i.Object.GetObjectKind().GroupVersionKind()
 		return kc.Factory.NewBuilder().
 			Unstructured().
@@ -216,10 +225,28 @@ func getLiveResources(ctx context.Context, r *release.Release, m *Meta) (map[str
 			Object()
 	})
 	diags.Append(resDiags...)
-	return resources, diags
+	if resDiags.HasError() {
+		return rawResources, diags
+	}
+
+	cleaned := make(map[string]string, len(rawResources))
+	for k, v := range rawResources {
+		var obj map[string]any
+		if err := json.Unmarshal([]byte(v), &obj); err != nil {
+			cleaned[k] = v
+			continue
+		}
+		normalizeK8sObject(obj)
+		if b, err := json.Marshal(obj); err == nil {
+			cleaned[k] = string(b)
+		} else {
+			cleaned[k] = v
+		}
+	}
+
+	return cleaned, diags
 }
 
-// getDryRunResources simulates applying a manifest and returns the resulting objects.
 func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -238,7 +265,7 @@ func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[s
 		fieldManager = filepath.Base(os.Args[0])
 	}
 
-	resources, resDiags := mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
+	rawResources, resDiags := mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
 		info := &diff.InfoObject{
 			LocalObj:        i.Object,
 			Info:            i,
@@ -252,5 +279,23 @@ func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[s
 		return info.Merged()
 	})
 	diags.Append(resDiags...)
-	return resources, diags
+	if resDiags.HasError() {
+		return rawResources, diags
+	}
+	cleaned := make(map[string]string, len(rawResources))
+	for k, v := range rawResources {
+		var obj map[string]any
+		if err := json.Unmarshal([]byte(v), &obj); err != nil {
+			cleaned[k] = v
+			continue
+		}
+		normalizeK8sObject(obj)
+		if b, err := json.Marshal(obj); err == nil {
+			cleaned[k] = string(b)
+		} else {
+			cleaned[k] = v
+		}
+	}
+
+	return cleaned, diags
 }
