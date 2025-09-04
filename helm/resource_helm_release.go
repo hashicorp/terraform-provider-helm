@@ -1988,6 +1988,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			plan.Manifest = types.StringNull()
 			plan.Version = types.StringNull()
 			plan.Resources = types.MapNull(types.StringType)
+			resp.Plan.Set(ctx, &plan)
 			return
 		}
 
@@ -2049,6 +2050,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
 					resp.Diagnostics.AddError("cluster was unreachable at create time, marking manifest as computed", err.Error())
 					plan.Manifest = types.StringNull()
+					resp.Plan.Set(ctx, &plan)
 					return
 				}
 				resp.Diagnostics.AddError("Error performing dry run install", err.Error())
@@ -2093,6 +2095,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 			plan.Manifest = types.StringNull()
 			plan.Resources = types.MapNull(types.StringType)
+			resp.Plan.Set(ctx, &plan)
 			return
 		} else if err != nil {
 			resp.Diagnostics.AddError("Error retrieving old release for a diff", err.Error())
@@ -2135,6 +2138,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			plan.Version = types.StringNull()
 			plan.Manifest = types.StringNull()
 			plan.Resources = types.MapNull(types.StringType)
+			resp.Plan.Set(ctx, &plan)
 			return
 		} else if err != nil {
 			resp.Diagnostics.AddError("Error running dry run for a diff", err.Error())
@@ -2173,6 +2177,11 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			return
 		}
 		tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
+
+		if !state.Resources.Equal(plan.Resources) {
+			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+		}
+
 	} else {
 		plan.Manifest = types.StringNull()
 		plan.Resources = types.MapNull(types.StringType)
@@ -2448,6 +2457,7 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 	}
 	return false
 }
+
 func isInternalAnno(key string) bool {
 	u, err := url.Parse("//" + key)
 	if err != nil {
