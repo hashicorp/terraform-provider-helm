@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/list"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
@@ -30,7 +31,10 @@ import (
 	"helm.sh/helm/v3/pkg/storage/driver"
 )
 
-var _ provider.Provider = &HelmProvider{}
+var (
+	_ provider.Provider                  = &HelmProvider{}
+	_ provider.ProviderWithListResources = &HelmProvider{}
+)
 
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
@@ -320,6 +324,9 @@ func execSchemaAttrTypes() map[string]attr.Type {
 }
 
 /////////////////////     					END OF SCHEMA CREATION           ///////////////////////////////
+
+// HACK FIXME
+var m *Meta
 
 // Setting up the provider, anything we need to get the provider running, probbaly authentication. like the api
 func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
@@ -631,6 +638,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 	resp.DataSourceData = meta
 	resp.ResourceData = meta
+	m = meta
 
 	tflog.Debug(ctx, "Configure method completed successfully")
 }
@@ -644,6 +652,12 @@ func (p *HelmProvider) DataSources(ctx context.Context) []func() datasource.Data
 func (p *HelmProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewHelmRelease,
+	}
+}
+
+func (p *HelmProvider) ListResources(ctx context.Context) []func() list.ListResource {
+	return []func() list.ListResource{
+		NewHelmReleaseList,
 	}
 }
 
