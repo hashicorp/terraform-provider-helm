@@ -1622,6 +1622,8 @@ func versionsEqual(a, b string) bool {
 func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity *tfsdk.ResourceIdentity, r *release.Release, meta *Meta) diag.Diagnostics {
 	var diags diag.Diagnostics
 	// Update state with attributes from the helm release
+	state.Resources = types.MapNull(types.StringType)
+	state.Manifest = types.StringNull()
 	state.Name = types.StringValue(r.Name)
 	version := r.Chart.Metadata.Version
 	if !versionsEqual(version, state.Version.ValueString()) {
