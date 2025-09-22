@@ -1987,9 +1987,11 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		// Check if all necessary values are known
 		if valuesUnknown(plan) {
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
-			plan.Manifest = types.StringNull()
-			plan.Version = types.StringNull()
-			plan.Resources = types.MapNull(types.StringType)
+			plan.Manifest = types.StringUnknown()
+			plan.Resources = types.MapUnknown(types.StringType)
+			if config.Version.IsNull() {
+				plan.Version = types.StringUnknown()
+			}
 			resp.Plan.Set(ctx, &plan)
 			return
 		}
@@ -2457,6 +2459,31 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 	if plan.SetSensitive.IsUnknown() {
 		return true
 	}
+
+	sensitive := []setResourceModel{}
+	plan.SetSensitive.ElementsAs(context.Background(), &sensitive, false)
+	for _, s := range sensitive {
+		if s.Value.IsUnknown() {
+			return true
+		}
+	}
+
+	set := []setResourceModel{}
+	plan.Set.ElementsAs(context.Background(), &set, false)
+	for _, s := range set {
+		if s.Value.IsUnknown() {
+			return true
+		}
+	}
+
+	setList := []setResourceModel{}
+	plan.Set.ElementsAs(context.Background(), &setList, false)
+	for _, s := range setList {
+		if s.Value.IsUnknown() {
+			return true
+		}
+	}
+
 	return false
 }
 
