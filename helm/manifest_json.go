@@ -93,3 +93,10 @@ func redactSensitiveValues(text string, sensitiveValues map[string]string) strin
 
 	return masked
 }
+
+func redactSecretData(secret *corev1.Secret) {
+	for k, v := range secret.Data {
+		h := hashSensitiveValue(string(v))
+		secret.Data[k] = []byte(h)
+	}
+}

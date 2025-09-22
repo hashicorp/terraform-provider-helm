@@ -68,6 +68,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 
 - `id` (String) The ID of this resource.
 - `manifest` (String) The rendered manifest as JSON.
+- `resources` (Map of String) Rendered manifests as JSON.  
 - `metadata` (List of Object) Status of the deployed release. (see [below for nested schema](#nestedatt--metadata))
 - `status` (String) Status of the release.
 

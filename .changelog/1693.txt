@@ -1,0 +1,3 @@
+```release-note:feature
+Add `resources` attribute to manifest experimental feature 
+```
