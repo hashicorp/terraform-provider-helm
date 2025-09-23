@@ -299,7 +299,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 							Optional: true,
 							Computed: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string", "literal"),
+								stringvalidator.OneOf("auto", "string", "literal", "json"),
 							},
 						},
 					},
@@ -335,7 +335,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 						"type": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string", "literal"),
+								stringvalidator.OneOf("auto", "string", "literal", "json"),
 							},
 						},
 					},
@@ -943,6 +943,37 @@ func applySetValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
 		} else {
 			base[name] = literal
 		}
+	case "json":
+		var jsonValue interface{}
+		if err := json.Unmarshal([]byte(value), &jsonValue); err != nil {
+			diags.AddError(
+				"Failed parsing JSON value",
+				fmt.Sprintf("Key %q with json value %s: %s", name, value, err),
+			)
+			return diags
+		}
+
+		pathKeys := strings.Split(name, ".")
+		m := base
+		for i, k := range pathKeys {
+			if i == len(pathKeys)-1 {
+				m[k] = jsonValue
+			} else {
+				if _, exists := m[k]; !exists {
+					m[k] = map[string]interface{}{}
+				}
+				if nested, ok := m[k].(map[string]interface{}); ok {
+					m = nested
+				} else {
+					diags.AddError(
+						"JSON merge error",
+						fmt.Sprintf("Cannot merge JSON into an non-object path %q", strings.Join(pathKeys[:i+1], ".")),
+					)
+					return diags
+				}
+			}
+		}
+
 	default:
 		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type: %s", valueType))
 	}
