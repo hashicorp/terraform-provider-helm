@@ -999,33 +999,6 @@ func TestAccResourceRelease_namespaceDoesNotExist(t *testing.T) {
 		},
 	})
 }
-
-func TestAccResourceRelease_invalidName(t *testing.T) {
-	namespace := createRandomNamespace(t)
-	defer deleteNamespace(t, namespace)
-
-	broken := fmt.Sprintf(`
-	resource "helm_release" "test" {
-		name        = "1nva&lidname$"
-		namespace   = %q
-		repository  = %q
-		chart       = "test-chart"
-	}`, namespace, testRepositoryURL)
-
-	resource.Test(t, resource.TestCase{
-		// PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: protoV6ProviderFactories(),
-		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
-		Steps: []resource.TestStep{
-			{
-				Config:             broken,
-				ExpectError:        regexp.MustCompile("invalid release name"),
-				ExpectNonEmptyPlan: true,
-			},
-		},
-	})
-}
-
 func TestAccResourceRelease_createNamespace(t *testing.T) {
 	name := randName("create-namespace")
 	namespace := randName("helm-created-namespace")
@@ -1054,6 +1027,29 @@ func TestAccResourceRelease_createNamespace(t *testing.T) {
 			},
 		},
 	})
+}
+func TestAccResourceRelease_planValidationInvalidName(t *testing.T) {
+	invalidNames := []string{
+		"invalid_helm_release_name",
+		"ThisHelmRelease",
+	}
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	for index, name := range invalidNames {
+		t.Run(fmt.Sprintf("invalid_name_%d", index), func(t *testing.T) {
+			resource.Test(t, resource.TestCase{
+				ProtoV6ProviderFactories: protoV6ProviderFactories(),
+				Steps: []resource.TestStep{
+					{
+						Config:      testAccHelmReleaseConfigInvalidNamePlan(testResourceName, namespace, name),
+						PlanOnly:    true,
+						ExpectError: regexp.MustCompile(`Invalid Helm Release Name`),
+					},
+				},
+			})
+		})
+	}
 }
 
 func TestAccResourceRelease_LocalVersion(t *testing.T) {
@@ -1124,6 +1120,17 @@ func testAccHelmReleaseConfigBasic(resource, ns, name, version string) string {
 			]
 		}
 	`, resource, name, ns, testRepositoryURL, version)
+}
+
+func testAccHelmReleaseConfigInvalidNamePlan(resource, ns, name string) string {
+	return fmt.Sprintf(`
+        resource "helm_release" "%s" {
+            name       = %q
+            namespace  = %q
+            repository = %q
+            chart      = "test-chart"
+        }
+    `, resource, name, ns, testRepositoryURL)
 }
 
 func testAccHelmReleaseConfig_set_wo(resource, ns, name, version string) string {
