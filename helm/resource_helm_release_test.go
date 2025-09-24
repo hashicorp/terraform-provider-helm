@@ -2324,7 +2324,7 @@ func TestAccResourceRelease_OCI_registry_login(t *testing.T) {
 func testAccHelmReleaseConfig_OCI_login_provider(kubeconfig, resource, ns, name, repo, version, username, password, chart string) string {
 	return fmt.Sprintf(`
 provider "helm" {
-    kubernetes = {
+    kubernetes {
         config_path = "%s"
     }
     registries = [{
