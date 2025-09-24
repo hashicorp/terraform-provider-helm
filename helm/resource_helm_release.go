@@ -71,6 +71,7 @@ type HelmReleaseModel struct {
 	Chart                    types.String     `tfsdk:"chart"`
 	CleanupOnFail            types.Bool       `tfsdk:"cleanup_on_fail"`
 	CreateNamespace          types.Bool       `tfsdk:"create_namespace"`
+	DeletionPropagation      types.String     `tfsdk:"deletion_propagation"`
 	DependencyUpdate         types.Bool       `tfsdk:"dependency_update"`
 	Description              types.String     `tfsdk:"description"`
 	Devel                    types.Bool       `tfsdk:"devel"`
@@ -121,6 +122,7 @@ var defaultAttributes = map[string]interface{}{
 	"atomic":                     false,
 	"cleanup_on_fail":            false,
 	"create_namespace":           false,
+	"deletion_propagation":       "background",
 	"dependency_update":          false,
 	"disable_crd_hooks":          false,
 	"disable_openapi_validation": false,
@@ -291,6 +293,14 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Default:     booldefault.StaticBool(defaultAttributes["create_namespace"].(bool)),
 				Description: "Create the namespace if it does not exist",
+			},
+			"deletion_propagation": schema.StringAttribute{
+				Optional:    true,
+				Default:     stringdefault.StaticString(defaultAttributes["deletion_propagation"].(string)),
+				Description: "Propagation policy for deleting resources. Must be one of: foreground, background, orphan, or unspecified.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("background", "foreground", "orphan"),
+				},
 			},
 			"dependency_update": schema.BoolAttribute{
 				Optional:    true,
@@ -1234,6 +1244,7 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 	uninstall.Wait = state.Wait.ValueBool()
 	uninstall.DisableHooks = state.DisableWebhooks.ValueBool()
 	uninstall.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
+	uninstall.DeletionPropagation = state.DeletionPropagation.ValueString()
 
 	// Uninstall the release
 	tflog.Info(ctx, fmt.Sprintf("Uninstalling Helm release: %s", name))
