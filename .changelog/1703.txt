@@ -1,0 +1,3 @@
+```release-note:feature
+`helm_template`: Add `set_wo` write-only attribute
+```
