@@ -89,6 +89,7 @@ type HelmTemplateModel struct {
 	Set                      types.Set        `tfsdk:"set"`
 	SetList                  types.List       `tfsdk:"set_list"`
 	SetSensitive             types.Set        `tfsdk:"set_sensitive"`
+	SetWO                    types.List       `tfsdk:"set_wo"`
 	ShowOnly                 types.List       `tfsdk:"show_only"`
 	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
 	SkipTests                types.Bool       `tfsdk:"skip_tests"`
@@ -336,6 +337,26 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 							Optional: true,
 							Validators: []validator.String{
 								stringvalidator.OneOf("auto", "string", "literal"),
+							},
+						},
+					},
+				},
+			},
+			"set_wo": schema.ListNestedAttribute{
+				Description: "Write-only custom values to be merged with the values.",
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Required: true,
+						},
+						"value": schema.StringAttribute{
+							Required: true,
+						},
+						"type": schema.StringAttribute{
+							Optional: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("auto", "string"),
 							},
 						},
 					},
@@ -797,6 +818,21 @@ func getValuesModel(ctx context.Context, model *HelmTemplateModel) (map[string]i
 			}
 		}
 	}
+	if !model.SetWO.IsNull() && !model.SetWO.IsUnknown() {
+		var setWOList []SetValue
+		setWODiags := model.SetWO.ElementsAs(ctx, &setWOList, false)
+		diags.Append(setWODiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		for _, set := range setWOList {
+			setDiags := applySetValue(base, set)
+			diags.Append(setDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Final merged values: %v", base))
 	logDiags := LogValuesModel(ctx, base, model)
@@ -1048,6 +1084,17 @@ func cloakSetValuesModel(config map[string]interface{}, state *HelmTemplateModel
 		}
 
 		for _, set := range setSensitiveList {
+			cloakSetValueModel(config, set.Name.ValueString())
+		}
+	}
+	if !state.SetWO.IsNull() && !state.SetWO.IsUnknown() {
+		var setWOList []SetValue
+		diags := state.SetWO.ElementsAs(context.Background(), &setWOList, false)
+		if diags.HasError() {
+			tflog.Warn(context.Background(), "Error parsing SetWO elements", map[string]interface{}{"diagnostics": diags})
+			return
+		}
+		for _, set := range setWOList {
 			cloakSetValueModel(config, set.Name.ValueString())
 		}
 	}
