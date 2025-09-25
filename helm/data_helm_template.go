@@ -916,7 +916,7 @@ func checkChartDependenciesModel(ctx context.Context, model *HelmTemplateModel, 
 	return false, diags
 }
 
-func applySetValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
+func applySetValue(base map[string]any, set SetValue) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	name := set.Name.ValueString()
@@ -933,12 +933,12 @@ func applySetValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
 			diags.AddError("Failed parsing string value", fmt.Sprintf("Key %q with value %s: %s", name, value, err))
 		}
 	case "literal":
-		var literal interface{}
-		if err := yaml.Unmarshal([]byte(fmt.Sprintf("%s: %s", name, value)), &literal); err != nil {
+		var literal any
+		if err := yaml.Unmarshal(fmt.Appendf(nil, "%s: %s", name, value), &literal); err != nil {
 			diags.AddError("Failed parsing literal value", fmt.Sprintf("Key %q with literal value %s: %s", name, value, err))
 			return diags
 		}
-		if m, ok := literal.(map[string]interface{}); ok {
+		if m, ok := literal.(map[string]any); ok {
 			base[name] = m[name]
 		} else {
 			base[name] = literal
@@ -949,7 +949,7 @@ func applySetValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
 	return diags
 }
 
-func applySetListValue(ctx context.Context, base map[string]interface{}, setList SetListValue) diag.Diagnostics {
+func applySetListValue(_ context.Context, base map[string]any, setList SetListValue) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	name := setList.Name.ValueString()
@@ -981,7 +981,7 @@ func applySetListValue(ctx context.Context, base map[string]interface{}, setList
 	return diags
 }
 
-func applySetSensitiveValue(base map[string]interface{}, setSensitive SetSensitiveValue) diag.Diagnostics {
+func applySetSensitiveValue(base map[string]any, setSensitive SetSensitiveValue) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	name := setSensitive.Name.ValueString()
@@ -996,6 +996,18 @@ func applySetSensitiveValue(base map[string]interface{}, setSensitive SetSensiti
 	case "string":
 		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
 			diags.AddError("Failed parsing sensitive string value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
+		}
+	case "literal":
+		var literal any
+		if err := yaml.Unmarshal(fmt.Appendf(nil, "%s: %s", name, value), &literal); err != nil {
+			diags.AddError("Failed parsing sensitive literal value", fmt.Sprintf("Key %q with literal value %s: %s", name, value, err))
+			return diags
+		}
+
+		if m, ok := literal.(map[string]any); ok {
+			base[name] = m[name]
+		} else {
+			base[name] = literal
 		}
 	default:
 		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type for sensitive value: %s", valueType))
