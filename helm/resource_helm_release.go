@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -109,6 +110,7 @@ type HelmReleaseModel struct {
 	Status                   types.String     `tfsdk:"status"`
 	TakeOwnership            types.Bool       `tfsdk:"take_ownership"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
+	Timeouts                 timeouts.Value   `tfsdk:"timeouts"`
 	UpgradeInstall           types.Bool       `tfsdk:"upgrade_install"`
 	Values                   types.List       `tfsdk:"values"`
 	Verify                   types.Bool       `tfsdk:"verify"`
@@ -517,6 +519,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Default:     int64default.StaticInt64(defaultAttributes["timeout"].(int64)),
 				Description: "Time in seconds to wait for any individual kubernetes operation",
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: true,
+			}),
 			"values": schema.ListAttribute{
 				Optional:    true,
 				Description: "List of values in raw YAML format to pass to helm",
@@ -756,6 +764,12 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	createTimeout, diags := state.Timeouts.Create(ctx, 20*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	var config HelmReleaseModel
 	diags = req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -764,6 +778,8 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Plan state on Create: %+v", state))
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	meta := r.meta
 	if meta == nil {
@@ -979,6 +995,15 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, 20*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	tflog.Debug(ctx, fmt.Sprintf("Current state before changes: %+v", state))
 
 	meta := r.meta
@@ -1052,6 +1077,15 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	updateTimeout, diags := plan.Timeouts.Update(ctx, 20*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
 
 	var config HelmReleaseModel
 	diags = req.Config.Get(ctx, &config)
@@ -1193,6 +1227,15 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 		return
 	}
 	tflog.Debug(ctx, fmt.Sprintf("Retrieved state: %+v", state))
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, 20*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	// Check if meta is set
 	meta := r.meta
@@ -2382,6 +2425,13 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	var timeouts timeouts.Value
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("timeouts"), &timeouts)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.Timeouts = timeouts
 
 	state.Set = types.ListNull(types.ObjectType{
 		AttrTypes: map[string]attr.Type{

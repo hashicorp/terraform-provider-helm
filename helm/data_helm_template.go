@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -94,6 +95,7 @@ type HelmTemplateModel struct {
 	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
 	SkipTests                types.Bool       `tfsdk:"skip_tests"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
+	Timeouts                 timeouts.Value   `tfsdk:"timeouts"`
 	Validate                 types.Bool       `tfsdk:"validate"`
 	Values                   types.List       `tfsdk:"values"`
 	Version                  types.String     `tfsdk:"version"`
@@ -379,6 +381,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Optional:    true,
 				Description: "Time in seconds to wait for any individual Kubernetes operation.",
 			},
+			"timeouts": timeouts.Attributes(ctx),
 			"validate": schema.BoolAttribute{
 				Optional:    true,
 				Description: "Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install.",
@@ -412,6 +415,15 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	readTimeout, diagsTimeout := state.Timeouts.Read(ctx, 20*time.Minute)
+	resp.Diagnostics.Append(diagsTimeout...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	// setting default values to false is attributes are not provided in the config
 	if state.Description.IsNull() || state.Description.ValueString() == "" {
