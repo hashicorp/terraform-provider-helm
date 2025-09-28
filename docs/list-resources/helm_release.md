@@ -50,4 +50,4 @@ This list resource supports the following arguments:
 
 * `namespace` - (Optional) The namespace to list releases in.
 * `all_namespaces` (Optional) List reeleases across all namespaces.
-* `filter` (Optional) A regular expression to filter the name of releases. 
+* `filter` (Optional) A regular expression to filter the name of releases.
