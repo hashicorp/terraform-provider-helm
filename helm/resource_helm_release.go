@@ -269,10 +269,10 @@ func (r *HelmRelease) UpgradeState(ctx context.Context) map[int64]resource.State
 }
 
 func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = helmReleaseSchema()
+	resp.Schema = helmReleaseSchema(ctx)
 }
 
-func helmReleaseSchema() schema.Schema {
+func helmReleaseSchema(ctx context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Schema to define attributes that are available in the resource",
 		Attributes: map[string]schema.Attribute{

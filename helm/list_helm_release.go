@@ -129,7 +129,7 @@ func (l *HelmRelease) List(ctx context.Context, req list.ListRequest, results *l
 			resourceData.Values = types.ListNull(types.StringType)
 
 			r := tfsdk.Resource{
-				Schema: helmReleaseSchema(),
+				Schema: helmReleaseSchema(ctx),
 			}
 			diags = r.Set(ctx, &resourceData)
 
