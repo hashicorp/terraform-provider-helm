@@ -8,22 +8,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/list"
 	"github.com/hashicorp/terraform-plugin-framework/list/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"helm.sh/helm/v3/pkg/action"
 )
 
-var (
-	_ list.ListResource              = &HelmReleaseList{}
-	_ list.ListResourceWithConfigure = &HelmReleaseList{}
-)
-
-type HelmReleaseList struct {
-	meta *Meta
-}
+var _ list.ListResource = &HelmRelease{}
 
 type HelmReleaseListConfig struct {
 	AllNamespaces types.Bool   `tfsdk:"all_namespaces"`
@@ -32,37 +23,10 @@ type HelmReleaseListConfig struct {
 }
 
 func NewHelmReleaseList() list.ListResource {
-	return &HelmReleaseList{}
+	return &HelmRelease{}
 }
 
-func (l *HelmReleaseList) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
-		tflog.Debug(ctx, "Meta is nil for List Resource")
-
-		// HACK FIXME
-		l.meta = m
-
-		return
-	}
-
-	meta, ok := req.ProviderData.(*Meta)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Provider Configuration Error",
-			fmt.Sprintf("Unexpected ProviderData type: %T", req.ProviderData),
-		)
-		return
-	}
-	tflog.Debug(ctx, fmt.Sprintf("Configured meta: %+v", meta))
-
-	l.meta = meta
-}
-
-func (l *HelmReleaseList) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_release"
-}
-
-func (l *HelmReleaseList) ListResourceConfigSchema(ctx context.Context, req list.ListResourceSchemaRequest, resp *list.ListResourceSchemaResponse) {
+func (l *HelmRelease) ListResourceConfigSchema(ctx context.Context, req list.ListResourceSchemaRequest, resp *list.ListResourceSchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Schema to define attributes that are available in the resource",
 		Attributes: map[string]schema.Attribute{
@@ -82,7 +46,7 @@ func (l *HelmReleaseList) ListResourceConfigSchema(ctx context.Context, req list
 	}
 }
 
-func (l *HelmReleaseList) List(ctx context.Context, req list.ListRequest, results *list.ListResultsStream) {
+func (l *HelmRelease) List(ctx context.Context, req list.ListRequest, results *list.ListResultsStream) {
 	results.Results = func(yield func(list.ListResult) bool) {
 		listConfig := HelmReleaseListConfig{}
 		req.Config.Get(ctx, &listConfig)
