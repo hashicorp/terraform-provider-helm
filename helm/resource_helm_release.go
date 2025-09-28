@@ -269,7 +269,11 @@ func (r *HelmRelease) UpgradeState(ctx context.Context) map[int64]resource.State
 }
 
 func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
+	resp.Schema = helmReleaseSchema(ctx)
+}
+
+func helmReleaseSchema(ctx context.Context) schema.Schema {
+	return schema.Schema{
 		Description: "Schema to define attributes that are available in the resource",
 		Attributes: map[string]schema.Attribute{
 			"atomic": schema.BoolAttribute{
@@ -668,8 +672,8 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 	}
 }
 
-func (r *HelmRelease) IdentitySchema(ctx context.Context, req resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {
-	resp.IdentitySchema = identityschema.Schema{
+func helmReleaseIdentitySchema() identityschema.Schema {
+	return identityschema.Schema{
 		Version: 0,
 		Attributes: map[string]identityschema.Attribute{
 			"namespace": identityschema.StringAttribute{
@@ -681,6 +685,10 @@ func (r *HelmRelease) IdentitySchema(ctx context.Context, req resource.IdentityS
 			},
 		},
 	}
+}
+
+func (r *HelmRelease) IdentitySchema(ctx context.Context, req resource.IdentitySchemaRequest, resp *resource.IdentitySchemaResponse) {
+	resp.IdentitySchema = helmReleaseIdentitySchema()
 }
 
 func (r *HelmRelease) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
