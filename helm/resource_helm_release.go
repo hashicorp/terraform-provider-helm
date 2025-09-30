@@ -78,6 +78,7 @@ type HelmReleaseModel struct {
 	DisableCrdHooks          types.Bool       `tfsdk:"disable_crd_hooks"`
 	DisableOpenapiValidation types.Bool       `tfsdk:"disable_openapi_validation"`
 	DisableWebhooks          types.Bool       `tfsdk:"disable_webhooks"`
+	DisableSchemaValidation 	types.Bool       `tfsdk:"disable_schema_validation"`
 	ForceUpdate              types.Bool       `tfsdk:"force_update"`
 	ID                       types.String     `tfsdk:"id"`
 	Keyring                  types.String     `tfsdk:"keyring"`
@@ -126,6 +127,7 @@ var defaultAttributes = map[string]interface{}{
 	"dependency_update":          false,
 	"disable_crd_hooks":          false,
 	"disable_openapi_validation": false,
+	"disable_schema_validation": false,
 	"disable_webhooks":           false,
 	"force_update":               false,
 	"lint":                       false,
@@ -325,6 +327,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(defaultAttributes["disable_openapi_validation"].(bool)),
+				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
+			},
+			"disable_schema_validation": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(defaultAttributes["disable_schema_validation"].(bool)),
 				Description: "If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema",
 			},
 			"disable_webhooks": schema.BoolAttribute{
@@ -861,6 +869,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.SkipCRDs = state.SkipCrds.ValueBool()
 	client.SubNotes = state.RenderSubchartNotes.ValueBool()
 	client.DisableOpenAPIValidation = state.DisableOpenapiValidation.ValueBool()
+	client.DisableSchemaValidation = state.DisableSchemaValidation.ValueBool()
 	client.Replace = state.Replace.ValueBool()
 	client.Description = state.Description.ValueString()
 	client.CreateNamespace = state.CreateNamespace.ValueBool()
@@ -1150,6 +1159,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.SkipCRDs = plan.SkipCrds.ValueBool()
 	client.SubNotes = plan.RenderSubchartNotes.ValueBool()
 	client.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
+	client.DisableSchemaValidation = plan.DisableSchemaValidation.ValueBool()
 	client.Force = plan.ForceUpdate.ValueBool()
 	client.ResetValues = plan.ResetValues.ValueBool()
 	client.ReuseValues = plan.ReuseValues.ValueBool()
@@ -2075,6 +2085,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			install.SkipCRDs = plan.SkipCrds.ValueBool()
 			install.SubNotes = plan.RenderSubchartNotes.ValueBool()
 			install.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
+			install.DisableSchemaValidation = plan.DisableSchemaValidation.ValueBool()
 			install.Replace = plan.Replace.ValueBool()
 			install.Description = plan.Description.ValueString()
 			install.CreateNamespace = plan.CreateNamespace.ValueBool()
