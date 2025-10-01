@@ -2291,6 +2291,9 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 	if !plan.Repository.Equal(state.Repository) {
 		return true
 	}
+	if !plan.Version.Equal(state.Version) {
+		return true
+	}
 	if !plan.Values.Equal(state.Values) {
 		return true
 	}
