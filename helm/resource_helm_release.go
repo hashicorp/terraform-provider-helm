@@ -1971,11 +1971,6 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	// Always set desired state to DEPLOYED
 	plan.Status = types.StringValue(release.StatusDeployed.String())
 
-	if recomputeMetadata(plan, state) {
-		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
-		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
-	}
-
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
 		// Check if version has changed
 		if state != nil && !plan.Version.Equal(state.Version) {
@@ -2275,6 +2270,11 @@ You should update the version in your configuration to %[2]q, or remove the vers
 		}
 	}
 
+	if recomputeMetadata(plan, state) {
+		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
+		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+	}
+
 	resp.Plan.Set(ctx, &plan)
 }
 
@@ -2289,6 +2289,9 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 		return true
 	}
 	if !plan.Repository.Equal(state.Repository) {
+		return true
+	}
+	if !plan.Version.Equal(state.Version) {
 		return true
 	}
 	if !plan.Values.Equal(state.Values) {
