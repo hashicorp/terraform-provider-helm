@@ -1,3 +1,21 @@
+## 3.1.0 (Oct 27, 2025)
+
+FEATURES:
+
+* Add `qps` field to Helm provider configuration [[GH-1668](https://github.com/hashicorp/terraform-provider-helm/issues/1668)]
+* Add `resources` attribute to manifest experimental feature [[GH-1693](https://github.com/hashicorp/terraform-provider-helm/issues/1693)]
+* `helm_template`: Add `set_wo` write-only attribute [[GH-1703](https://github.com/hashicorp/terraform-provider-helm/issues/1703)]
+* `helm_release`: Add support for the `take_ownership` field [[GH-1680](https://github.com/hashicorp/terraform-provider-helm/pull/1680)]
+
+ENHANCEMENT:
+
+* Introduce the `timeouts` field to the helm_release resource and helm_template data source, enabling configurable operation timeouts for create, read, update, and delete actions. [[GH-1702](https://github.com/hashicorp/terraform-provider-helm/issues/1702)]
+
+BUG FIXES:
+
+* Port missing field `upgrade_install` [[GH-1675](https://github.com/hashicorp/terraform-provider-helm/pull/1675)]
+ 
+
 ## 3.0.2 (Jun 23, 2025)
 
 This is a patch release that fixes a number of bugs discovered in the v3.x.x release. 
