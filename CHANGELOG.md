@@ -1,3 +1,9 @@
+## 3.1.1 (Nov 17, 2025)
+
+BUG FIXES:
+
+* `resource/helm_release`: Fix "inconsistent result after apply" error by moving recomputeMetadata function call [[GH-1713](https://github.com/hashicorp/terraform-provider-helm/issues/1713)]
+
 ## 3.1.0 (Oct 27, 2025)
 
 FEATURES:
