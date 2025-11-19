@@ -1,0 +1,3 @@
+```release-note:feature
+`provider`: Add support for Terraform Search with helm_release List Resource.
+```
