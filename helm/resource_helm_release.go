@@ -1964,6 +1964,7 @@ func checkChartDependencies(ctx context.Context, model *HelmReleaseModel, c *cha
 					Getters:          p,
 					RepositoryConfig: m.Settings.RepositoryConfig,
 					RepositoryCache:  m.Settings.RepositoryCache,
+					RegistryClient:   m.RegistryClient,
 					Debug:            m.Settings.Debug,
 				}
 				tflog.Debug(ctx, "Downloading chart dependencies...")
