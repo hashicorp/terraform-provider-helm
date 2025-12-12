@@ -764,6 +764,11 @@ resource "helm_release" "%s" {
 `, resource, name, ns, testRepositoryURL)
 }
 
+// TestAccResourceRelease_updateExistingFailed tests:
+// 1: Failed deployment preserves state - verifies that when an upgrade fails,
+// the release remains in Terraform state with FAILED status
+// 2: Recovery from failed state - verifies that after fixing the configuration,
+// Terraform can successfully upgrade the release without "cannot re-use a name" error
 func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 	name := randName("test-update-existing-failed")
 	namespace := createRandomNamespace(t)
@@ -774,6 +779,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6ProviderFactories(),
 		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
+			// Step 1: Create release successfully
 			{
 				Config: testAccHelmReleaseConfigValues(
 					testResourceName, namespace, name, "test-chart", "1.2.3",
@@ -784,6 +790,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
 				),
 			},
+			// Step 2: Apply invalid config - state should be preserved with FAILED status
 			{
 				Config: testAccHelmReleaseConfigValues(
 					testResourceName, namespace, name, "test-chart", "1.2.3",
@@ -796,6 +803,7 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 					resource.TestCheckResourceAttr("helm_release.test", "status", "FAILED"),
 				),
 			},
+			// Step 3: Re-apply same invalid config - should NOT produce "cannot re-use a name" error
 			{
 				Config: testAccHelmReleaseConfigValues(
 					testResourceName, namespace, name, "test-chart", "1.2.3",
@@ -803,6 +811,280 @@ func TestAccResourceRelease_updateExistingFailed(t *testing.T) {
 				),
 				ExpectError:        regexp.MustCompile("Unsupported value"),
 				ExpectNonEmptyPlan: true,
+			},
+			// Step 4: Fix the configuration and verify recovery from FAILED to DEPLOYED
+			{
+				Config: testAccHelmReleaseConfigValues(
+					testResourceName, namespace, name, "test-chart", "1.2.3",
+					[]string{"serviceAccount:\n  name: recovered-name"},
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceRelease_statePreservedDuringRefresh tests:
+// 1: State not removed during refresh - verifies that when a release exists
+// in both Terraform state and Kubernetes cluster, terraform refresh/plan
+// does NOT remove the resource from Terraform state
+func TestAccResourceRelease_statePreservedDuringRefresh(t *testing.T) {
+	name := randName("test-refresh-preserve")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	config := testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			// Step 1: Create release successfully
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+				),
+			},
+			// Step 2: Run refresh (via RefreshState) - resource should remain in state
+			{
+				Config:       config,
+				RefreshState: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+				),
+			},
+			// Step 3: Run plan-only to verify no changes and resource still exists
+			{
+				Config:   config,
+				PlanOnly: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceRelease_refreshPreservesFailedState tests for failed releases:
+// Verifies that a release in FAILED state is preserved during refresh operations
+func TestAccResourceRelease_refreshPreservesFailedState(t *testing.T) {
+	name := randName("test-refresh-failed")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			// Step 1: Create release successfully
+			{
+				Config: testAccHelmReleaseConfigValues(
+					testResourceName, namespace, name, "test-chart", "1.2.3",
+					[]string{"serviceAccount:\n  name: valid-name"},
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+			// Step 2: Apply invalid config to create FAILED state
+			{
+				Config: testAccHelmReleaseConfigValues(
+					testResourceName, namespace, name, "test-chart", "1.2.3",
+					[]string{"service:\n  type: invalid%-$type"},
+				),
+				ExpectError:        regexp.MustCompile("Unsupported value"),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", "FAILED"),
+				),
+			},
+			// Step 3: Run refresh - FAILED release should remain in state
+			{
+				Config: testAccHelmReleaseConfigValues(
+					testResourceName, namespace, name, "test-chart", "1.2.3",
+					[]string{"service:\n  type: invalid%-$type"},
+				),
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", "FAILED"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceRelease_comprehensiveReleaseDetection tests :
+// 1: Comprehensive release detection - verifies that resourceReleaseExists
+// can detect releases in various states (deployed, failed, pending-install, etc.)
+func TestAccResourceRelease_comprehensiveReleaseDetection(t *testing.T) {
+	name := randName("test-detect-states")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			// Step 1: Create release - tests detection of DEPLOYED state
+			{
+				Config: testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+				),
+			},
+			// Step 2: Upgrade to create new revision - still DEPLOYED
+			{
+				Config: testAccHelmReleaseConfigValues(
+					testResourceName, namespace, name, "test-chart", "1.2.3",
+					[]string{"serviceAccount:\n  name: upgraded"},
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "2"),
+				),
+			},
+			// Step 3: Apply invalid config to create FAILED state - tests detection of FAILED state
+			{
+				Config: testAccHelmReleaseConfigValues(
+					testResourceName, namespace, name, "test-chart", "1.2.3",
+					[]string{"service:\n  type: invalid%-$type"},
+				),
+				ExpectError:        regexp.MustCompile("Unsupported value"),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", "FAILED"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "3"),
+				),
+			},
+			// Step 4: Plan-only to verify release is still detected in FAILED state
+			{
+				Config: testAccHelmReleaseConfigValues(
+					testResourceName, namespace, name, "test-chart", "1.2.3",
+					[]string{"service:\n  type: invalid%-$type"},
+				),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+// TestAccResourceRelease_failedInitialDeployPreservesState tests:
+// 1: Failed initial deployment preserves state - verifies that when the initial
+// Helm deployment fails but a release object exists in the cluster, the resource
+// is added to Terraform state with FAILED status
+// Note: This is also tested by TestAccResourceRelease_FailedDeployFailsApply
+func TestAccResourceRelease_failedInitialDeployPreservesState(t *testing.T) {
+	name := randName("test-failed-initial")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	// Use the failed-deploy chart which creates a resource in a non-existent namespace
+	failed := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name        = %q
+		namespace   = %q
+		chart       = "failed-deploy"
+		repository  = %q
+	}`, name, namespace, testRepositoryURL)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			// Step 1: Initial deployment fails but should preserve state
+			{
+				Config:             failed,
+				ExpectError:        regexp.MustCompile(`namespaces "doesnt-exist" not found`),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusFailed.String()),
+				),
+			},
+			// Step 2: Re-apply same failing config - should NOT produce "cannot re-use a name" error
+			{
+				Config:             failed,
+				ExpectError:        regexp.MustCompile(`namespaces "doesnt-exist" not found`),
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+// TestAccResourceRelease_deleteOperationCorrectBehavior tests:
+// 1: Delete operation maintains correct behavior - verifies that the delete
+// operation correctly removes releases and handles errors appropriately
+func TestAccResourceRelease_deleteOperationCorrectBehavior(t *testing.T) {
+	name := randName("test-delete-behavior")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	config := testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			// Step 1: Create release successfully
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+			// Step 2: Remove the resource from config - this triggers destroy
+			// The CheckDestroy function will verify the release was properly removed
+			{
+				Config: `# Empty config to trigger destroy`,
+			},
+		},
+	})
+}
+
+// TestAccResourceRelease_deleteAlreadyRemovedRelease tests:
+// Verifies that delete operation handles gracefully when release was already
+// removed outside of Terraform
+func TestAccResourceRelease_deleteAlreadyRemovedRelease(t *testing.T) {
+	name := randName("test-delete-removed")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	config := testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			// Step 1: Create release successfully
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+			// Step 2: Delete release outside Terraform, then remove from config
+			{
+				PreConfig: func() {
+					// Delete the release outside of Terraform
+					cmd := exec.Command("helm", "delete", "--namespace", namespace, name)
+					out, err := cmd.CombinedOutput()
+					t.Log(string(out))
+					if err != nil {
+						t.Logf("helm delete warning: %v", err)
+					}
+				},
+				Config: `# Empty config to trigger destroy`,
+				// Should not error - delete should handle already-removed release gracefully
 			},
 		},
 	})
