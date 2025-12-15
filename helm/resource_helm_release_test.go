@@ -1021,6 +1021,47 @@ func TestAccResourceRelease_failedInitialDeployPreservesState(t *testing.T) {
 	})
 }
 
+// TestAccResourceRelease_failedInitialDeployAtomicNoState tests:
+// 1: When atomic = true and initial installation fails, the Helm atomic
+// rollback executes (deleting the failed release), so no state should be saved
+// and subsequent applies should attempt to create the release fresh
+func TestAccResourceRelease_failedInitialDeployAtomicNoState(t *testing.T) {
+	name := randName("test-failed-atomic")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	// Use the failed-deploy chart with atomic = true
+	// When atomic is true and installation fails, Helm automatically deletes the release
+	failedAtomic := fmt.Sprintf(`
+	resource "helm_release" "test" {
+		name        = %q
+		namespace   = %q
+		chart       = "failed-deploy"
+		repository  = %q
+		atomic      = true
+		timeout     = 30
+	}`, name, namespace, testRepositoryURL)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			// Step 1: Initial deployment fails with atomic=true
+			// Helm should automatically rollback and delete the release
+			// No state should be saved
+			{
+				Config:      failedAtomic,
+				ExpectError: regexp.MustCompile(`(namespaces "doesnt-exist" not found|installation failed|release failed)`),
+			},
+			// Step 2: Re-apply same failing config - should attempt to create fresh
+			// (not "cannot re-use a name" error because release was deleted by atomic rollback)
+			{
+				Config:      failedAtomic,
+				ExpectError: regexp.MustCompile(`(namespaces "doesnt-exist" not found|installation failed|release failed)`),
+			},
+		},
+	})
+}
+
 // TestAccResourceRelease_deleteOperationCorrectBehavior tests:
 // 1: Delete operation maintains correct behavior - verifies that the delete
 // operation correctly removes releases and handles errors appropriately
