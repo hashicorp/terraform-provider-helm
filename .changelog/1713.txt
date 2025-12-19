@@ -1,0 +1,3 @@
+```release-note:bug
+`resource/helm_release`: Fix "inconsistent result after apply" error by moving recomputeMetadata function call
+```

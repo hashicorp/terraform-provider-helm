@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -88,6 +89,7 @@ type HelmReleaseModel struct {
 	Namespace                types.String     `tfsdk:"namespace"`
 	PassCredentials          types.Bool       `tfsdk:"pass_credentials"`
 	PostRender               *PostRenderModel `tfsdk:"postrender"`
+	Resources                types.Map        `tfsdk:"resources"`
 	RecreatePods             types.Bool       `tfsdk:"recreate_pods"`
 	Replace                  types.Bool       `tfsdk:"replace"`
 	RenderSubchartNotes      types.Bool       `tfsdk:"render_subchart_notes"`
@@ -108,6 +110,7 @@ type HelmReleaseModel struct {
 	Status                   types.String     `tfsdk:"status"`
 	TakeOwnership            types.Bool       `tfsdk:"take_ownership"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
+	Timeouts                 timeouts.Value   `tfsdk:"timeouts"`
 	UpgradeInstall           types.Bool       `tfsdk:"upgrade_install"`
 	Values                   types.List       `tfsdk:"values"`
 	Verify                   types.Bool       `tfsdk:"verify"`
@@ -489,6 +492,11 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Description: "When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored",
 				Default:     booldefault.StaticBool(defaultAttributes["reuse_values"].(bool)),
 			},
+			"resources": schema.MapAttribute{
+				Description: "The kubernetes resources created by this release.",
+				Computed:    true,
+				ElementType: types.StringType,
+			},
 			"skip_crds": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
@@ -511,6 +519,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Default:     int64default.StaticInt64(defaultAttributes["timeout"].(int64)),
 				Description: "Time in seconds to wait for any individual kubernetes operation",
 			},
+			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: true,
+			}),
 			"values": schema.ListAttribute{
 				Optional:    true,
 				Description: "List of values in raw YAML format to pass to helm",
@@ -750,6 +764,12 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	createTimeout, diags := plan.Timeouts.Create(ctx, 20*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	var config HelmReleaseModel
 	diags = req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -758,6 +778,8 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Plan state on Create: %+v", plan))
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	meta := r.meta
 	if meta == nil {
@@ -973,6 +995,15 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, 20*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	tflog.Debug(ctx, fmt.Sprintf("Current state before changes: %+v", state))
 
 	meta := r.meta
@@ -1046,6 +1077,15 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	updateTimeout, diags := plan.Timeouts.Update(ctx, 20*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
 
 	var config HelmReleaseModel
 	diags = req.Config.Get(ctx, &config)
@@ -1187,6 +1227,15 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 		return
 	}
 	tflog.Debug(ctx, fmt.Sprintf("Retrieved state: %+v", state))
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, 20*time.Minute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	// Check if meta is set
 	meta := r.meta
@@ -1615,8 +1664,9 @@ func versionsEqual(a, b string) bool {
 
 func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity *tfsdk.ResourceIdentity, r *release.Release, meta *Meta) diag.Diagnostics {
 	var diags diag.Diagnostics
-
 	// Update state with attributes from the helm release
+	state.Resources = types.MapNull(types.StringType)
+	state.Manifest = types.StringNull()
 	state.Name = types.StringValue(r.Name)
 	version := r.Chart.Metadata.Version
 	if !versionsEqual(version, state.Version.ValueString()) {
@@ -1667,6 +1717,22 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		sensitiveValues := extractSensitiveValues(state)
 		manifest := redactSensitiveValues(string(jsonManifest), sensitiveValues)
 		state.Manifest = types.StringValue(manifest)
+
+		resources, resDiags := getLiveResources(ctx, r, meta)
+		diags.Append(resDiags...)
+
+		if !resDiags.HasError() {
+			resMap, resConvDiags := mapToTerraformStringMap(ctx, resources)
+			diags.Append(resConvDiags...)
+
+			if resConvDiags.HasError() {
+				state.Resources = types.MapValueMust(types.StringType, map[string]attr.Value{})
+			} else {
+				state.Resources = resMap
+			}
+		} else {
+			state.Resources = types.MapValueMust(types.StringType, map[string]attr.Value{})
+		}
 	}
 
 	// NOTE Don't retrieve values if write-only is being used.
@@ -1707,6 +1773,14 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 	tflog.Debug(ctx, fmt.Sprintf("Metadata after conversion: %+v", metadataObject))
 	state.Metadata = metadataObject
 	return diags
+}
+
+func mapToTerraformStringMap(ctx context.Context, m map[string]string) (types.Map, diag.Diagnostics) {
+	valueMap := make(map[string]attr.Value)
+	for k, v := range m {
+		valueMap[k] = types.StringValue(v)
+	}
+	return types.MapValue(types.StringType, valueMap)
 }
 
 func metadataAttrTypes() map[string]attr.Type {
@@ -1897,11 +1971,6 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	// Always set desired state to DEPLOYED
 	plan.Status = types.StringValue(release.StatusDeployed.String())
 
-	if recomputeMetadata(plan, state) {
-		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
-		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
-	}
-
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
 		// Check if version has changed
 		if state != nil && !plan.Version.Equal(state.Version) {
@@ -1956,8 +2025,12 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		// Check if all necessary values are known
 		if valuesUnknown(plan) {
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
-			plan.Manifest = types.StringNull()
-			plan.Version = types.StringNull()
+			plan.Manifest = types.StringUnknown()
+			plan.Resources = types.MapUnknown(types.StringType)
+			if config.Version.IsNull() {
+				plan.Version = types.StringUnknown()
+			}
+			resp.Plan.Set(ctx, &plan)
 			return
 		}
 
@@ -2019,6 +2092,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
 					resp.Diagnostics.AddError("cluster was unreachable at create time, marking manifest as computed", err.Error())
 					plan.Manifest = types.StringNull()
+					resp.Plan.Set(ctx, &plan)
 					return
 				}
 				resp.Diagnostics.AddError("Error performing dry run install", err.Error())
@@ -2045,6 +2119,14 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 			manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
 			plan.Manifest = types.StringValue(manifest)
+			resources, resDiags := getDryRunResources(ctx, dry, meta)
+			resp.Diagnostics.Append(resDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
+			resp.Diagnostics.Append(diags...)
+			resp.Plan.Set(ctx, &plan)
 			return
 		}
 
@@ -2054,6 +2136,8 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				plan.Version = types.StringValue(chart.Metadata.Version)
 			}
 			plan.Manifest = types.StringNull()
+			plan.Resources = types.MapNull(types.StringType)
+			resp.Plan.Set(ctx, &plan)
 			return
 		} else if err != nil {
 			resp.Diagnostics.AddError("Error retrieving old release for a diff", err.Error())
@@ -2095,6 +2179,8 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 			plan.Version = types.StringNull()
 			plan.Manifest = types.StringNull()
+			plan.Resources = types.MapNull(types.StringType)
+			resp.Plan.Set(ctx, &plan)
 			return
 		} else if err != nil {
 			resp.Diagnostics.AddError("Error running dry run for a diff", err.Error())
@@ -2121,9 +2207,26 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 		manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
 		plan.Manifest = types.StringValue(manifest)
+		resources, resDiags := getDryRunResources(ctx, dry, meta)
+		resp.Diagnostics.Append(resDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
+
+		if !state.Resources.Equal(plan.Resources) {
+			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+		}
+
 	} else {
 		plan.Manifest = types.StringNull()
+		plan.Resources = types.MapNull(types.StringType)
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("%s Done", logID))
@@ -2167,6 +2270,11 @@ You should update the version in your configuration to %[2]q, or remove the vers
 		}
 	}
 
+	if recomputeMetadata(plan, state) {
+		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
+		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+	}
+
 	resp.Plan.Set(ctx, &plan)
 }
 
@@ -2181,6 +2289,9 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 		return true
 	}
 	if !plan.Repository.Equal(state.Repository) {
+		return true
+	}
+	if !plan.Version.Equal(state.Version) {
 		return true
 	}
 	if !plan.Values.Equal(state.Values) {
@@ -2318,6 +2429,13 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 		return
 	}
 
+	var timeouts timeouts.Value
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("timeouts"), &timeouts)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.Timeouts = timeouts
+
 	state.Set = types.ListNull(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"name":  types.StringType,
@@ -2394,5 +2512,139 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 	if plan.SetSensitive.IsUnknown() {
 		return true
 	}
+
+	sensitive := []setResourceModel{}
+	plan.SetSensitive.ElementsAs(context.Background(), &sensitive, false)
+	for _, s := range sensitive {
+		if s.Value.IsUnknown() {
+			return true
+		}
+	}
+
+	set := []setResourceModel{}
+	plan.Set.ElementsAs(context.Background(), &set, false)
+	for _, s := range set {
+		if s.Value.IsUnknown() {
+			return true
+		}
+	}
+
+	setList := []setResourceModel{}
+	plan.Set.ElementsAs(context.Background(), &setList, false)
+	for _, s := range setList {
+		if s.Value.IsUnknown() {
+			return true
+		}
+	}
+
 	return false
+}
+
+func isInternalAnno(key string) bool {
+	u, err := url.Parse("//" + key)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+
+	if host == "app.kubernetes.io" || host == "service.beta.kubernetes.io" {
+		return false
+	}
+	if strings.HasSuffix(host, "kubernetes.io") || strings.HasSuffix(host, "k8s.io") {
+		return true
+	}
+	if strings.Contains(key, "deprecated.daemonset.template.generation") {
+		return true
+	}
+	return false
+}
+
+func stripServerSideAnnotations(obj map[string]any) {
+	md, _ := obj["metadata"].(map[string]any)
+	if md == nil {
+		return
+	}
+	ann, _ := md["annotations"].(map[string]any)
+	if ann == nil {
+		return
+	}
+	for k := range ann {
+		if isInternalAnno(k) {
+			delete(ann, k)
+		}
+	}
+	if len(ann) == 0 {
+		delete(md, "annotations")
+	}
+}
+
+func stripHelmMetaAnnotations(obj map[string]any) {
+	md, _ := obj["metadata"].(map[string]any)
+	if md == nil {
+		return
+	}
+	ann, _ := md["annotations"].(map[string]any)
+	if ann == nil {
+		return
+	}
+	for k := range ann {
+		if strings.HasPrefix(k, "meta.helm.sh/") {
+			delete(ann, k)
+		}
+	}
+	if len(ann) == 0 {
+		delete(md, "annotations")
+	}
+}
+
+func stripVolatileFields(obj map[string]any) {
+	if md, _ := obj["metadata"].(map[string]any); md != nil {
+		delete(md, "managedFields")
+		delete(md, "resourceVersion")
+		delete(md, "uid")
+		delete(md, "creationTimestamp")
+	}
+
+	// Service fields assigned by API server
+	if kind, _ := obj["kind"].(string); kind == "Service" {
+		if spec, _ := obj["spec"].(map[string]any); spec != nil {
+			delete(spec, "clusterIP")
+			delete(spec, "clusterIPs")
+		}
+	}
+}
+
+func stripSecretManagedByLabel(obj map[string]any) {
+	if kind, _ := obj["kind"].(string); kind != "Secret" {
+		return
+	}
+	md, _ := obj["metadata"].(map[string]any)
+	if md == nil {
+		return
+	}
+	labels, _ := md["labels"].(map[string]any)
+	if labels == nil {
+		return
+	}
+	delete(labels, "app.kubernetes.io/managed-by")
+	if len(labels) == 0 {
+		delete(md, "labels")
+	}
+}
+
+func normalizeStatus(obj map[string]any) {
+	kind, _ := obj["kind"].(string)
+	if kind == "Deployment" {
+		obj["status"] = nil
+		return
+	}
+	delete(obj, "status")
+}
+
+func normalizeK8sObject(obj map[string]any) {
+	stripServerSideAnnotations(obj)
+	stripHelmMetaAnnotations(obj)
+	stripVolatileFields(obj)
+	stripSecretManagedByLabel(obj)
+	normalizeStatus(obj)
 }

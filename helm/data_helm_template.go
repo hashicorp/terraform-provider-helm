@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -89,10 +90,12 @@ type HelmTemplateModel struct {
 	Set                      types.Set        `tfsdk:"set"`
 	SetList                  types.List       `tfsdk:"set_list"`
 	SetSensitive             types.Set        `tfsdk:"set_sensitive"`
+	SetWO                    types.List       `tfsdk:"set_wo"`
 	ShowOnly                 types.List       `tfsdk:"show_only"`
 	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
 	SkipTests                types.Bool       `tfsdk:"skip_tests"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
+	Timeouts                 timeouts.Value   `tfsdk:"timeouts"`
 	Validate                 types.Bool       `tfsdk:"validate"`
 	Values                   types.List       `tfsdk:"values"`
 	Version                  types.String     `tfsdk:"version"`
@@ -341,6 +344,26 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 					},
 				},
 			},
+			"set_wo": schema.ListNestedAttribute{
+				Description: "Write-only custom values to be merged with the values.",
+				Optional:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Required: true,
+						},
+						"value": schema.StringAttribute{
+							Required: true,
+						},
+						"type": schema.StringAttribute{
+							Optional: true,
+							Validators: []validator.String{
+								stringvalidator.OneOf("auto", "string"),
+							},
+						},
+					},
+				},
+			},
 			"show_only": schema.ListAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
@@ -358,6 +381,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Optional:    true,
 				Description: "Time in seconds to wait for any individual Kubernetes operation.",
 			},
+			"timeouts": timeouts.Attributes(ctx),
 			"validate": schema.BoolAttribute{
 				Optional:    true,
 				Description: "Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install.",
@@ -391,6 +415,15 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	readTimeout, diagsTimeout := state.Timeouts.Read(ctx, 20*time.Minute)
+	resp.Diagnostics.Append(diagsTimeout...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	// setting default values to false is attributes are not provided in the config
 	if state.Description.IsNull() || state.Description.ValueString() == "" {
@@ -797,6 +830,21 @@ func getValuesModel(ctx context.Context, model *HelmTemplateModel) (map[string]i
 			}
 		}
 	}
+	if !model.SetWO.IsNull() && !model.SetWO.IsUnknown() {
+		var setWOList []SetValue
+		setWODiags := model.SetWO.ElementsAs(ctx, &setWOList, false)
+		diags.Append(setWODiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		for _, set := range setWOList {
+			setDiags := applySetValue(base, set)
+			diags.Append(setDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Final merged values: %v", base))
 	logDiags := LogValuesModel(ctx, base, model)
@@ -1048,6 +1096,17 @@ func cloakSetValuesModel(config map[string]interface{}, state *HelmTemplateModel
 		}
 
 		for _, set := range setSensitiveList {
+			cloakSetValueModel(config, set.Name.ValueString())
+		}
+	}
+	if !state.SetWO.IsNull() && !state.SetWO.IsUnknown() {
+		var setWOList []SetValue
+		diags := state.SetWO.ElementsAs(context.Background(), &setWOList, false)
+		if diags.HasError() {
+			tflog.Warn(context.Background(), "Error parsing SetWO elements", map[string]interface{}{"diagnostics": diags})
+			return
+		}
+		for _, set := range setWOList {
 			cloakSetValueModel(config, set.Name.ValueString())
 		}
 	}
