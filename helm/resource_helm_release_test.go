@@ -388,6 +388,62 @@ func TestAccResourceRelease_updateValues(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_metadataSuppression(t *testing.T) {
+	name := randName("test-metadata-suppression")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigMetadataSuppression(
+					testResourceName, namespace, name, "1.2.3", "initial",
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+			{
+				// Update a set value - this triggers metadata recomputation
+				// but metadata is not set to unknown, so it doesn't show as changed in plan
+				Config: testAccHelmReleaseConfigMetadataSuppression(
+					testResourceName, namespace, name, "1.2.3", "updated",
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "2"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					// Verify the set value was actually updated
+					resource.TestCheckResourceAttr("helm_release.test", "set.0.value", "updated"),
+				),
+			},
+			{
+				// Update version - another metadata recomputation trigger
+				Config: testAccHelmReleaseConfigMetadataSuppression(
+					testResourceName, namespace, name, "2.0.0", "updated",
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "3"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "2.0.0"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_cloakValues(t *testing.T) {
 	name := randName("test-update-values")
 	namespace := createRandomNamespace(t)
@@ -1264,6 +1320,26 @@ func testAccHelmReleaseConfigSet(resource, ns, name, version, setValue string) s
 				{
 					name  = "fizz"
 					value = 1337
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, version, setValue)
+}
+
+func testAccHelmReleaseConfigMetadataSuppression(resource, ns, name, version, setValue string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test metadata suppression"
+			repository  = %q
+  			chart       = "test-chart"
+			version     = %q
+
+			set = [
+				{
+					name  = "testValue"
+					value = %q
 				}
 			]
 		}

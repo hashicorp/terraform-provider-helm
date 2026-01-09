@@ -157,6 +157,7 @@ type releaseMetaData struct {
 	LastDeployed  types.Int64  `tfsdk:"last_deployed"`
 	Notes         types.String `tfsdk:"notes"`
 }
+
 type setResourceModel struct {
 	Name  types.String `tfsdk:"name"`
 	Type  types.String `tfsdk:"type"`
@@ -1757,11 +1758,11 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		"notes":          types.StringValue(r.Info.Notes),
 	}
 
-	// Convert the list of ObjectValues to a ListValue
+	// Convert to ObjectValue
 	metadataObject, diag := types.ObjectValue(metadataAttrTypes(), metadata)
 	diags.Append(diag...)
 	if diags.HasError() {
-		tflog.Error(ctx, "Error converting metadata to ListValue", map[string]interface{}{
+		tflog.Error(ctx, "Error converting metadata to ObjectValue", map[string]interface{}{
 			"metadata": metadata,
 			"error":    diags,
 		})
@@ -2270,9 +2271,12 @@ You should update the version in your configuration to %[2]q, or remove the vers
 		}
 	}
 
+	// Metadata is computed during apply - don't set to unknown to avoid verbose plan output
+	// See: https://github.com/hashicorp/terraform-provider-helm/issues/1315
 	if recomputeMetadata(plan, state) {
-		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
-		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+		tflog.Debug(ctx, fmt.Sprintf("%s Metadata will be recomputed during apply", logID))
+		// Keep existing state metadata in plan to suppress diff output
+		// Metadata will be properly updated during apply
 	}
 
 	resp.Plan.Set(ctx, &plan)
