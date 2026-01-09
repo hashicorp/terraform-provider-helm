@@ -403,7 +403,8 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 					"values": schema.StringAttribute{
 						Computed:    true,
-						Description: "Set of extra values. added to the chart. The sensitive data is cloaked. JSON encoded.",
+						Sensitive:   true,
+						Description: "Set of extra values added to the chart, marked as sensitive to avoid revealing potential secrets passed as values.",
 					},
 					"version": schema.StringAttribute{
 						Computed:    true,
