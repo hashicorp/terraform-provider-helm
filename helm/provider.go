@@ -69,7 +69,9 @@ type HelmProviderModel struct {
 
 // ExperimentsConfigModel configures the experiments that are enabled or disabled
 type ExperimentsConfigModel struct {
-	Manifest types.Bool `tfsdk:"manifest"`
+	Manifest               types.Bool `tfsdk:"manifest"`
+	SuppressMetadataNotes  types.Bool `tfsdk:"suppress_metadata_notes"`
+	SuppressMetadataValues types.Bool `tfsdk:"suppress_metadata_values"`
 }
 
 // RegistryConfigModel configures an OCI registry
@@ -189,6 +191,14 @@ func experimentsSchema() map[string]schema.Attribute {
 		"manifest": schema.BoolAttribute{
 			Optional:    true,
 			Description: "Enable full diff by storing the rendered manifest in the state.",
+		},
+		"suppress_metadata_notes": schema.BoolAttribute{
+			Optional:    true,
+			Description: "Suppress verbose helm chart notes from metadata to reduce plan output size and avoid exposing potentially sensitive information in logs.",
+		},
+		"suppress_metadata_values": schema.BoolAttribute{
+			Optional:    true,
+			Description: "Suppress helm values from metadata to reduce plan output size and avoid exposing sensitive configuration values in logs.",
 		},
 	}
 }
@@ -512,8 +522,12 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 
 	manifestExperiment := false
+	suppressMetadataNotes := false
+	suppressMetadataValues := false
 	if config.Experiments != nil {
 		manifestExperiment = config.Experiments.Manifest.ValueBool()
+		suppressMetadataNotes = config.Experiments.SuppressMetadataNotes.ValueBool()
+		suppressMetadataValues = config.Experiments.SuppressMetadataValues.ValueBool()
 	}
 
 	var execAttrValue attr.Value = types.ObjectNull(execSchemaAttrTypes())
@@ -582,13 +596,17 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			BurstLimit:           types.Int64Value(burstLimit),
 			Kubernetes:           kubernetesConfigObjectValue,
 			Experiments: &ExperimentsConfigModel{
-				Manifest: types.BoolValue(manifestExperiment),
+				Manifest:               types.BoolValue(manifestExperiment),
+				SuppressMetadataNotes:  types.BoolValue(suppressMetadataNotes),
+				SuppressMetadataValues: types.BoolValue(suppressMetadataValues),
 			},
 		},
 		Settings:   settings,
 		HelmDriver: helmDriver,
 		Experiments: map[string]bool{
-			"manifest": manifestExperiment,
+			"manifest":                 manifestExperiment,
+			"suppress_metadata_notes":  suppressMetadataNotes,
+			"suppress_metadata_values": suppressMetadataValues,
 		},
 	}
 	registryClient, err := registry.NewClient()

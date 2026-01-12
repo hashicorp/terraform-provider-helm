@@ -1743,6 +1743,17 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		valuesstr = types.StringValue(values)
 	}
 
+	// Suppress metadata values if experiment is enabled
+	if meta.ExperimentEnabled("suppress_metadata_values") {
+		valuesstr = types.StringValue("")
+	}
+
+	// Determine notes value based on suppression experiment
+	notesValue := types.StringValue(r.Info.Notes)
+	if meta.ExperimentEnabled("suppress_metadata_notes") {
+		notesValue = types.StringValue("")
+	}
+
 	// Create metadata as a slice of maps
 	metadata := map[string]attr.Value{
 		"name":           types.StringValue(r.Name),
@@ -1754,7 +1765,7 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		"values":         valuesstr,
 		"first_deployed": types.Int64Value(r.Info.FirstDeployed.Unix()),
 		"last_deployed":  types.Int64Value(r.Info.LastDeployed.Unix()),
-		"notes":          types.StringValue(r.Info.Notes),
+		"notes":          notesValue,
 	}
 
 	// Convert the list of ObjectValues to a ListValue
