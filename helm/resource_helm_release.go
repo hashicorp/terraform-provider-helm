@@ -229,7 +229,7 @@ func (m suppressKeyringPlanModifier) MarkdownDescription(ctx context.Context) st
 func (m suppressKeyringPlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
 	var verify types.Bool
 	req.Plan.GetAttribute(ctx, path.Root("verify"), &verify)
-	if !verify.IsNull() && !verify.ValueBool() {
+	if !verify.IsNull() && !verify.ValueBool() && req.ConfigValue.IsNull() {
 		resp.PlanValue = req.StateValue
 	}
 }
