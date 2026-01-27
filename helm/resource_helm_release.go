@@ -1106,7 +1106,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, plan.Repository.ValueString(), plan.Chart.ValueString(), plan.RepositoryUsername.ValueString(), plan.RepositoryPassword.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -2429,6 +2429,61 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 		return
 	}
 
+	// Preserve config-driven attributes that are not derivable from the release.
+	var repository types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("repository"), &repository)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !repository.IsNull() && !repository.IsUnknown() {
+		state.Repository = repository
+	}
+
+	var repositoryCaFile types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("repository_ca_file"), &repositoryCaFile)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !repositoryCaFile.IsNull() && !repositoryCaFile.IsUnknown() {
+		state.RepositoryCaFile = repositoryCaFile
+	}
+
+	var repositoryCertFile types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("repository_cert_file"), &repositoryCertFile)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !repositoryCertFile.IsNull() && !repositoryCertFile.IsUnknown() {
+		state.RepositoryCertFile = repositoryCertFile
+	}
+
+	var repositoryKeyFile types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("repository_key_file"), &repositoryKeyFile)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !repositoryKeyFile.IsNull() && !repositoryKeyFile.IsUnknown() {
+		state.RepositoryKeyFile = repositoryKeyFile
+	}
+
+	var repositoryUsername types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("repository_username"), &repositoryUsername)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !repositoryUsername.IsNull() && !repositoryUsername.IsUnknown() {
+		state.RepositoryUsername = repositoryUsername
+	}
+
+	var repositoryPassword types.String
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("repository_password"), &repositoryPassword)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !repositoryPassword.IsNull() && !repositoryPassword.IsUnknown() {
+		state.RepositoryPassword = repositoryPassword
+	}
+
 	var timeouts timeouts.Value
 	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("timeouts"), &timeouts)...)
 	if resp.Diagnostics.HasError() {
@@ -2436,36 +2491,100 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 	}
 	state.Timeouts = timeouts
 
-	state.Set = types.ListNull(types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"name":  types.StringType,
-			"type":  types.StringType,
-			"value": types.StringType,
-		},
-	})
-	state.SetWO = types.ListNull(types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"name":  types.StringType,
-			"type":  types.StringType,
-			"value": types.StringType,
-		},
-	})
-	state.SetSensitive = types.ListNull(types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"name":  types.StringType,
-			"type":  types.StringType,
-			"value": types.StringType,
-		},
-	})
-	state.SetList = types.ListNull(types.ObjectType{
-		AttrTypes: map[string]attr.Type{
-			"name": types.StringType,
-			"value": types.ListType{
-				ElemType: types.StringType,
+	// Preserve list-driven config that cannot be derived from the release.
+	var values types.List
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("values"), &values)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !values.IsNull() && !values.IsUnknown() {
+		state.Values = values
+	} else if release.Config != nil {
+		// Best-effort reconstruction: encode Helm user values into a single YAML document.
+		configClone := deepCloneMap(release.Config)
+		y, err := yaml.Marshal(configClone)
+		if err != nil {
+			resp.Diagnostics.AddError("Error marshaling values", fmt.Sprintf("Unable to marshal release values to YAML: %s", err))
+			return
+		}
+		yamlStr := strings.TrimSpace(string(y))
+		if yamlStr != "" && yamlStr != "null" {
+			state.Values = types.ListValueMust(types.StringType, []attr.Value{types.StringValue(yamlStr)})
+		} else {
+			state.Values = types.ListNull(types.StringType)
+		}
+	} else {
+		state.Values = types.ListNull(types.StringType)
+	}
+
+	var set types.List
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("set"), &set)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !set.IsNull() && !set.IsUnknown() {
+		state.Set = set
+	} else {
+		state.Set = types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"name":  types.StringType,
+				"type":  types.StringType,
+				"value": types.StringType,
 			},
-		},
-	})
-	state.Values = types.ListNull(types.StringType)
+		})
+	}
+
+	var setWO types.List
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("set_wo"), &setWO)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !setWO.IsNull() && !setWO.IsUnknown() {
+		state.SetWO = setWO
+	} else {
+		state.SetWO = types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"name":  types.StringType,
+				"type":  types.StringType,
+				"value": types.StringType,
+			},
+		})
+	}
+
+	var setSensitive types.List
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("set_sensitive"), &setSensitive)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !setSensitive.IsNull() && !setSensitive.IsUnknown() {
+		state.SetSensitive = setSensitive
+	} else {
+		state.SetSensitive = types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"name":  types.StringType,
+				"type":  types.StringType,
+				"value": types.StringType,
+			},
+		})
+	}
+
+	var setList types.List
+	resp.Diagnostics.Append(resp.State.GetAttribute(ctx, path.Root("set_list"), &setList)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !setList.IsNull() && !setList.IsUnknown() {
+		state.SetList = setList
+	} else {
+		state.SetList = types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"name": types.StringType,
+				"value": types.ListType{
+					ElemType: types.StringType,
+				},
+			},
+		})
+	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Setting final state: %+v", state))
 	diags = resp.State.Set(ctx, &state)

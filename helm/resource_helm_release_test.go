@@ -165,13 +165,13 @@ func TestAccResourceRelease_import(t *testing.T) {
 				ResourceName:            "helm_release.imported",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"set", "set.#", "repository"},
+				ImportStateVerifyIgnore: []string{"set", "set.#"},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.imported", "metadata.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.imported", "metadata.version", "1.2.0"),
 					resource.TestCheckResourceAttr("helm_release.imported", "status", release.StatusDeployed.String()),
 					resource.TestCheckResourceAttr("helm_release.imported", "description", "Test"),
-					resource.TestCheckNoResourceAttr("helm_release.imported", "repository"),
+					resource.TestCheckResourceAttr("helm_release.imported", "repository", testRepositoryURL),
 
 					// Default values
 					resource.TestCheckResourceAttr("helm_release.imported", "verify", "false"),
