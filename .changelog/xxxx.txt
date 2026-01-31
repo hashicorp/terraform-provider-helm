@@ -1,3 +1,0 @@
-```release-note:bug
-Fix nil pointer dereference crash when downloading OCI chart dependencies with dependency_update enabled
-```
