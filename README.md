@@ -34,9 +34,30 @@ terraform {
 }
 ```
 
+## Migrating from hashicorp/helm
+
+```diff
+terraform {
+  required_providers {
+    helm = {
+-      source  = "hashicorp/helm"
++      source  = "schnell3526/helm"
+      version = "~> 3.1"
+    }
+  }
+}
+```
+
+```bash
+terraform init -upgrade
+```
+
+State is compatible - no import required.
+
 ## Changes from upstream
 
 - Fix: Preserve Terraform state on failed Helm operations ([#1669](https://github.com/hashicorp/terraform-provider-helm/issues/1669))
+- Fix: Nil pointer crash when updating OCI chart dependencies ([#1726](https://github.com/hashicorp/terraform-provider-helm/pull/1726))
 
 ## Roadmap
 
