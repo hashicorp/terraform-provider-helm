@@ -2287,6 +2287,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	cmd = exec.Command(helmPath, "push",
 		"test-chart-1.2.3.tgz",
 		ociRegistryURL)
+	cmd.Env = append(os.Environ(), "HELM_EXPERIMENTAL_OCI=1")
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	if err != nil {
