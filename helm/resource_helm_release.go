@@ -738,7 +738,7 @@ func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-func getInstalledReleaseVersion(ctx context.Context, m *Meta, cfg *action.Configuration, name string) (string, error) {
+func getInstalledReleaseVersion(ctx context.Context, _ *Meta, cfg *action.Configuration, name string) (string, error) {
 	logID := fmt.Sprintf("[getInstalledReleaseVersion: %s]", name)
 	histClient := action.NewHistory(cfg)
 	histClient.Max = 1
@@ -1298,7 +1298,7 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 	}
 }
 
-func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
+func chartPathOptions(model *HelmReleaseModel, _ *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chartName := model.Chart.ValueString()
 	repository := model.Repository.ValueString()
@@ -1364,7 +1364,7 @@ func buildChartNameWithRepository(repository, name string) (string, string, erro
 		return repository, name, nil
 	}
 
-	if strings.Index(name, "/") == -1 && repository != "" {
+	if !strings.Contains(name, "/") && repository != "" {
 		name = fmt.Sprintf("%s/%s", repository, name)
 	}
 
@@ -1387,7 +1387,7 @@ func isChartInstallable(ch *chart.Chart) error {
 	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
-func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
+func getChart(ctx context.Context, _ *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", m.Settings))
@@ -1625,7 +1625,7 @@ func cloakSetValues(config map[string]interface{}, state *HelmReleaseModel) {
 	}
 }
 
-func getListValue(ctx context.Context, base map[string]interface{}, set set_listResourceModel) diag.Diagnostics {
+func getListValue(_ context.Context, base map[string]interface{}, set set_listResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	name := set.Name.ValueString()
@@ -1861,7 +1861,7 @@ func resourceReleaseExists(ctx context.Context, name, namespace string, meta *Me
 var errReleaseNotFound = fmt.Errorf("release: not found")
 
 // c
-func getRelease(ctx context.Context, m *Meta, cfg *action.Configuration, name string) (*release.Release, error) {
+func getRelease(ctx context.Context, _ *Meta, cfg *action.Configuration, name string) (*release.Release, error) {
 	get := action.NewGet(cfg)
 	tflog.Debug(ctx, fmt.Sprintf("%s getRelease post action created", name))
 
