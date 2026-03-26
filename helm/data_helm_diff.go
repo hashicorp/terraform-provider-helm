@@ -529,9 +529,6 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 		return
 	}
 
-	// Create a separate action configuration for looking up the existing release
-	// We need a fresh config because the Install client above has ClientOnly=true which uses in-memory storage
-	// and won't find releases stored in Kubernetes secrets
 	lookupActionConfig, err := meta.GetHelmConfiguration(ctx, state.Namespace.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
