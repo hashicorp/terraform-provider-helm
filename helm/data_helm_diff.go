@@ -8,23 +8,29 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
+	pathpkg "path"
 	"sort"
 	"strings"
 	"time"
-	"unsafe"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
+	"helm.sh/helm/v3/pkg/downloader"
+	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/releaseutil"
 	"sigs.k8s.io/yaml"
 )
@@ -361,13 +367,11 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 	ctx, cancel := context.WithTimeout(ctx, readTimeout)
 	defer cancel()
 
-	// setting default values to false is attributes are not provided in the config
 	if state.Description.IsNull() || state.Description.ValueString() == "" {
 		state.Description = types.StringValue("")
 	}
 	if state.Devel.IsNull() || state.Devel.IsUnknown() {
 		if !state.Version.IsNull() && state.Version.ValueString() != "" {
-			// Version is set, suppress devel change
 			state.Devel = types.BoolValue(false)
 		}
 	}
@@ -440,6 +444,7 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 		)
 		return
 	}
+
 	diags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
@@ -447,19 +452,19 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 	}
 	client := action.NewInstall(actionConfig)
 
-	cpo, chartName, cpoDiags := chartPathOptionsModel((*HelmTemplateModel)(unsafe.Pointer(&state)), meta, &client.ChartPathOptions)
+	cpo, chartName, cpoDiags := chartPathOptionsDiff(&state, meta, &client.ChartPathOptions)
 	resp.Diagnostics.Append(cpoDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	c, chartPath, chartDiags := getChartModel(ctx, (*HelmTemplateModel)(unsafe.Pointer(&state)), meta, chartName, cpo)
+	c, chartPath, chartDiags := getChartDiff(ctx, &state, meta, chartName, cpo)
 	resp.Diagnostics.Append(chartDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	updated, depDiags := checkChartDependenciesModel(ctx, (*HelmTemplateModel)(unsafe.Pointer(&state)), c, chartPath, meta)
+	updated, depDiags := checkChartDependenciesDiff(ctx, &state, c, chartPath, meta)
 	resp.Diagnostics.Append(depDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -471,7 +476,7 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 		}
 	}
 
-	values, valuesDiags := getValuesModel(ctx, (*HelmTemplateModel)(unsafe.Pointer(&state)))
+	values, valuesDiags := getValuesDiff(ctx, &state)
 	resp.Diagnostics.Append(valuesDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -524,11 +529,32 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 		return
 	}
 
-	getClient := action.NewGet(actionConfig)
-	currentRelease, err := getClient.Run(state.Name.ValueString())
-	var currentManifest string
+	// Create a separate action configuration for looking up the existing release
+	// We need a fresh config because the Install client above has ClientOnly=true which uses in-memory storage
+	// and won't find releases stored in Kubernetes secrets
+	lookupActionConfig, err := meta.GetHelmConfiguration(ctx, state.Namespace.ValueString())
 	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to get Helm configuration for release lookup",
+			fmt.Sprintf("There was an error retrieving Helm configuration for namespace %q: %s", state.Namespace.ValueString(), err),
+		)
+		return
+	}
+
+	currentRelease, err := getRelease(ctx, meta, lookupActionConfig, state.Name.ValueString())
+	var currentManifest string
+
+	if err == errReleaseNotFound {
 		currentManifest = ""
+	} else if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to retrieve current release",
+			fmt.Sprintf("Error retrieving release %q from namespace %q: %s",
+				state.Name.ValueString(),
+				state.Namespace.ValueString(),
+				err),
+		)
+		return
 	} else {
 		currentManifest = currentRelease.Manifest
 	}
@@ -560,8 +586,6 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 func compareManifests(ctx context.Context, current, proposed string) (diff string, diffJSON string, hasChanges bool) {
 	currentResources := releaseutil.SplitManifests(current)
 	proposedResources := releaseutil.SplitManifests(proposed)
-	tflog.Debug(ctx, fmt.Sprintf("Current resources: %d, Proposed resources: %d",
-		len(currentResources), len(proposedResources)))
 
 	added, modified, deleted := matchResources(ctx, currentResources, proposedResources)
 
@@ -757,4 +781,219 @@ func modifiedResourceJSON(resources []ModifiedResource) []map[string]string {
 		})
 	}
 	return result
+}
+
+func getValuesDiff(ctx context.Context, model *HelmDiffModel) (map[string]interface{}, diag.Diagnostics) {
+	base := map[string]interface{}{}
+	var diags diag.Diagnostics
+
+	for _, raw := range model.Values.Elements() {
+		if raw.IsNull() {
+			continue
+		}
+
+		value, ok := raw.(types.String)
+		if !ok {
+			diags.AddError("Type Error", fmt.Sprintf("Expected types.String, got %T", raw))
+			return nil, diags
+		}
+
+		values := value.ValueString()
+		if values == "" {
+			continue
+		}
+
+		currentMap := map[string]interface{}{}
+		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+			diags.AddError("Error unmarshaling values", fmt.Sprintf("---> %v %s", err, values))
+			return nil, diags
+		}
+
+		base = mergeMaps(base, currentMap)
+	}
+
+	if !model.Set.IsNull() {
+		var setList []SetValue
+		setDiags := model.Set.ElementsAs(ctx, &setList, false)
+		diags.Append(setDiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		for _, set := range setList {
+			setDiags := applySetValue(base, set)
+			diags.Append(setDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+	}
+
+	if !model.SetList.IsUnknown() {
+		var setListSlice []SetListValue
+		setListDiags := model.SetList.ElementsAs(ctx, &setListSlice, false)
+		diags.Append(setListDiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		for _, setList := range setListSlice {
+			setListDiags := applySetListValue(ctx, base, setList)
+			diags.Append(setListDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+	}
+
+	if !model.SetSensitive.IsNull() {
+		var setSensitiveList []SetSensitiveValue
+		setSensitiveDiags := model.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
+		diags.Append(setSensitiveDiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		for _, setSensitive := range setSensitiveList {
+			setSensitiveDiags := applySetSensitiveValue(base, setSensitive)
+			diags.Append(setSensitiveDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+	}
+	if !model.SetWO.IsNull() && !model.SetWO.IsUnknown() {
+		var setWOList []SetValue
+		setWODiags := model.SetWO.ElementsAs(ctx, &setWOList, false)
+		diags.Append(setWODiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		for _, set := range setWOList {
+			setDiags := applySetValue(base, set)
+			diags.Append(setDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+		}
+	}
+
+	tflog.Debug(ctx, fmt.Sprintf("Final merged values: %v", base))
+	logDiags := LogValuesDiff(ctx, base, model)
+	diags.Append(logDiags...)
+	return base, diags
+}
+
+func chartPathOptionsDiff(model *HelmDiffModel, meta *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	chartName := model.Chart.ValueString()
+	repository := model.Repository.ValueString()
+
+	var repositoryURL string
+	if registry.IsOCI(repository) {
+		u, err := url.Parse(repository)
+		if err != nil {
+			diags.AddError("Invalid Repository URL", fmt.Sprintf("Failed to parse repository URL %s: %s", repository, err))
+			return nil, "", diags
+		}
+		u.Path = pathpkg.Join(u.Path, chartName)
+		chartName = u.String()
+	} else {
+		var err error
+		repositoryURL, chartName, err = buildChartNameWithRepository(repository, strings.TrimSpace(chartName))
+		if err != nil {
+			diags.AddError("Error building Chart Name With Repository", fmt.Sprintf("Could not build Chart Name With Repository %s and chart %s: %s", repository, chartName, err))
+			return nil, "", diags
+		}
+	}
+
+	version := getVersionDiff(model)
+
+	cpo.CaFile = model.RepositoryCaFile.ValueString()
+	cpo.CertFile = model.RepositoryCertFile.ValueString()
+	cpo.KeyFile = model.RepositoryKeyFile.ValueString()
+	cpo.Keyring = model.Keyring.ValueString()
+	cpo.RepoURL = repositoryURL
+	cpo.Verify = model.Verify.ValueBool()
+	if !useChartVersion(chartName, cpo.RepoURL) {
+		cpo.Version = version
+	}
+	cpo.Username = model.RepositoryUsername.ValueString()
+	cpo.Password = model.RepositoryPassword.ValueString()
+	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
+
+	return cpo, chartName, diags
+}
+
+func getVersionDiff(model *HelmDiffModel) string {
+	version := model.Version.ValueString()
+	if version == "" && model.Devel.ValueBool() {
+		return ">0.0.0-0"
+	}
+	return strings.TrimSpace(version)
+}
+
+func getChartDiff(ctx context.Context, model *HelmDiffModel, meta *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", meta.Settings))
+
+	path, err := cpo.LocateChart(name, meta.Settings)
+	if err != nil {
+		diags.AddError("Error locating chart", fmt.Sprintf("Unable to locate chart %s: %s", name, err))
+		return nil, "", diags
+	}
+
+	c, err := loader.Load(path)
+	if err != nil {
+		diags.AddError("Error loading chart", fmt.Sprintf("Unable to load chart %s: %s", path, err))
+		return nil, "", diags
+	}
+
+	return c, path, diags
+}
+
+func checkChartDependenciesDiff(ctx context.Context, model *HelmDiffModel, c *chart.Chart, path string, meta *Meta) (bool, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	p := getter.All(meta.Settings)
+
+	if req := c.Metadata.Dependencies; req != nil {
+		err := action.CheckDependencies(c, req)
+		if err != nil {
+			if model.DependencyUpdate.ValueBool() {
+				man := &downloader.Manager{
+					Out:              os.Stdout,
+					ChartPath:        path,
+					Keyring:          model.Keyring.ValueString(),
+					SkipUpdate:       false,
+					Getters:          p,
+					RepositoryConfig: meta.Settings.RepositoryConfig,
+					RepositoryCache:  meta.Settings.RepositoryCache,
+					Debug:            meta.Settings.Debug,
+				}
+				tflog.Debug(ctx, "Downloading chart dependencies...")
+				if err := man.Update(); err != nil {
+					diags.AddError("Failed to update chart dependencies", fmt.Sprintf("Error: %s", err))
+					return true, diags
+				}
+				return true, diags
+			}
+			diags.AddError("Missing chart dependencies", "Found in Chart.yaml, but missing in charts/ directory.")
+			return false, diags
+		}
+	}
+	tflog.Debug(ctx, "Chart dependencies are up to date.")
+	return false, diags
+}
+
+func LogValuesDiff(ctx context.Context, values map[string]interface{}, model *HelmDiffModel) diag.Diagnostics {
+	y, err := yaml.Marshal(values)
+	if err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Error marshaling values", fmt.Sprintf("Error marshaling values: %s", err))
+		return diags
+	}
+
+	tflog.Debug(ctx, fmt.Sprintf("---[ values.yaml ]-----------------------------------\n%s\n", string(y)))
+	return nil
 }
