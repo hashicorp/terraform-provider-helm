@@ -1,0 +1,33 @@
+---
+page_title: "helm: helm_diff"
+sidebar_current: "docs-helm-diff"
+description: |-
+
+---
+# Data Source: {{ .Name }}
+
+Compare a proposed Helm chart configuration against a deployed release.
+
+`helm_diff` compares a proposed chart configuration against what is currently deployed in the Kubernetes cluster and outputs the differences. This is useful for drift detection, change preview before upgrades, and CI/CD integration.
+
+{{ .SchemaMarkdown }}
+
+## Example Usage
+
+### Check what would be created for a new release
+
+The following example shows using `helm_diff` to preview what resources would be created when deploying a new release that doesn't exist yet.
+
+{{tffile "examples/data-sources/diff/example_1.tf"}}
+
+### Verify deployed release matches desired configuration
+
+The following example shows using `helm_diff` to verify that a deployed release matches your desired configuration (drift detection).
+
+{{tffile "examples/data-sources/diff/example_2.tf"}}
+
+### Preview configuration changes before applying
+
+The following example shows using `helm_diff` to preview what would change if you modify the configuration of an existing release.
+
+{{tffile "examples/data-sources/diff/example_3.tf"}}
