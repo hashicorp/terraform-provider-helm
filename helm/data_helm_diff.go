@@ -8,35 +8,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
-	pathpkg "path"
-	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/datasource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
-	"helm.sh/helm/v3/pkg/downloader"
-	"helm.sh/helm/v3/pkg/getter"
-	"helm.sh/helm/v3/pkg/registry"
-	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
-	"k8s.io/helm/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
 
@@ -93,28 +82,6 @@ type HelmDiffModel struct {
 	HasChanges               types.Bool       `tfsdk:"has_changes"`
 	CurrentManifest          types.String     `tfsdk:"current_manifest"`
 	ProposedManifest         types.String     `tfsdk:"proposed_manifest"`
-}
-
-type SetValue struct {
-	Name  types.String `tfsdk:"name"`
-	Type  types.String `tfsdk:"type"`
-	Value types.String `tfsdk:"value"`
-}
-
-type SetListValue struct {
-	Name  types.String `tfsdk:"name"`
-	Value types.List   `tfsdk:"value"`
-}
-
-type SetSensitiveValue struct {
-	Name  types.String `tfsdk:"name"`
-	Type  types.String `tfsdk:"type"`
-	Value types.String `tfsdk:"value"`
-}
-
-type PostRenderModel struct {
-	BinaryPath types.String `tfsdk:"binary_path"`
-	Args       types.List   `tfsdk:"args"`
 }
 
 type ResourceInfo struct {
@@ -465,7 +432,6 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 		}
 	}
 
-
 	actionConfig, err := meta.GetHelmConfiguration(ctx, state.Namespace.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -481,19 +447,19 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 	}
 	client := action.NewInstall(actionConfig)
 
-	cpo, chartName, cpoDiags := chartPathOptionsModel(&state, meta, &client.ChartPathOptions)
+	cpo, chartName, cpoDiags := chartPathOptionsModel((*HelmTemplateModel)(unsafe.Pointer(&state)), meta, &client.ChartPathOptions)
 	resp.Diagnostics.Append(cpoDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	c, chartPath, chartDiags := getChartModel(ctx, &state, meta, chartName, cpo)
+	c, chartPath, chartDiags := getChartModel(ctx, (*HelmTemplateModel)(unsafe.Pointer(&state)), meta, chartName, cpo)
 	resp.Diagnostics.Append(chartDiags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	updated, depDiags := checkChartDependenciesModel(ctx, &state, c, chartPath, meta)
+	updated, depDiags := checkChartDependenciesModel(ctx, (*HelmTemplateModel)(unsafe.Pointer(&state)), c, chartPath, meta)
 	resp.Diagnostics.Append(depDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -505,7 +471,7 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 		}
 	}
 
-	values, valuesDiags := getValuesModel(ctx, &state)
+	values, valuesDiags := getValuesModel(ctx, (*HelmTemplateModel)(unsafe.Pointer(&state)))
 	resp.Diagnostics.Append(valuesDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -591,395 +557,12 @@ func (d *HelmDiff) Read(ctx context.Context, req datasource.ReadRequest, resp *d
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func getValuesModel(ctx context.Context, model *HelmDiffModel) (map[string]interface{}, diag.Diagnostics) {
-	base := map[string]interface{}{}
-	var diags diag.Diagnostics
-
-	// Process "values" attribute
-	for _, raw := range model.Values.Elements() {
-		if raw.IsNull() {
-			continue
-		}
-
-		value, ok := raw.(types.String)
-		if !ok {
-			diags.AddError("Type Error", fmt.Sprintf("Expected types.String, got %T", raw))
-			return nil, diags
-		}
-
-		values := value.ValueString()
-		if values == "" {
-			continue
-		}
-
-		currentMap := map[string]interface{}{}
-		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
-			diags.AddError("Error unmarshaling values", fmt.Sprintf("---> %v %s", err, values))
-			return nil, diags
-		}
-
-		base = mergeMaps(base, currentMap)
-	}
-
-	// Process "set" attribute
-	if !model.Set.IsNull() {
-		var setList []SetValue
-		setDiags := model.Set.ElementsAs(ctx, &setList, false)
-		diags.Append(setDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		for _, set := range setList {
-			setDiags := applySetValue(base, set)
-			diags.Append(setDiags...)
-			if diags.HasError() {
-				return nil, diags
-			}
-		}
-	}
-
-	// Process "set_list" attribute
-	if !model.SetList.IsUnknown() {
-		var setListSlice []SetListValue
-		setListDiags := model.SetList.ElementsAs(ctx, &setListSlice, false)
-		diags.Append(setListDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		for _, setList := range setListSlice {
-			setListDiags := applySetListValue(ctx, base, setList)
-			diags.Append(setListDiags...)
-			if diags.HasError() {
-				return nil, diags
-			}
-		}
-	}
-
-	// Process "set_sensitive" attribute
-	if !model.SetSensitive.IsNull() {
-		var setSensitiveList []SetSensitiveValue
-		setSensitiveDiags := model.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
-		diags.Append(setSensitiveDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
-
-		for _, setSensitive := range setSensitiveList {
-			setSensitiveDiags := applySetSensitiveValue(base, setSensitive)
-			diags.Append(setSensitiveDiags...)
-			if diags.HasError() {
-				return nil, diags
-			}
-		}
-	}
-	if !model.SetWO.IsNull() && !model.SetWO.IsUnknown() {
-		var setWOList []SetValue
-		setWODiags := model.SetWO.ElementsAs(ctx, &setWOList, false)
-		diags.Append(setWODiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		for _, set := range setWOList {
-			setDiags := applySetValue(base, set)
-			diags.Append(setDiags...)
-			if diags.HasError() {
-				return nil, diags
-			}
-		}
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Final merged values: %v", base))
-	logDiags := LogValuesModel(ctx, base, model)
-	diags.Append(logDiags...)
-	return base, diags
-}
-
-func isTestHook(h *release.Hook) bool {
-	for _, e := range h.Events {
-		if e == release.HookTest {
-			return true
-		}
-	}
-	return false
-}
-
-func chartPathOptionsModel(model *HelmDiffModel, meta *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	chartName := model.Chart.ValueString()
-	repository := model.Repository.ValueString()
-
-	var repositoryURL string
-	if registry.IsOCI(repository) {
-		// LocateChart expects the chart name to contain the full OCI path
-		u, err := url.Parse(repository)
-		if err != nil {
-			diags.AddError("Invalid Repository URL", fmt.Sprintf("Failed to parse repository URL %s: %s", repository, err))
-			return nil, "", diags
-		}
-		u.Path = pathpkg.Join(u.Path, chartName)
-		chartName = u.String()
-	} else {
-		var err error
-		repositoryURL, chartName, err = buildChartNameWithRepository(repository, strings.TrimSpace(chartName))
-		if err != nil {
-			diags.AddError("Error building Chart Name With Repository", fmt.Sprintf("Could not build Chart Name With Repository %s and chart %s: %s", repository, chartName, err))
-			return nil, "", diags
-		}
-	}
-
-	version := getVersionModel(model)
-
-	cpo.CaFile = model.RepositoryCaFile.ValueString()
-	cpo.CertFile = model.RepositoryCertFile.ValueString()
-	cpo.KeyFile = model.RepositoryKeyFile.ValueString()
-	cpo.Keyring = model.Keyring.ValueString()
-	cpo.RepoURL = repositoryURL
-	cpo.Verify = model.Verify.ValueBool()
-	if !useChartVersion(chartName, cpo.RepoURL) {
-		cpo.Version = version
-	}
-	cpo.Username = model.RepositoryUsername.ValueString()
-	cpo.Password = model.RepositoryPassword.ValueString()
-	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
-
-	return cpo, chartName, diags
-}
-
-func getVersionModel(model *HelmDiffModel) string {
-	version := model.Version.ValueString()
-	if version == "" && model.Devel.ValueBool() {
-		return ">0.0.0-0"
-	}
-	return strings.TrimSpace(version)
-}
-
-func getChartModel(ctx context.Context, model *HelmDiffModel, meta *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", meta.Settings))
-
-	path, err := cpo.LocateChart(name, meta.Settings)
-	if err != nil {
-		diags.AddError("Error locating chart", fmt.Sprintf("Unable to locate chart %s: %s", name, err))
-		return nil, "", diags
-	}
-
-	c, err := loader.Load(path)
-	if err != nil {
-		diags.AddError("Error loading chart", fmt.Sprintf("Unable to load chart %s: %s", path, err))
-		return nil, "", diags
-	}
-
-	return c, path, diags
-}
-
-func checkChartDependenciesModel(ctx context.Context, model *HelmDiffModel, c *chart.Chart, path string, meta *Meta) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	p := getter.All(meta.Settings)
-
-	if req := c.Metadata.Dependencies; req != nil {
-		err := action.CheckDependencies(c, req)
-		if err != nil {
-			if model.DependencyUpdate.ValueBool() {
-				man := &downloader.Manager{
-					Out:              os.Stdout,
-					ChartPath:        path,
-					Keyring:          model.Keyring.ValueString(),
-					SkipUpdate:       false,
-					Getters:          p,
-					RepositoryConfig: meta.Settings.RepositoryConfig,
-					RepositoryCache:  meta.Settings.RepositoryCache,
-					Debug:            meta.Settings.Debug,
-				}
-				tflog.Debug(ctx, "Downloading chart dependencies...")
-				if err := man.Update(); err != nil {
-					diags.AddError("Failed to update chart dependencies", fmt.Sprintf("Error: %s", err))
-					return true, diags
-				}
-				return true, diags
-			}
-			diags.AddError("Missing chart dependencies", "Found in Chart.yaml, but missing in charts/ directory.")
-			return false, diags
-		}
-	}
-	tflog.Debug(ctx, "Chart dependencies are up to date.")
-	return false, diags
-}
-
-func applySetValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	name := set.Name.ValueString()
-	value := set.Value.ValueString()
-	valueType := set.Type.ValueString()
-
-	switch valueType {
-	case "auto", "":
-		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			diags.AddError("Failed parsing value", fmt.Sprintf("Key %q with value %s: %s", name, value, err))
-		}
-	case "string":
-		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			diags.AddError("Failed parsing string value", fmt.Sprintf("Key %q with value %s: %s", name, value, err))
-		}
-	case "literal":
-		var literal interface{}
-		if err := yaml.Unmarshal([]byte(fmt.Sprintf("%s: %s", name, value)), &literal); err != nil {
-			diags.AddError("Failed parsing literal value", fmt.Sprintf("Key %q with literal value %s: %s", name, value, err))
-			return diags
-		}
-		if m, ok := literal.(map[string]interface{}); ok {
-			base[name] = m[name]
-		} else {
-			base[name] = literal
-		}
-	default:
-		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type: %s", valueType))
-	}
-	return diags
-}
-
-func applySetListValue(ctx context.Context, base map[string]interface{}, setList SetListValue) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	name := setList.Name.ValueString()
-
-	if setList.Value.IsNull() {
-		diags.AddError("Null List Value", "The list value is null.")
-		return diags
-	}
-
-	// Extract elements from the list value
-	elements := setList.Value.Elements()
-
-	listStringArray := make([]string, 0, len(elements))
-	for _, element := range elements {
-		if !element.IsNull() {
-			strValue := element.(types.String).ValueString()
-			listStringArray = append(listStringArray, strValue)
-		}
-	}
-
-	listString := strings.Join(listStringArray, ",")
-
-	// Parse the joined string into the base map
-	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
-		diags.AddError("Error parsing list value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, listString, err))
-		return diags
-	}
-
-	return diags
-}
-
-func applySetSensitiveValue(base map[string]interface{}, setSensitive SetSensitiveValue) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	name := setSensitive.Name.ValueString()
-	value := setSensitive.Value.ValueString()
-	valueType := setSensitive.Type.ValueString()
-
-	switch valueType {
-	case "auto", "":
-		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			diags.AddError("Failed parsing sensitive value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
-		}
-	case "string":
-		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			diags.AddError("Failed parsing sensitive string value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
-		}
-	default:
-		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type for sensitive value: %s", valueType))
-	}
-
-	return diags
-}
-
-func LogValuesModel(ctx context.Context, values map[string]interface{}, state *HelmDiffModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	asJSON, err := json.Marshal(values)
-	if err != nil {
-		diags.AddError("Error marshaling values to JSON", fmt.Sprintf("Failed to marshal values to JSON: %s", err))
-		return diags
-	}
-
-	var clonedValues map[string]interface{}
-	err = json.Unmarshal(asJSON, &clonedValues)
-	if err != nil {
-		diags.AddError("Error unmarshaling JSON to map", fmt.Sprintf("Failed to unmarshal JSON to map: %s", err))
-		return diags
-	}
-
-	// Apply cloaking or masking for sensitive values
-	cloakSetValuesModel(clonedValues, state)
-
-	// Convert the modified map to YAML for logging purposes
-	yamlData, err := yaml.Marshal(clonedValues)
-	if err != nil {
-		diags.AddError("Error marshaling map to YAML", fmt.Sprintf("Failed to marshal map to YAML: %s", err))
-		return diags
-	}
-
-	// Log the final YAML representation of the values
-	tflog.Debug(ctx, fmt.Sprintf("---[ values.yaml ]-----------------------------------\n%s\n", string(yamlData)))
-
-	return diags
-}
-
-func cloakSetValuesModel(config map[string]interface{}, state *HelmDiffModel) {
-	if !state.SetSensitive.IsNull() {
-		var setSensitiveList []SetSensitiveValue
-		diags := state.SetSensitive.ElementsAs(context.Background(), &setSensitiveList, false)
-		if diags.HasError() {
-			tflog.Warn(context.Background(), "Error parsing SetSensitive elements", map[string]interface{}{
-				"diagnostics": diags,
-			})
-			return
-		}
-
-		for _, set := range setSensitiveList {
-			cloakSetValueModel(config, set.Name.ValueString())
-		}
-	}
-	if !state.SetWO.IsNull() && !state.SetWO.IsUnknown() {
-		var setWOList []SetValue
-		diags := state.SetWO.ElementsAs(context.Background(), &setWOList, false)
-		if diags.HasError() {
-			tflog.Warn(context.Background(), "Error parsing SetWO elements", map[string]interface{}{"diagnostics": diags})
-			return
-		}
-		for _, set := range setWOList {
-			cloakSetValueModel(config, set.Name.ValueString())
-		}
-	}
-}
-
-const sensitiveContentModelValue = "(sensitive value)"
-
-func cloakSetValueModel(values map[string]interface{}, valuePath string) {
-	pathKeys := strings.Split(valuePath, ".")
-	sensitiveKey := pathKeys[len(pathKeys)-1]
-	parentPathKeys := pathKeys[:len(pathKeys)-1]
-
-	currentMap := values
-	for _, key := range parentPathKeys {
-		v, ok := currentMap[key].(map[string]interface{})
-		if !ok {
-			return
-		}
-		currentMap = v
-	}
-	currentMap[sensitiveKey] = sensitiveContentModelValue
-}
-
-func compareManifests(ctx context.Context, current, proposed string) (diff string, diffJSON string, hasChanges bool){
+func compareManifests(ctx context.Context, current, proposed string) (diff string, diffJSON string, hasChanges bool) {
 	currentResources := releaseutil.SplitManifests(current)
 	proposedResources := releaseutil.SplitManifests(proposed)
-	tflog.Debug(ctx, fmt.Sprintf("Current resources: %d, Proposed resources: %d", 
+	tflog.Debug(ctx, fmt.Sprintf("Current resources: %d, Proposed resources: %d",
 		len(currentResources), len(proposedResources)))
-	
+
 	added, modified, deleted := matchResources(ctx, currentResources, proposedResources)
 
 	diff = generateUnifiedDiff(added, modified, deleted)
@@ -995,7 +578,6 @@ func compareManifests(ctx context.Context, current, proposed string) (diff strin
 func matchResources(ctx context.Context, current, proposed map[string]string) (added []ResourceInfo, modified []ModifiedResource, deleted []ResourceInfo) {
 	currentParsed := parseResources(ctx, current)
 	proposedParsed := parseResources(ctx, proposed)
-
 
 	currentMap := make(map[string]ResourceInfo)
 	for _, res := range currentParsed {
@@ -1074,8 +656,8 @@ func parseResources(ctx context.Context, manifests map[string]string) []Resource
 		}
 
 		resources = append(resources, ResourceInfo{
-			Kind: kind,
-			Name: name,
+			Kind:      kind,
+			Name:      name,
 			Namespace: namespace,
 			Content:   content,
 		})
@@ -1110,7 +692,7 @@ func generateUnifiedDiff(added []ResourceInfo, modified []ModifiedResource, dele
 	dmp := diffmatchpatch.New()
 	for _, res := range modified {
 		fmt.Fprintf(&buf, "%s, %s, %s has changed:\n", res.Namespace, res.Name, res.Kind)
-		
+
 		diffs := dmp.DiffMain(res.OldContent, res.NewContent, false)
 		diffs = dmp.DiffCleanupSemantic(diffs)
 
@@ -1119,13 +701,13 @@ func generateUnifiedDiff(added []ResourceInfo, modified []ModifiedResource, dele
 			if text == "" {
 				continue
 			}
-			
+
 			lines := strings.Split(text, "\n")
 			for _, line := range lines {
 				if line == "" {
 					continue
 				}
-			
+
 				switch diff.Type {
 				case diffmatchpatch.DiffDelete:
 					fmt.Fprintf(&buf, "- %s\n", line)
@@ -1144,9 +726,9 @@ func generateUnifiedDiff(added []ResourceInfo, modified []ModifiedResource, dele
 
 func generateDiffJSON(added []ResourceInfo, modified []ModifiedResource, deleted []ResourceInfo) string {
 	result := map[string]interface{}{
-		"added": resourceInfoJSON(added),
+		"added":    resourceInfoJSON(added),
 		"modified": modifiedResourceJSON(modified),
-		"deleted": resourceInfoJSON(deleted),
+		"deleted":  resourceInfoJSON(deleted),
 	}
 
 	jsonBytes, _ := json.MarshalIndent(result, "", "  ")
@@ -1157,25 +739,22 @@ func resourceInfoJSON(resources []ResourceInfo) []map[string]string {
 	var result []map[string]string
 	for _, res := range resources {
 		result = append(result, map[string]string{
-			"kind": res.Kind,
-			"name": res.Name,
+			"kind":      res.Kind,
+			"name":      res.Name,
 			"namespace": res.Namespace,
 		})
 	}
 	return result
 }
 
-func ModifiedResourceJSON(resources []ModifiedResource) []map[string]string {
+func modifiedResourceJSON(resources []ModifiedResource) []map[string]string {
 	var result []map[string]string
 	for _, res := range resources {
 		result = append(result, map[string]string{
-			"kind": res.Kind,
-			"name": res.Name,
-			"namespace": res.Namespace
+			"kind":      res.Kind,
+			"name":      res.Name,
+			"namespace": res.Namespace,
 		})
 	}
 	return result
 }
-
-
-
