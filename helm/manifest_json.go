@@ -4,11 +4,10 @@
 package helm
 
 import (
+	"crypto/sha3"
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	"golang.org/x/crypto/sha3"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,8 +76,7 @@ func convertYAMLManifestToJSON(manifest string) (string, error) {
 }
 
 func hashSensitiveValue(v string) string {
-	hash := make([]byte, 8)
-	sha3.ShakeSum256(hash, []byte(v))
+	hash := sha3.SumSHAKE256([]byte(v), 8)
 	return fmt.Sprintf("(sensitive value %x)", hash)
 }
 

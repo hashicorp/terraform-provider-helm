@@ -1,0 +1,11 @@
+```release-note:dependency
+Upgrade `go` from `1.24.5` to `1.25.8`
+```
+
+```release-note:dependency
+Remove `golang.org/x/crypto` as a direct dependency
+```
+
+```release-note:enhancement
+Replace usage of `golang.org/x/crypto/sha3` with `crypto/sha3` from stdlib
+```
