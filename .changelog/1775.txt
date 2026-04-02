@@ -1,5 +1,5 @@
 ```release-note:dependency
-Upgrade `go` from `1.24.3` to `1.25.8`
+Upgrade `go` from `1.24.5` to `1.25.8`
 ```
 
 ```release-note:dependency
