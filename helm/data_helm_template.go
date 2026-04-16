@@ -861,7 +861,7 @@ func isTestHook(h *release.Hook) bool {
 	return false
 }
 
-func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
+func chartPathOptionsModel(model *HelmTemplateModel, _ *Meta, cpo *action.ChartPathOptions) (*action.ChartPathOptions, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	chartName := model.Chart.ValueString()
 	repository := model.Repository.ValueString()
@@ -911,7 +911,7 @@ func getVersionModel(model *HelmTemplateModel) string {
 	return strings.TrimSpace(version)
 }
 
-func getChartModel(ctx context.Context, model *HelmTemplateModel, meta *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
+func getChartModel(ctx context.Context, _ *HelmTemplateModel, meta *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", meta.Settings))
@@ -997,7 +997,7 @@ func applySetValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
 	return diags
 }
 
-func applySetListValue(ctx context.Context, base map[string]interface{}, setList SetListValue) diag.Diagnostics {
+func applySetListValue(_ context.Context, base map[string]interface{}, setList SetListValue) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	name := setList.Name.ValueString()
