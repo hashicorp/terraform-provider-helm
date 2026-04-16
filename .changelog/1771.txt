@@ -1,0 +1,3 @@
+```release-note:feature
+`data_source/helm_diff`: Data source to compare proposed chart configuration against deployed release
+```

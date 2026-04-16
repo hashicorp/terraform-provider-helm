@@ -17,74 +17,75 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 
 ### Required
 
-- `chart` (String) Chart name to be installed. A path may be used.
-- `name` (String) Release name. The length must not be longer than 53 characters.
+- `chart` (String) Chart name to be installed. A path may be used
+- `name` (String) Release name. The length must not be longer than 53 characters
 
 ### Optional
 
-- `atomic` (Boolean) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used. Defaults to `false`.
-- `cleanup_on_fail` (Boolean) Allow deletion of new resources created in this upgrade when upgrade fails. Defaults to `false`.
-- `create_namespace` (Boolean) Create the namespace if it does not exist. Defaults to `false`.
-- `dependency_update` (Boolean) Run helm dependency update before installing the chart. Defaults to `false`.
+- `atomic` (Boolean) If set, installation process purges chart on fail. The wait flag will be set automatically if atomic is used
+- `cleanup_on_fail` (Boolean) Allow deletion of new resources created in this upgrade when upgrade fails
+- `create_namespace` (Boolean) Create the namespace if it does not exist
+- `dependency_update` (Boolean) Run helm dependency update before installing the chart
 - `description` (String) Add a custom description
-- `devel` (Boolean) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored
-- `disable_crd_hooks` (Boolean) Prevent CRD hooks from, running, but run other hooks.  See helm install --no-crd-hook
-- `disable_openapi_validation` (Boolean) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false`.
-- `disable_webhooks` (Boolean) Prevent hooks from running.Defaults to `false`.
-- `force_update` (Boolean) Force resource update through delete/recreate if needed. Defaults to `false`.
-- `keyring` (String) Location of public keys used for verification. Used only if `verify` is true. Defaults to `/.gnupg/pubring.gpg` in the location set by `home`.
-- `lint` (Boolean) Run helm lint when planning. Defaults to `false`.
-- `max_history` (Number) Limit the maximum number of revisions saved per release. Use 0 for no limit. Defaults to 0 (no limit).
-- `namespace` (String) Namespace to install the release into. Defaults to `default`.
-- `pass_credentials` (Boolean) Pass credentials to all domains. Defaults to `false`.
-- `postrender` (Block List, Max: 1) Postrender command configuration. (see [below for nested schema](#nestedblock--postrender))
-- `recreate_pods` (Boolean) Perform pods restart during upgrade/rollback. Defaults to `false`.
-- `render_subchart_notes` (Boolean) If set, render subchart notes along with the parent. Defaults to `true`.
-- `replace` (Boolean) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
-- `repository` (String) Repository where to locate the requested chart. If is a URL the chart is installed without installing the repository.
-- `repository_ca_file` (String) The Repositories CA File
+- `devel` (Boolean) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If 'version' is set, this is ignored
+- `disable_crd_hooks` (Boolean) Prevent CRD hooks from running, but run other hooks. See helm install --no-crd-hook
+- `disable_openapi_validation` (Boolean) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema
+- `disable_webhooks` (Boolean) Prevent hooks from running
+- `force_update` (Boolean) Force resource update through delete/recreate if needed.
+- `keyring` (String) Location of public keys used for verification, Used only if 'verify is true'
+- `lint` (Boolean) Run helm lint when planning
+- `max_history` (Number) Limit the maximum number of revisions saved per release. Use 0 for no limit
+- `namespace` (String) Namespace to install the release into
+- `pass_credentials` (Boolean) Pass credentials to all domains
+- `postrender` (Attributes) Postrender command config (see [below for nested schema](#nestedatt--postrender))
+- `recreate_pods` (Boolean) Perform pods restart during upgrade/rollback
+- `render_subchart_notes` (Boolean) If set, render subchart notes along with the parent
+- `replace` (Boolean) Re-use the given name, even if that name is already used. This is unsafe in production
+- `repository` (String) Repository where to locate the requested chart. If it is a URL, the chart is installed without installing the repository
+- `repository_ca_file` (String) The Repositories CA file
 - `repository_cert_file` (String) The repositories cert file
 - `repository_key_file` (String) The repositories cert key file
 - `repository_password` (String, Sensitive) Password for HTTP basic authentication
 - `repository_username` (String) Username for HTTP basic authentication
-- `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
-- `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
-- `set` (Block Set) Custom values to be merged with the values. (see [below for nested schema](#nestedblock--set))
-- `set_wo` (Attribute List) Custom values to be merged with the values. This is the same as "set" but write-only. (see [below for nested schema](#nestedblock--set))
-- `set_wo_revision` (Number) The current revision of the write-only "set_wo" attribute. Incrementing this integer value will cause Terraform to update the write-only value.`  
-- `set_list` (Block List) Custom list values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
-- `set_sensitive` (Block Set) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_sensitive))
-- `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
-- `take_ownership` (Boolean) If set, allows Helm to adopt existing resources not marked as managed by the release. Defaults to `false`.
-- `timeout` (Number) Time in seconds to wait for any individual kubernetes operation. Defaults to 300 seconds.
-- `upgrade_install` (Boolean) If true, the provider will install the release at the specified version even if a release not controlled by the provider is present: this is equivalent to running 'helm upgrade --install' with the Helm CLI. WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' note in the provider documentation. Defaults to `false`.
-- `values` (List of String) List of values in raw yaml format to pass to helm.
-- `verify` (Boolean) Verify the package before installing it.Defaults to `false`.
-- `version` (String) Specify the exact chart version to install. If this is not specified, the latest version is installed.
-- `wait` (Boolean) Will wait until all resources are in a ready state before marking the release as successful. Defaults to `true`.
-- `wait_for_jobs` (Boolean) If wait is enabled, will wait until all Jobs have been completed before marking the release as successful. Defaults to `false``.
+- `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart
+- `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored
+- `set` (Attributes List) Custom values to be merged with the values (see [below for nested schema](#nestedatt--set))
+- `set_list` (Attributes List) Custom sensitive values to be merged with the values (see [below for nested schema](#nestedatt--set_list))
+- `set_sensitive` (Attributes List) Custom sensitive values to be merged with the values (see [below for nested schema](#nestedatt--set_sensitive))
+- `set_wo` (Attributes List) Custom values to be merged with the values (see [below for nested schema](#nestedatt--set_wo))
+- `set_wo_revision` (Number) The current revision of the write-only "set_wo" attribute. Incrementing this integer value will cause Terraform to update the write-only value.
+- `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present
+- `take_ownership` (Boolean) If set, Helm will take ownership of resources not already annotated by this release. Useful for migrations or recovery.
+- `timeout` (Number) Time in seconds to wait for any individual kubernetes operation
+- `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
+- `upgrade_install` (Boolean) If true, the provider will install the release at the specified version even if a release not controlled by the provider is present. This is equivalent to running 'helm upgrade --install'. WARNING: this may not be suitable for production use -- see the 'Upgrade Mode' note in the provider documentation. Defaults to `false`.
+- `values` (List of String) List of values in raw YAML format to pass to helm
+- `verify` (Boolean) Verify the package before installing it.
+- `version` (String) Specify the exact chart version to install. If this is not specified, the latest version is installed
+- `wait` (Boolean) Will wait until all resources are in a ready state before marking the release as successful.
+- `wait_for_jobs` (Boolean) If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
 - `manifest` (String) The rendered manifest as JSON.
-- `resources` (Map of String) Rendered manifests as JSON.  
-- `metadata` (List of Object) Status of the deployed release. (see [below for nested schema](#nestedatt--metadata))
-- `status` (String) Status of the release.
+- `metadata` (Attributes) Status of the deployed release. (see [below for nested schema](#nestedatt--metadata))
+- `resources` (Map of String) The kubernetes resources created by this release.
+- `status` (String) Status of the release
 
-<a id="nestedblock--postrender"></a>
+<a id="nestedatt--postrender"></a>
 ### Nested Schema for `postrender`
 
 Required:
 
-- `binary_path` (String) The command binary path.
+- `binary_path` (String) The common binary path
 
 Optional:
 
-- `args` (List of String) an argument to the post-renderer (can specify multiple)
+- `args` (List of String) An argument to the post-renderer (can specify multiple)
 
 
-<a id="nestedblock--set"></a>
+<a id="nestedatt--set"></a>
 ### Nested Schema for `set`
 
 Required:
@@ -96,7 +97,8 @@ Optional:
 - `type` (String)
 - `value` (String)
 
-<a id="nestedblock--set_list"></a>
+
+<a id="nestedatt--set_list"></a>
 ### Nested Schema for `set_list`
 
 Required:
@@ -105,7 +107,7 @@ Required:
 - `value` (List of String)
 
 
-<a id="nestedblock--set_sensitive"></a>
+<a id="nestedatt--set_sensitive"></a>
 ### Nested Schema for `set_sensitive`
 
 Required:
@@ -118,21 +120,45 @@ Optional:
 - `type` (String)
 
 
+<a id="nestedatt--set_wo"></a>
+### Nested Schema for `set_wo`
+
+Required:
+
+- `name` (String)
+- `value` (String)
+
+Optional:
+
+- `type` (String)
+
+
+<a id="nestedatt--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+
 <a id="nestedatt--metadata"></a>
 ### Nested Schema for `metadata`
 
 Read-Only:
 
-- `app_version` (String)
-- `chart` (String)
-- `first_deployed` (Number)
-- `last_deployed` (Number)
-- `name` (String)
-- `namespace` (String)
-- `notes` (String)
-- `revision` (Number)
-- `values` (String)
-- `version` (String)
+- `app_version` (String) The version number of the application being deployed
+- `chart` (String) The name of the chart
+- `first_deployed` (Number) FirstDeployed is an int64 which represents timestamp when the release was first deployed.
+- `last_deployed` (Number) LastDeployed is an int64 which represents timestamp when the release was last deployed.
+- `name` (String) Name is the name of the release
+- `namespace` (String) Namespace is the kubernetes namespace of the release
+- `notes` (String) Notes is the description of the deployed release, rendered from templates.
+- `revision` (Number) Version is an int32 which represents the version of the release
+- `values` (String) Set of extra values. added to the chart. The sensitive data is cloaked. JSON encoded.
+- `version` (String) A SemVer 2 conformant version string of the chart
 
 
 
@@ -147,6 +173,10 @@ resource "helm_release" "example" {
   chart      = "redis"
   version    = "6.0.1"
 
+  values = [
+    "${file("values.yaml")}"
+  ]
+
   set = [
     {
       name  = "cluster.enabled"
@@ -155,7 +185,10 @@ resource "helm_release" "example" {
     {
       name  = "metrics.enabled"
       value = "true"
-    },
+    }
+  ]
+
+  set = [
     {
       name  = "service.annotations.prometheus\\.io/port"
       value = "9127"
@@ -196,7 +229,7 @@ provider "helm" {
   kubernetes = {
     config_path = "~/.kube/config"
   }
-
+  # localhost registry with password protection
   registries = [
     {
       url      = "oci://localhost:5000"
@@ -286,11 +319,11 @@ resource "helm_release" "example" {
 }
 ```
 
-The `set`, `set_list`, and `set_sensitive` blocks support:
+The `set`, and `set_sensitive` blocks support:
 
 * `name` - (Required) full name of the variable to be set.
-* `value` - (Required; Optional for `set`) value of the variable to be set.
-* `type` - (Optional) type of the variable to be set. Valid options are `auto` and `string`.
+* `value` - (Required) value of the variable to be set.
+* `type` - (Optional) type of the variable to be set. Valid options are `auto`, `string`, and `literal`.
 
 Since Terraform Utilizes HCL as well as Helm using the Helm Template Language, it's necessary to escape the `{}`, `[]`, `.`, and `,` characters twice in order for it to be parsed. `name` should also be set to the `value path`, and `value` is the desired value that will be set.
 
@@ -326,7 +359,6 @@ set = [
     value = "\\{\"timeout\": \"30s\"\\}"
   }
 ]
-
 ```
 
 The `postrender` block supports two attributes:
