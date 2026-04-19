@@ -5,7 +5,7 @@ resource "helm_release" "example" {
   version    = "6.0.1"
 
   values = [
-    "${file("values.yaml")}"
+    file("values.yaml")
   ]
 
   set = [

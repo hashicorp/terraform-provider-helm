@@ -146,6 +146,8 @@ resource "helm_release" "example" {
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "redis"
   version    = "6.0.1"
+  
+  values = [file("values.yaml")]
 
   set = [
     {
