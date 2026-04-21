@@ -46,6 +46,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `repository_cert_file` (String) The repositories cert file
 - `repository_key_file` (String) The repositories cert key file
 - `repository_password` (String, Sensitive) Password for HTTP basic authentication
+- `repository_password_wo` (String, Write-Only) Password for HTTP basic authentication. This is the same as "repository_password" but write-only. One of `repository_password` or `repository_password_wo` field must be set, but both are mutually exclusive properties. If one is set, the other must be unset.
 - `repository_username` (String) Username for HTTP basic authentication
 - `reset_values` (Boolean) When upgrading, reset the values to the ones built into the chart. Defaults to `false`.
 - `reuse_values` (Boolean) When upgrading, reuse the last release's values and merge in any overrides. If 'reset_values' is specified, this is ignored. Defaults to `false`.
