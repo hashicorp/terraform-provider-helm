@@ -1,3 +1,18 @@
+## 3.1.2 (Apr 24, 2026)
+
+ENHANCEMENT:
+
+* Replace usage of `golang.org/x/crypto/sha3` with `crypto/sha3` from stdlib [[GH-1775](https://github.com/hashicorp/terraform-provider-helm/issues/1775)]
+
+DEPENDENCIES:
+
+* Remove `golang.org/x/crypto` as a direct dependency [[GH-1775](https://github.com/hashicorp/terraform-provider-helm/issues/1775)]
+* Upgrade `go` from `1.24.5` to `1.25.8` [[GH-1775](https://github.com/hashicorp/terraform-provider-helm/issues/1775)]
+* Bump `github.com/cloudflare/circl` from `1.6.0` to `1.6.1` [[GH-1759](https://github.com/hashicorp/terraform-provider-helm/pull/1759)]
+* Bump `github.com/containerd/containerd` from `1.7.27` to `1.7.29` [[GH-1758](https://github.com/hashicorp/terraform-provider-helm/pull/1758)]
+* Bump `helm.sh/helm/v3` from `3.18.4` to `3.18.5` [[GH-1757](https://github.com/hashicorp/terraform-provider-helm/pull/1757)]
+* Bump `google.golang.org/grpc` from `1.75.1` to `1.79.3` [[GH-1769](https://github.com/hashicorp/terraform-provider-helm/pull/1769)]
+
 ## 3.1.1 (Nov 17, 2025)
 
 BUG FIXES:
