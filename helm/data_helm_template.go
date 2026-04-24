@@ -65,6 +65,7 @@ type HelmTemplateModel struct {
 	Devel                    types.Bool       `tfsdk:"devel"`
 	DisableOpenAPIValidation types.Bool       `tfsdk:"disable_openapi_validation"`
 	DisableWebhooks          types.Bool       `tfsdk:"disable_webhooks"`
+	DisableSchemaValidation		types.Bool      `tfsdk:"disable_schema_validation"`
 	ID                       types.String     `tfsdk:"id"`
 	IncludeCRDs              types.Bool       `tfsdk:"include_crds"`
 	IsUpgrade                types.Bool       `tfsdk:"is_upgrade"`
@@ -183,6 +184,10 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 			"disable_webhooks": schema.BoolAttribute{
 				Optional:    true,
 				Description: "Prevent hooks from running.",
+			},
+			"disable_schema_validation": schema.BoolAttribute{
+				Optional:    true,
+				Description: "If set, the schema validation is disabled.",
 			},
 			"id": schema.StringAttribute{
 				Computed: true,
@@ -472,6 +477,9 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	if state.DisableOpenAPIValidation.IsNull() || state.DisableOpenAPIValidation.IsUnknown() {
 		state.DisableOpenAPIValidation = types.BoolValue(false)
 	}
+	if state.DisableSchemaValidation.IsNull() || state.DisableSchemaValidation.IsUnknown() {
+		state.DisableSchemaValidation = types.BoolValue(false)
+	}
 	if state.Wait.IsNull() || state.Wait.IsUnknown() {
 		state.Wait = types.BoolValue(false)
 	}
@@ -596,6 +604,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
 	client.DisableHooks = state.DisableWebhooks.ValueBool()
 	client.DisableOpenAPIValidation = state.DisableOpenAPIValidation.ValueBool()
+	client.DisableSchemaValidation = state.DisableSchemaValidation.ValueBool()
 	client.Atomic = state.Atomic.ValueBool()
 	client.Replace = state.Replace.ValueBool()
 	client.SkipCRDs = state.SkipCrds.ValueBool()
