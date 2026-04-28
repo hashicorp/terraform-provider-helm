@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: Fix Windows-only apply failure (`Error locating chart` / `Unable to locate chart ... link error: cannot rename ... Access is denied`) when multiple releases reference the same OCI chart/version in one run.
+```
