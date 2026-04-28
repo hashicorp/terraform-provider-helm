@@ -48,8 +48,21 @@ type Meta struct {
 	RegistryClient *registry.Client
 	HelmDriver     string
 	// Experimental feature toggles
-	Experiments map[string]bool
-	Mutex       sync.Mutex
+	Experiments           map[string]bool
+	Mutex                 sync.Mutex
+	loggedInOCIRegistries map[string]struct{}
+	ChartPathMutex        sync.Mutex
+}
+
+// LocateChart serializes calls to cpo.LocateChart to avoid concurrent writes to Helm's shared repository cache.
+// Helm's chart downloader writes to a random temp file under the shared repository cache (e.g. %TEMP%\helm\repository\<chart>-<ver>.tgz<suffix>)
+// and then renames it to the canonical cache path. When multiple releases reference the same OCI chart/version in a single run, concurrent renames
+// into that shared cache race on Windows and fail with "Access is denied" (see provider issue #1623). Serializing LocateChart avoids the race
+// while keeping a single cache entry per chart/version.
+func (m *Meta) LocateChart(cpo *action.ChartPathOptions, name string) (string, error) {
+	m.ChartPathMutex.Lock()
+	defer m.ChartPathMutex.Unlock()
+	return cpo.LocateChart(name, m.Settings)
 }
 
 // HelmProviderModel contains the configuration for the provider
@@ -590,6 +603,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		Experiments: map[string]bool{
 			"manifest": manifestExperiment,
 		},
+		loggedInOCIRegistries: make(map[string]struct{}),
 	}
 	registryClient, err := registry.NewClient()
 	if err != nil {
@@ -678,7 +692,6 @@ func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Conf
 
 // registryClient = client used to comm with the registry, oci urls, un, and pw used for authentication
 func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *registry.Client, ociURL, username, password string) error {
-	loggedInOCIRegistries := make(map[string]string)
 	// getting the oci url, and extracting the host.
 	u, err := url.Parse(ociURL)
 	if err != nil {
@@ -686,7 +699,7 @@ func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *re
 	}
 	meta.Mutex.Lock()
 	defer meta.Mutex.Unlock()
-	if _, ok := loggedInOCIRegistries[u.Host]; ok {
+	if _, ok := meta.loggedInOCIRegistries[u.Host]; ok {
 		tflog.Info(ctx, fmt.Sprintf("Already logged into OCI registry %q", u.Host))
 		return nil
 	}
@@ -695,7 +708,7 @@ func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *re
 	if err != nil {
 		return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
 	}
-	loggedInOCIRegistries[u.Host] = ""
+	meta.loggedInOCIRegistries[u.Host] = struct{}{}
 	tflog.Info(ctx, fmt.Sprintf("Logged into OCI registry %q", u.Host))
 	return nil
 }
