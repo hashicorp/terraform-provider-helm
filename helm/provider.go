@@ -56,7 +56,7 @@ type Meta struct {
 
 // LocateChart serializes calls to cpo.LocateChart to avoid concurrent writes to Helm's shared repository cache.
 // Helm's chart downloader writes to a random temp file under the shared repository cache (e.g. %TEMP%\helm\repository\<chart>-<ver>.tgz<suffix>)
-// and then renames it to the canonical cache path. When multiple releases reference the same OCI chart/version in a single run, concurrent renames 
+// and then renames it to the canonical cache path. When multiple releases reference the same OCI chart/version in a single run, concurrent renames
 // of same file on Windows fail with "Access is denied" (see provider issue #1623). Serializing LocateChart avoids the race
 // while keeping a single cache entry per chart/version.
 func (m *Meta) LocateChart(cpo *action.ChartPathOptions, name string) (string, error) {
