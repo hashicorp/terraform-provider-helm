@@ -238,6 +238,55 @@ func suppressKeyring() planmodifier.String {
 	return suppressKeyringPlanModifier{}
 }
 
+// normalizeLineEndingsListPlanModifier suppresses diffs caused by CRLF vs LF
+// line endings in values YAML strings. This is common when values files are
+// checked out on Windows (CRLF) but state was stored from Linux/Mac (LF).
+type normalizeLineEndingsListPlanModifier struct{}
+
+func (m normalizeLineEndingsListPlanModifier) Description(ctx context.Context) string {
+	return "Normalize line endings (CRLF -> LF) to prevent cross-platform diffs"
+}
+
+func (m normalizeLineEndingsListPlanModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m normalizeLineEndingsListPlanModifier) PlanModifyList(ctx context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+	if req.PlanValue.IsNull() || req.PlanValue.IsUnknown() || req.StateValue.IsNull() || req.StateValue.IsUnknown() {
+		return
+	}
+
+	planElems := req.PlanValue.Elements()
+	stateElems := req.StateValue.Elements()
+
+	if len(planElems) != len(stateElems) {
+		return
+	}
+
+	equal := true
+	for i, planElem := range planElems {
+		planStr, ok1 := planElem.(types.String)
+		stateStr, ok2 := stateElems[i].(types.String)
+		if !ok1 || !ok2 {
+			return
+		}
+		normalizedPlan := strings.ReplaceAll(planStr.ValueString(), "\r\n", "\n")
+		normalizedState := strings.ReplaceAll(stateStr.ValueString(), "\r\n", "\n")
+		if normalizedPlan != normalizedState {
+			equal = false
+			break
+		}
+	}
+
+	if equal {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func normalizeLineEndingsList() planmodifier.List {
+	return normalizeLineEndingsListPlanModifier{}
+}
+
 func namespaceDefault() defaults.String {
 	return namespaceDefaultValue{}
 }
@@ -529,6 +578,9 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Optional:    true,
 				Description: "List of values in raw YAML format to pass to helm",
 				ElementType: types.StringType,
+				PlanModifiers: []planmodifier.List{
+					normalizeLineEndingsList(),
+				},
 			},
 			"verify": schema.BoolAttribute{
 				Optional:    true,
