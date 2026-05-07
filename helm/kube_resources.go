@@ -11,10 +11,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
+	openapi_v3 "github.com/google/gnostic-models/openapiv3"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/pkg/errors"
+	gproto "google.golang.org/protobuf/proto"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/release"
@@ -29,10 +32,12 @@ import (
 	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/discovery"
-	"k8s.io/kube-openapi/pkg/util/proto"
+	"k8s.io/client-go/openapi"
+	kubeproto "k8s.io/kube-openapi/pkg/util/proto"
 	"k8s.io/kubectl/pkg/cmd/diff"
 	"k8s.io/kubectl/pkg/scheme"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
+	"sigs.k8s.io/structured-merge-diff/v4/typed"
 )
 
 // getKubeClient returns the underlying *kube.Client from an action.Configuration.
@@ -44,26 +49,117 @@ func getKubeClient(actionConfig *action.Configuration) (*kube.Client, error) {
 	return kc, nil
 }
 
-// regenerateGVKParser builds the parser from the raw OpenAPI schema.
-func regenerateGVKParser(dc discovery.DiscoveryInterface) (*managedfields.GvkParser, error) {
-	doc, err := dc.OpenAPISchema()
+// gvkParser provides per-GroupVersion field-set parsers built lazily from
+// the cluster's OpenAPI v3 schema.
+type gvkParser struct {
+	mu      sync.Mutex
+	paths   map[string]openapi.GroupVersion
+	parsers map[schema.GroupVersion]*managedfields.GvkParser
+}
+
+// newGVKParser builds a lazy per-GroupVersion parser cache from the cluster's
+// OpenAPI v3 discovery client.
+func newGVKParser(dc discovery.DiscoveryInterface) (*gvkParser, error) {
+	paths, err := dc.OpenAPIV3().Paths()
 	if err != nil {
 		return nil, err
 	}
+	return &gvkParser{
+		paths:   paths,
+		parsers: map[schema.GroupVersion]*managedfields.GvkParser{},
+	}, nil
+}
 
-	models, err := proto.NewOpenAPIData(doc)
-	if err != nil {
-		return nil, err
+func gvToAPIPath(gv schema.GroupVersion) string {
+	if gv.Group == "" {
+		return fmt.Sprintf("api/%s", gv.Version)
+	}
+	return fmt.Sprintf("apis/%s/%s", gv.Group, gv.Version)
+}
+
+// Type returns the parseable type for the given GVK, building the underlying
+// per-GroupVersion parser on first use.
+func (p *gvkParser) Type(gvk schema.GroupVersionKind) (*typed.ParseableType, error) {
+	gv := gvk.GroupVersion()
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	parser, ok := p.parsers[gv]
+	if !ok {
+		path := gvToAPIPath(gv)
+		gvc, ok := p.paths[path]
+		if !ok {
+			return nil, fmt.Errorf("no OpenAPI v3 schema for GroupVersion %q", gv.String())
+		}
+		bs, err := gvc.Schema(openapi.ContentTypeOpenAPIV3PB)
+		if err != nil {
+			return nil, fmt.Errorf("fetch OpenAPI v3 schema for %q: %w", gv.String(), err)
+		}
+		var doc openapi_v3.Document
+		if err := gproto.Unmarshal(bs, &doc); err != nil {
+			return nil, fmt.Errorf("unmarshal OpenAPI v3 schema for %q: %w", gv.String(), err)
+		}
+		models, err := kubeproto.NewOpenAPIV3Data(&doc)
+		if err != nil {
+			return nil, err
+		}
+		normalizeV3Extensions(models)
+		parser, err = managedfields.NewGVKParser(models, false)
+		if err != nil {
+			return nil, fmt.Errorf("build GVK parser for %q: %w", gv.String(), err)
+		}
+		p.parsers[gv] = parser
 	}
 
-	return managedfields.NewGVKParser(models, false)
+	pt := parser.Type(gvk)
+	if pt == nil {
+		return nil, fmt.Errorf("no parseable type found for %s", gvk.String())
+	}
+	return pt, nil
+}
+
+// normalizeV3Extensions rewrites every model's vendor extensions so that
+// managedfields.NewGVKParser (and the schemaconv it uses) can read them.
+func normalizeV3Extensions(models kubeproto.Models) {
+	for _, name := range models.ListModels() {
+		m := models.LookupModel(name)
+		if m == nil {
+			continue
+		}
+		ext := m.GetExtensions()
+		for k, v := range ext {
+			ext[k] = toInterfaceKeyedMap(v)
+		}
+	}
+}
+
+// toInterfaceKeyedMap recursively converts map[string]interface{} values
+// (yaml.v3 shape) to map[interface{}]interface{} (yaml.v2 shape), descending
+// into nested maps and slices.
+func toInterfaceKeyedMap(v interface{}) interface{} {
+	switch t := v.(type) {
+	case map[string]interface{}:
+		out := make(map[interface{}]interface{}, len(t))
+		for k, vv := range t {
+			out[k] = toInterfaceKeyedMap(vv)
+		}
+		return out
+	case []interface{}:
+		for i, vv := range t {
+			t[i] = toInterfaceKeyedMap(vv)
+		}
+		return t
+	default:
+		return v
+	}
 }
 
 // removeUnmanagedFields strips fields managed by kube-controller-manager or subresources.
-func removeUnmanagedFields(parser *managedfields.GvkParser, obj runtime.Object, gvk schema.GroupVersionKind) error {
-	parseableType := parser.Type(gvk)
-	if parseableType == nil {
-		return errors.Errorf("no parseable type found for %s", gvk.String())
+func removeUnmanagedFields(parser *gvkParser, obj runtime.Object, gvk schema.GroupVersionKind) error {
+	parseableType, err := parser.Type(gvk)
+	if err != nil {
+		return err
 	}
 	typedObj, err := parseableType.FromStructured(obj)
 	if err != nil {
@@ -101,7 +197,7 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 		diags.AddError("Client Error", err.Error())
 		return nil, diags
 	}
-	parser, err := regenerateGVKParser(clientSet.Discovery())
+	parser, err := newGVKParser(clientSet.Discovery())
 	if err != nil {
 		diags.AddError("Parser Error", err.Error())
 		return nil, diags
