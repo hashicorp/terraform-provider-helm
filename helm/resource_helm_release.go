@@ -705,7 +705,7 @@ func (r *HelmRelease) Configure(ctx context.Context, req resource.ConfigureReque
 const sensitiveContentValue = "(sensitive value)"
 
 func cloakSetValue(values map[string]interface{}, valuePath string) {
-	pathKeys := strings.Split(valuePath, ".")
+	pathKeys := splitKeyPath(valuePath)
 	sensitiveKey := pathKeys[len(pathKeys)-1]
 	parentPathKeys := pathKeys[:len(pathKeys)-1]
 	m := values
