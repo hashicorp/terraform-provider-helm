@@ -119,7 +119,6 @@ func TestMain(m *testing.M) {
 	os.Exit(ec)
 }
 
-// todo
 func TestProvider(t *testing.T) {
 	ctx := context.Background()
 	provider := New("test")()
@@ -143,11 +142,7 @@ func TestProvider(t *testing.T) {
 
 func createProviderServer(provider provider.Provider) (tfprotov6.ProviderServer, error) {
 	providerServerFunc := providerserver.NewProtocol6WithError(provider)
-	server, err := providerServerFunc()
-	if err != nil {
-	} else {
-	}
-	return server, err
+	return providerServerFunc()
 }
 
 func buildChartRepository() {
