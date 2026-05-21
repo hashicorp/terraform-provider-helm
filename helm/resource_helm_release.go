@@ -1392,7 +1392,7 @@ func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string
 
 	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", m.Settings))
 
-	path, err := cpo.LocateChart(name, m.Settings)
+	path, err := m.LocateChart(cpo, name)
 	if err != nil {
 		diags.AddError("Error locating chart", fmt.Sprintf("Unable to locate chart %s: %s", name, err))
 		return nil, "", diags
@@ -2334,7 +2334,7 @@ func resourceReleaseValidate(ctx context.Context, model *HelmReleaseModel, meta 
 }
 
 func lintChart(m *Meta, name string, cpo *action.ChartPathOptions, values map[string]interface{}) error {
-	path, err := cpo.LocateChart(name, m.Settings)
+	path, err := m.LocateChart(cpo, name)
 	if err != nil {
 		return err
 	}

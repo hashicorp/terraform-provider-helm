@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: Fix Windows apply failure when multiple releases reference the same OCI chart/version in a single run (#1623)
+```
