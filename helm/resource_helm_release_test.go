@@ -2199,7 +2199,7 @@ func testAccHelmReleaseConfigWithTimeouts(resource, ns, name, version string) st
 	`, resource, name, ns, testRepositoryURL, version)
 }
 
-func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
+func setupOCIRegistry(t *testing.T, usepassword bool) (string, string, func()) {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
 		t.Skip("Starting the OCI registry requires docker to be installed in the PATH")
@@ -2236,7 +2236,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	t.Log(string(out))
 	if err != nil {
 		t.Errorf("Failed to start OCI registry: %v", err)
-		return "", nil
+		return "", "", nil
 	}
 	// wait a few seconds for the server to start
 	t.Log("Waiting for registry to start...")
@@ -2248,7 +2248,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	t.Log(string(out))
 	if err != nil {
 		t.Errorf("Failed to get port for OCI registry: %v", err)
-		return "", nil
+		return "", "", nil
 	}
 
 	portOutput := strings.Split(string(out), "\n")[0]
@@ -2264,7 +2264,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	t.Log(string(out))
 	if err != nil {
 		t.Errorf("Failed to package chart: %v", err)
-		return "", nil
+		return "", "", nil
 	}
 
 	if usepassword {
@@ -2278,7 +2278,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 		t.Log(string(out))
 		if err != nil {
 			t.Errorf("Failed to login to OCI registry: %v", err)
-			return "", nil
+			return "", "", nil
 		}
 	}
 
@@ -2291,10 +2291,10 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	t.Log(string(out))
 	if err != nil {
 		t.Errorf("Failed to push chart: %v", err)
-		return "", nil
+		return "", "", nil
 	}
 
-	return ociRegistryURL, func() {
+	return ociRegistryURL, registryContainerName, func() {
 		t.Log("stopping OCI registry")
 		cmd := exec.Command(dockerPath, "rm",
 			"--force", registryContainerName)
@@ -2306,12 +2306,32 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	}
 }
 
+// rotateOCIRegistryCredentials replaces the htpasswd file inside a running
+// OCI registry container with a new fixture. The distribution registry reads
+// htpasswd per request, so no container restart is needed.
+func rotateOCIRegistryCredentials(t *testing.T, containerName, htpasswdFixture string) {
+	dockerPath, err := exec.LookPath("docker")
+	if err != nil {
+		t.Fatalf("docker not found in PATH: %v", err)
+	}
+	wd, _ := os.Getwd()
+	src := path.Join(wd, htpasswdFixture)
+	cmd := exec.Command(dockerPath, "cp", src,
+		fmt.Sprintf("%s:/etc/docker/registry/auth.htpasswd", containerName))
+	out, err := cmd.CombinedOutput()
+	t.Log(string(out))
+	if err != nil {
+		t.Fatalf("Failed to rotate htpasswd: %v", err)
+	}
+	t.Logf("Rotated OCI registry credentials using %s", htpasswdFixture)
+}
+
 func TestAccResourceRelease_OCI_repository(t *testing.T) {
 	name := randName("oci")
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	ociRegistryURL, shutdown := setupOCIRegistry(t, false)
+	ociRegistryURL, _, shutdown := setupOCIRegistry(t, false)
 	defer shutdown()
 
 	resource.Test(t, resource.TestCase{
@@ -2361,7 +2381,7 @@ func TestAccResourceRelease_OCI_registry_login(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	ociRegistryURL, shutdown := setupOCIRegistry(t, false)
+	ociRegistryURL, _, shutdown := setupOCIRegistry(t, false)
 	defer shutdown()
 
 	resource.Test(t, resource.TestCase{
@@ -2411,7 +2431,7 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 	namespace := createRandomNamespace(t)
 	defer deleteNamespace(t, namespace)
 
-	ociRegistryURL, shutdown := setupOCIRegistry(t, true)
+	ociRegistryURL, _, shutdown := setupOCIRegistry(t, true)
 	defer shutdown()
 
 	resource.Test(t, resource.TestCase{
@@ -2436,6 +2456,72 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 			},
 		},
 	})
+}
+
+// TestAccResourceRelease_OCI_login_rotated_credentials reproduces the
+// regression from issues #1645 and #1660: when a helm_release is updated
+// after its repository credentials change (e.g. a rotated short-lived token
+// from AWS Public ECR or Azure ACR), the Update path must send the new
+// credentials from the plan rather than the stale ones from state.
+func TestAccResourceRelease_OCI_login_rotated_credentials(t *testing.T) {
+	name := randName("oci")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	ociRegistryURL, containerName, shutdown := setupOCIRegistry(t, true)
+	defer shutdown()
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfig_OCI_login_with_set(
+					testResourceName, namespace, name, ociRegistryURL, "1.2.3",
+					"hashicorp", "terraform", 1),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+				),
+			},
+			{
+				PreConfig: func() {
+					rotateOCIRegistryCredentials(t, containerName, "testdata/oci_registry/auth2.htpasswd")
+				},
+				Config: testAccHelmReleaseConfig_OCI_login_with_set(
+					testResourceName, namespace, name, ociRegistryURL, "1.2.3",
+					"hashicorp2", "terraform2", 2),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "set.0.name", "replicaCount"),
+					resource.TestCheckResourceAttr("helm_release.test", "set.0.value", "2"),
+				),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfig_OCI_login_with_set(resource, ns, name, repo, version, username, password string, replicaCount int) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+
+			repository_username = %q
+			repository_password = %q
+
+			set = [
+				{
+					name  = "replicaCount"
+					value = %d
+				}
+			]
+		}
+	`, resource, name, ns, repo, version, username, password, replicaCount)
 }
 
 func TestAccResourceRelease_recomputeMetadata(t *testing.T) {
