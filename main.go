@@ -10,7 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-provider-helm/helm"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // Example version string that can be overwritten by a release process
@@ -23,6 +23,8 @@ func main() {
 
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(klogFlags)
+	_ = klogFlags.Set("legacy_stderr_threshold_behavior", "false")
+	_ = klogFlags.Set("stderrthreshold", "INFO")
 	err := klogFlags.Set("logtostderr", "false")
 	if err != nil {
 		panic(err)
