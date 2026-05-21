@@ -968,6 +968,9 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 			return
 		}
 
+		// Save state to prevent orphaning the release from Terraform tracking
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+
 		resp.Diagnostics.Append(diag.NewWarningDiagnostic("Helm release created with warnings", fmt.Sprintf("Helm release %q was created but has a failed status. Use the `helm` command to investigate the error, correct it, then run Terraform again.", client.ReleaseName)))
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic("Helm release error", err.Error()))
 
@@ -1015,17 +1018,18 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
+	logID := fmt.Sprintf("[resourceReleaseRead: %s]", state.Name.ValueString())
+
 	exists, diags := resourceReleaseExists(ctx, state.Name.ValueString(), state.Namespace.ValueString(), meta)
-	if !exists {
-		resp.State.RemoveResource(ctx)
-		return
-	}
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	logID := fmt.Sprintf("[resourceReleaseRead: %s]", state.Name.ValueString())
+	if !exists {
+		tflog.Info(ctx, fmt.Sprintf("%s Release not found in namespace %s, removing from Terraform state. If this is unexpected, the release may have been deleted outside of Terraform or may be in a state that cannot be detected.", logID, state.Namespace.ValueString()))
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	tflog.Debug(ctx, fmt.Sprintf("%s Started", logID))
 
 	c, err := meta.GetHelmConfiguration(ctx, state.Namespace.ValueString())
@@ -1193,13 +1197,60 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	name := plan.Name.ValueString()
-	release, err := client.Run(name, c, values)
-	if err != nil {
+	rel, err := client.Run(name, c, values)
+
+	// Handle upgrade failure - check if release exists and save state to prevent orphaning
+	if err != nil && rel == nil {
+		// Try to get the release to check if it exists in any state
+		existingRelease, getErr := getRelease(ctx, meta, actionConfig, name)
+		if getErr != nil {
+			tflog.Debug(ctx, fmt.Sprintf("%s Upgrade failed and could not retrieve release: %s", logID, getErr))
+			resp.Diagnostics.AddError("Error upgrading chart", fmt.Sprintf("Upgrade failed: %s", err))
+			return
+		}
+		// Release exists - save state with current release info to prevent state loss
+		if existingRelease != nil {
+			tflog.Debug(ctx, fmt.Sprintf("%s Upgrade failed but release exists with status %s, saving state", logID, existingRelease.Info.Status))
+			diags = setReleaseAttributes(ctx, &plan, resp.Identity, existingRelease, meta)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+			resp.Diagnostics.Append(diag.NewWarningDiagnostic("Helm release upgrade failed", fmt.Sprintf("Helm release %q upgrade failed but release exists with status %s. Use the `helm` command to investigate the error, correct it, then run Terraform again.", name, existingRelease.Info.Status)))
+			resp.Diagnostics.Append(diag.NewErrorDiagnostic("Helm release error", err.Error()))
+			return
+		}
 		resp.Diagnostics.AddError("Error upgrading chart", fmt.Sprintf("Upgrade failed: %s", err))
 		return
 	}
 
-	diags = setReleaseAttributes(ctx, &plan, resp.Identity, release, meta)
+	if err != nil && rel != nil {
+		// Upgrade failed but returned a release object - check if release exists and save state
+		exists, existsDiags := resourceReleaseExists(ctx, plan.Name.ValueString(), plan.Namespace.ValueString(), meta)
+		resp.Diagnostics.Append(existsDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if !exists {
+			resp.Diagnostics.AddError("upgrade failed", err.Error())
+			return
+		}
+
+		tflog.Debug(ctx, fmt.Sprintf("%s Upgrade failed but release exists with status %s, saving state", logID, rel.Info.Status))
+		diags = setReleaseAttributes(ctx, &plan, resp.Identity, rel, meta)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+		resp.Diagnostics.Append(diag.NewWarningDiagnostic("Helm release upgrade failed", fmt.Sprintf("Helm release %q upgrade failed but has status %s. Use the `helm` command to investigate the error, correct it, then run Terraform again.", name, rel.Info.Status)))
+		resp.Diagnostics.Append(diag.NewErrorDiagnostic("Helm release error", err.Error()))
+		return
+	}
+
+	diags = setReleaseAttributes(ctx, &plan, resp.Identity, rel, meta)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1823,15 +1874,17 @@ func (m *Meta) ExperimentEnabled(name string) bool {
 	return false
 }
 
-// c
+// resourceReleaseExists checks if a Helm release exists in any state (deployed, failed, pending-install, etc.)
+// This function uses action.List to comprehensively detect releases in all states, not just deployed ones.
 func resourceReleaseExists(ctx context.Context, name, namespace string, meta *Meta) (bool, diag.Diagnostics) {
 	logID := fmt.Sprintf("[resourceReleaseExists: %s]", name)
-	tflog.Debug(ctx, fmt.Sprintf("%s Start", logID))
+	tflog.Debug(ctx, fmt.Sprintf("%s Start - checking release existence in namespace %s", logID, namespace))
 
 	var diags diag.Diagnostics
 
 	c, err := meta.GetHelmConfiguration(ctx, namespace)
 	if err != nil {
+		tflog.Error(ctx, fmt.Sprintf("%s Failed to get Helm configuration: %s", logID, err))
 		diags.AddError(
 			"Error getting helm configuration",
 			fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err),
@@ -1839,22 +1892,32 @@ func resourceReleaseExists(ctx context.Context, name, namespace string, meta *Me
 		return false, diags
 	}
 
-	_, err = getRelease(ctx, meta, c, name)
+	// Use action.List to detect releases in ALL states (deployed, failed, pending-install, pending-upgrade, etc.)
+	// This is more comprehensive than action.Get which may not return releases in certain states
+	listAction := action.NewList(c)
+	listAction.All = true                 // Include releases in all states
+	listAction.AllNamespaces = false      // Only search in the specified namespace
+	listAction.StateMask = action.ListAll // Include all release states
 
-	tflog.Debug(ctx, fmt.Sprintf("%s Done", logID))
-
-	if err == nil {
-		return true, diags
-	}
-
-	if err == errReleaseNotFound {
+	releases, err := listAction.Run()
+	if err != nil {
+		tflog.Error(ctx, fmt.Sprintf("%s Failed to list releases: %s", logID, err))
+		diags.AddError(
+			"Error listing releases",
+			fmt.Sprintf("Error listing releases in namespace %s: %s", namespace, err),
+		)
 		return false, diags
 	}
 
-	diags.AddError(
-		"Error checking release existence",
-		fmt.Sprintf("Error checking release %s in namespace %s: %s", name, namespace, err),
-	)
+	// Search for the release by name
+	for _, rel := range releases {
+		if rel.Name == name {
+			tflog.Debug(ctx, fmt.Sprintf("%s Found release with status: %s, revision: %d", logID, rel.Info.Status, rel.Version))
+			return true, diags
+		}
+	}
+
+	tflog.Debug(ctx, fmt.Sprintf("%s Release not found in namespace %s", logID, namespace))
 	return false, diags
 }
 
