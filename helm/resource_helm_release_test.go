@@ -2312,7 +2312,11 @@ func TestAccResourceRelease_OCI_repository(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	ociRegistryURL, shutdown := setupOCIRegistry(t, false)
-	defer shutdown()
+	defer func() {
+		if shutdown != nil {
+			shutdown()
+		}
+	}()
 
 	resource.Test(t, resource.TestCase{
 		//PreCheck: func() {
@@ -2362,7 +2366,11 @@ func TestAccResourceRelease_OCI_registry_login(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	ociRegistryURL, shutdown := setupOCIRegistry(t, false)
-	defer shutdown()
+	defer func() {
+		if shutdown != nil {
+			shutdown()
+		}
+	}()
 
 	resource.Test(t, resource.TestCase{
 		//PreCheck: func() {
@@ -2412,7 +2420,11 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 	defer deleteNamespace(t, namespace)
 
 	ociRegistryURL, shutdown := setupOCIRegistry(t, true)
-	defer shutdown()
+	defer func() {
+		if shutdown != nil {
+			shutdown()
+		}
+	}()
 
 	resource.Test(t, resource.TestCase{
 		//PreCheck: func() {
