@@ -2950,6 +2950,55 @@ provider "helm" {
 	})
 }
 
+func TestAccResourceRelease_manifestSecretDataMutation(t *testing.T) {
+	name := randName("secretdiff")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	provider := `
+provider "helm" {
+  experiments = { manifest = true }
+}
+`
+	secretKey := "cloakedData.cloaked"
+	secretValue := "initial-secret"
+	config := provider + testAccHelmReleaseConfigSensitiveValue(
+		testResourceName, namespace, name, "test-chart", "1.2.3", secretKey, secretValue,
+	)
+	secretName := fmt.Sprintf("%s-test-chart", name)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", name),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.namespace", namespace),
+					checkSecretResourceDataStripped("helm_release.test", namespace, secretName),
+					func(state *terraform.State) error {
+						t.Logf("fetching live JSON resources for %s/%s", namespace, name)
+						r := getReleaseJSONResourcesPF(t, namespace, name)
+						return checkResourceAttrMap("helm_release.test", "resources", r)(state)
+					},
+				),
+			},
+			{
+				PreConfig: patchSecretDataPF(t, namespace, secretName, "server.secretkey", "rotated-by-controller"),
+				Config:    config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkSecretResourceDataStripped("helm_release.test", namespace, secretName),
+					func(state *terraform.State) error {
+						t.Logf("fetching live JSON resources for %s/%s", namespace, name)
+						r := getReleaseJSONResourcesPF(t, namespace, name)
+						return checkResourceAttrMap("helm_release.test", "resources", r)(state)
+					},
+				),
+			},
+		},
+	})
+}
+
 func checkResourceAttrMap(resourceName, key string, expected map[string]string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -2970,6 +3019,53 @@ func checkResourceAttrMap(resourceName, key string, expected map[string]string) 
 			if got, ok := attrs[attrKey]; !ok || got != v {
 				return fmt.Errorf("expected %s=%q but got %q", attrKey, v, got)
 			}
+		}
+		return nil
+	}
+}
+
+func patchSecretDataPF(t *testing.T, namespace, name, key, value string) func() {
+	return func() {
+		kc := getTestKubeClientPF(t, namespace)
+		client, err := kc.Factory.KubernetesClientSet()
+		if err != nil {
+			t.Fatalf("failed to create kubernetes clientset: %v", err)
+		}
+		secret, err := client.CoreV1().Secrets(namespace).Get(context.Background(), name, v1.GetOptions{})
+		if err != nil {
+			t.Fatalf("failed to get secret: %v", err)
+		}
+		if secret.Data == nil {
+			secret.Data = map[string][]byte{}
+		}
+		secret.Data[key] = []byte(value)
+		if _, err := client.CoreV1().Secrets(namespace).Update(context.Background(), secret, v1.UpdateOptions{}); err != nil {
+			t.Fatalf("failed to update secret: %v", err)
+		}
+	}
+}
+
+func checkSecretResourceDataStripped(resourceName, namespace, secretName string) resource.TestCheckFunc {
+	secretKey := fmt.Sprintf("resources.secret/v1/%s/%s", namespace, secretName)
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %s not found in state", resourceName)
+		}
+		val, ok := rs.Primary.Attributes[secretKey]
+		if !ok {
+			return fmt.Errorf("attribute %s not found in state", secretKey)
+		}
+
+		var secret map[string]any
+		if err := json.Unmarshal([]byte(val), &secret); err != nil {
+			return fmt.Errorf("failed to unmarshal secret JSON: %w", err)
+		}
+		if _, exists := secret["data"]; exists {
+			return fmt.Errorf("expected secret resource %s to not contain data field", secretKey)
+		}
+		if _, exists := secret["stringData"]; exists {
+			return fmt.Errorf("expected secret resource %s to not contain stringData field", secretKey)
 		}
 		return nil
 	}
