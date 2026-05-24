@@ -167,9 +167,8 @@ The following arguments are supported:
 * `repository_cache` - (Optional) The path to the file containing cached repository indexes. Defaults to `HELM_REPOSITORY_CACHE` env if it is set, otherwise uses the default path set by helm.
 * `helm_driver` - (Optional) "The backend storage driver. Valid values are: `configmap`, `secret`, `memory`, `sql`. Defaults to `secret`. Note: Regarding the sql driver, as of helm v3.2.0 SQL support exists only for the postgres dialect. The connection string can be configured by setting the `HELM_DRIVER_SQL_CONNECTION_STRING` environment variable e.g. `HELM_DRIVER_SQL_CONNECTION_STRING=postgres://username:password@host/dbname` more info [here](https://pkg.go.dev/github.com/lib/pq).
 * `burst_limit` - (Optional) The helm burst limit to use. Set this value higher if your cluster has many CRDs. Default: `100`
-* `qps` - (Optional) Queries per second used when communicating with the Kubernetes API. Can be used to avoid throttling.
 * `kubernetes` - Kubernetes configuration block.
-* `registries` - Private OCI registry configuration block. Can be specified multiple times.
+* `registry` - Private OCI registry configuration block. Can be specified multiple times.
 
 The `kubernetes` block supports:
 
@@ -187,12 +186,12 @@ The `kubernetes` block supports:
 * `config_context` - (Optional) Context to choose from the config file. Can be sourced from `KUBE_CTX`.
 * `proxy_url` - (Optional) URL to the proxy to be used for all API requests. URLs with "http", "https", and "socks5" schemes are supported. Can be sourced from `KUBE_PROXY_URL`.
 * `exec` - (Optional) Configuration block to use an [exec-based credential plugin](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins), e.g. call an external command to receive user credentials.
-* `api_version` - (Required) API version to use when decoding the ExecCredentials resource, e.g. `client.authentication.k8s.io/v1beta1`.
-* `command` - (Required) Command to execute.
-* `args` - (Optional) List of arguments to pass when executing the plugin.
-* `env` - (Optional) Map of environment variables to set when executing the plugin.
+  * `api_version` - (Required) API version to use when decoding the ExecCredentials resource, e.g. `client.authentication.k8s.io/v1beta1`.
+  * `command` - (Required) Command to execute.
+  * `args` - (Optional) List of arguments to pass when executing the plugin.
+  * `env` - (Optional) Map of environment variables to set when executing the plugin.
 
-The `registries` block has options:
+The `registry` block has options:
 
 * `url` - (Required) url to the registry in format `oci://host:port`
 * `username` - (Required) username to registry
@@ -203,11 +202,3 @@ The `registries` block has options:
 The provider takes an `experiments` block that allows you enable experimental features by setting them to `true`.
 
 * `manifest` - Enable storing of the rendered manifest for `helm_release` so the full diff of what is changing can been seen in the plan.
-
-```terraform
-provider "helm" {
-  experiments = {
-    manifest = true
-  }
-}
-```
