@@ -276,7 +276,14 @@ func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[s
 		fieldManager = filepath.Base(os.Args[0])
 	}
 
+	skipServerSideApply := false
+
 	rawResources, resDiags := mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
+		// If server-side apply is skipped, return the local object directly
+		if skipServerSideApply {
+			return i.Object, nil
+		}
+		// get server-side applied merged object
 		info := &diff.InfoObject{
 			LocalObj:        i.Object,
 			Info:            i,
@@ -287,7 +294,16 @@ func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[s
 			ForceConflicts:  true,
 			IOStreams:       ioStreams,
 		}
-		return info.Merged()
+		obj, err := info.Merged()
+		// Fall back to local object if server-side apply is forbidden
+		if err != nil {
+			if apierrors.IsForbidden(err) {
+				tflog.Warn(ctx, "API returned forbidden, falling back to local object", map[string]interface{}{"resource": fmt.Sprintf("%s/%s", i.Namespace, i.Name)})
+				skipServerSideApply = true
+				return i.Object, nil
+			}
+		}
+		return obj, err
 	})
 	diags.Append(resDiags...)
 	if resDiags.HasError() {
