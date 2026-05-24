@@ -135,16 +135,23 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		} else {
 			loader.Precedence = expandedPaths
 		}
+	}
 
-		// Check ConfigContext
-		if !kubernetesConfig.ConfigContext.IsNull() {
-			overrides.CurrentContext = kubernetesConfig.ConfigContext.ValueString()
+	// Context overrides apply regardless of whether an explicit config_path is set,
+	// so that users can switch context on the default kubeconfig without specifying a path.
+	if !kubernetesConfig.ConfigContext.IsNull() {
+		if v := kubernetesConfig.ConfigContext.ValueString(); v != "" {
+			overrides.CurrentContext = v
 		}
-		if !kubernetesConfig.ConfigContextAuthInfo.IsNull() {
-			overrides.Context.AuthInfo = kubernetesConfig.ConfigContextAuthInfo.ValueString()
+	}
+	if !kubernetesConfig.ConfigContextAuthInfo.IsNull() {
+		if v := kubernetesConfig.ConfigContextAuthInfo.ValueString(); v != "" {
+			overrides.Context.AuthInfo = v
 		}
-		if !kubernetesConfig.ConfigContextCluster.IsNull() {
-			overrides.Context.Cluster = kubernetesConfig.ConfigContextCluster.ValueString()
+	}
+	if !kubernetesConfig.ConfigContextCluster.IsNull() {
+		if v := kubernetesConfig.ConfigContextCluster.ValueString(); v != "" {
+			overrides.Context.Cluster = v
 		}
 	}
 
@@ -185,7 +192,9 @@ func (m *Meta) NewKubeConfig(ctx context.Context, namespace string) (*KubeConfig
 		overrides.AuthInfo.Token = kubernetesConfig.Token.ValueString()
 	}
 	if !kubernetesConfig.ProxyURL.IsNull() {
-		overrides.ClusterDefaults.ProxyURL = kubernetesConfig.ProxyURL.ValueString()
+		if v := kubernetesConfig.ProxyURL.ValueString(); v != "" {
+			overrides.ClusterInfo.ProxyURL = v
+		}
 	}
 
 	if kubernetesConfig.Exec != nil {
