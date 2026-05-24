@@ -2438,6 +2438,38 @@ func TestAccResourceRelease_OCI_login(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_OCI_login_wo(t *testing.T) {
+	name := randName("oci")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	ociRegistryURL, shutdown := setupOCIRegistry(t, true)
+	defer shutdown()
+
+	resource.Test(t, resource.TestCase{
+		//PreCheck: func() {
+		//testAccPreCheck(t)
+		//},
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfig_OCI_login_wo_multiple(testResourceName, namespace, name, ociRegistryURL, "1.2.3", "hashicorp", "terraform"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test1", "metadata.name", name+"1"),
+					resource.TestCheckResourceAttr("helm_release.test1", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test1", "metadata.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test1", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test2", "metadata.name", name+"2"),
+					resource.TestCheckResourceAttr("helm_release.test2", "metadata.namespace", namespace),
+					resource.TestCheckResourceAttr("helm_release.test2", "metadata.version", "1.2.3"),
+					resource.TestCheckResourceAttr("helm_release.test2", "status", release.StatusDeployed.String()),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceRelease_recomputeMetadata(t *testing.T) {
 	name := randName("basic")
 	namespace := createRandomNamespace(t)
@@ -2507,14 +2539,39 @@ func testAccHelmReleaseConfig_OCI_login_multiple(resource, ns, name, repo, versi
 		}
 		resource "helm_release" "%[1]s2" {
 			name       = "%[2]s2"
-		   namespace   = %[3]q
-		   repository  = %[4]q
-		   version     = %[5]q
-		   chart       = "test-chart"
+		  	namespace   = %[3]q
+		  	repository  = %[4]q
+		  	version     = %[5]q
+		  	chart       = "test-chart"
 
-		   repository_username = %[6]q
-		   repository_password = %[7]q
-	   }
+		  	repository_username = %[6]q
+		  	repository_password = %[7]q
+	   	}
+	`, resource, name, ns, repo, version, username, password)
+}
+
+func testAccHelmReleaseConfig_OCI_login_wo_multiple(resource, ns, name, repo, version, username, password string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" "%s1" {
+			name        = "%s1"
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+
+			repository_username    = %q
+			repository_password_wo = %q
+		}
+		resource "helm_release" "%[1]s2" {
+			name        = "%[2]s2"
+		  	namespace   = %[3]q
+		  	repository  = %[4]q
+		  	version     = %[5]q
+		  	chart       = "test-chart"
+
+		  	repository_username    = %[6]q
+		  	repository_password_wo = %[7]q
+	   	}
 	`, resource, name, ns, repo, version, username, password)
 }
 
