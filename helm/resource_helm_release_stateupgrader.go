@@ -155,6 +155,17 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 					}
 				}
 
+				normalizeKeyring := func(val tftypes.Value) tftypes.Value {
+					if val.IsNull() {
+						return tftypes.NewValue(tftypes.String, nil)
+					}
+					var str string
+					if err := val.As(&str); err == nil && str == "" {
+						return tftypes.NewValue(tftypes.String, nil)
+					}
+					return val
+				}
+
 				// Creating new type in FW
 				newType := tftypes.Object{
 					AttributeTypes: map[string]tftypes.Type{
@@ -293,7 +304,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 					"disable_webhooks":           oldState["disable_webhooks"],
 					"force_update":               oldState["force_update"],
 					"id":                         oldState["id"],
-					"keyring":                    oldState["keyring"],
+					"keyring":                    normalizeKeyring(oldState["keyring"]),
 					"lint":                       oldState["lint"],
 					"manifest":                   oldState["manifest"],
 					"max_history":                oldState["max_history"],
