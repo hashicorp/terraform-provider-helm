@@ -1,3 +1,9 @@
+## 3.2.0 (June 4, 2026)
+
+ENHANCEMENT:
+
+* Added linux/s390x build target for IBM Z platform [[GH-1800](https://github.com/hashicorp/terraform-provider-helm/issues/1800)]
+
 ## 3.1.2 (May 21, 2026)
 
 ENHANCEMENT:
