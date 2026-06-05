@@ -2234,33 +2234,21 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	if plan.UpgradeInstall.ValueBool() && config.Version.IsNull() {
 		tflog.Debug(ctx, fmt.Sprintf("%s upgrade_install is enabled and version attribute is empty", logID))
 
-		clusterAvailable := meta.isKubernetesConfigured(ctx)
-
-		var installedVersion string
-		if clusterAvailable {
-			var err error
-			installedVersion, err = getInstalledReleaseVersion(ctx, meta, actionConfig, name)
-			if err != nil {
-				// If the cluster is unreachable (e.g. being created in the same apply),
-				// fall back to using the chart version or marking as unknown.
-				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") ||
-					strings.Contains(err.Error(), "no configuration has been provided") {
-					tflog.Debug(ctx, fmt.Sprintf("%s cluster unreachable during plan, cannot determine installed version", logID))
-					clusterAvailable = false
+		installedVersion, err := getInstalledReleaseVersion(ctx, meta, actionConfig, name)
+		if err != nil {
+			if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
+				// Cluster is not reachable during plan — this is expected when the
+				// cluster is being created in the same Terraform configuration.
+				// Fall back to chart version or mark as unknown for apply-time resolution.
+				tflog.Debug(ctx, fmt.Sprintf("%s cluster unreachable during plan, falling back to chart version", logID))
+				if len(chart.Metadata.Version) > 0 {
+					plan.Version = types.StringValue(chart.Metadata.Version)
 				} else {
-					resp.Diagnostics.AddError("Failed to check installed release version", err.Error())
-					return
+					plan.Version = types.StringUnknown()
 				}
-			}
-		}
-
-		if !clusterAvailable {
-			// Use the chart version if available, otherwise mark as unknown
-			tflog.Debug(ctx, fmt.Sprintf("%s cluster unreachable during plan, deferring version resolution to apply", logID))
-			if len(chart.Metadata.Version) > 0 {
-				plan.Version = types.StringValue(chart.Metadata.Version)
 			} else {
-				plan.Version = types.StringUnknown()
+				resp.Diagnostics.AddError("Failed to check installed release version", err.Error())
+				return
 			}
 		} else if installedVersion != "" {
 			tflog.Debug(ctx, fmt.Sprintf("%s setting version to installed version %s", logID, installedVersion))
