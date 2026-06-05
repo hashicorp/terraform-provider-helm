@@ -2234,13 +2234,35 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	if plan.UpgradeInstall.ValueBool() && config.Version.IsNull() {
 		tflog.Debug(ctx, fmt.Sprintf("%s upgrade_install is enabled and version attribute is empty", logID))
 
-		installedVersion, err := getInstalledReleaseVersion(ctx, meta, actionConfig, name)
-		if err != nil {
-			resp.Diagnostics.AddError("Failed to check installed release version", err.Error())
-			return
+		clusterAvailable := meta.isKubernetesConfigured(ctx)
+
+		var installedVersion string
+		if clusterAvailable {
+			var err error
+			installedVersion, err = getInstalledReleaseVersion(ctx, meta, actionConfig, name)
+			if err != nil {
+				// If the cluster is unreachable (e.g. being created in the same apply),
+				// fall back to using the chart version or marking as unknown.
+				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") ||
+					strings.Contains(err.Error(), "no configuration has been provided") {
+					tflog.Debug(ctx, fmt.Sprintf("%s cluster unreachable during plan, cannot determine installed version", logID))
+					clusterAvailable = false
+				} else {
+					resp.Diagnostics.AddError("Failed to check installed release version", err.Error())
+					return
+				}
+			}
 		}
 
-		if installedVersion != "" {
+		if !clusterAvailable {
+			// Use the chart version if available, otherwise mark as unknown
+			tflog.Debug(ctx, fmt.Sprintf("%s cluster unreachable during plan, deferring version resolution to apply", logID))
+			if len(chart.Metadata.Version) > 0 {
+				plan.Version = types.StringValue(chart.Metadata.Version)
+			} else {
+				plan.Version = types.StringUnknown()
+			}
+		} else if installedVersion != "" {
 			tflog.Debug(ctx, fmt.Sprintf("%s setting version to installed version %s", logID, installedVersion))
 			plan.Version = types.StringValue(installedVersion)
 		} else if len(chart.Metadata.Version) > 0 {
@@ -2263,7 +2285,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			} else {
 				resp.Diagnostics.AddError(
 					"Planned version is different from configured version",
-					fmt.Sprintf(`The version in the configuration is %q but the planned version is %q. 
+					fmt.Sprintf(`The version in the configuration is %q but the planned version is %q.
 You should update the version in your configuration to %[2]q, or remove the version attribute from your configuration.`, config.Version.ValueString(), plan.Version.ValueString()))
 				return
 			}

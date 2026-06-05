@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/cli"
@@ -711,6 +712,31 @@ func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *re
 	meta.loggedInOCIRegistries[u.Host] = struct{}{}
 	tflog.Info(ctx, fmt.Sprintf("Logged into OCI registry %q", u.Host))
 	return nil
+}
+
+// isKubernetesConfigured checks whether the provider has a valid Kubernetes
+// configuration that can be used to connect to a cluster.
+func (m *Meta) isKubernetesConfigured(ctx context.Context) bool {
+	if m == nil || m.Data == nil || m.Data.Kubernetes.IsNull() || m.Data.Kubernetes.IsUnknown() {
+		return false
+	}
+
+	var kubernetesConfig KubernetesConfigModel
+	diags := m.Data.Kubernetes.As(ctx, &kubernetesConfig, basetypes.ObjectAsOptions{})
+	if diags.HasError() {
+		return false
+	}
+
+	// A cluster is considered configured if at least one of the following is set:
+	hasHost := !kubernetesConfig.Host.IsNull() && !kubernetesConfig.Host.IsUnknown() && kubernetesConfig.Host.ValueString() != ""
+	hasConfigPath := !kubernetesConfig.ConfigPath.IsNull() && !kubernetesConfig.ConfigPath.IsUnknown() && kubernetesConfig.ConfigPath.ValueString() != ""
+	hasConfigPaths := !kubernetesConfig.ConfigPaths.IsNull() && !kubernetesConfig.ConfigPaths.IsUnknown() && len(kubernetesConfig.ConfigPaths.Elements()) > 0
+
+	configured := hasHost || hasConfigPath || hasConfigPaths
+	if !configured {
+		tflog.Debug(ctx, "Kubernetes configuration is not available (host, config_path, and config_paths are all empty or unknown)")
+	}
+	return configured
 }
 
 // GetHelmConfiguration retrieves the Helm configuration for a given namespace
