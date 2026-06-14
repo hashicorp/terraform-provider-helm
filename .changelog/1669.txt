@@ -1,0 +1,7 @@
+```release-note:bug
+`resource/helm_release`: Fix releases being unexpectedly removed from Terraform state. `resourceReleaseExists` now uses `action.List` with `StateMask=ListAll` so releases in any state (failed, pending-install, pending-upgrade, etc.) are detected instead of being treated as missing and dropped from state during refresh.
+```
+
+```release-note:bug
+`resource/helm_release`: Persist Terraform state when a release create or upgrade fails but the release still exists on the cluster, preventing the resource from being orphaned from Terraform tracking.
+```
