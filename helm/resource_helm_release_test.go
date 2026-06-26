@@ -2273,7 +2273,8 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 		cmd = exec.Command(helmPath, "registry", "login",
 			fmt.Sprintf("localhost:%s", ociRegistryPort),
 			"--username", "hashicorp",
-			"--password", "terraform")
+			"--password", "terraform",
+			"--plain-http")
 		out, err = cmd.CombinedOutput()
 		t.Log(string(out))
 		if err != nil {
@@ -2286,7 +2287,8 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	t.Log("pushing test-chart to OCI registry")
 	cmd = exec.Command(helmPath, "push",
 		"test-chart-1.2.3.tgz",
-		ociRegistryURL)
+		ociRegistryURL,
+		"--plain-http")
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	if err != nil {
