@@ -1,0 +1,9 @@
+Upgrade `helm.sh/helm/v3` from `3.18.5` to `3.20.2` to address security vulnerability SECVULN-42899
+```
+
+```release-note:dependency
+Upgrade Kubernetes dependencies (`k8s.io/api`, `k8s.io/apimachinery`, `k8s.io/cli-runtime`, `k8s.io/client-go`, `k8s.io/kubectl`) from `0.33.3` to `0.35.1`
+```
+
+```release-note:dependency
+Update `sigs.k8s.io/structured-merge-diff` from `v4` to `v6` to support upgraded Kubernetes dependencies
