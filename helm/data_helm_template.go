@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright IBM Corp. 2017, 2026
 // SPDX-License-Identifier: MPL-2.0
 
 package helm
@@ -916,7 +916,7 @@ func getChartModel(ctx context.Context, model *HelmTemplateModel, meta *Meta, na
 
 	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", meta.Settings))
 
-	path, err := cpo.LocateChart(name, meta.Settings)
+	path, err := meta.LocateChart(cpo, name)
 	if err != nil {
 		diags.AddError("Error locating chart", fmt.Sprintf("Unable to locate chart %s: %s", name, err))
 		return nil, "", diags
