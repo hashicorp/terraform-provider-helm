@@ -605,7 +605,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		},
 		loggedInOCIRegistries: make(map[string]struct{}),
 	}
-	registryClient, err := registry.NewClient()
+	registryClient, err := registry.NewClient(registry.ClientOptCredentialsFile(settings.RegistryConfig))
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Registry client initialization failed",
