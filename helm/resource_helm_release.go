@@ -98,6 +98,7 @@ type HelmReleaseModel struct {
 	RepositoryCertFile       types.String     `tfsdk:"repository_cert_file"`
 	RepositoryKeyFile        types.String     `tfsdk:"repository_key_file"`
 	RepositoryPassword       types.String     `tfsdk:"repository_password"`
+	RepositoryPasswordWO     types.String     `tfsdk:"repository_password_wo"`
 	RepositoryUsername       types.String     `tfsdk:"repository_username"`
 	ResetValues              types.Bool       `tfsdk:"reset_values"`
 	ReuseValues              types.Bool       `tfsdk:"reuse_values"`
@@ -476,6 +477,11 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Sensitive:   true,
 				Description: "Password for HTTP basic authentication",
 			},
+			"repository_password_wo": schema.StringAttribute{
+				Optional:    true,
+				WriteOnly:   true,
+				Description: "Password for HTTP basic authentication (write-only, not stored in plan/state)",
+			},
 			"repository_username": schema.StringAttribute{
 				Optional:    true,
 				Description: "Username for HTTP basic authentication",
@@ -792,7 +798,14 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+
+	repoPassword := state.RepositoryPassword.ValueString()
+	if repoPassword == "" && !config.RepositoryPasswordWO.IsNull() {
+		repoPassword = config.RepositoryPasswordWO.ValueString()
+		state.RepositoryPassword = types.StringValue(repoPassword)
+	}
+
+	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), repoPassword)
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1106,7 +1119,14 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
-	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+
+	repoPassword := plan.RepositoryPassword.ValueString()
+	if repoPassword == "" && !config.RepositoryPasswordWO.IsNull() {
+		repoPassword = config.RepositoryPasswordWO.ValueString()
+		plan.RepositoryPassword = types.StringValue(repoPassword)
+	}
+
+	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, plan.Repository.ValueString(), plan.Chart.ValueString(), plan.RepositoryUsername.ValueString(), repoPassword)
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1334,7 +1354,11 @@ func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPath
 		cpo.Version = version
 	}
 	cpo.Username = model.RepositoryUsername.ValueString()
-	cpo.Password = model.RepositoryPassword.ValueString()
+	password := model.RepositoryPassword.ValueString()
+	if password == "" && !model.RepositoryPasswordWO.IsNull() {
+		password = model.RepositoryPasswordWO.ValueString()
+	}
+	cpo.Password = password
 	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
 
 	return cpo, chartName, diags

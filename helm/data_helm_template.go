@@ -84,6 +84,7 @@ type HelmTemplateModel struct {
 	RepositoryCertFile       types.String     `tfsdk:"repository_cert_file"`
 	RepositoryKeyFile        types.String     `tfsdk:"repository_key_file"`
 	RepositoryPassword       types.String     `tfsdk:"repository_password"`
+	RepositoryPasswordWO     types.String     `tfsdk:"repository_password_wo"`
 	RepositoryUsername       types.String     `tfsdk:"repository_username"`
 	ResetValues              types.Bool       `tfsdk:"reset_values"`
 	ReuseValues              types.Bool       `tfsdk:"reuse_values"`
@@ -274,6 +275,10 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Optional:    true,
 				Sensitive:   true,
 				Description: "Password for HTTP basic authentication",
+			},
+			"repository_password_wo": schema.StringAttribute{
+				Optional:    true,
+				Description: "Password for HTTP basic authentication (write-only alternative, not stored in plan/state)",
 			},
 			"repository_username": schema.StringAttribute{
 				Optional:    true,
@@ -543,7 +548,13 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		)
 		return
 	}
-	diags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+	repoPassword := state.RepositoryPassword.ValueString()
+	if repoPassword == "" && !state.RepositoryPasswordWO.IsNull() {
+		repoPassword = state.RepositoryPasswordWO.ValueString()
+		state.RepositoryPassword = types.StringValue(repoPassword)
+	}
+
+	diags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), repoPassword)
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -897,7 +908,11 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 		cpo.Version = version
 	}
 	cpo.Username = model.RepositoryUsername.ValueString()
-	cpo.Password = model.RepositoryPassword.ValueString()
+	password := model.RepositoryPassword.ValueString()
+	if password == "" && !model.RepositoryPasswordWO.IsNull() {
+		password = model.RepositoryPasswordWO.ValueString()
+	}
+	cpo.Password = password
 	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
 
 	return cpo, chartName, diags
