@@ -5,17 +5,22 @@ package helm
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	pathpkg "path"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"helm.sh/helm/v3/pkg/ignore"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -70,6 +75,7 @@ type HelmReleaseIdentityModel struct {
 type HelmReleaseModel struct {
 	Atomic                   types.Bool       `tfsdk:"atomic"`
 	Chart                    types.String     `tfsdk:"chart"`
+	ChartHash                types.String     `tfsdk:"_chart_hash"`
 	CleanupOnFail            types.Bool       `tfsdk:"cleanup_on_fail"`
 	CreateNamespace          types.Bool       `tfsdk:"create_namespace"`
 	DependencyUpdate         types.Bool       `tfsdk:"dependency_update"`
@@ -281,6 +287,10 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			"chart": schema.StringAttribute{
 				Required:    true,
 				Description: "Chart name to be installed. A path may be used",
+			},
+			"_chart_hash": schema.StringAttribute{
+				Computed:    true,
+				Description: "Internal hash of local chart directory content for detecting changes",
 			},
 			"cleanup_on_fail": schema.BoolAttribute{
 				Optional:    true,
@@ -773,6 +783,11 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	attrTimeout := time.Duration(state.Timeout.ValueInt64()) * time.Second
+	if attrTimeout > createTimeout {
+		createTimeout = attrTimeout
+	}
+
 	var config HelmReleaseModel
 	diags = req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -1410,6 +1425,84 @@ func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string
 	return c, path, diags
 }
 
+func isLocalChartDirectory(chart string) bool {
+	info, err := os.Stat(chart)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func computeLocalChartHash(chartPath string) (string, error) {
+	info, err := os.Stat(chartPath)
+	if err != nil {
+		return "", fmt.Errorf("cannot stat chart path %s: %w", chartPath, err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("chart path %s is not a directory", chartPath)
+	}
+
+	rules := ignore.Empty()
+	ifile := filepath.Join(chartPath, ignore.HelmIgnore)
+	if _, err := os.Stat(ifile); err == nil {
+		r, err := ignore.ParseFile(ifile)
+		if err != nil {
+			return "", fmt.Errorf("error parsing .helmignore: %w", err)
+		}
+		rules = r
+	}
+
+	hasher := sha256.New()
+
+	err = filepath.Walk(chartPath, func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(chartPath, path)
+		if err != nil {
+			return err
+		}
+		if relPath == "." {
+			return nil
+		}
+		if relPath == ignore.HelmIgnore {
+			return nil
+		}
+
+		if rules.Ignore(relPath, fi) {
+			if fi.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		if fi.IsDir() {
+			hasher.Write([]byte(relPath))
+			hasher.Write([]byte{0})
+			return nil
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		hasher.Write([]byte(relPath))
+		hasher.Write([]byte{0})
+		if _, err := io.Copy(hasher, f); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("error walking chart directory %s: %w", chartPath, err)
+	}
+
+	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
 func getWriteOnlyValues(ctx context.Context, model *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
 	base := map[string]interface{}{}
 	diags := diag.Diagnostics{}
@@ -2024,6 +2117,20 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	}
 	tflog.Debug(ctx, fmt.Sprintf("%s Release validated", logID))
 
+	if isLocalChartDirectory(plan.Chart.ValueString()) {
+		hash, err := computeLocalChartHash(path)
+		if err != nil {
+			resp.Diagnostics.AddError("Error computing local chart hash", err.Error())
+			return
+		}
+		plan.ChartHash = types.StringValue(hash)
+
+		if state != nil && !state.ChartHash.IsNull() && state.ChartHash.ValueString() != hash {
+			tflog.Debug(ctx, fmt.Sprintf("%s Local chart content changed, triggering diff", logID))
+			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+		}
+	}
+
 	if meta.ExperimentEnabled("manifest") {
 		// Check if all necessary values are known
 		if valuesUnknown(plan) {
@@ -2307,6 +2414,9 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 		return true
 	}
 	if !plan.SetList.Equal(state.SetList) {
+		return true
+	}
+	if !plan.ChartHash.Equal(state.ChartHash) {
 		return true
 	}
 	return false
