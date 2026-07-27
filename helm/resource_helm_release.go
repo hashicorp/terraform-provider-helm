@@ -112,7 +112,7 @@ type HelmReleaseModel struct {
 	Timeout                  types.Int64      `tfsdk:"timeout"`
 	Timeouts                 timeouts.Value   `tfsdk:"timeouts"`
 	UpgradeInstall           types.Bool       `tfsdk:"upgrade_install"`
-	Values                   types.List       `tfsdk:"values"`
+	Values                   types.Dynamic    `tfsdk:"values"`
 	Verify                   types.Bool       `tfsdk:"verify"`
 	Version                  types.String     `tfsdk:"version"`
 	Wait                     types.Bool       `tfsdk:"wait"`
@@ -525,10 +525,9 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Update: true,
 				Delete: true,
 			}),
-			"values": schema.ListAttribute{
+			"values": schema.DynamicAttribute{
 				Optional:    true,
-				Description: "List of values in raw YAML format to pass to helm",
-				ElementType: types.StringType,
+				Description: "List of values in raw YAML format or an object of structured values to pass to helm",
 			},
 			"verify": schema.BoolAttribute{
 				Optional:    true,
@@ -1436,29 +1435,47 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 	var diags diag.Diagnostics
 
 	// Processing "values" attribute
-	for _, raw := range model.Values.Elements() {
-		if raw.IsNull() {
-			continue
-		}
+	if !model.Values.IsNull() && !model.Values.IsUnknown() {
+		uv := model.Values.UnderlyingValue()
+		if uv != nil {
+			switch v := uv.(type) {
+			case types.List:
+				for _, raw := range v.Elements() {
+					if raw.IsNull() {
+						continue
+					}
 
-		value, ok := raw.(types.String)
-		if !ok {
-			diags.AddError("Type Error", fmt.Sprintf("Expected types.String, got %T", raw))
-			return nil, diags
-		}
+					value, ok := raw.(types.String)
+					if !ok {
+						diags.AddError("Type Error", fmt.Sprintf("Expected types.String, got %T", raw))
+						return nil, diags
+					}
 
-		values := value.ValueString()
-		if values == "" {
-			continue
-		}
+					values := value.ValueString()
+					if values == "" {
+						continue
+					}
 
-		currentMap := map[string]interface{}{}
-		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
-			diags.AddError("Error unmarshaling values", fmt.Sprintf("---> %v %s", err, values))
-			return nil, diags
-		}
+					currentMap := map[string]interface{}{}
+					if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+						diags.AddError("Error unmarshaling values", fmt.Sprintf("---> %v %s", err, values))
+						return nil, diags
+					}
 
-		base = mergeMaps(base, currentMap)
+					base = mergeMaps(base, currentMap)
+				}
+			case types.Object:
+				valueMap, mapDiags := dynamicObjectToMap(ctx, v)
+				diags.Append(mapDiags...)
+				if diags.HasError() {
+					return nil, diags
+				}
+				base = mergeMaps(base, valueMap)
+			default:
+				diags.AddError("Type Error", fmt.Sprintf("Expected types.Object or types.List, got %T", uv))
+				return nil, diags
+			}
+		}
 	}
 
 	// Processing "set" attribute
@@ -1608,6 +1625,78 @@ func logValues(ctx context.Context, values map[string]interface{}, state *HelmRe
 	tflog.Debug(ctx, fmt.Sprintf("---[ values.yaml ]-----------------------------------\n%s\n", string(y)))
 
 	return diags
+}
+
+func dynamicObjectToMap(ctx context.Context, obj types.Object) (map[string]interface{}, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+	result := map[string]interface{}{}
+
+	attrs := obj.Attributes()
+	attrTypes := obj.AttributeTypes(ctx)
+
+	for name := range attrTypes {
+		val, valDiags := attrValueToNative(ctx, attrs[name])
+		diags.Append(valDiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+		result[name] = val
+	}
+
+	return result, diags
+}
+
+func attrValueToNative(ctx context.Context, val attr.Value) (interface{}, diag.Diagnostics) {
+	if val == nil || val.IsNull() || val.IsUnknown() {
+		return nil, nil
+	}
+
+	switch v := val.(type) {
+	case types.String:
+		return v.ValueString(), nil
+	case types.Int64:
+		return v.ValueInt64(), nil
+	case types.Float64:
+		return v.ValueFloat64(), nil
+	case types.Bool:
+		return v.ValueBool(), nil
+	case types.List:
+		var list []interface{}
+		for _, elem := range v.Elements() {
+			item, d := attrValueToNative(ctx, elem)
+			if d.HasError() {
+				return nil, d
+			}
+			list = append(list, item)
+		}
+		return list, nil
+	case types.Set:
+		var set []interface{}
+		for _, elem := range v.Elements() {
+			item, d := attrValueToNative(ctx, elem)
+			if d.HasError() {
+				return nil, d
+			}
+			set = append(set, item)
+		}
+		return set, nil
+	case types.Map:
+		m := map[string]interface{}{}
+		for k, elem := range v.Elements() {
+			item, d := attrValueToNative(ctx, elem)
+			if d.HasError() {
+				return nil, d
+			}
+			m[k] = item
+		}
+		return m, nil
+	case types.Object:
+		return dynamicObjectToMap(ctx, v)
+	default:
+		return nil, diag.Diagnostics{
+			diag.NewErrorDiagnostic("Type Error", fmt.Sprintf("Unexpected type: %T", val)),
+		}
+	}
 }
 
 func cloakSetValues(config map[string]interface{}, state *HelmReleaseModel) {
@@ -2465,7 +2554,7 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 			},
 		},
 	})
-	state.Values = types.ListNull(types.StringType)
+	state.Values = types.DynamicNull()
 
 	tflog.Debug(ctx, fmt.Sprintf("Setting final state: %+v", state))
 	diags = resp.State.Set(ctx, &state)
