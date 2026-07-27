@@ -398,7 +398,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 			"version": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed.",
+				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed. Supports semver range syntax (e.g., ^1.2.3, >= 1.0.0 < 2.0.0) for standard chart repositories and OCI registries.",
 			},
 			"wait": schema.BoolAttribute{
 				Optional:    true,
@@ -886,6 +886,15 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 	}
 
 	version := getVersionModel(model)
+
+	if registry.IsOCI(repository) && version != "" {
+		resolvedVersion, resolveDiags := resolveOCIVersionConstraint(meta, repository, model.Chart.ValueString(), version)
+		diags.Append(resolveDiags...)
+		if resolveDiags.HasError() {
+			return nil, "", diags
+		}
+		version = resolvedVersion
+	}
 
 	cpo.CaFile = model.RepositoryCaFile.ValueString()
 	cpo.CertFile = model.RepositoryCertFile.ValueString()

@@ -32,6 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
@@ -539,7 +540,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			"version": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed",
+				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed. Supports semver range syntax (e.g., ^1.2.3, >= 1.0.0 < 2.0.0) for standard chart repositories and OCI registries.",
 			},
 			"wait": schema.BoolAttribute{
 				Optional:    true,
@@ -1324,6 +1325,15 @@ func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPath
 
 	version := getVersion(model)
 
+	if registry.IsOCI(repository) && version != "" {
+		resolvedVersion, resolveDiags := resolveOCIVersionConstraint(meta, repository, model.Chart.ValueString(), version)
+		diags.Append(resolveDiags...)
+		if resolveDiags.HasError() {
+			return nil, "", diags
+		}
+		version = resolvedVersion
+	}
+
 	cpo.CaFile = model.RepositoryCaFile.ValueString()
 	cpo.CertFile = model.RepositoryCertFile.ValueString()
 	cpo.KeyFile = model.RepositoryKeyFile.ValueString()
@@ -1377,6 +1387,58 @@ func getVersion(model *HelmReleaseModel) string {
 		return ">0.0.0-0"
 	}
 	return strings.TrimSpace(version)
+}
+
+func resolveOCIVersionConstraint(meta *Meta, repository, chartName, version string) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if version == "" {
+		return version, diags
+	}
+
+	_, err := semver.StrictNewVersion(version)
+	if err == nil {
+		return version, diags
+	}
+
+	constraint, err := semver.NewConstraint(version)
+	if err != nil {
+		return version, diags
+	}
+
+	u, err := url.Parse(repository)
+	if err != nil {
+		diags.AddError("Invalid OCI Repository URL", fmt.Sprintf("Failed to parse OCI repository URL %s: %s", repository, err))
+		return "", diags
+	}
+	u.Path = pathpkg.Join(u.Path, chartName)
+	ref := strings.TrimPrefix(u.String(), "oci://")
+
+	tags, err := meta.RegistryClient.Tags(ref)
+	if err != nil {
+		diags.AddError("Error listing OCI registry tags", fmt.Sprintf("Unable to list tags for OCI reference %s: %s", ref, err))
+		return "", diags
+	}
+
+	var bestMatch *semver.Version
+	for _, tag := range tags {
+		v, err := semver.StrictNewVersion(tag)
+		if err != nil {
+			continue
+		}
+		if constraint.Check(v) {
+			if bestMatch == nil || v.GreaterThan(bestMatch) {
+				bestMatch = v
+			}
+		}
+	}
+
+	if bestMatch == nil {
+		diags.AddError("No matching chart version found", fmt.Sprintf("No chart version in repository %s satisfies constraint %q", repository, version))
+		return "", diags
+	}
+
+	return bestMatch.String(), diags
 }
 
 func isChartInstallable(ch *chart.Chart) error {
