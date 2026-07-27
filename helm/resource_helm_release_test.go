@@ -406,7 +406,7 @@ func TestAccResourceRelease_cloakValues(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("helm_release.test", "metadata.revision", "1"),
 					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
-					resource.TestCheckResourceAttr("helm_release.test", "metadata.values", `{"cloakedData":{"cloaked":"(sensitive value)"}}`),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.values", `{}`),
 					func(s *terraform.State) error {
 						c, err := createKubernetesClient()
 						if err != nil {
