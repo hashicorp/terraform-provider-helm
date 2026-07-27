@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
@@ -1419,68 +1421,172 @@ func TestUseChartVersion(t *testing.T) {
 // 	}
 // }
 
-// func TestCloakSetValues(t *testing.T) {
-// 	d := resourceRelease().Data(nil)
-// 	err := d.Set("set_sensitive", []interface{}{
-// 		map[string]interface{}{"name": "foo", "value": "42"},
-// 	})
-// 	if err != nil {
-// 		t.Fatalf("error setting values: %v", err)
-// 	}
+// setSensitiveState builds a HelmReleaseModel with SetSensitive populated from
+// the given list of {name, value} pairs, ready for use in unit tests.
+func setSensitiveState(entries []struct{ name, value string }) *HelmReleaseModel {
+	setSensitiveAttrTypes := map[string]attr.Type{
+		"name":  fwtypes.StringType,
+		"type":  fwtypes.StringType,
+		"value": fwtypes.StringType,
+	}
+	elems := make([]attr.Value, 0, len(entries))
+	for _, e := range entries {
+		obj, _ := fwtypes.ObjectValue(setSensitiveAttrTypes, map[string]attr.Value{
+			"name":  fwtypes.StringValue(e.name),
+			"type":  fwtypes.StringValue(""),
+			"value": fwtypes.StringValue(e.value),
+		})
+		elems = append(elems, obj)
+	}
+	list := fwtypes.ListValueMust(fwtypes.ObjectType{AttrTypes: setSensitiveAttrTypes}, elems)
+	return &HelmReleaseModel{SetSensitive: list}
+}
 
-// 	values := map[string]interface{}{
-// 		"foo": "foo",
-// 	}
+func TestCloakSetValues(t *testing.T) {
+	state := setSensitiveState([]struct{ name, value string }{
+		{"foo", "42"},
+	})
+	values := map[string]interface{}{
+		"foo": "foo",
+	}
+	cloakSetValues(values, state)
+	if values["foo"] != sensitiveContentValue {
+		t.Fatalf("expected %q, got %s", sensitiveContentValue, values["foo"])
+	}
+}
 
-// 	cloakSetValues(values, d)
-// 	if values["foo"] != sensitiveContentValue {
-// 		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, values["foo"])
-// 	}
-// }
+func TestCloakSetValuesNested(t *testing.T) {
+	state := setSensitiveState([]struct{ name, value string }{
+		{"foo.qux.bar", "42"},
+	})
+	qux := map[string]interface{}{
+		"bar": "bar",
+	}
+	values := map[string]interface{}{
+		"foo": map[string]interface{}{
+			"qux": qux,
+		},
+	}
+	cloakSetValues(values, state)
+	if qux["bar"] != sensitiveContentValue {
+		t.Fatalf("expected %q, got %s", sensitiveContentValue, qux["bar"])
+	}
+}
 
-// func TestCloakSetValuesNested(t *testing.T) {
-// 	d := resourceRelease().Data(nil)
-// 	err := d.Set("set_sensitive", []interface{}{
-// 		map[string]interface{}{"name": "foo.qux.bar", "value": "42"},
-// 	})
-// 	if err != nil {
-// 		t.Fatalf("error setting values: %v", err)
-// 	}
+func TestCloakSetValuesNotMatching(t *testing.T) {
+	state := setSensitiveState([]struct{ name, value string }{
+		{"foo.qux.bar", "42"},
+	})
+	values := map[string]interface{}{
+		"foo": "42",
+	}
+	cloakSetValues(values, state)
+	if values["foo"] != "42" {
+		t.Fatalf("expected %q to be unchanged, got %s", "42", values["foo"])
+	}
+}
 
-// 	qux := map[string]interface{}{
-// 		"bar": "bar",
-// 	}
+func TestDeepCloneMap(t *testing.T) {
+	original := map[string]interface{}{
+		"top": "value",
+		"nested": map[string]interface{}{
+			"inner": "original",
+		},
+	}
+	clone := deepCloneMap(original)
 
-// 	values := map[string]interface{}{
-// 		"foo": map[string]interface{}{
-// 			"qux": qux,
-// 		},
-// 	}
+	// Mutate the clone's nested map
+	clone["nested"].(map[string]interface{})["inner"] = "mutated"
+	clone["top"] = "changed"
 
-// 	cloakSetValues(values, d)
-// 	if qux["bar"] != sensitiveContentValue {
-// 		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, qux["bar"])
-// 	}
-// }
+	// Original must be untouched
+	if original["top"] != "value" {
+		t.Fatalf("deepCloneMap mutated original top-level key")
+	}
+	if original["nested"].(map[string]interface{})["inner"] != "original" {
+		t.Fatalf("deepCloneMap mutated original nested key")
+	}
+}
 
-// func TestCloakSetValuesNotMatching(t *testing.T) {
-// 	d := resourceRelease().Data(nil)
-// 	err := d.Set("set_sensitive", []interface{}{
-// 		map[string]interface{}{"name": "foo.qux.bar", "value": "42"},
-// 	})
-// 	if err != nil {
-// 		t.Fatalf("error setting values: %v", err)
-// 	}
+func TestExtractSensitiveValues(t *testing.T) {
+	state := setSensitiveState([]struct{ name, value string }{
+		{"db.password", "secret1"},
+		{"api.key", "secret2"},
+	})
+	got := extractSensitiveValues(state)
 
-// 	values := map[string]interface{}{
-// 		"foo": "42",
-// 	}
+	if len(got) != 2 {
+		t.Fatalf("expected 2 sensitive values, got %d", len(got))
+	}
+	for _, key := range []string{"db.password", "api.key"} {
+		if _, ok := got[key]; !ok {
+			t.Fatalf("expected key %q in sensitive values map", key)
+		}
+	}
+}
 
-// 	cloakSetValues(values, d)
-// 	if values["foo"] != "42" {
-// 		t.Fatalf("error cloak values, expected %q, got %s", "42", values["foo"])
-// 	}
-// }
+// metadataObjectWithValues builds a fwtypes.Object suitable for HelmReleaseModel.Metadata
+// with the given values and notes strings.
+func metadataObjectWithValues(values, notes string) fwtypes.Object {
+	attrTypes := metadataAttrTypes()
+	obj, _ := fwtypes.ObjectValue(attrTypes, map[string]attr.Value{
+		"name":           fwtypes.StringValue("test"),
+		"revision":       fwtypes.Int64Value(1),
+		"namespace":      fwtypes.StringValue("default"),
+		"chart":          fwtypes.StringValue("test-chart"),
+		"version":        fwtypes.StringValue("1.0.0"),
+		"app_version":    fwtypes.StringValue("1.0.0"),
+		"values":         fwtypes.StringValue(values),
+		"first_deployed": fwtypes.Int64Value(0),
+		"last_deployed":  fwtypes.Int64Value(0),
+		"notes":          fwtypes.StringValue(notes),
+	})
+	return obj
+}
+
+func TestStateMetadataNeedsSuppression_values(t *testing.T) {
+	meta := &Meta{Experiments: map[string]bool{"suppress_metadata_values": true}}
+
+	// State holds real values — suppression is needed.
+	state := &HelmReleaseModel{Metadata: metadataObjectWithValues(`{"key":"val"}`, "")}
+	if !stateMetadataNeedsSuppression(state, meta) {
+		t.Fatal("expected stateMetadataNeedsSuppression=true when suppress_metadata_values is on and state.values contains real data")
+	}
+
+	// State already holds the suppressed sentinel "{}" — no further suppression needed.
+	state2 := &HelmReleaseModel{Metadata: metadataObjectWithValues("{}", "")}
+	if stateMetadataNeedsSuppression(state2, meta) {
+		t.Fatal("expected stateMetadataNeedsSuppression=false when suppress_metadata_values is on and state.values is already \"{}\"")
+	}
+
+	// Experiment disabled — never needs suppression.
+	metaOff := &Meta{Experiments: map[string]bool{}}
+	if stateMetadataNeedsSuppression(state, metaOff) {
+		t.Fatal("expected stateMetadataNeedsSuppression=false when suppress_metadata_values experiment is off")
+	}
+}
+
+func TestStateMetadataNeedsSuppression_notes(t *testing.T) {
+	meta := &Meta{Experiments: map[string]bool{"suppress_metadata_notes": true}}
+
+	// State holds real notes — suppression is needed.
+	state := &HelmReleaseModel{Metadata: metadataObjectWithValues("{}", "some notes")}
+	if !stateMetadataNeedsSuppression(state, meta) {
+		t.Fatal("expected stateMetadataNeedsSuppression=true when suppress_metadata_notes is on and state.notes is populated")
+	}
+
+	// State already holds suppressed notes ("") — no further suppression needed.
+	state2 := &HelmReleaseModel{Metadata: metadataObjectWithValues("{}", "")}
+	if stateMetadataNeedsSuppression(state2, meta) {
+		t.Fatal("expected stateMetadataNeedsSuppression=false when suppress_metadata_notes is on and state.notes is already empty")
+	}
+
+	// Experiment disabled — never needs suppression.
+	metaOff := &Meta{Experiments: map[string]bool{}}
+	if stateMetadataNeedsSuppression(state, metaOff) {
+		t.Fatal("expected stateMetadataNeedsSuppression=false when suppress_metadata_notes experiment is off")
+	}
+}
 
 func testAccHelmReleaseConfigRepositoryURL(resource, ns, name string) string {
 	return fmt.Sprintf(`
