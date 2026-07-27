@@ -888,6 +888,39 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		}
 	}
 
+	// Check if a release already exists in any status (e.g., from a previous failed install
+	// that didn't get written to TF state). If it exists with a non-deployed status,
+	// uninstall it so the fresh install can proceed.
+	if !releaseAlreadyExists {
+		existingRelease, err := getRelease(ctx, meta, actionConfig, releaseName)
+		if err == nil && existingRelease != nil {
+			tflog.Debug(ctx, fmt.Sprintf("Release %q already exists on cluster with status %q", releaseName, existingRelease.Info.Status.String()))
+			if existingRelease.Info.Status == release.StatusDeployed {
+				resp.Diagnostics.AddError(
+					"Release already exists",
+					fmt.Sprintf("Release %q already exists and is in deployed state. Set 'upgrade_install = true' to manage existing releases, or manually uninstall it.", releaseName),
+				)
+				return
+			}
+			tflog.Debug(ctx, fmt.Sprintf("Uninstalling existing %q release %q before re-installing", existingRelease.Info.Status.String(), releaseName))
+			uninstall := action.NewUninstall(actionConfig)
+			uninstall.Wait = state.Wait.ValueBool()
+			uninstall.DisableHooks = state.DisableWebhooks.ValueBool()
+			uninstall.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
+			_, uninstallErr := uninstall.Run(releaseName)
+			if uninstallErr != nil {
+				resp.Diagnostics.AddError("Error uninstalling existing release",
+					fmt.Sprintf("Failed to uninstall existing release %s: %s", releaseName, uninstallErr))
+				return
+			}
+			tflog.Debug(ctx, fmt.Sprintf("Successfully uninstalled existing release %q", releaseName))
+		} else if err != nil && err != errReleaseNotFound {
+			resp.Diagnostics.AddError("Error checking existing release",
+				fmt.Sprintf("Failed to check if release %s exists: %s", releaseName, err))
+			return
+		}
+	}
+
 	if state.UpgradeInstall.ValueBool() && releaseAlreadyExists {
 		tflog.Debug(ctx, fmt.Sprintf("Upgrade-installing chart %q", releaseName))
 
@@ -963,6 +996,12 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		}
 
 		diags := setReleaseAttributes(ctx, &state, resp.Identity, rel, meta)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		diags = resp.State.Set(ctx, &state)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -1893,16 +1932,17 @@ func checkChartDependencies(ctx context.Context, model *HelmReleaseModel, c *cha
 		err := action.CheckDependencies(c, req)
 		if err != nil {
 			if model.DependencyUpdate.ValueBool() {
-				man := &downloader.Manager{
-					Out:              os.Stdout,
-					ChartPath:        path,
-					Keyring:          model.Keyring.ValueString(),
-					SkipUpdate:       false,
-					Getters:          p,
-					RepositoryConfig: m.Settings.RepositoryConfig,
-					RepositoryCache:  m.Settings.RepositoryCache,
-					Debug:            m.Settings.Debug,
-				}
+			man := &downloader.Manager{
+				Out:              os.Stdout,
+				ChartPath:        path,
+				Keyring:          model.Keyring.ValueString(),
+				SkipUpdate:       false,
+				Getters:          p,
+				RegistryClient:   m.RegistryClient,
+				RepositoryConfig: m.Settings.RepositoryConfig,
+				RepositoryCache:  m.Settings.RepositoryCache,
+				Debug:            m.Settings.Debug,
+			}
 				tflog.Debug(ctx, "Downloading chart dependencies...")
 				if err := man.Update(); err != nil {
 					diags.AddError("", fmt.Sprintf("Failed to update chart dependencies: %s", err))
