@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -37,6 +38,12 @@ type KubeConfig struct {
 // Converting KubeConfig to a REST config, which will be used to create k8s clients
 func (k *KubeConfig) ToRESTConfig() (*rest.Config, error) {
 	config, err := k.ToRawKubeConfigLoader().ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+	if config.Timeout == 0 {
+		config.Timeout = 300 * time.Second
+	}
 	return config, err
 }
 

@@ -770,6 +770,11 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	attrTimeout := time.Duration(state.Timeout.ValueInt64()) * time.Second
+	if attrTimeout > createTimeout {
+		createTimeout = attrTimeout
+	}
+
 	var config HelmReleaseModel
 	diags = req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -854,7 +859,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.Devel = state.Devel.ValueBool()
 	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
 	client.TakeOwnership = state.TakeOwnership.ValueBool()
-	client.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
+	client.Timeout = createTimeout
 	client.Namespace = state.Namespace.ValueString()
 	client.ReleaseName = state.Name.ValueString()
 	client.Atomic = state.Atomic.ValueBool()
@@ -897,7 +902,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		upgradeClient.DisableHooks = state.DisableWebhooks.ValueBool()
 		upgradeClient.Wait = state.Wait.ValueBool()
 		upgradeClient.Devel = state.Devel.ValueBool()
-		upgradeClient.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
+		upgradeClient.Timeout = createTimeout
 		upgradeClient.Namespace = state.Namespace.ValueString()
 		upgradeClient.Atomic = state.Atomic.ValueBool()
 		upgradeClient.SkipCRDs = state.SkipCrds.ValueBool()
@@ -922,7 +927,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 			}
 		}
 
-		rel, err = upgradeClient.Run(releaseName, c, values)
+		rel, err = upgradeClient.RunWithContext(ctx, releaseName, c, values)
 	} else {
 		tflog.Debug(ctx, fmt.Sprintf("Installing chart %q", releaseName))
 		if state.PostRender != nil {
@@ -944,7 +949,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 				client.PostRenderer = pr
 			}
 		}
-		rel, err = client.Run(c, values)
+		rel, err = client.RunWithContext(ctx, c, values)
 	}
 	if err != nil && rel == nil {
 		resp.Diagnostics.AddError("installation failed", err.Error())
@@ -1083,6 +1088,10 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	attrTimeout := time.Duration(plan.Timeout.ValueInt64()) * time.Second
+	if attrTimeout > updateTimeout {
+		updateTimeout = attrTimeout
+	}
 
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
@@ -1141,7 +1150,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.Devel = plan.Devel.ValueBool()
 	client.Namespace = plan.Namespace.ValueString()
 	client.TakeOwnership = plan.TakeOwnership.ValueBool()
-	client.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
+	client.Timeout = updateTimeout
 	client.Wait = plan.Wait.ValueBool()
 	client.WaitForJobs = plan.WaitForJobs.ValueBool()
 	client.DryRun = false
@@ -1193,7 +1202,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	name := plan.Name.ValueString()
-	release, err := client.Run(name, c, values)
+	release, err := client.RunWithContext(ctx, name, c, values)
 	if err != nil {
 		resp.Diagnostics.AddError("Error upgrading chart", fmt.Sprintf("Upgrade failed: %s", err))
 		return
@@ -1232,6 +1241,10 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+	attrTimeout := time.Duration(state.Timeout.ValueInt64()) * time.Second
+	if attrTimeout > deleteTimeout {
+		deleteTimeout = attrTimeout
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
@@ -1276,7 +1289,7 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 	uninstall := action.NewUninstall(actionConfig)
 	uninstall.Wait = state.Wait.ValueBool()
 	uninstall.DisableHooks = state.DisableWebhooks.ValueBool()
-	uninstall.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
+	uninstall.Timeout = deleteTimeout
 
 	// Uninstall the release
 	tflog.Info(ctx, fmt.Sprintf("Uninstalling Helm release: %s", name))
