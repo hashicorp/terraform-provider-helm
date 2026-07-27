@@ -2013,7 +2013,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	}
 
 	if plan.Lint.ValueBool() {
-		diags := resourceReleaseValidate(ctx, &plan, meta, cpo)
+		diags := resourceReleaseValidate(ctx, &plan, &config, meta, cpo)
 		if diags.HasError() {
 			resp.Diagnostics.Append(diags...)
 			return
@@ -2309,7 +2309,7 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 	return false
 }
 
-func resourceReleaseValidate(ctx context.Context, model *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
+func resourceReleaseValidate(ctx context.Context, model *HelmReleaseModel, config *HelmReleaseModel, meta *Meta, cpo *action.ChartPathOptions) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	cpo, name, chartDiags := chartPathOptions(model, meta, cpo)
@@ -2323,6 +2323,17 @@ func resourceReleaseValidate(ctx context.Context, model *HelmReleaseModel, meta 
 	diags.Append(valuesDiags...)
 	if diags.HasError() {
 		return diags
+	}
+
+	if config != nil && config.SetWORevision.ValueInt64() > 0 {
+		woValues, woDiags := getWriteOnlyValues(ctx, config)
+		diags.Append(woDiags...)
+		if diags.HasError() {
+			return diags
+		}
+		if len(woValues) > 0 {
+			values = mergeMaps(values, woValues)
+		}
 	}
 
 	lintDiags := lintChart(meta, name, cpo, values)
