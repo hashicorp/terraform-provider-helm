@@ -1419,68 +1419,53 @@ func TestUseChartVersion(t *testing.T) {
 // 	}
 // }
 
-// func TestCloakSetValues(t *testing.T) {
-// 	d := resourceRelease().Data(nil)
-// 	err := d.Set("set_sensitive", []interface{}{
-// 		map[string]interface{}{"name": "foo", "value": "42"},
-// 	})
-// 	if err != nil {
-// 		t.Fatalf("error setting values: %v", err)
-// 	}
+func TestCloakSetValue(t *testing.T) {
+	values := map[string]interface{}{
+		"foo": "foo",
+	}
+	cloakSetValue(values, "foo")
+	if values["foo"] != sensitiveContentValue {
+		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, values["foo"])
+	}
+}
 
-// 	values := map[string]interface{}{
-// 		"foo": "foo",
-// 	}
+func TestCloakSetValueNested(t *testing.T) {
+	qux := map[string]interface{}{
+		"bar": "bar",
+	}
+	values := map[string]interface{}{
+		"foo": map[string]interface{}{
+			"qux": qux,
+		},
+	}
+	cloakSetValue(values, "foo.qux.bar")
+	if qux["bar"] != sensitiveContentValue {
+		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, qux["bar"])
+	}
+}
 
-// 	cloakSetValues(values, d)
-// 	if values["foo"] != sensitiveContentValue {
-// 		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, values["foo"])
-// 	}
-// }
+func TestCloakSetValueNotMatching(t *testing.T) {
+	values := map[string]interface{}{
+		"foo": "42",
+	}
+	cloakSetValue(values, "foo.qux.bar")
+	if values["foo"] != "42" {
+		t.Fatalf("error cloak values, expected %q, got %s", "42", values["foo"])
+	}
+}
 
-// func TestCloakSetValuesNested(t *testing.T) {
-// 	d := resourceRelease().Data(nil)
-// 	err := d.Set("set_sensitive", []interface{}{
-// 		map[string]interface{}{"name": "foo.qux.bar", "value": "42"},
-// 	})
-// 	if err != nil {
-// 		t.Fatalf("error setting values: %v", err)
-// 	}
-
-// 	qux := map[string]interface{}{
-// 		"bar": "bar",
-// 	}
-
-// 	values := map[string]interface{}{
-// 		"foo": map[string]interface{}{
-// 			"qux": qux,
-// 		},
-// 	}
-
-// 	cloakSetValues(values, d)
-// 	if qux["bar"] != sensitiveContentValue {
-// 		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, qux["bar"])
-// 	}
-// }
-
-// func TestCloakSetValuesNotMatching(t *testing.T) {
-// 	d := resourceRelease().Data(nil)
-// 	err := d.Set("set_sensitive", []interface{}{
-// 		map[string]interface{}{"name": "foo.qux.bar", "value": "42"},
-// 	})
-// 	if err != nil {
-// 		t.Fatalf("error setting values: %v", err)
-// 	}
-
-// 	values := map[string]interface{}{
-// 		"foo": "42",
-// 	}
-
-// 	cloakSetValues(values, d)
-// 	if values["foo"] != "42" {
-// 		t.Fatalf("error cloak values, expected %q, got %s", "42", values["foo"])
-// 	}
-// }
+func TestCloakSetValueEscapedDot(t *testing.T) {
+	values := map[string]interface{}{
+		"config": map[string]interface{}{
+			"oidc.clientSecret": "secret-value",
+		},
+	}
+	cloakSetValue(values, "config.oidc\\.clientSecret")
+	config := values["config"].(map[string]interface{})
+	if config["oidc.clientSecret"] != sensitiveContentValue {
+		t.Fatalf("error cloak values, expected %q, got %s", sensitiveContentValue, config["oidc.clientSecret"])
+	}
+}
 
 func testAccHelmReleaseConfigRepositoryURL(resource, ns, name string) string {
 	return fmt.Sprintf(`

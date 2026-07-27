@@ -1118,7 +1118,7 @@ func cloakSetValuesModel(config map[string]interface{}, state *HelmTemplateModel
 const sensitiveContentModelValue = "(sensitive value)"
 
 func cloakSetValueModel(values map[string]interface{}, valuePath string) {
-	pathKeys := strings.Split(valuePath, ".")
+	pathKeys := splitPath(valuePath)
 	sensitiveKey := pathKeys[len(pathKeys)-1]
 	parentPathKeys := pathKeys[:len(pathKeys)-1]
 
