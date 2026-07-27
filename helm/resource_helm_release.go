@@ -403,6 +403,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 					},
 					"values": schema.StringAttribute{
 						Computed:    true,
+						Sensitive:   true,
 						Description: "Set of extra values. added to the chart. The sensitive data is cloaked. JSON encoded.",
 					},
 					"version": schema.StringAttribute{
@@ -527,6 +528,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			}),
 			"values": schema.ListAttribute{
 				Optional:    true,
+				Sensitive:   true,
 				Description: "List of values in raw YAML format to pass to helm",
 				ElementType: types.StringType,
 			},
