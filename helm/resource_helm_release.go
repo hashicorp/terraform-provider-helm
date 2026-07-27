@@ -113,6 +113,7 @@ type HelmReleaseModel struct {
 	Timeouts                 timeouts.Value   `tfsdk:"timeouts"`
 	UpgradeInstall           types.Bool       `tfsdk:"upgrade_install"`
 	Values                   types.List       `tfsdk:"values"`
+	ValuesMap                types.Map        `tfsdk:"values_map"`
 	Verify                   types.Bool       `tfsdk:"verify"`
 	Version                  types.String     `tfsdk:"version"`
 	Wait                     types.Bool       `tfsdk:"wait"`
@@ -1461,6 +1462,27 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 		base = mergeMaps(base, currentMap)
 	}
 
+	// Processing "values_map" attribute
+	if !model.ValuesMap.IsNull() && !model.ValuesMap.IsUnknown() {
+		tflog.Debug(ctx, "Processing ValuesMap attribute")
+		elements := model.ValuesMap.Elements()
+		parsedMap := map[string]interface{}{}
+		for k, v := range elements {
+			parsedMap[k] = dynamicValueToGo(v)
+		}
+		yamlBytes, err := yaml.Marshal(parsedMap)
+		if err != nil {
+			diags.AddError("Error serializing values_map to YAML", err.Error())
+			return nil, diags
+		}
+		var currentMap map[string]interface{}
+		if err := yaml.Unmarshal(yamlBytes, &currentMap); err != nil {
+			diags.AddError("Error deserializing values_map from YAML", err.Error())
+			return nil, diags
+		}
+		base = mergeMaps(base, currentMap)
+	}
+
 	// Processing "set" attribute
 	if !model.Set.IsNull() {
 		tflog.Debug(ctx, "Processing Set attribute")
@@ -1535,6 +1557,51 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 	}
 
 	return base, diags
+}
+
+func dynamicValueToGo(v attr.Value) interface{} {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+	if dyn, ok := v.(types.Dynamic); ok {
+		return dynamicValueToGo(dyn.UnderlyingValue())
+	}
+	switch val := v.(type) {
+	case types.String:
+		return val.ValueString()
+	case types.Int64:
+		return val.ValueInt64()
+	case types.Float64:
+		return val.ValueFloat64()
+	case types.Bool:
+		return val.ValueBool()
+	case types.Map:
+		result := map[string]interface{}{}
+		for k, ev := range val.Elements() {
+			result[k] = dynamicValueToGo(ev)
+		}
+		return result
+	case types.List:
+		var result []interface{}
+		for _, ev := range val.Elements() {
+			result = append(result, dynamicValueToGo(ev))
+		}
+		return result
+	case types.Set:
+		var result []interface{}
+		for _, ev := range val.Elements() {
+			result = append(result, dynamicValueToGo(ev))
+		}
+		return result
+	case types.Object:
+		result := map[string]interface{}{}
+		for k, av := range val.Attributes() {
+			result[k] = dynamicValueToGo(av)
+		}
+		return result
+	default:
+		return nil
+	}
 }
 
 func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostics {
@@ -2296,6 +2363,9 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 	}
 	if !plan.Values.Equal(state.Values) {
 		return true
+	if !plan.ValuesMap.Equal(state.ValuesMap) {
+		return true
+	}
 	}
 	if !plan.Set.Equal(state.Set) {
 		return true
@@ -2502,6 +2572,9 @@ func parseImportIdentifier(id string) (string, string, error) {
 func valuesUnknown(plan HelmReleaseModel) bool {
 	if plan.Values.IsUnknown() {
 		return true
+	if plan.ValuesMap.IsUnknown() {
+		return true
+	}
 	}
 	if plan.SetList.IsUnknown() {
 		return true
