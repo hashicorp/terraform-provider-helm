@@ -569,7 +569,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 							Computed: true,
 							Default:  stringdefault.StaticString(""),
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string", "literal"),
+								stringvalidator.OneOf("auto", "string", "literal", "json"),
 							},
 						},
 					},
@@ -593,7 +593,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 							Optional:  true,
 							WriteOnly: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string"),
+								stringvalidator.OneOf("auto", "string", "json"),
 							},
 						},
 					},
@@ -636,7 +636,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 						"type": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string", "literal"),
+								stringvalidator.OneOf("auto", "string", "literal", "json"),
 							},
 						},
 					},
@@ -1567,6 +1567,13 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 		} else {
 			base[name] = literal
 		}
+	case "json":
+		var parsedValue interface{}
+		if err := json.Unmarshal([]byte(value), &parsedValue); err != nil {
+			diags.AddError("Failed parsing JSON value", fmt.Sprintf("Key %q with JSON value %s: %s", name, value, err))
+			return diags
+		}
+		base[name] = parsedValue
 	default:
 		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type: %s", valueType))
 		return diags

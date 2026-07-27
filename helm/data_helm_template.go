@@ -302,7 +302,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 							Optional: true,
 							Computed: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string", "literal"),
+								stringvalidator.OneOf("auto", "string", "literal", "json"),
 							},
 						},
 					},
@@ -338,7 +338,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 						"type": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string", "literal"),
+								stringvalidator.OneOf("auto", "string", "literal", "json"),
 							},
 						},
 					},
@@ -358,7 +358,7 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 						"type": schema.StringAttribute{
 							Optional: true,
 							Validators: []validator.String{
-								stringvalidator.OneOf("auto", "string"),
+								stringvalidator.OneOf("auto", "string", "json"),
 							},
 						},
 					},
@@ -991,6 +991,13 @@ func applySetValue(base map[string]interface{}, set SetValue) diag.Diagnostics {
 		} else {
 			base[name] = literal
 		}
+	case "json":
+		var parsedValue interface{}
+		if err := json.Unmarshal([]byte(value), &parsedValue); err != nil {
+			diags.AddError("Failed parsing JSON value", fmt.Sprintf("Key %q with JSON value %s: %s", name, value, err))
+			return diags
+		}
+		base[name] = parsedValue
 	default:
 		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type: %s", valueType))
 	}
@@ -1045,6 +1052,13 @@ func applySetSensitiveValue(base map[string]interface{}, setSensitive SetSensiti
 		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
 			diags.AddError("Failed parsing sensitive string value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
 		}
+	case "json":
+		var parsedValue interface{}
+		if err := json.Unmarshal([]byte(value), &parsedValue); err != nil {
+			diags.AddError("Failed parsing sensitive JSON value", fmt.Sprintf("Key %q with JSON value %s: %s", name, value, err))
+			return diags
+		}
+		base[name] = parsedValue
 	default:
 		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type for sensitive value: %s", valueType))
 	}
