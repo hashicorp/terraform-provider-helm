@@ -1971,6 +1971,30 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	// Always set desired state to DEPLOYED
 	plan.Status = types.StringValue(release.StatusDeployed.String())
 
+	// If the chart is a local path that doesn't exist yet (e.g., being generated
+	// by another resource), defer chart resolution to apply time.
+	if state == nil {
+		chartPath := plan.Chart.ValueString()
+		if _, err := os.Stat(chartPath); os.IsNotExist(err) {
+			if !strings.Contains(chartPath, "://") {
+				repo := plan.Repository.ValueString()
+				if repo == "" || (!strings.Contains(repo, "://") && func() bool { _, err := os.Stat(repo); return os.IsNotExist(err) }()) {
+					tflog.Debug(ctx, fmt.Sprintf("Chart path %q does not exist yet, deferring chart resolution to apply time", chartPath))
+					plan.Manifest = types.StringUnknown()
+					plan.Resources = types.MapUnknown(types.StringType)
+					if config.Version.IsNull() {
+						plan.Version = types.StringUnknown()
+					}
+					plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+					resp.Diagnostics.AddWarning("Chart not found",
+						fmt.Sprintf("Chart %q does not exist yet. The chart will be resolved at apply time.", chartPath))
+					resp.Plan.Set(ctx, &plan)
+					return
+				}
+			}
+		}
+	}
+
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
 		// Check if version has changed
 		if state != nil && !plan.Version.Equal(state.Version) {
