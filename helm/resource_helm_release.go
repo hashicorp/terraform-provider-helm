@@ -78,6 +78,7 @@ type HelmReleaseModel struct {
 	DisableCrdHooks          types.Bool       `tfsdk:"disable_crd_hooks"`
 	DisableOpenapiValidation types.Bool       `tfsdk:"disable_openapi_validation"`
 	DisableWebhooks          types.Bool       `tfsdk:"disable_webhooks"`
+	DriftDetection           types.Bool       `tfsdk:"drift_detection"`
 	ForceUpdate              types.Bool       `tfsdk:"force_update"`
 	ID                       types.String     `tfsdk:"id"`
 	Keyring                  types.String     `tfsdk:"keyring"`
@@ -127,6 +128,7 @@ var defaultAttributes = map[string]interface{}{
 	"disable_crd_hooks":          false,
 	"disable_openapi_validation": false,
 	"disable_webhooks":           false,
+	"drift_detection":            false,
 	"force_update":               false,
 	"lint":                       false,
 	"max_history":                int64(0),
@@ -332,6 +334,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Default:     booldefault.StaticBool(defaultAttributes["disable_webhooks"].(bool)),
 				Description: "Prevent hooks from running",
+			},
+			"drift_detection": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(defaultAttributes["drift_detection"].(bool)),
+				Description: "Enable drift detection. If enabled, Terraform will detect drift between the Helm release manifest and the live Kubernetes resources. Resources modified outside of Terraform or Helm will be reported during planning.",
 			},
 			"force_update": schema.BoolAttribute{
 				Optional:    true,
@@ -1054,6 +1062,11 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 			fmt.Sprintf("Unable to set attributes for helm release %s", state.Name.ValueString()),
 		)
 		return
+	}
+
+	if state.DriftDetection.ValueBool() {
+		driftDiags := detectDrift(ctx, release, meta)
+		resp.Diagnostics.Append(driftDiags...)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -2647,4 +2660,51 @@ func normalizeK8sObject(obj map[string]any) {
 	stripVolatileFields(obj)
 	stripSecretManagedByLabel(obj)
 	normalizeStatus(obj)
+}
+
+
+func detectDrift(ctx context.Context, r *release.Release, m *Meta) diag.Diagnostics {
+	logID := fmt.Sprintf("[detectDrift: %s]", r.Name)
+	tflog.Debug(ctx, fmt.Sprintf("%s checking for drift between release manifest and live cluster state", logID))
+
+	manifestResources, resDiags := getManifestResources(ctx, r, m)
+	if resDiags.HasError() {
+		return resDiags
+	}
+
+	liveResources, resDiags := getLiveResources(ctx, r, m)
+	if resDiags.HasError() {
+		return resDiags
+	}
+
+	var driftedResources []string
+	for key, manifestVal := range manifestResources {
+		liveVal, exists := liveResources[key]
+		if !exists {
+			driftedResources = append(driftedResources, fmt.Sprintf("  - %s: missing from cluster", key))
+			continue
+		}
+		if manifestVal != liveVal {
+			driftedResources = append(driftedResources, fmt.Sprintf("  - %s: has drifted", key))
+		}
+	}
+	for key := range liveResources {
+		if _, exists := manifestResources[key]; !exists {
+			driftedResources = append(driftedResources, fmt.Sprintf("  - %s: not in release manifest, found in cluster only", key))
+		}
+	}
+
+	if len(driftedResources) > 0 {
+		tflog.Warn(ctx, fmt.Sprintf("%s drift detected in %d resources", logID, len(driftedResources)))
+		var diags diag.Diagnostics
+		diags.AddWarning(
+			"Drift Detected",
+			fmt.Sprintf("The following resources have drifted from the Helm release manifest:\n%s\n\nRun 'terraform apply' to reconcile the release and restore the desired state.",
+				strings.Join(driftedResources, "\n")),
+		)
+		return diags
+	}
+
+	tflog.Debug(ctx, fmt.Sprintf("%s no drift detected", logID))
+	return nil
 }
