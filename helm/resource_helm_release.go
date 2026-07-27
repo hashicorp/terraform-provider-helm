@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	pathpkg "path"
+	"sort"
 	"strings"
 	"time"
 
@@ -2355,7 +2356,7 @@ You should update the version in your configuration to %[2]q, or remove the vers
 
 // TODO: write unit test, always returns true for recomputing the metadata
 // returns true if any metadata fields have changed
-func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
+func recomputeMetadata(ctx context.Context, plan HelmReleaseModel, state *HelmReleaseModel) bool {
 	if state == nil {
 		return true
 	}
@@ -2366,20 +2367,80 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 	if !plan.Repository.Equal(state.Repository) {
 		return true
 	}
-	if !plan.Version.Equal(state.Version) {
+	if !versionsEqual(plan.Version.ValueString(), state.Version.ValueString()) {
 		return true
 	}
 	if !plan.Values.Equal(state.Values) {
 		return true
 	}
-	if !plan.Set.Equal(state.Set) {
+
+	var setList, stateSetList []setResourceModel
+	plan.Set.ElementsAs(ctx, &setList, false)
+	state.Set.ElementsAs(ctx, &stateSetList, false)
+	sort.Slice(setList, func(i, j int) bool {
+		return setList[i].Name.ValueString() < setList[j].Name.ValueString()
+	})
+	sort.Slice(stateSetList, func(i, j int) bool {
+		return stateSetList[i].Name.ValueString() < stateSetList[j].Name.ValueString()
+	})
+	if len(setList) != len(stateSetList) {
 		return true
 	}
-	if !plan.SetSensitive.Equal(state.SetSensitive) {
+	for i := range setList {
+		if setList[i].Name.ValueString() != stateSetList[i].Name.ValueString() ||
+			setList[i].Value.ValueString() != stateSetList[i].Value.ValueString() ||
+			setList[i].Type.ValueString() != stateSetList[i].Type.ValueString() {
+			return true
+		}
+	}
+
+	var setSensitiveList, stateSetSensitiveList []setResourceModel
+	plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
+	state.SetSensitive.ElementsAs(ctx, &stateSetSensitiveList, false)
+	sort.Slice(setSensitiveList, func(i, j int) bool {
+		return setSensitiveList[i].Name.ValueString() < setSensitiveList[j].Name.ValueString()
+	})
+	sort.Slice(stateSetSensitiveList, func(i, j int) bool {
+		return stateSetSensitiveList[i].Name.ValueString() < stateSetSensitiveList[j].Name.ValueString()
+	})
+	if len(setSensitiveList) != len(stateSetSensitiveList) {
 		return true
 	}
-	if !plan.SetList.Equal(state.SetList) {
+	for i := range setSensitiveList {
+		if setSensitiveList[i].Name.ValueString() != stateSetSensitiveList[i].Name.ValueString() ||
+			setSensitiveList[i].Value.ValueString() != stateSetSensitiveList[i].Value.ValueString() ||
+			setSensitiveList[i].Type.ValueString() != stateSetSensitiveList[i].Type.ValueString() {
+			return true
+		}
+	}
+
+	var setListList, stateSetListList []set_listResourceModel
+	plan.SetList.ElementsAs(ctx, &setListList, false)
+	state.SetList.ElementsAs(ctx, &stateSetListList, false)
+	sort.Slice(setListList, func(i, j int) bool {
+		return setListList[i].Name.ValueString() < setListList[j].Name.ValueString()
+	})
+	sort.Slice(stateSetListList, func(i, j int) bool {
+		return stateSetListList[i].Name.ValueString() < stateSetListList[j].Name.ValueString()
+	})
+	if len(setListList) != len(stateSetListList) {
 		return true
+	}
+	for i := range setListList {
+		if setListList[i].Name.ValueString() != stateSetListList[i].Name.ValueString() {
+			return true
+		}
+		var aVals, bVals []string
+		setListList[i].Value.ElementsAs(ctx, &aVals, false)
+		stateSetListList[i].Value.ElementsAs(ctx, &bVals, false)
+		if len(aVals) != len(bVals) {
+			return true
+		}
+		for j := range aVals {
+			if aVals[j] != bVals[j] {
+				return true
+			}
+		}
 	}
 	return false
 }
