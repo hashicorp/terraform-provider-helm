@@ -87,9 +87,10 @@ type ExperimentsConfigModel struct {
 
 // RegistryConfigModel configures an OCI registry
 type RegistryConfigModel struct {
-	URL      types.String `tfsdk:"url"`
-	Username types.String `tfsdk:"username"`
-	Password types.String `tfsdk:"password"`
+	URL         types.String `tfsdk:"url"`
+	Username    types.String `tfsdk:"username"`
+	Password    types.String `tfsdk:"password"`
+	InsecureOCI types.Bool   `tfsdk:"insecure_oci"`
 }
 
 // KubernetesConfigModel configures a Kubernetes client
@@ -219,6 +220,10 @@ func registriesResourceSchema() map[string]schema.Attribute {
 		"password": schema.StringAttribute{
 			Required:    true,
 			Description: "The password to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
+		},
+		"insecure_oci": schema.BoolAttribute{
+			Optional:    true,
+			Description: "Allow OCI registries to be accessed over plain HTTP connections when set to true.",
 		},
 	}
 }
@@ -605,7 +610,27 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		},
 		loggedInOCIRegistries: make(map[string]struct{}),
 	}
-	registryClient, err := registry.NewClient()
+	var plainHTTP bool
+	if !config.Registries.IsUnknown() {
+		var registryConfigs []RegistryConfigModel
+		diags := config.Registries.ElementsAs(ctx, &registryConfigs, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		for _, r := range registryConfigs {
+			if !r.InsecureOCI.IsNull() && r.InsecureOCI.ValueBool() {
+				plainHTTP = true
+				break
+			}
+		}
+	}
+
+	var clientOpts []registry.ClientOption
+	if plainHTTP {
+		clientOpts = append(clientOpts, registry.ClientOptPlainHTTP())
+	}
+	registryClient, err := registry.NewClient(clientOpts...)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Registry client initialization failed",
