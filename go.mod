@@ -13,6 +13,7 @@ require (
 	github.com/hashicorp/terraform-plugin-testing v1.13.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1
+	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3
 	github.com/stretchr/testify v1.11.1
 	helm.sh/helm/v3 v3.20.2
 	k8s.io/api v0.35.1
