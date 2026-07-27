@@ -80,6 +80,7 @@ type HelmTemplateModel struct {
 	RenderSubchartNotes      types.Bool       `tfsdk:"render_subchart_notes"`
 	Replace                  types.Bool       `tfsdk:"replace"`
 	Repository               types.String     `tfsdk:"repository"`
+	RepositoryUpdate         types.Bool       `tfsdk:"repository_update"`
 	RepositoryCaFile         types.String     `tfsdk:"repository_ca_file"`
 	RepositoryCertFile       types.String     `tfsdk:"repository_cert_file"`
 	RepositoryKeyFile        types.String     `tfsdk:"repository_key_file"`
@@ -257,6 +258,10 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 			"repository": schema.StringAttribute{
 				Optional:    true,
 				Description: "Repository where to locate the requested chart. If it is a URL the chart is installed without installing the repository.",
+			},
+			"repository_update": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Run helm repo update before fetching the chart. This ensures the repository index is up to date. Defaults to true.",
 			},
 			"repository_ca_file": schema.StringAttribute{
 				Optional:    true,
@@ -478,6 +483,9 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	if state.DependencyUpdate.IsNull() || state.DependencyUpdate.IsUnknown() {
 		state.DependencyUpdate = types.BoolValue(false)
 	}
+	if state.RepositoryUpdate.IsNull() || state.RepositoryUpdate.IsUnknown() {
+		state.RepositoryUpdate = types.BoolValue(true)
+	}
 	if state.Replace.IsNull() || state.Replace.IsUnknown() {
 		state.Replace = types.BoolValue(false)
 	}
@@ -554,6 +562,13 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	resp.Diagnostics.Append(cpoDiags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if state.RepositoryUpdate.ValueBool() {
+		resp.Diagnostics.Append(repoUpdate(ctx, meta, getRepoNameForTemplateUpdate(&state))...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	c, chartPath, chartDiags := getChartModel(ctx, &state, meta, chartName, cpo)
@@ -909,6 +924,23 @@ func getVersionModel(model *HelmTemplateModel) string {
 		return ">0.0.0-0"
 	}
 	return strings.TrimSpace(version)
+}
+
+func getRepoNameForTemplateUpdate(model *HelmTemplateModel) string {
+	repo := model.Repository.ValueString()
+	if repo != "" {
+		if _, err := url.ParseRequestURI(repo); err != nil && !registry.IsOCI(repo) {
+			return repo
+		}
+	}
+	chart := model.Chart.ValueString()
+	if idx := strings.Index(chart, "/"); idx > 0 {
+		candidate := chart[:idx]
+		if _, err := url.ParseRequestURI(candidate); err != nil {
+			return candidate
+		}
+	}
+	return ""
 }
 
 func getChartModel(ctx context.Context, model *HelmTemplateModel, meta *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
