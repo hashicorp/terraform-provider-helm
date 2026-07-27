@@ -515,6 +515,15 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	if repositoryCache != "" {
 		settings.RepositoryCache = repositoryCache
 	}
+
+	if err := os.MkdirAll(settings.RepositoryCache, os.ModePerm); err != nil {
+		resp.Diagnostics.AddError(
+			"Repository Cache Directory Creation Failed",
+			fmt.Sprintf("Unable to create repository cache directory %s: %s", settings.RepositoryCache, err),
+		)
+		return
+	}
+
 	tflog.Debug(ctx, "Helm settings initialized", map[string]interface{}{
 		"settings": settings,
 	})
