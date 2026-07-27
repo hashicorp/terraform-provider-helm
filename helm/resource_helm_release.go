@@ -4,6 +4,7 @@
 package helm
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -42,6 +43,9 @@ import (
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	runtimeresource "k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/helm/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
@@ -117,6 +121,7 @@ type HelmReleaseModel struct {
 	Version                  types.String     `tfsdk:"version"`
 	Wait                     types.Bool       `tfsdk:"wait"`
 	WaitForJobs              types.Bool       `tfsdk:"wait_for_jobs"`
+	WaitForDaemonsets        types.Bool       `tfsdk:"wait_for_daemonsets"`
 }
 
 var defaultAttributes = map[string]interface{}{
@@ -142,6 +147,7 @@ var defaultAttributes = map[string]interface{}{
 	"verify":                     false,
 	"wait":                       true,
 	"wait_for_jobs":              false,
+	"wait_for_daemonsets":        true,
 	"upgrade_install":            false,
 }
 
@@ -552,6 +558,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Default:     booldefault.StaticBool(defaultAttributes["wait_for_jobs"].(bool)),
 				Description: "If wait is enabled, will wait until all Jobs have been completed before marking the release as successful.",
+			},
+			"wait_for_daemonsets": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(defaultAttributes["wait_for_daemonsets"].(bool)),
+				Description: "Will wait until all DaemonSet resources are in a ready state before marking the release as successful.",
 			},
 			"set": schema.ListNestedAttribute{
 				Description: "Custom values to be merged with the values",
@@ -980,6 +992,14 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
+	if state.WaitForDaemonsets.ValueBool() {
+		waitDiags := waitForDaemonSets(ctx, rel, actionConfig, time.Duration(state.Timeout.ValueInt64())*time.Second)
+		resp.Diagnostics.Append(waitDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -1203,6 +1223,14 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if plan.WaitForDaemonsets.ValueBool() {
+		waitDiags := waitForDaemonSets(ctx, release, actionConfig, time.Duration(plan.Timeout.ValueInt64())*time.Second)
+		resp.Diagnostics.Append(waitDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	diags = resp.State.Set(ctx, &plan)
@@ -2639,6 +2667,97 @@ func normalizeStatus(obj map[string]any) {
 		return
 	}
 	delete(obj, "status")
+}
+
+
+
+func waitForDaemonSets(ctx context.Context, rel *release.Release, actionConfig *action.Configuration, timeout time.Duration) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	resources, err := actionConfig.KubeClient.Build(bytes.NewBufferString(rel.Manifest), false)
+	if err != nil {
+		diags.AddError("Error building resources from manifest", err.Error())
+		return diags
+	}
+
+	kc, err := getKubeClient(actionConfig)
+	if err != nil {
+		diags.AddError("Error getting kube client", err.Error())
+		return diags
+	}
+
+	cs, err := kc.Factory.KubernetesClientSet()
+	if err != nil {
+		diags.AddError("Error getting kubernetes clientset", err.Error())
+		return diags
+	}
+
+	type dsRef struct {
+		namespace string
+		name      string
+	}
+	var daemonSets []dsRef
+
+	err = resources.Visit(func(info *runtimeresource.Info, err error) error {
+		if err != nil {
+			return err
+		}
+		gvk := info.Object.GetObjectKind().GroupVersionKind()
+		if gvk.Kind == "DaemonSet" && (gvk.Group == "" || gvk.Group == "apps") {
+			daemonSets = append(daemonSets, dsRef{
+				namespace: info.Namespace,
+				name:      info.Name,
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		diags.AddError("Error visiting resources", err.Error())
+		return diags
+	}
+
+	if len(daemonSets) == 0 {
+		tflog.Debug(ctx, "No DaemonSets found in release, skipping wait")
+		return diags
+	}
+
+	tflog.Debug(ctx, fmt.Sprintf("Waiting for %d DaemonSet(s) to become ready", len(daemonSets)))
+
+	for _, ds := range daemonSets {
+		tflog.Debug(ctx, fmt.Sprintf("Waiting for DaemonSet %s/%s to be ready", ds.namespace, ds.name))
+
+		err = wait.PollUntilContextTimeout(ctx, 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
+			d, err := cs.AppsV1().DaemonSets(ds.namespace).Get(ctx, ds.name, metav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
+
+			desired := d.Status.DesiredNumberScheduled
+			current := d.Status.CurrentNumberScheduled
+			ready := d.Status.NumberReady
+			updated := d.Status.UpdatedNumberScheduled
+
+			tflog.Debug(ctx, fmt.Sprintf("DaemonSet %s/%s status: desired=%d, current=%d, ready=%d, updated=%d",
+				ds.namespace, ds.name, desired, current, ready, updated))
+
+			return desired > 0 && desired == current && current == ready && ready == updated, nil
+		})
+		if err != nil {
+			if ctx.Err() != nil {
+				diags.AddError("Timeout waiting for DaemonSet", fmt.Sprintf(
+					"Timed out waiting for DaemonSet %s/%s to be ready. Check pod status with 'kubectl get pods -n %s'",
+					ds.namespace, ds.name, ds.namespace))
+			} else {
+				diags.AddError("Error waiting for DaemonSet", fmt.Sprintf(
+					"Error waiting for DaemonSet %s/%s: %s", ds.namespace, ds.name, err))
+			}
+			return diags
+		}
+
+		tflog.Debug(ctx, fmt.Sprintf("DaemonSet %s/%s is ready", ds.namespace, ds.name))
+	}
+
+	return diags
 }
 
 func normalizeK8sObject(obj map[string]any) {
