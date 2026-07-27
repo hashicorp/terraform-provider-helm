@@ -536,11 +536,14 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Default:     booldefault.StaticBool(defaultAttributes["verify"].(bool)),
 				Description: "Verify the package before installing it.",
 			},
-			"version": schema.StringAttribute{
-				Optional:    true,
-				Computed:    true,
-				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed",
+		"version": schema.StringAttribute{
+			Optional:    true,
+			Computed:    true,
+			Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
 			},
+		},
 			"wait": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
