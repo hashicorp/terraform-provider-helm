@@ -11,6 +11,7 @@ import (
 	"os"
 	pathpkg "path"
 	"strings"
+	"reflect"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -1054,6 +1055,31 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 			fmt.Sprintf("Unable to set attributes for helm release %s", state.Name.ValueString()),
 		)
 		return
+	}
+
+	// Detect drift in deployed values vs state-computed values (fixes #372 and #472)
+	if state.SetWORevision.ValueInt64() <= 0 {
+		deployValues := release.Config
+		if deployValues == nil {
+			deployValues = map[string]interface{}{}
+		}
+		stateValues, stateValuesDiags := getValues(ctx, &state)
+		resp.Diagnostics.Append(stateValuesDiags...)
+		if !stateValuesDiags.HasError() {
+			if stateValues == nil {
+				stateValues = map[string]interface{}{}
+			}
+			if !reflect.DeepEqual(deployValues, stateValues) {
+				tflog.Debug(ctx, fmt.Sprintf("Values drift detected for release %s", state.Name.ValueString()))
+				deployYAML, err := yaml.Marshal(deployValues)
+				if err == nil {
+					state.Values = types.ListValueMust(types.StringType, []attr.Value{
+						types.StringValue(string(deployYAML)),
+					})
+					tflog.Debug(ctx, fmt.Sprintf("Updated state values to reflect deployed values for release %s", state.Name.ValueString()))
+				}
+			}
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
