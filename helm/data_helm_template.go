@@ -93,6 +93,7 @@ type HelmTemplateModel struct {
 	SetWO                    types.List       `tfsdk:"set_wo"`
 	ShowOnly                 types.List       `tfsdk:"show_only"`
 	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
+	SkipSchemaValidation     types.Bool       `tfsdk:"skip_schema_validation"`
 	SkipTests                types.Bool       `tfsdk:"skip_tests"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
 	Timeouts                 timeouts.Value   `tfsdk:"timeouts"`
@@ -373,6 +374,10 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Optional:    true,
 				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present.",
 			},
+			"skip_schema_validation": schema.BoolAttribute{
+				Optional:    true,
+				Description: "If set, the installation process will not validate the chart against the JSON schema of the chart",
+			},
 			"skip_tests": schema.BoolAttribute{
 				Optional:    true,
 				Description: "If set, tests will not be rendered. By default, tests are rendered.",
@@ -465,6 +470,9 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	}
 	if state.SkipTests.IsNull() || state.SkipTests.IsUnknown() {
 		state.SkipTests = types.BoolValue(false)
+	}
+	if state.SkipSchemaValidation.IsNull() || state.SkipSchemaValidation.IsUnknown() {
+		state.SkipSchemaValidation = types.BoolValue(false)
 	}
 	if state.RenderSubchartNotes.IsNull() || state.RenderSubchartNotes.IsUnknown() {
 		state.RenderSubchartNotes = types.BoolValue(false)
@@ -596,6 +604,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
 	client.DisableHooks = state.DisableWebhooks.ValueBool()
 	client.DisableOpenAPIValidation = state.DisableOpenAPIValidation.ValueBool()
+	client.SkipSchemaValidation = state.SkipSchemaValidation.ValueBool()
 	client.Atomic = state.Atomic.ValueBool()
 	client.Replace = state.Replace.ValueBool()
 	client.SkipCRDs = state.SkipCrds.ValueBool()
