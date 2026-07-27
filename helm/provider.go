@@ -49,8 +49,8 @@ type Meta struct {
 	HelmDriver     string
 	// Experimental feature toggles
 	Experiments           map[string]bool
-	Mutex                 sync.Mutex
-	loggedInOCIRegistries map[string]struct{}
+	registryMutexes       sync.Map
+	loggedInOCIRegistries sync.Map
 	ChartPathMutex        sync.Mutex
 }
 
@@ -603,7 +603,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		Experiments: map[string]bool{
 			"manifest": manifestExperiment,
 		},
-		loggedInOCIRegistries: make(map[string]struct{}),
+
 	}
 	registryClient, err := registry.NewClient()
 	if err != nil {
@@ -692,23 +692,32 @@ func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Conf
 
 // registryClient = client used to comm with the registry, oci urls, un, and pw used for authentication
 func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *registry.Client, ociURL, username, password string) error {
-	// getting the oci url, and extracting the host.
 	u, err := url.Parse(ociURL)
 	if err != nil {
 		return fmt.Errorf("could not parse OCI registry URL: %v", err)
 	}
-	meta.Mutex.Lock()
-	defer meta.Mutex.Unlock()
-	if _, ok := meta.loggedInOCIRegistries[u.Host]; ok {
+
+	if _, ok := meta.loggedInOCIRegistries.Load(u.Host); ok {
 		tflog.Info(ctx, fmt.Sprintf("Already logged into OCI registry %q", u.Host))
 		return nil
 	}
-	// Now we perform the login, with the provided username and password by calling the login method
+
+	actualMutex, _ := meta.registryMutexes.LoadOrStore(u.Host, &sync.Mutex{})
+	mu := actualMutex.(*sync.Mutex)
+	mu.Lock()
+	defer mu.Unlock()
+
+	if _, ok := meta.loggedInOCIRegistries.Load(u.Host); ok {
+		tflog.Info(ctx, fmt.Sprintf("Already logged into OCI registry %q", u.Host))
+		return nil
+	}
+
 	err = registryClient.Login(u.Host, registry.LoginOptBasicAuth(username, password))
 	if err != nil {
 		return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
 	}
-	meta.loggedInOCIRegistries[u.Host] = struct{}{}
+
+	meta.loggedInOCIRegistries.Store(u.Host, struct{}{})
 	tflog.Info(ctx, fmt.Sprintf("Logged into OCI registry %q", u.Host))
 	return nil
 }
