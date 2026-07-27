@@ -57,6 +57,7 @@ For further details on the `helm template` command, refer to the [Helm documenta
 - `set_list` (Block List) Custom list values to be merged with the values. (see [below for nested schema](#nestedblock--set_list))
 - `set_sensitive` (Block Set) Custom sensitive values to be merged with the values. (see [below for nested schema](#nestedblock--set_sensitive))
 - `set_string` (Block Set, Deprecated) Custom string values to be merged with the values. (see [below for nested schema](#nestedblock--set_string))
+- `set_wo` (Block List) Write-only custom values to be merged with the values. (see [below for nested schema](#nestedblock--set_wo))
 - `show_only` (List of String) Only show manifests rendered from the given templates
 - `skip_crds` (Boolean) If set, no CRDs will be installed. By default, CRDs are installed if not already present. Defaults to `false`.
 - `skip_tests` (Boolean) If set, tests will not be rendered. By default, tests are rendered. Defaults to `false`.
@@ -121,7 +122,17 @@ Required:
 
 - `name` (String)
 - `value` (String)
+<a id="nestedblock--set_wo"></a>
+### Nested Schema for `set_wo`
 
+Required:
+
+- `name` (String)
+- `value` (String, Sensitive)
+
+Optional:
+
+- `type` (String)
 
 
 
