@@ -48,10 +48,8 @@ type Meta struct {
 	RegistryClient *registry.Client
 	HelmDriver     string
 	// Experimental feature toggles
-	Experiments           map[string]bool
-	Mutex                 sync.Mutex
-	loggedInOCIRegistries map[string]struct{}
-	ChartPathMutex        sync.Mutex
+	Experiments    map[string]bool
+	ChartPathMutex sync.Mutex
 }
 
 // LocateChart serializes calls to cpo.LocateChart to avoid concurrent writes to Helm's shared repository cache.
@@ -603,18 +601,13 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		Experiments: map[string]bool{
 			"manifest": manifestExperiment,
 		},
-		loggedInOCIRegistries: make(map[string]struct{}),
-	}
-	registryClient, err := registry.NewClient()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Registry client initialization failed",
-			fmt.Sprintf("Unable to create Helm registry client: %s", err),
-		)
-		return
 	}
 
-	meta.RegistryClient = registryClient
+	// Use ephemeral registry clients for login to avoid overwriting the
+	// authorizer's credential function on the main client (#1719).
+	// Login stores credentials in the shared credentials file; the main
+	// client created afterwards will load them and use its authorizer
+	// with per-host resolution via credentials.Credential(store).
 	if !config.Registries.IsUnknown() {
 		var registryConfigs []RegistryConfigModel
 		diags := config.Registries.ElementsAs(ctx, &registryConfigs, false)
@@ -631,11 +624,28 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 				return
 			}
 
-			err := OCIRegistryPerformLogin(ctx, meta, meta.RegistryClient, r.URL.ValueString(), r.Username.ValueString(), r.Password.ValueString())
+			u, err := url.Parse(r.URL.ValueString())
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"OCI Registry login failed",
-					err.Error(),
+					fmt.Sprintf("Could not parse OCI registry URL: %s", err),
+				)
+				return
+			}
+
+			tempClient, err := registry.NewClient()
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"Registry client initialization failed",
+					fmt.Sprintf("Unable to create ephemeral Helm registry client: %s", err),
+				)
+				return
+			}
+			err = tempClient.Login(u.Host, registry.LoginOptBasicAuth(r.Username.ValueString(), r.Password.ValueString()))
+			if err != nil {
+				resp.Diagnostics.AddError(
+					"OCI Registry login failed",
+					fmt.Sprintf("Could not login to OCI registry %q: %s", u.Host, err),
 				)
 				return
 			}
@@ -643,6 +653,17 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	} else {
 		tflog.Debug(ctx, "No registry configurations found")
 	}
+
+	registryClient, err := registry.NewClient()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Registry client initialization failed",
+			fmt.Sprintf("Unable to create Helm registry client: %s", err),
+		)
+		return
+	}
+
+	meta.RegistryClient = registryClient
 	resp.DataSourceData = meta
 	resp.ResourceData = meta
 
@@ -661,10 +682,8 @@ func (p *HelmProvider) Resources(ctx context.Context) []func() resource.Resource
 	}
 }
 
-func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Configuration, registryClient *registry.Client, repository, chartName, username, password string) diag.Diagnostics {
+func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Configuration, _ *registry.Client, repository, chartName, username, password string) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	actionConfig.RegistryClient = registryClient
 
 	var ociURL string
 	if registry.IsOCI(repository) {
@@ -674,11 +693,12 @@ func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Conf
 	}
 
 	if ociURL == "" {
+		actionConfig.RegistryClient = meta.RegistryClient
 		return diags
 	}
 
 	if username != "" && password != "" {
-		err := OCIRegistryPerformLogin(ctx, meta, registryClient, ociURL, username, password)
+		err := OCIRegistryPerformLogin(ctx, meta, ociURL, username, password)
 		if err != nil {
 			diags.AddError(
 				"OCI Registry Login Failed",
@@ -687,28 +707,31 @@ func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Conf
 		}
 	}
 
+	actionConfig.RegistryClient = meta.RegistryClient
 	return diags
 }
 
-// registryClient = client used to comm with the registry, oci urls, un, and pw used for authentication
-func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *registry.Client, ociURL, username, password string) error {
-	// getting the oci url, and extracting the host.
+func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, ociURL, username, password string) error {
 	u, err := url.Parse(ociURL)
 	if err != nil {
 		return fmt.Errorf("could not parse OCI registry URL: %v", err)
 	}
-	meta.Mutex.Lock()
-	defer meta.Mutex.Unlock()
-	if _, ok := meta.loggedInOCIRegistries[u.Host]; ok {
-		tflog.Info(ctx, fmt.Sprintf("Already logged into OCI registry %q", u.Host))
-		return nil
+
+	tempClient, err := registry.NewClient()
+	if err != nil {
+		return fmt.Errorf("could not create ephemeral registry client: %v", err)
 	}
-	// Now we perform the login, with the provided username and password by calling the login method
-	err = registryClient.Login(u.Host, registry.LoginOptBasicAuth(username, password))
+	err = tempClient.Login(u.Host, registry.LoginOptBasicAuth(username, password))
 	if err != nil {
 		return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
 	}
-	meta.loggedInOCIRegistries[u.Host] = struct{}{}
+
+	newClient, err := registry.NewClient()
+	if err != nil {
+		return fmt.Errorf("could not create fresh registry client: %v", err)
+	}
+	meta.RegistryClient = newClient
+
 	tflog.Info(ctx, fmt.Sprintf("Logged into OCI registry %q", u.Host))
 	return nil
 }
