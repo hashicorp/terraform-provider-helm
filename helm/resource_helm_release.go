@@ -2025,6 +2025,12 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		// Check if all necessary values are known
 		if valuesUnknown(plan) {
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
+			resp.Diagnostics.AddWarning(
+				"Manifest deferred to apply time",
+				"The manifest experiment is enabled, but some values contain unresolvable "+
+					"plan-time references. The manifest attribute will be computed during apply "+
+					"when all values are known. This may cause the plan to appear incomplete until apply.",
+			)
 			plan.Manifest = types.StringUnknown()
 			plan.Resources = types.MapUnknown(types.StringType)
 			if config.Version.IsNull() {
@@ -2503,6 +2509,11 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 	if plan.Values.IsUnknown() {
 		return true
 	}
+	for _, v := range plan.Values.Elements() {
+		if v.IsUnknown() {
+			return true
+		}
+	}
 	if plan.SetList.IsUnknown() {
 		return true
 	}
@@ -2529,11 +2540,16 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 		}
 	}
 
-	setList := []setResourceModel{}
-	plan.Set.ElementsAs(context.Background(), &setList, false)
+	setList := []set_listResourceModel{}
+	plan.SetList.ElementsAs(context.Background(), &setList, false)
 	for _, s := range setList {
 		if s.Value.IsUnknown() {
 			return true
+		}
+		for _, v := range s.Value.Elements() {
+			if v.IsUnknown() {
+				return true
+			}
 		}
 	}
 
