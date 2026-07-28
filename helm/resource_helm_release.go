@@ -74,6 +74,7 @@ type HelmReleaseModel struct {
 	CreateNamespace          types.Bool       `tfsdk:"create_namespace"`
 	DependencyUpdate         types.Bool       `tfsdk:"dependency_update"`
 	Description              types.String     `tfsdk:"description"`
+	EnableResources          types.Bool       `tfsdk:"enable_resources"`
 	Devel                    types.Bool       `tfsdk:"devel"`
 	DisableCrdHooks          types.Bool       `tfsdk:"disable_crd_hooks"`
 	DisableOpenapiValidation types.Bool       `tfsdk:"disable_openapi_validation"`
@@ -127,6 +128,7 @@ var defaultAttributes = map[string]interface{}{
 	"disable_crd_hooks":          false,
 	"disable_openapi_validation": false,
 	"disable_webhooks":           false,
+	"enable_resources":           true,
 	"force_update":               false,
 	"lint":                       false,
 	"max_history":                int64(0),
@@ -332,6 +334,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Default:     booldefault.StaticBool(defaultAttributes["disable_webhooks"].(bool)),
 				Description: "Prevent hooks from running",
+			},
+			"enable_resources": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(defaultAttributes["enable_resources"].(bool)),
+				Description: "Track the Kubernetes resources created by this release in the resources attribute. Set to false to avoid drift when external tools modify resources.",
 			},
 			"force_update": schema.BoolAttribute{
 				Optional:    true,
@@ -1718,20 +1726,22 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		manifest := redactSensitiveValues(string(jsonManifest), sensitiveValues)
 		state.Manifest = types.StringValue(manifest)
 
-		resources, resDiags := getLiveResources(ctx, r, meta)
-		diags.Append(resDiags...)
+		if state.EnableResources.ValueBool() {
+			resources, resDiags := getLiveResources(ctx, r, meta)
+			diags.Append(resDiags...)
 
-		if !resDiags.HasError() {
-			resMap, resConvDiags := mapToTerraformStringMap(ctx, resources)
-			diags.Append(resConvDiags...)
+			if !resDiags.HasError() {
+				resMap, resConvDiags := mapToTerraformStringMap(ctx, resources)
+				diags.Append(resConvDiags...)
 
-			if resConvDiags.HasError() {
-				state.Resources = types.MapValueMust(types.StringType, map[string]attr.Value{})
+				if resConvDiags.HasError() {
+					state.Resources = types.MapValueMust(types.StringType, map[string]attr.Value{})
+				} else {
+					state.Resources = resMap
+				}
 			} else {
-				state.Resources = resMap
+				state.Resources = types.MapValueMust(types.StringType, map[string]attr.Value{})
 			}
-		} else {
-			state.Resources = types.MapValueMust(types.StringType, map[string]attr.Value{})
 		}
 	}
 
@@ -2026,7 +2036,11 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		if valuesUnknown(plan) {
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
 			plan.Manifest = types.StringUnknown()
-			plan.Resources = types.MapUnknown(types.StringType)
+			if plan.EnableResources.ValueBool() {
+				plan.Resources = types.MapUnknown(types.StringType)
+			} else {
+				plan.Resources = types.MapNull(types.StringType)
+			}
 			if config.Version.IsNull() {
 				plan.Version = types.StringUnknown()
 			}
@@ -2119,13 +2133,15 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 			manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
 			plan.Manifest = types.StringValue(manifest)
-			resources, resDiags := getDryRunResources(ctx, dry, meta)
-			resp.Diagnostics.Append(resDiags...)
-			if resp.Diagnostics.HasError() {
-				return
+			if plan.EnableResources.ValueBool() {
+				resources, resDiags := getDryRunResources(ctx, dry, meta)
+				resp.Diagnostics.Append(resDiags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
+				resp.Diagnostics.Append(diags...)
 			}
-			plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
-			resp.Diagnostics.Append(diags...)
 			resp.Plan.Set(ctx, &plan)
 			return
 		}
@@ -2207,21 +2223,23 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 		manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
 		plan.Manifest = types.StringValue(manifest)
-		resources, resDiags := getDryRunResources(ctx, dry, meta)
-		resp.Diagnostics.Append(resDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+		if plan.EnableResources.ValueBool() {
+			resources, resDiags := getDryRunResources(ctx, dry, meta)
+			resp.Diagnostics.Append(resDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
 
-		plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
+			plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+			tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
 
-		if !state.Resources.Equal(plan.Resources) {
-			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			if state != nil && !state.Resources.Equal(plan.Resources) {
+				plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			}
 		}
 
 	} else {
