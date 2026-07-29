@@ -84,6 +84,7 @@ type HelmTemplateModel struct {
 	RepositoryCertFile       types.String     `tfsdk:"repository_cert_file"`
 	RepositoryKeyFile        types.String     `tfsdk:"repository_key_file"`
 	RepositoryPassword       types.String     `tfsdk:"repository_password"`
+	RepositoryPlainHTTP      types.Bool       `tfsdk:"repository_plain_http"`
 	RepositoryUsername       types.String     `tfsdk:"repository_username"`
 	ResetValues              types.Bool       `tfsdk:"reset_values"`
 	ReuseValues              types.Bool       `tfsdk:"reuse_values"`
@@ -274,6 +275,10 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Optional:    true,
 				Sensitive:   true,
 				Description: "Password for HTTP basic authentication",
+			},
+			"repository_plain_http": schema.BoolAttribute{
+				Optional:    true,
+				Description: "Connect to the OCI registry over plain HTTP",
 			},
 			"repository_username": schema.StringAttribute{
 				Optional:    true,
@@ -543,7 +548,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		)
 		return
 	}
-	diags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
+	diags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString(), state.RepositoryPlainHTTP.ValueBool())
 	if diags.HasError() {
 		resp.Diagnostics.Append(diags...)
 		return
@@ -899,6 +904,7 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 	cpo.Username = model.RepositoryUsername.ValueString()
 	cpo.Password = model.RepositoryPassword.ValueString()
 	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
+	cpo.PlainHTTP = model.RepositoryPlainHTTP.ValueBool()
 
 	return cpo, chartName, diags
 }

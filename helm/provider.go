@@ -631,7 +631,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 				return
 			}
 
-			err := OCIRegistryPerformLogin(ctx, meta, meta.RegistryClient, r.URL.ValueString(), r.Username.ValueString(), r.Password.ValueString())
+			err := OCIRegistryPerformLogin(ctx, meta, meta.RegistryClient, r.URL.ValueString(), r.Username.ValueString(), r.Password.ValueString(), false)
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"OCI Registry login failed",
@@ -661,7 +661,7 @@ func (p *HelmProvider) Resources(ctx context.Context) []func() resource.Resource
 	}
 }
 
-func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Configuration, registryClient *registry.Client, repository, chartName, username, password string) diag.Diagnostics {
+func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Configuration, registryClient *registry.Client, repository, chartName, username, password string, plainHTTP bool) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	actionConfig.RegistryClient = registryClient
@@ -678,7 +678,7 @@ func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Conf
 	}
 
 	if username != "" && password != "" {
-		err := OCIRegistryPerformLogin(ctx, meta, registryClient, ociURL, username, password)
+		err := OCIRegistryPerformLogin(ctx, meta, registryClient, ociURL, username, password, plainHTTP)
 		if err != nil {
 			diags.AddError(
 				"OCI Registry Login Failed",
@@ -691,7 +691,7 @@ func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Conf
 }
 
 // registryClient = client used to comm with the registry, oci urls, un, and pw used for authentication
-func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *registry.Client, ociURL, username, password string) error {
+func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *registry.Client, ociURL, username, password string, plainHTTP bool) error {
 	// getting the oci url, and extracting the host.
 	u, err := url.Parse(ociURL)
 	if err != nil {
@@ -704,7 +704,7 @@ func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *re
 		return nil
 	}
 	// Now we perform the login, with the provided username and password by calling the login method
-	err = registryClient.Login(u.Host, registry.LoginOptBasicAuth(username, password))
+	err = registryClient.Login(u.Host, registry.LoginOptBasicAuth(username, password), registry.LoginOptPlainText(plainHTTP))
 	if err != nil {
 		return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
 	}

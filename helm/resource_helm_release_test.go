@@ -2504,8 +2504,9 @@ func testAccHelmReleaseConfig_OCI_login_multiple(resource, ns, name, repo, versi
 			version     = %q
 			chart       = "test-chart"
 
-			repository_username = %q
-			repository_password = %q
+			repository_username   = %q
+			repository_password   = %q
+			repository_plain_http = true
 		}
 		resource "helm_release" "%[1]s2" {
 			name       = "%[2]s2"
@@ -2514,8 +2515,9 @@ func testAccHelmReleaseConfig_OCI_login_multiple(resource, ns, name, repo, versi
 		   version     = %[5]q
 		   chart       = "test-chart"
 
-		   repository_username = %[6]q
-		   repository_password = %[7]q
+		   repository_username   = %[6]q
+		   repository_password   = %[7]q
+		   repository_plain_http = true
 	   }
 	`, resource, name, ns, repo, version, username, password)
 }

@@ -1,0 +1,11 @@
+```release-note:note
+Upgrade Helm from 3.20.2 to 3.21.3
+```
+
+```release-note:dependency
+Upgrade `go` from `1.25.8` to `1.26.5`
+```
+
+```release-note:note
+Add `repository_plain_http` attribute to `helm_release` resource and `helm_template` data source to support plain-HTTP OCI registries, required as of Helm 3.21.3 (via oras-go v2.6.1 per GHSA-vh4v-2xq2-g5cg)
+```
