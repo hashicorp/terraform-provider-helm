@@ -76,34 +76,57 @@ func TestSplitKeyPath(t *testing.T) {
 	}
 }
 
-func TestCloakSetValue_EscapedDot(t *testing.T) {
-	values := map[string]interface{}{
-		"server": map[string]interface{}{
-			"config": map[string]interface{}{
-				"oidc.config": "my-secret",
+func TestCloakSetValue(t *testing.T) {
+	tests := []struct {
+		name   string
+		values map[string]interface{}
+		key    string
+		get    func(map[string]interface{}) interface{}
+	}{
+		{
+			name:   "plain key",
+			values: map[string]interface{}{"password": "secret"},
+			key:    "password",
+			get:    func(m map[string]interface{}) interface{} { return m["password"] },
+		},
+		{
+			name: "dotted key",
+			values: map[string]interface{}{
+				"auth": map[string]interface{}{"password": "secret"},
+			},
+			key: "auth.password",
+			get: func(m map[string]interface{}) interface{} {
+				return m["auth"].(map[string]interface{})["password"]
+			},
+		},
+		{
+			name:   "escaped-dotted key",
+			values: map[string]interface{}{"foo.bar": "secret"},
+			key:    `foo\.bar`,
+			get:    func(m map[string]interface{}) interface{} { return m["foo.bar"] },
+		},
+		{
+			name: "nested key",
+			values: map[string]interface{}{
+				"server": map[string]interface{}{
+					"config": map[string]interface{}{
+						"oidc.config": "my-secret",
+					},
+				},
+			},
+			key: `server.config.oidc\.config`,
+			get: func(m map[string]interface{}) interface{} {
+				return m["server"].(map[string]interface{})["config"].(map[string]interface{})["oidc.config"]
 			},
 		},
 	}
 
-	cloakSetValue(values, `server.config.oidc\.config`)
-
-	got := values["server"].(map[string]interface{})["config"].(map[string]interface{})["oidc.config"]
-	if got != sensitiveContentValue {
-		t.Errorf("expected %q, got %q", sensitiveContentValue, got)
-	}
-}
-
-func TestCloakSetValue_NormalDottedPath(t *testing.T) {
-	values := map[string]interface{}{
-		"auth": map[string]interface{}{
-			"password": "secret123",
-		},
-	}
-
-	cloakSetValue(values, "auth.password")
-
-	got := values["auth"].(map[string]interface{})["password"]
-	if got != sensitiveContentValue {
-		t.Errorf("expected %q, got %q", sensitiveContentValue, got)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cloakSetValue(tt.values, tt.key)
+			if got := tt.get(tt.values); got != sensitiveContentValue {
+				t.Errorf("key %q: expected %q, got %q", tt.key, sensitiveContentValue, got)
+			}
+		})
 	}
 }
