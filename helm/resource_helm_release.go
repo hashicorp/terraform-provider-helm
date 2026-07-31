@@ -1251,12 +1251,18 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 	name := state.Name.ValueString()
 	namespace := state.Namespace.ValueString()
 
+	// resourceReleaseExists reports false both when the release is gone and
+	// when the lookup itself failed, so the diagnostics have to be checked
+	// before treating the release as already uninstalled. Otherwise a
+	// transient error talking to the cluster ends the delete right here: the
+	// resource is dropped from state without the uninstall ever running, and
+	// the release stays behind in the cluster.
 	exists, diags := resourceReleaseExists(ctx, name, namespace, meta)
-	if !exists {
-		return
-	}
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !exists {
 		return
 	}
 
