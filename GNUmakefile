@@ -20,10 +20,23 @@ endif
 LAST_RELEASE?=$$(git describe --tags $$(git rev-list --tags --max-count=1))
 THIS_RELEASE?=$$(git rev-parse --abbrev-ref HEAD)
 
+# Derive Helm's default Capabilities.KubeVersion from the k8s.io/client-go
+# version this provider builds against, mirroring Helm's own Makefile. Without
+# these, chartutil.k8sVersionMajor/Minor keep their in-source values of 1 and
+# 20, so anything rendering a chart without a cluster connection reports
+# Kubernetes v1.20.0 and charts declaring a kubeVersion constraint refuse to
+# render. client-go v0.x.y corresponds to Kubernetes v1.x.y, hence the +1.
+K8S_MODULES_VER=$(subst ., ,$(subst v,,$(shell go list -f '{{.Version}}' -m k8s.io/client-go)))
+K8S_MODULES_MAJOR_VER=$(shell echo $$(($(firstword $(K8S_MODULES_VER)) + 1)))
+K8S_MODULES_MINOR_VER=$(word 2,$(K8S_MODULES_VER))
+
+LDFLAGS += -X helm.sh/helm/v3/pkg/chartutil.k8sVersionMajor=$(K8S_MODULES_MAJOR_VER)
+LDFLAGS += -X helm.sh/helm/v3/pkg/chartutil.k8sVersionMinor=$(K8S_MODULES_MINOR_VER)
+
 default: build
 
 build: fmtcheck
-	go build -v .
+	go build -v -ldflags "$(LDFLAGS)" .
 
 # expected to be invoked by make changelog LAST_RELEASE=gitref THIS_RELEASE=gitref
 changelog:
@@ -89,7 +102,7 @@ packages:
 		for arch in $(PKG_ARCH); do \
 			mkdir -p $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch} && \
 			cd $(BASE_PATH) && \
-			CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} go build -o $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch}/$(PROVIDER)_$(VERSION) . && \
+			CGO_ENABLED=0 GOOS=$${os} GOARCH=$${arch} go build -ldflags "$(LDFLAGS)" -o $(BUILD_PATH)/$(PROVIDER)_$${os}_$${arch}/$(PROVIDER)_$(VERSION) . && \
 			cd $(BUILD_PATH) && \
 			tar -cvzf $(BUILD_PATH)/$(PROVIDER)_$(BRANCH)_$${os}_$${arch}.tar.gz $(PROVIDER)_$${os}_$${arch}/; \
 		done; \

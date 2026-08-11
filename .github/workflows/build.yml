@@ -132,11 +132,22 @@ jobs:
           arch: ${{ matrix.goarch }}
           reproducible: report
           instructions: |
+            # Derive Helm's default Capabilities.KubeVersion from the
+            # k8s.io/client-go version this provider builds against, mirroring
+            # Helm's own Makefile. Without these, chartutil keeps its in-source
+            # values of 1 and 20, so anything rendering a chart without a
+            # cluster connection reports Kubernetes v1.20.0 and charts declaring
+            # a kubeVersion constraint refuse to render. client-go v0.x.y
+            # corresponds to Kubernetes v1.x.y, hence the +1.
+            K8S_MODULES_VER="$(go list -f '{{.Version}}' -m k8s.io/client-go)"
+            K8S_MODULES_VER="${K8S_MODULES_VER#v}"
+            K8S_MODULES_MAJOR_VER="$(( $(echo "$K8S_MODULES_VER" | cut -d. -f1) + 1 ))"
+            K8S_MODULES_MINOR_VER="$(echo "$K8S_MODULES_VER" | cut -d. -f2)"
             go build \
               -o "$BIN_PATH" \
               -trimpath \
               -buildvcs=false \
-              -ldflags "-s -w -X 'main.Version=${{ needs.set-product-version.outputs.product-version }}'"
+              -ldflags "-s -w -X 'main.Version=${{ needs.set-product-version.outputs.product-version }}' -X 'helm.sh/helm/v3/pkg/chartutil.k8sVersionMajor=$K8S_MODULES_MAJOR_VER' -X 'helm.sh/helm/v3/pkg/chartutil.k8sVersionMinor=$K8S_MODULES_MINOR_VER'"
             cp LICENSE "$TARGET_DIR/LICENSE.txt"
 
   whats-next:
