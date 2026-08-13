@@ -1,0 +1,7 @@
+```release-note:bug
+`resource/helm_release`: Report an error instead of silently truncating a `set`, `set_sensitive` or `set_list` value that helm's value parser would split on an unescaped comma.
+```
+
+```release-note:bug
+`resource/helm_release`: Stop `set_sensitive` and `set_wo` values from being printed in plan output when parsing them fails, and from being written to debug logs.
+```

@@ -1420,7 +1420,8 @@ func getWriteOnlyValues(ctx context.Context, model *HelmReleaseModel) (map[strin
 			return nil, diags
 		}
 		for _, set := range setvals {
-			setDiags := getValue(base, set)
+			// Write-only values are secrets by construction.
+			setDiags := getValue(base, set, true)
 			diags.Append(setDiags...)
 			if diags.HasError() {
 				return nil, diags
@@ -1473,7 +1474,7 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 
 		for i, set := range setList {
 			tflog.Debug(ctx, fmt.Sprintf("Processing Set element at index %d: %v", i, set))
-			setDiags := getValue(base, set)
+			setDiags := getValue(base, set, false)
 			diags.Append(setDiags...)
 			if diags.HasError() {
 				tflog.Debug(ctx, fmt.Sprintf("Error occurred while processing Set element at index %d", i))
@@ -1516,8 +1517,9 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 		}
 
 		for i, setSensitive := range setSensitiveList {
-			tflog.Debug(ctx, fmt.Sprintf("Processing Set_Sensitive element at index %d: %v", i, setSensitive))
-			setSensitiveDiags := getValue(base, setSensitive)
+			// Logged by name only: %v on the model renders the value, which is the secret.
+			tflog.Debug(ctx, fmt.Sprintf("Processing Set_Sensitive element at index %d: %s", i, setSensitive.Name))
+			setSensitiveDiags := getValue(base, setSensitive, true)
 			diags.Append(setSensitiveDiags...)
 			if diags.HasError() {
 				tflog.Debug(ctx, fmt.Sprintf("Error occurred while processing Set_Sensitive element at index %d", i))
@@ -1537,7 +1539,128 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 	return base, diags
 }
 
-func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostics {
+// checkValueIsNotSplit reports whether a single set entry would be parsed as more than one
+// assignment. helm's strvals parser treats "," as an assignment separator, so a value containing an
+// unescaped comma is split: the key keeps only the text before it and the remainder becomes further
+// assignments. When that remainder happens to contain an "=" -- a PEM bundle, a base64 blob, a
+// comment header -- it parses cleanly, so the release is applied with a truncated value and helm
+// exits 0. Nothing in the plan or the apply output shows that anything was dropped.
+//
+// A single entry is expected to produce exactly one leaf. Brace list syntax ("{a,b}") still counts
+// as one leaf, so that stays supported; a split value produces two or more, which is reported here
+// instead of being silently accepted.
+//
+// The diagnostic deliberately does not include the value: this runs for set_sensitive too.
+func checkValueIsNotSplit(name, value string, asString bool) *diag.ErrorDiagnostic {
+	probe := map[string]interface{}{}
+	assignment := fmt.Sprintf("%s=%s", name, value)
+
+	var err error
+	if asString {
+		err = strvals.ParseIntoString(assignment, probe)
+	} else {
+		err = strvals.ParseInto(assignment, probe)
+	}
+	if err != nil {
+		// Left to the real parse below, which reports it.
+		return nil
+	}
+
+	if countLeaves(probe) <= 1 {
+		return nil
+	}
+
+	d := diag.NewErrorDiagnostic(
+		"Value would be truncated",
+		fmt.Sprintf("The value for %q contains an unescaped %q, which helm's value parser treats as a "+
+			"separator between assignments. Only the text before it would reach the chart, and the "+
+			"remainder would be applied as unrelated keys.\n\n"+
+			"Escape it as %q to pass it through unchanged, or supply the value through the `values` "+
+			"attribute instead, which is parsed as YAML and needs no escaping.", name, ",", `\,`),
+	)
+	return &d
+}
+
+// checkListIsNotSplit reports whether a set_list entry would gain elements. The elements are joined
+// with "," into helm's list syntax, so an element containing an unescaped comma silently becomes two
+// elements rather than one.
+//
+// The diagnostic deliberately does not include the elements, which may be sensitive.
+func checkListIsNotSplit(name string, elements []string) *diag.ErrorDiagnostic {
+	// An empty list parses as a single empty element, which is pre-existing behaviour and not a
+	// split, so there is nothing to compare against.
+	if len(elements) == 0 {
+		return nil
+	}
+
+	probe := map[string]interface{}{}
+	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, strings.Join(elements, ",")), probe); err != nil {
+		// Left to the real parse below, which reports it.
+		return nil
+	}
+
+	parsed, ok := lookupPath(probe, name).([]interface{})
+	if !ok || len(parsed) == len(elements) {
+		return nil
+	}
+
+	d := diag.NewErrorDiagnostic(
+		"List value would gain elements",
+		fmt.Sprintf("The list for %q parses as %d elements rather than the %d supplied, because an "+
+			"element contains an unescaped %q, which helm's value parser treats as an element "+
+			"separator.\n\nEscape it as %q to keep the element intact, or supply the list through the "+
+			"`values` attribute instead, which is parsed as YAML and needs no escaping.",
+			name, len(parsed), len(elements), ",", `\,`),
+	)
+	return &d
+}
+
+// lookupPath resolves a dotted strvals key against a parsed result, returning nil if any segment is
+// missing. Keys containing escaped separators are not resolved, which only costs a check.
+func lookupPath(m map[string]interface{}, path string) interface{} {
+	segments := strings.Split(path, ".")
+	var current interface{} = m
+	for _, segment := range segments {
+		asMap, ok := current.(map[string]interface{})
+		if !ok {
+			return nil
+		}
+		current, ok = asMap[segment]
+		if !ok {
+			return nil
+		}
+	}
+	return current
+}
+
+// countLeaves counts the non-map values in a parsed strvals result.
+func countLeaves(m map[string]interface{}) int {
+	n := 0
+	for _, v := range m {
+		if child, ok := v.(map[string]interface{}); ok {
+			n += countLeaves(child)
+			continue
+		}
+		n++
+	}
+	return n
+}
+
+// parseErrorDetail formats a parse failure. The underlying parser errors quote the fragment they
+// choked on, which for a sensitive entry is part of the secret, so they are withheld there and the
+// escaping hint given instead. Diagnostics are shown in plan output, so this is the difference
+// between a secret being printed and not.
+func parseErrorDetail(name string, err error, sensitive bool) string {
+	if sensitive {
+		return fmt.Sprintf("Failed parsing key %q. The parser error is withheld because the value is "+
+			"sensitive. It is usually an unescaped %q, which helm's value parser treats as a separator "+
+			"between assignments; escape it as %q, or supply the value through the `values` attribute "+
+			"instead, which is parsed as YAML and needs no escaping.", name, ",", `\,`)
+	}
+	return fmt.Sprintf("Failed parsing key %q: %s", name, err)
+}
+
+func getValue(base map[string]interface{}, set setResourceModel, sensitive bool) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	name := set.Name.ValueString()
@@ -1546,19 +1669,27 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 
 	switch valueType {
 	case "auto", "":
+		if d := checkValueIsNotSplit(name, value, false); d != nil {
+			diags.Append(d)
+			return diags
+		}
 		if err := strvals.ParseInto(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			diags.AddError("Failed parsing value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
+			diags.AddError("Failed parsing value", parseErrorDetail(name, err, sensitive))
 			return diags
 		}
 	case "string":
+		if d := checkValueIsNotSplit(name, value, true); d != nil {
+			diags.Append(d)
+			return diags
+		}
 		if err := strvals.ParseIntoString(fmt.Sprintf("%s=%s", name, value), base); err != nil {
-			diags.AddError("Failed parsing string value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, value, err))
+			diags.AddError("Failed parsing string value", parseErrorDetail(name, err, sensitive))
 			return diags
 		}
 	case "literal":
 		var literal interface{}
 		if err := yaml.Unmarshal([]byte(fmt.Sprintf("%s: %s", name, value)), &literal); err != nil {
-			diags.AddError("Failed parsing literal value", fmt.Sprintf("Key %q with literal value %s: %s", name, value, err))
+			diags.AddError("Failed parsing literal value", parseErrorDetail(name, err, sensitive))
 			return diags
 		}
 
@@ -1650,8 +1781,13 @@ func getListValue(ctx context.Context, base map[string]interface{}, set set_list
 	// Join the list into a single string
 	listString := strings.Join(listStringArray, ",")
 
+	if d := checkListIsNotSplit(name, listStringArray); d != nil {
+		diags.Append(d)
+		return diags
+	}
+
 	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
-		diags.AddError("Error parsing list value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, listString, err))
+		diags.AddError("Error parsing list value", fmt.Sprintf("Failed parsing key %q: %s", name, err))
 		return diags
 	}
 
