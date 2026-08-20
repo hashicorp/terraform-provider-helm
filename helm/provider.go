@@ -664,8 +664,6 @@ func (p *HelmProvider) Resources(ctx context.Context) []func() resource.Resource
 func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Configuration, registryClient *registry.Client, repository, chartName, username, password string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	actionConfig.RegistryClient = registryClient
-
 	var ociURL string
 	if registry.IsOCI(repository) {
 		ociURL = repository
@@ -676,6 +674,26 @@ func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Conf
 	if ociURL == "" {
 		return diags
 	}
+
+	// For local (plain HTTP) OCI registries, use a dedicated registry client so
+	// the subsequent chart pull does not attempt HTTPS. Otherwise reuse the
+	// provider's global client.
+	if needsPlainHTTP(ociURL) {
+		localClient, err := registry.NewClient(
+			registry.ClientOptPlainHTTP(),
+			registry.ClientOptCredentialsFile(meta.Settings.RegistryConfig),
+		)
+		if err != nil {
+			diags.AddError(
+				"OCI Registry Client Failed",
+				fmt.Sprintf("Failed to create plain HTTP registry client for %q: %s", ociURL, err.Error()),
+			)
+			return diags
+		}
+		registryClient = localClient
+	}
+
+	actionConfig.RegistryClient = registryClient
 
 	if username != "" && password != "" {
 		err := OCIRegistryPerformLogin(ctx, meta, registryClient, ociURL, username, password)
@@ -704,7 +722,10 @@ func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *re
 		return nil
 	}
 	// Now we perform the login, with the provided username and password by calling the login method
-	err = registryClient.Login(u.Host, registry.LoginOptBasicAuth(username, password))
+	err = registryClient.Login(u.Host,
+		registry.LoginOptBasicAuth(username, password),
+		registry.LoginOptPlainText(needsPlainHTTP(ociURL)),
+	)
 	if err != nil {
 		return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
 	}

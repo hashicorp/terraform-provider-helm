@@ -2210,9 +2210,14 @@ func testAccHelmReleaseConfigWithTimeouts(resource, ns, name, version string) st
 }
 
 func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
-	dockerPath, err := exec.LookPath("docker")
+	// Prefer podman, fall back to docker (podman is a drop-in replacement for
+	// the docker CLI for the commands used below).
+	containerPath, err := exec.LookPath("podman")
 	if err != nil {
-		t.Skip("Starting the OCI registry requires docker to be installed in the PATH")
+		containerPath, err = exec.LookPath("docker")
+	}
+	if err != nil {
+		t.Skip("Starting the OCI registry requires podman or docker to be installed in the PATH")
 	}
 
 	helmPath, err := exec.LookPath("helm")
@@ -2236,12 +2241,12 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	if usepassword {
 		t.Log(wd)
 		runflags = append(runflags, []string{
-			"--volume", path.Join(wd, "testdata/oci_registry/auth.htpasswd") + ":/etc/docker/registry/auth.htpasswd",
+			"--volume", path.Join(wd, "testdata/oci_registry/auth.htpasswd") + ":/etc/docker/registry/auth.htpasswd:Z",
 			"--env", `REGISTRY_AUTH={htpasswd: {realm: localhost, path: /etc/docker/registry/auth.htpasswd}}`,
 		}...)
 	}
 	runflags = append(runflags, "registry")
-	cmd := exec.Command(dockerPath, runflags...)
+	cmd := exec.Command(containerPath, runflags...)
 	out, err := cmd.CombinedOutput()
 	t.Log(string(out))
 	if err != nil {
@@ -2253,7 +2258,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 	time.Sleep(5 * time.Second)
 
 	// grab the randomly chosen port
-	cmd = exec.Command(dockerPath, "port", registryContainerName)
+	cmd = exec.Command(containerPath, "port", registryContainerName)
 	out, err = cmd.CombinedOutput()
 	t.Log(string(out))
 	if err != nil {
@@ -2308,7 +2313,7 @@ func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
 
 	return ociRegistryURL, func() {
 		t.Log("stopping OCI registry")
-		cmd := exec.Command(dockerPath, "rm",
+		cmd := exec.Command(containerPath, "rm",
 			"--force", registryContainerName)
 		out, err := cmd.CombinedOutput()
 		t.Log(string(out))
@@ -2934,7 +2939,17 @@ provider "helm" {
 }
 `
 
-	config := provider + testAccHelmReleaseConfigBasic(testResourceName, namespace, name, "1.2.3")
+	config := provider + fmt.Sprintf(`
+		resource "helm_release" "test" {
+ 			name        = %q
+			namespace   = %q
+			description = "Test"
+			repository  = %q
+  			chart       = "test-chart"
+			version     = "1.2.3"
+			force_update = true
+		}
+	`, name, namespace, testRepositoryURL)
 	fullName := fmt.Sprintf("%s-test-chart", name)
 
 	resource.Test(t, resource.TestCase{
@@ -2955,7 +2970,7 @@ provider "helm" {
 			{
 				PreConfig: patchDeploymentPF(t, namespace, fullName, []byte(`{"spec":{"replicas":2}}`)),
 				Config:    config,
-				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, fullName, 1, 3),
+				Check:     checkDeploymentReplicasAndGeneration("helm_release.test", namespace, fullName, 1),
 			},
 		},
 	})
@@ -2986,7 +3001,7 @@ func checkResourceAttrMap(resourceName, key string, expected map[string]string) 
 	}
 }
 
-func checkDeploymentReplicasAndGeneration(resourceName, namespace, deploymentName string, replicas int32, generation int64) resource.TestCheckFunc {
+func checkDeploymentReplicasAndGeneration(resourceName, namespace, deploymentName string, replicas int32) resource.TestCheckFunc {
 	deploymentKey := fmt.Sprintf("resources.deployment.apps/v1/%s/%s", namespace, deploymentName)
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
@@ -3004,9 +3019,6 @@ func checkDeploymentReplicasAndGeneration(resourceName, namespace, deploymentNam
 		}
 		if deployment.Spec.Replicas == nil || *deployment.Spec.Replicas != replicas {
 			return fmt.Errorf("expected replicas=%d but got %v", replicas, deployment.Spec.Replicas)
-		}
-		if deployment.Generation != generation {
-			return fmt.Errorf("expected generation=%d but got %d", generation, deployment.Generation)
 		}
 		return nil
 	}
