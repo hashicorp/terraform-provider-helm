@@ -1,3 +1,13 @@
+## Unreleased
+
+BREAKING CHANGES:
+
+* Migrate from Helm v3 SDK (`helm.sh/helm/v3`) to Helm v4 SDK (`helm.sh/helm/v4`) [[GH-1730](https://github.com/hashicorp/terraform-provider-helm/issues/1730)]
+  * The bundled Helm engine is now Helm v4. This brings server-side apply as the default behavior, chart pinning by digest, multi-document YAML values support, and other Helm v4 changes.
+  * `postrender` now uses Helm v4 post-renderer plugin semantics; arbitrary executables via `binary_path` are still supported through a compatibility layer but are deprecated.
+  * The `wait` and `wait_for_jobs` attributes are now handled through Helm v4's wait strategy.
+  * `recreate_pods` is no longer supported (removed in Helm v4).
+
 ## 3.2.0 (June 4, 2026)
 
 ENHANCEMENT:
