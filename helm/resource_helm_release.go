@@ -1197,7 +1197,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.SkipCRDs = plan.SkipCrds.ValueBool()
 	client.SubNotes = plan.RenderSubchartNotes.ValueBool()
 	client.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
-	client.ForceReplace = plan.ForceUpdate.ValueBool()
+	client.ForceConflicts = plan.ForceUpdate.ValueBool()
 	client.ResetValues = plan.ResetValues.ValueBool()
 	client.ReuseValues = plan.ReuseValues.ValueBool()
 	client.MaxHistory = int(plan.MaxHistory.ValueInt64())
@@ -1391,8 +1391,23 @@ func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPath
 	cpo.Username = model.RepositoryUsername.ValueString()
 	cpo.Password = model.RepositoryPassword.ValueString()
 	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
+	cpo.PlainHTTP = needsPlainHTTP(repository)
 
 	return cpo, chartName, diags
+}
+
+// needsPlainHTTP reports whether an OCI repository requires plain HTTP (no TLS).
+// Local registries (localhost / 127.0.0.1) are commonly served over plain HTTP.
+func needsPlainHTTP(repository string) bool {
+	if !registry.IsOCI(repository) {
+		return false
+	}
+	u, err := url.Parse(repository)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
 func useChartVersion(chart string, repo string) bool {
@@ -2238,7 +2253,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.DisableHooks = plan.DisableWebhooks.ValueBool()
 		upgrade.RollbackOnFailure = plan.Atomic.ValueBool()
 		upgrade.SubNotes = plan.RenderSubchartNotes.ValueBool()
-		upgrade.ForceReplace = plan.ForceUpdate.ValueBool()
+		upgrade.ForceConflicts = plan.ForceUpdate.ValueBool()
 		upgrade.ResetValues = plan.ResetValues.ValueBool()
 		upgrade.ReuseValues = plan.ReuseValues.ValueBool()
 		upgrade.MaxHistory = int(plan.MaxHistory.ValueInt64())
@@ -2620,7 +2635,7 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 	}
 
 	setList := []setResourceModel{}
-	plan.Set.ElementsAs(context.Background(), &setList, false)
+	plan.SetList.ElementsAs(context.Background(), &setList, false)
 	for _, s := range setList {
 		if s.Value.IsUnknown() {
 			return true
@@ -2693,6 +2708,7 @@ func stripVolatileFields(obj map[string]any) {
 		delete(md, "resourceVersion")
 		delete(md, "uid")
 		delete(md, "creationTimestamp")
+		delete(md, "generation")
 	}
 
 	// Service fields assigned by API server
