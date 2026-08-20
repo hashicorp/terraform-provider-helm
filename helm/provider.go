@@ -24,10 +24,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/cli"
-	"helm.sh/helm/v3/pkg/registry"
-	"helm.sh/helm/v3/pkg/storage/driver"
+	"helm.sh/helm/v4/pkg/action"
+	"helm.sh/helm/v4/pkg/cli"
+	"helm.sh/helm/v4/pkg/registry"
+	"helm.sh/helm/v4/pkg/storage/driver"
 )
 
 var _ provider.Provider = &HelmProvider{}
@@ -726,9 +726,7 @@ func (m *Meta) GetHelmConfiguration(ctx context.Context, namespace string) (*act
 	if err != nil {
 		return nil, err
 	}
-	if err := actionConfig.Init(kc, namespace, m.HelmDriver, func(format string, v ...interface{}) {
-		tflog.Info(context.Background(), fmt.Sprintf(format, v...))
-	}); err != nil {
+	if err := actionConfig.Init(kc, namespace, m.HelmDriver); err != nil {
 		return nil, err
 	}
 	tflog.Info(context.Background(), "[INFO] GetHelmConfiguration success")

@@ -34,14 +34,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/pkg/errors"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/downloader"
-	"helm.sh/helm/v3/pkg/getter"
-	"helm.sh/helm/v3/pkg/postrender"
-	"helm.sh/helm/v3/pkg/registry"
-	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v4/pkg/action"
+	"helm.sh/helm/v4/pkg/chart/loader"
+	"helm.sh/helm/v4/pkg/chart/v2"
+	"helm.sh/helm/v4/pkg/downloader"
+	"helm.sh/helm/v4/pkg/getter"
+	"helm.sh/helm/v4/pkg/kube"
+	"helm.sh/helm/v4/pkg/registry"
+	"helm.sh/helm/v4/pkg/release/common"
+	"helm.sh/helm/v4/pkg/release/v1"
 	"k8s.io/helm/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
@@ -752,7 +753,11 @@ func getInstalledReleaseVersion(ctx context.Context, m *Meta, cfg *action.Config
 		return "", err
 	}
 
-	installedVersion := hist[0].Chart.Metadata.Version
+	installedRelease, ok := hist[0].(*v1.Release)
+	if !ok {
+		return "", fmt.Errorf("unable to type assert release to v1.Release")
+	}
+	installedVersion := installedRelease.Chart.Metadata.Version
 	tflog.Debug(ctx, fmt.Sprintf("%s Chart %s is installed as release %s", logID, name, installedVersion))
 	return installedVersion, nil
 }
@@ -816,9 +821,15 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	} else if updated {
-		c, err = loader.Load(cpath)
+		cLoaded, err := loader.Load(cpath)
 		if err != nil {
 			resp.Diagnostics.AddError("Error loading chart", fmt.Sprintf("Could not load chart: %s", err))
+			return
+		}
+		var ok bool
+		c, ok = cLoaded.(*v2.Chart)
+		if !ok {
+			resp.Diagnostics.AddError("Error loading chart", "Could not type assert chart to v2.Chart")
 			return
 		}
 	}
@@ -846,18 +857,20 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	client.ClientOnly = false
-	client.DryRun = false
+	client.DryRunStrategy = action.DryRunNone
 	client.DisableHooks = state.DisableWebhooks.ValueBool()
-	client.Wait = state.Wait.ValueBool()
-	client.WaitForJobs = state.WaitForJobs.ValueBool()
+	if state.Wait.ValueBool() || state.WaitForJobs.ValueBool() {
+		client.WaitStrategy = kube.StatusWatcherStrategy
+	} else {
+		client.WaitStrategy = kube.HookOnlyStrategy
+	}
 	client.Devel = state.Devel.ValueBool()
 	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
 	client.TakeOwnership = state.TakeOwnership.ValueBool()
 	client.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
 	client.Namespace = state.Namespace.ValueString()
 	client.ReleaseName = state.Name.ValueString()
-	client.Atomic = state.Atomic.ValueBool()
+	client.RollbackOnFailure = state.Atomic.ValueBool()
 	client.SkipCRDs = state.SkipCrds.ValueBool()
 	client.SubNotes = state.RenderSubchartNotes.ValueBool()
 	client.DisableOpenAPIValidation = state.DisableOpenapiValidation.ValueBool()
@@ -867,7 +880,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 
 	var releaseAlreadyExists bool
 	var installedVersion string
-	var rel *release.Release
+	var rel *v1.Release
 
 	releaseName := state.Name.ValueString()
 
@@ -893,13 +906,17 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 
 		upgradeClient := action.NewUpgrade(actionConfig)
 		upgradeClient.ChartPathOptions = *cpo
-		upgradeClient.DryRun = false
+		upgradeClient.DryRunStrategy = action.DryRunNone
 		upgradeClient.DisableHooks = state.DisableWebhooks.ValueBool()
-		upgradeClient.Wait = state.Wait.ValueBool()
+		if state.Wait.ValueBool() || state.WaitForJobs.ValueBool() {
+			upgradeClient.WaitStrategy = kube.StatusWatcherStrategy
+		} else {
+			upgradeClient.WaitStrategy = kube.HookOnlyStrategy
+		}
 		upgradeClient.Devel = state.Devel.ValueBool()
 		upgradeClient.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
 		upgradeClient.Namespace = state.Namespace.ValueString()
-		upgradeClient.Atomic = state.Atomic.ValueBool()
+		upgradeClient.RollbackOnFailure = state.Atomic.ValueBool()
 		upgradeClient.SkipCRDs = state.SkipCrds.ValueBool()
 		upgradeClient.SubNotes = state.RenderSubchartNotes.ValueBool()
 		upgradeClient.DisableOpenAPIValidation = state.DisableOpenapiValidation.ValueBool()
@@ -913,7 +930,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 				for _, arg := range argsList {
 					args = append(args, arg.(basetypes.StringValue).ValueString())
 				}
-				pr, err := postrender.NewExec(binaryPath, args...)
+				pr, err := NewExecPostRenderer(binaryPath, args...)
 				if err != nil {
 					resp.Diagnostics.AddError("Post-render Error", fmt.Sprintf("Could not create post-renderer: %s", err))
 					return
@@ -922,7 +939,17 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 			}
 		}
 
-		rel, err = upgradeClient.Run(releaseName, c, values)
+		relReleaser, runErr := upgradeClient.Run(releaseName, c, values)
+		if runErr != nil {
+			err = runErr
+		} else {
+			var ok bool
+			rel, ok = relReleaser.(*v1.Release)
+			if !ok {
+				resp.Diagnostics.AddError("installation failed", "Unable to type assert release to v1.Release")
+				return
+			}
+		}
 	} else {
 		tflog.Debug(ctx, fmt.Sprintf("Installing chart %q", releaseName))
 		if state.PostRender != nil {
@@ -935,7 +962,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 					args = append(args, arg.(basetypes.StringValue).ValueString())
 				}
 				tflog.Debug(ctx, fmt.Sprintf("Creating post-renderer with binary path: %s and args: %v", binaryPath, args))
-				pr, err := postrender.NewExec(binaryPath, args...)
+				pr, err := NewExecPostRenderer(binaryPath, args...)
 				if err != nil {
 					resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
 					return
@@ -944,7 +971,17 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 				client.PostRenderer = pr
 			}
 		}
-		rel, err = client.Run(c, values)
+		relReleaser, runErr := client.Run(c, values)
+		if runErr != nil {
+			err = runErr
+		} else {
+			var ok bool
+			rel, ok = relReleaser.(*v1.Release)
+			if !ok {
+				resp.Diagnostics.AddError("installation failed", "Unable to type assert release to v1.Release")
+				return
+			}
+		}
 	}
 	if err != nil && rel == nil {
 		resp.Diagnostics.AddError("installation failed", err.Error())
@@ -1131,9 +1168,16 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	} else if updated {
-		c, err = loader.Load(path)
-		if err != nil {
+		cLoaded, loadErr := loader.Load(path)
+		if loadErr != nil {
+			err = loadErr
 			resp.Diagnostics.AddError("Error loading chart", fmt.Sprintf("Could not load chart: %s", err))
+			return
+		}
+		var ok bool
+		c, ok = cLoaded.(*v2.Chart)
+		if !ok {
+			resp.Diagnostics.AddError("Error loading chart", "Could not type assert chart to v2.Chart")
 			return
 		}
 	}
@@ -1142,18 +1186,20 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.Namespace = plan.Namespace.ValueString()
 	client.TakeOwnership = plan.TakeOwnership.ValueBool()
 	client.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
-	client.Wait = plan.Wait.ValueBool()
-	client.WaitForJobs = plan.WaitForJobs.ValueBool()
-	client.DryRun = false
+	if plan.Wait.ValueBool() || plan.WaitForJobs.ValueBool() {
+		client.WaitStrategy = kube.StatusWatcherStrategy
+	} else {
+		client.WaitStrategy = kube.HookOnlyStrategy
+	}
+	client.DryRunStrategy = action.DryRunNone
 	client.DisableHooks = plan.DisableWebhooks.ValueBool()
-	client.Atomic = plan.Atomic.ValueBool()
+	client.RollbackOnFailure = plan.Atomic.ValueBool()
 	client.SkipCRDs = plan.SkipCrds.ValueBool()
 	client.SubNotes = plan.RenderSubchartNotes.ValueBool()
 	client.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
-	client.Force = plan.ForceUpdate.ValueBool()
+	client.ForceReplace = plan.ForceUpdate.ValueBool()
 	client.ResetValues = plan.ResetValues.ValueBool()
 	client.ReuseValues = plan.ReuseValues.ValueBool()
-	client.Recreate = plan.RecreatePods.ValueBool()
 	client.MaxHistory = int(plan.MaxHistory.ValueInt64())
 	client.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 	client.Description = plan.Description.ValueString()
@@ -1168,7 +1214,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 				args = append(args, arg.(basetypes.StringValue).ValueString())
 			}
 			tflog.Debug(ctx, fmt.Sprintf("Binary path update method: %s, Args: %v", binaryPath, args))
-			pr, err := postrender.NewExec(binaryPath, args...)
+			pr, err := NewExecPostRenderer(binaryPath, args...)
 			if err != nil {
 				resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
 				return
@@ -1193,9 +1239,14 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	name := plan.Name.ValueString()
-	release, err := client.Run(name, c, values)
+	releaseReleaser, err := client.Run(name, c, values)
 	if err != nil {
 		resp.Diagnostics.AddError("Error upgrading chart", fmt.Sprintf("Upgrade failed: %s", err))
+		return
+	}
+	release, ok := releaseReleaser.(*v1.Release)
+	if !ok {
+		resp.Diagnostics.AddError("Error upgrading chart", "Unable to type assert release to v1.Release")
 		return
 	}
 
@@ -1274,7 +1325,11 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 	// Initialize uninstall action
 	uninstall := action.NewUninstall(actionConfig)
-	uninstall.Wait = state.Wait.ValueBool()
+	if state.Wait.ValueBool() || state.WaitForJobs.ValueBool() {
+		uninstall.WaitStrategy = kube.StatusWatcherStrategy
+	} else {
+		uninstall.WaitStrategy = kube.HookOnlyStrategy
+	}
 	uninstall.DisableHooks = state.DisableWebhooks.ValueBool()
 	uninstall.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
 
@@ -1379,7 +1434,7 @@ func getVersion(model *HelmReleaseModel) string {
 	return strings.TrimSpace(version)
 }
 
-func isChartInstallable(ch *chart.Chart) error {
+func isChartInstallable(ch *v2.Chart) error {
 	switch ch.Metadata.Type {
 	case "", "application":
 		return nil
@@ -1387,7 +1442,7 @@ func isChartInstallable(ch *chart.Chart) error {
 	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
-func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
+func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*v2.Chart, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", m.Settings))
@@ -1398,9 +1453,15 @@ func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string
 		return nil, "", diags
 	}
 
-	c, err := loader.Load(path)
+	cLoaded, err := loader.Load(path)
 	if err != nil {
 		diags.AddError("Error loading chart", fmt.Sprintf("Unable to load chart %s: %s", path, err))
+		return nil, "", diags
+	}
+
+	c, ok := cLoaded.(*v2.Chart)
+	if !ok {
+		diags.AddError("Error loading chart", "Unable to type assert chart to v2.Chart")
 		return nil, "", diags
 	}
 
@@ -1662,7 +1723,7 @@ func versionsEqual(a, b string) bool {
 	return strings.TrimPrefix(a, "v") == strings.TrimPrefix(b, "v")
 }
 
-func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity *tfsdk.ResourceIdentity, r *release.Release, meta *Meta) diag.Diagnostics {
+func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity *tfsdk.ResourceIdentity, r *v1.Release, meta *Meta) diag.Diagnostics {
 	var diags diag.Diagnostics
 	// Update state with attributes from the helm release
 	state.Resources = types.MapNull(types.StringType)
@@ -1861,7 +1922,7 @@ func resourceReleaseExists(ctx context.Context, name, namespace string, meta *Me
 var errReleaseNotFound = fmt.Errorf("release: not found")
 
 // c
-func getRelease(ctx context.Context, m *Meta, cfg *action.Configuration, name string) (*release.Release, error) {
+func getRelease(ctx context.Context, m *Meta, cfg *action.Configuration, name string) (*v1.Release, error) {
 	get := action.NewGet(cfg)
 	tflog.Debug(ctx, fmt.Sprintf("%s getRelease post action created", name))
 
@@ -1881,16 +1942,20 @@ func getRelease(ctx context.Context, m *Meta, cfg *action.Configuration, name st
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("%s getRelease completed", name))
-	return res, nil
+	resRelease, ok := res.(*v1.Release)
+	if !ok {
+		return nil, fmt.Errorf("unable to type assert release to v1.Release")
+	}
+	return resRelease, nil
 }
 
 // c
-func checkChartDependencies(ctx context.Context, model *HelmReleaseModel, c *chart.Chart, path string, m *Meta) (bool, diag.Diagnostics) {
+func checkChartDependencies(ctx context.Context, model *HelmReleaseModel, c *v2.Chart, path string, m *Meta) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	p := getter.All(m.Settings)
 
 	if req := c.Metadata.Dependencies; req != nil {
-		err := action.CheckDependencies(c, req)
+		err := action.CheckDependencies(c, compatDependencies(req))
 		if err != nil {
 			if model.DependencyUpdate.ValueBool() {
 				man := &downloader.Manager{
@@ -1969,7 +2034,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	}
 
 	// Always set desired state to DEPLOYED
-	plan.Status = types.StringValue(release.StatusDeployed.String())
+	plan.Status = types.StringValue(common.StatusDeployed.String())
 
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
 		// Check if version has changed
@@ -2005,9 +2070,15 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	if resp.Diagnostics.HasError() {
 		return
 	} else if updated {
-		chart, err = loader.Load(path)
-		if err != nil {
-			resp.Diagnostics.AddError("Error loading chart", err.Error())
+		cLoaded, loadErr := loader.Load(path)
+		if loadErr != nil {
+			resp.Diagnostics.AddError("Error loading chart", loadErr.Error())
+			return
+		}
+		var ok bool
+		chart, ok = cLoaded.(*v2.Chart)
+		if !ok {
+			resp.Diagnostics.AddError("Error loading chart", "Could not type assert chart to v2.Chart")
 			return
 		}
 	}
@@ -2044,7 +2115,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 					args = append(args, arg.(basetypes.StringValue).ValueString())
 				}
 
-				pr, err := postrender.NewExec(binaryPath, args...)
+				pr, err := NewExecPostRenderer(binaryPath, args...)
 				if err != nil {
 					resp.Diagnostics.AddError("Error creating post-renderer", fmt.Sprintf("Could not create post-renderer: %s", err))
 					return
@@ -2056,17 +2127,20 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		if state == nil {
 			install := action.NewInstall(actionConfig)
 			install.ChartPathOptions = *cpo
-			install.DryRun = true
+			install.DryRunStrategy = action.DryRunServer
 			install.DisableHooks = plan.DisableWebhooks.ValueBool()
-			install.Wait = plan.Wait.ValueBool()
-			install.WaitForJobs = plan.WaitForJobs.ValueBool()
+			if plan.Wait.ValueBool() || plan.WaitForJobs.ValueBool() {
+				install.WaitStrategy = kube.StatusWatcherStrategy
+			} else {
+				install.WaitStrategy = kube.HookOnlyStrategy
+			}
 			install.Devel = plan.Devel.ValueBool()
 			install.DependencyUpdate = plan.DependencyUpdate.ValueBool()
 			install.TakeOwnership = plan.TakeOwnership.ValueBool()
 			install.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
 			install.Namespace = plan.Namespace.ValueString()
 			install.ReleaseName = plan.Name.ValueString()
-			install.Atomic = plan.Atomic.ValueBool()
+			install.RollbackOnFailure = plan.Atomic.ValueBool()
 			install.SkipCRDs = plan.SkipCrds.ValueBool()
 			install.SubNotes = plan.RenderSubchartNotes.ValueBool()
 			install.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
@@ -2082,7 +2156,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 
 			tflog.Debug(ctx, fmt.Sprintf("%s performing dry run install", logID))
-			dry, err := install.Run(chart, values)
+			dryReleaser, err := install.Run(chart, values)
 			if err != nil {
 				// NOTE if the cluster is not reachable then we can't run the install
 				// this will happen if the user has their cluster creation in the
@@ -2096,6 +2170,11 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 					return
 				}
 				resp.Diagnostics.AddError("Error performing dry run install", err.Error())
+				return
+			}
+			dry, ok := dryReleaser.(*v1.Release)
+			if !ok {
+				resp.Diagnostics.AddError("Error performing dry run install", "Unable to type assert release to v1.Release")
 				return
 			}
 
@@ -2150,16 +2229,18 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.Namespace = plan.Namespace.ValueString()
 		upgrade.TakeOwnership = plan.TakeOwnership.ValueBool()
 		upgrade.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
-		upgrade.Wait = plan.Wait.ValueBool()
-		upgrade.DryRun = true
+		if plan.Wait.ValueBool() || plan.WaitForJobs.ValueBool() {
+			upgrade.WaitStrategy = kube.StatusWatcherStrategy
+		} else {
+			upgrade.WaitStrategy = kube.HookOnlyStrategy
+		}
+		upgrade.DryRunStrategy = action.DryRunServer
 		upgrade.DisableHooks = plan.DisableWebhooks.ValueBool()
-		upgrade.Atomic = plan.Atomic.ValueBool()
+		upgrade.RollbackOnFailure = plan.Atomic.ValueBool()
 		upgrade.SubNotes = plan.RenderSubchartNotes.ValueBool()
-		upgrade.WaitForJobs = plan.WaitForJobs.ValueBool()
-		upgrade.Force = plan.ForceUpdate.ValueBool()
+		upgrade.ForceReplace = plan.ForceUpdate.ValueBool()
 		upgrade.ResetValues = plan.ResetValues.ValueBool()
 		upgrade.ReuseValues = plan.ReuseValues.ValueBool()
-		upgrade.Recreate = plan.RecreatePods.ValueBool()
 		upgrade.MaxHistory = int(plan.MaxHistory.ValueInt64())
 		upgrade.CleanupOnFail = plan.CleanupOnFail.ValueBool()
 		upgrade.Description = plan.Description.ValueString()
@@ -2172,7 +2253,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 
 		tflog.Debug(ctx, fmt.Sprintf("%s performing dry run upgrade", logID))
-		dry, err := upgrade.Run(name, chart, values)
+		dryReleaser, err := upgrade.Run(name, chart, values)
 		if err != nil && strings.Contains(err.Error(), "has no deployed releases") {
 			if len(chart.Metadata.Version) > 0 && cpo.Version != "" {
 				plan.Version = types.StringValue(chart.Metadata.Version)
@@ -2184,6 +2265,11 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			return
 		} else if err != nil {
 			resp.Diagnostics.AddError("Error running dry run for a diff", err.Error())
+			return
+		}
+		dry, ok := dryReleaser.(*v1.Release)
+		if !ok {
+			resp.Diagnostics.AddError("Error running dry run for a diff", "Unable to type assert release to v1.Release")
 			return
 		}
 
