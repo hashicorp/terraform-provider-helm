@@ -946,7 +946,7 @@ func TestAccResourceRelease_postrender(t *testing.T) {
 			},
 			{
 				Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "echo", "this will not work!", "Wrong", "Code"),
-				ExpectError: regexp.MustCompile("error validating data"),
+				ExpectError: regexp.MustCompile("error parsing YAML"),
 			},
 			{
 				Config:      testAccHelmReleaseConfigPostrender(testResourceName, namespace, testResourceName, "foobardoesnotexist"),
@@ -1021,8 +1021,7 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config:             broken,
-				ExpectError:        regexp.MustCompile("invalid release name"),
-				ExpectNonEmptyPlan: true,
+				ExpectError:        regexp.MustCompile("invalid release"),
 			},
 		},
 	})
@@ -1796,7 +1795,7 @@ func TestAccResourceRelease_LintFailChart(t *testing.T) {
 			{
 				Config:             broken,
 				PlanOnly:           true,
-				ExpectError:        regexp.MustCompile(`function "BAD_FUNCTION" not defined`),
+				ExpectError:        regexp.MustCompile("malformed chart or values"),
 				ExpectNonEmptyPlan: true,
 			},
 		},

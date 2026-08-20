@@ -2359,6 +2359,10 @@ You should update the version in your configuration to %[2]q, or remove the vers
 	if recomputeMetadata(plan, state) {
 		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
 		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+	} else if state != nil && !plan.Metadata.IsUnknown() && !state.Metadata.IsNull() && !state.Metadata.IsUnknown() {
+		// Preserve the prior state's metadata when nothing relevant changed, to
+		// avoid spurious diffs on computed metadata between plan and apply.
+		plan.Metadata = state.Metadata
 	}
 
 	resp.Plan.Set(ctx, &plan)
