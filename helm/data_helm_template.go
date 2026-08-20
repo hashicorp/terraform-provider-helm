@@ -26,15 +26,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/chart"
-	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/chartutil"
-	"helm.sh/helm/v3/pkg/downloader"
-	"helm.sh/helm/v3/pkg/getter"
-	"helm.sh/helm/v3/pkg/registry"
-	"helm.sh/helm/v3/pkg/release"
-	"helm.sh/helm/v3/pkg/releaseutil"
+	"helm.sh/helm/v4/pkg/action"
+	"helm.sh/helm/v4/pkg/chart/common"
+	"helm.sh/helm/v4/pkg/chart/loader"
+	"helm.sh/helm/v4/pkg/chart/v2"
+	"helm.sh/helm/v4/pkg/downloader"
+	"helm.sh/helm/v4/pkg/getter"
+	"helm.sh/helm/v4/pkg/kube"
+	"helm.sh/helm/v4/pkg/registry"
+	"helm.sh/helm/v4/pkg/release/v1"
 	"k8s.io/helm/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
@@ -567,9 +567,15 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	if resp.Diagnostics.HasError() {
 		return
 	} else if updated {
-		c, err = loader.Load(chartPath)
+		cLoaded, err := loader.Load(chartPath)
 		if err != nil {
 			resp.Diagnostics.AddError("Error loading chart", fmt.Sprintf("Could not reload chart after updating dependencies: %s", err))
+			return
+		}
+		var ok bool
+		c, ok = cLoaded.(*v2.Chart)
+		if !ok {
+			resp.Diagnostics.AddError("Error loading chart", fmt.Sprintf("Could not type assert chart to v2.Chart"))
 			return
 		}
 	}
@@ -585,18 +591,22 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		return
 	}
 	client.ChartPathOptions = *cpo
-	client.ClientOnly = false
+	client.DryRunStrategy = action.DryRunNone
 	client.ReleaseName = state.Name.ValueString()
 	client.GenerateName = false
 	client.NameTemplate = ""
 	client.OutputDir = ""
 	client.Namespace = state.Namespace.ValueString()
 	client.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
-	client.Wait = state.Wait.ValueBool()
+	if state.Wait.ValueBool() {
+		client.WaitStrategy = kube.StatusWatcherStrategy
+	} else {
+		client.WaitStrategy = kube.HookOnlyStrategy
+	}
 	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
 	client.DisableHooks = state.DisableWebhooks.ValueBool()
 	client.DisableOpenAPIValidation = state.DisableOpenAPIValidation.ValueBool()
-	client.Atomic = state.Atomic.ValueBool()
+	client.RollbackOnFailure = state.Atomic.ValueBool()
 	client.Replace = state.Replace.ValueBool()
 	client.SkipCRDs = state.SkipCrds.ValueBool()
 	client.SubNotes = state.RenderSubchartNotes.ValueBool()
@@ -605,7 +615,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	client.CreateNamespace = state.CreateNamespace.ValueBool()
 
 	if state.KubeVersion.ValueString() != "" {
-		parsedVer, err := chartutil.ParseKubeVersion(state.KubeVersion.ValueString())
+		parsedVer, err := compatParseKubeVersion(state.KubeVersion.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Failed to parse Kubernetes version",
@@ -616,17 +626,27 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		client.KubeVersion = parsedVer
 	}
 
-	client.DryRun = true
-	client.Replace = true
-	client.ClientOnly = !state.Validate.ValueBool()
-	client.APIVersions = chartutil.VersionSet(apiVersions)
+	if state.Validate.ValueBool() {
+		client.DryRunStrategy = action.DryRunServer
+	} else {
+		client.DryRunStrategy = action.DryRunClient
+	}
+	client.APIVersions = common.VersionSet(apiVersions)
 	client.IncludeCRDs = state.IncludeCRDs.ValueBool()
 
-	rel, err := client.Run(c, values)
+	relReleaser, err := client.Run(c, values)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error running Helm install",
 			fmt.Sprintf("Error running Helm install: %s", err),
+		)
+		return
+	}
+	rel, ok := relReleaser.(*v1.Release)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Error running Helm install",
+			"Unable to type assert release to v1.Release",
 		)
 		return
 	}
@@ -643,12 +663,12 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	}
 	var manifestsToRender []string
 
-	splitManifests := releaseutil.SplitManifests(manifests.String())
+	splitManifests := compatSplitManifests(manifests.String())
 	manifestsKeys := make([]string, 0, len(splitManifests))
 	for k := range splitManifests {
 		manifestsKeys = append(manifestsKeys, k)
 	}
-	sort.Sort(releaseutil.BySplitManifestsOrder(manifestsKeys))
+	sort.Sort(compatBySplitManifestsOrder(manifestsKeys))
 
 	var chartCRDs []string
 	for _, crd := range rel.Chart.CRDObjects() {
@@ -852,9 +872,9 @@ func getValuesModel(ctx context.Context, model *HelmTemplateModel) (map[string]i
 	return base, diags
 }
 
-func isTestHook(h *release.Hook) bool {
+func isTestHook(h *v1.Hook) bool {
 	for _, e := range h.Events {
-		if e == release.HookTest {
+		if e == v1.HookTest {
 			return true
 		}
 	}
@@ -911,7 +931,7 @@ func getVersionModel(model *HelmTemplateModel) string {
 	return strings.TrimSpace(version)
 }
 
-func getChartModel(ctx context.Context, model *HelmTemplateModel, meta *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
+func getChartModel(ctx context.Context, model *HelmTemplateModel, meta *Meta, name string, cpo *action.ChartPathOptions) (*v2.Chart, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", meta.Settings))
@@ -922,21 +942,27 @@ func getChartModel(ctx context.Context, model *HelmTemplateModel, meta *Meta, na
 		return nil, "", diags
 	}
 
-	c, err := loader.Load(path)
+	cLoaded, err := loader.Load(path)
 	if err != nil {
 		diags.AddError("Error loading chart", fmt.Sprintf("Unable to load chart %s: %s", path, err))
+		return nil, "", diags
+	}
+
+	c, ok := cLoaded.(*v2.Chart)
+	if !ok {
+		diags.AddError("Error loading chart", "Unable to type assert chart to v2.Chart")
 		return nil, "", diags
 	}
 
 	return c, path, diags
 }
 
-func checkChartDependenciesModel(ctx context.Context, model *HelmTemplateModel, c *chart.Chart, path string, meta *Meta) (bool, diag.Diagnostics) {
+func checkChartDependenciesModel(ctx context.Context, model *HelmTemplateModel, c *v2.Chart, path string, meta *Meta) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	p := getter.All(meta.Settings)
 
 	if req := c.Metadata.Dependencies; req != nil {
-		err := action.CheckDependencies(c, req)
+		err := action.CheckDependencies(c, compatDependencies(req))
 		if err != nil {
 			if model.DependencyUpdate.ValueBool() {
 				man := &downloader.Manager{

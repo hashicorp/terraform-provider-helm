@@ -12,8 +12,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
-
-	"helm.sh/helm/v3/pkg/releaseutil"
 )
 
 type resourceMeta struct {
@@ -24,7 +22,7 @@ type resourceMeta struct {
 func convertYAMLManifestToJSON(manifest string) (string, error) {
 	m := map[string]json.RawMessage{}
 
-	resources := releaseutil.SplitManifests(manifest)
+	resources := compatSplitManifests(manifest)
 	for _, resource := range resources {
 		jsonbytes, err := yaml.YAMLToJSON([]byte(resource))
 		if err != nil {

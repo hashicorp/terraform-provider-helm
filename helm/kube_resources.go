@@ -15,9 +15,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/pkg/errors"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/kube"
-	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v4/pkg/action"
+	"helm.sh/helm/v4/pkg/kube"
+	"helm.sh/helm/v4/pkg/release/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -174,7 +174,7 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 	return mappedObjects, diags
 }
 
-func mapResources(ctx context.Context, actionConfig *action.Configuration, r *release.Release, f func(*resource.Info) (runtime.Object, error)) (map[string]string, diag.Diagnostics) {
+func mapResources(ctx context.Context, actionConfig *action.Configuration, r *v1.Release, f func(*resource.Info) (runtime.Object, error)) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	resources, err := actionConfig.KubeClient.Build(bytes.NewBufferString(r.Manifest), false)
@@ -212,7 +212,7 @@ func mapResources(ctx context.Context, actionConfig *action.Configuration, r *re
 }
 
 // getLiveResources fetches the live cluster resources of a Helm release.
-func getLiveResources(ctx context.Context, r *release.Release, m *Meta) (map[string]string, diag.Diagnostics) {
+func getLiveResources(ctx context.Context, r *v1.Release, m *Meta) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	actionConfig, err := m.GetHelmConfiguration(ctx, r.Namespace)
@@ -258,7 +258,7 @@ func getLiveResources(ctx context.Context, r *release.Release, m *Meta) (map[str
 	return cleaned, diags
 }
 
-func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[string]string, diag.Diagnostics) {
+func getDryRunResources(ctx context.Context, r *v1.Release, m *Meta) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	actionConfig, err := m.GetHelmConfiguration(ctx, r.Namespace)
