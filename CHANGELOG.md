@@ -1,3 +1,20 @@
+## 3.3.0 (Aug 28, 2026)
+
+ENHANCEMENT:
+
+* Upgrade Helm from `3.18.5` to `3.20.2` [[GH-1807](https://github.com/hashicorp/terraform-provider-helm/issues/1807)]
+
+DEPENDENCIES:
+
+* Upgrade `k8s.io/api`, `k8s.io/apimachinery`, `k8s.io/cli-runtime`, `k8s.io/client-go`, and `k8s.io/kubectl` from `0.33.3` to `0.35.1` [[GH-1807](https://github.com/hashicorp/terraform-provider-helm/issues/1807)]
+* Upgrade `sigs.k8s.io/structured-merge-diff` from `v4.6.0` to `v6.3.0` [[GH-1807](https://github.com/hashicorp/terraform-provider-helm/issues/1807)]
+* Upgrade `golang.org/x/crypto` from `0.49.0` to `0.52.0` [[GH-1871](https://github.com/hashicorp/terraform-provider-helm/issues/1871)]
+
+NOTES:
+
+* `provider`:  With `experiments.manifest` enabled, the stored manifest no longer includes `creationTimestamp: null` for rendered `Secret` resources. Expect a one-time diff on the first plan after upgrading. Nothing is applied to the cluster. [[GH-1807](https://github.com/hashicorp/terraform-provider-helm/issues/1807)]
+
+
 ## 3.2.0 (June 4, 2026)
 
 ENHANCEMENT:
