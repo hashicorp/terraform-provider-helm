@@ -1394,7 +1394,7 @@ func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string
 
 	path, err := m.LocateChart(cpo, name)
 	if err != nil {
-		diags.AddError("Error locating chart", fmt.Sprintf("Unable to locate chart %s: %s", name, err))
+		diags.AddError("Error locating chart", err.Error())
 		return nil, "", diags
 	}
 
@@ -2273,12 +2273,14 @@ You should update the version in your configuration to %[2]q, or remove the vers
 	if recomputeMetadata(plan, state) {
 		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
 		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+	} else if state != nil {
+		tflog.Debug(ctx, fmt.Sprintf("%s Metadata unchanged, preserving prior state", logID))
+		plan.Metadata = state.Metadata
 	}
 
 	resp.Plan.Set(ctx, &plan)
 }
 
-// TODO: write unit test, always returns true for recomputing the metadata
 // returns true if any metadata fields have changed
 func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 	if state == nil {
