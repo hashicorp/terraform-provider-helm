@@ -1016,12 +1016,12 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 	}
 
 	exists, diags := resourceReleaseExists(ctx, state.Name.ValueString(), state.Namespace.ValueString(), meta)
-	if !exists {
-		resp.State.RemoveResource(ctx)
-		return
-	}
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !exists {
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -1252,11 +1252,11 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 	namespace := state.Namespace.ValueString()
 
 	exists, diags := resourceReleaseExists(ctx, name, namespace, meta)
-	if !exists {
-		return
-	}
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !exists {
 		return
 	}
 

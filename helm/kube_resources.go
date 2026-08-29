@@ -258,6 +258,18 @@ func getLiveResources(ctx context.Context, r *release.Release, m *Meta) (map[str
 	return cleaned, diags
 }
 
+// isPermissionsError checks if the diagnostics contain a 403 Forbidden error
+// indicating the caller lacks permissions for a server-side operation.
+func isPermissionsError(diags diag.Diagnostics) bool {
+	for _, d := range diags {
+		detail := d.Detail()
+		if strings.Contains(detail, "Forbidden") || strings.Contains(detail, "is forbidden") {
+			return true
+		}
+	}
+	return false
+}
+
 func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -276,19 +288,29 @@ func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[s
 		fieldManager = filepath.Base(os.Args[0])
 	}
 
-	rawResources, resDiags := mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
-		info := &diff.InfoObject{
-			LocalObj:        i.Object,
-			Info:            i,
-			Encoder:         scheme.DefaultJSONEncoder(),
-			Force:           false,
-			ServerSideApply: true,
-			FieldManager:    fieldManager,
-			ForceConflicts:  true,
-			IOStreams:       ioStreams,
+	dryRunWithSSA := func(serverSideApply bool) (map[string]string, diag.Diagnostics) {
+		return mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
+			info := &diff.InfoObject{
+				LocalObj:        i.Object,
+				Info:            i,
+				Encoder:         scheme.DefaultJSONEncoder(),
+				Force:           false,
+				ServerSideApply: serverSideApply,
+				FieldManager:    fieldManager,
+				ForceConflicts:  true,
+				IOStreams:       ioStreams,
+			}
+			return info.Merged()
+		})
+	}
+
+	rawResources, resDiags := dryRunWithSSA(true)
+	if resDiags.HasError() {
+		if isPermissionsError(resDiags) {
+			tflog.Warn(ctx, "Server-side dry run failed due to insufficient permissions, falling back to client-side dry run")
+			rawResources, resDiags = dryRunWithSSA(false)
 		}
-		return info.Merged()
-	})
+	}
 	diags.Append(resDiags...)
 	if resDiags.HasError() {
 		return rawResources, diags
