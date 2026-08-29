@@ -886,6 +886,9 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 	}
 
 	version := getVersionModel(model)
+	if registry.IsOCI(repository) {
+		version = strings.TrimPrefix(version, "v")
+	}
 
 	cpo.CaFile = model.RepositoryCaFile.ValueString()
 	cpo.CertFile = model.RepositoryCertFile.ValueString()
@@ -1115,7 +1118,7 @@ func cloakSetValuesModel(config map[string]interface{}, state *HelmTemplateModel
 const sensitiveContentModelValue = "(sensitive value)"
 
 func cloakSetValueModel(values map[string]interface{}, valuePath string) {
-	pathKeys := strings.Split(valuePath, ".")
+	pathKeys := splitPath(valuePath)
 	sensitiveKey := pathKeys[len(pathKeys)-1]
 	parentPathKeys := pathKeys[:len(pathKeys)-1]
 
