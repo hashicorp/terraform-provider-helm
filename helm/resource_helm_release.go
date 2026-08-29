@@ -107,6 +107,7 @@ type HelmReleaseModel struct {
 	SetList                  types.List       `tfsdk:"set_list"`
 	SetSensitive             types.List       `tfsdk:"set_sensitive"`
 	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
+	SkipSchemaValidation     types.Bool       `tfsdk:"skip_schema_validation"`
 	Status                   types.String     `tfsdk:"status"`
 	TakeOwnership            types.Bool       `tfsdk:"take_ownership"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
@@ -137,6 +138,7 @@ var defaultAttributes = map[string]interface{}{
 	"reset_values":               false,
 	"reuse_values":               false,
 	"skip_crds":                  false,
+	"skip_schema_validation":     false,
 	"take_ownership":             false,
 	"timeout":                    int64(300),
 	"verify":                     false,
@@ -503,6 +505,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Default:     booldefault.StaticBool(defaultAttributes["skip_crds"].(bool)),
 				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
 			},
+			"skip_schema_validation": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(defaultAttributes["skip_schema_validation"].(bool)),
+				Description: "If set, the installation process will not validate the chart against the JSON schema of the chart",
+			},
 			"status": schema.StringAttribute{
 				Computed:    true,
 				Description: "Status of the release",
@@ -861,6 +869,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.SkipCRDs = state.SkipCrds.ValueBool()
 	client.SubNotes = state.RenderSubchartNotes.ValueBool()
 	client.DisableOpenAPIValidation = state.DisableOpenapiValidation.ValueBool()
+	client.SkipSchemaValidation = state.SkipSchemaValidation.ValueBool()
 	client.Replace = state.Replace.ValueBool()
 	client.Description = state.Description.ValueString()
 	client.CreateNamespace = state.CreateNamespace.ValueBool()
@@ -903,6 +912,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		upgradeClient.SkipCRDs = state.SkipCrds.ValueBool()
 		upgradeClient.SubNotes = state.RenderSubchartNotes.ValueBool()
 		upgradeClient.DisableOpenAPIValidation = state.DisableOpenapiValidation.ValueBool()
+		upgradeClient.SkipSchemaValidation = state.SkipSchemaValidation.ValueBool()
 		upgradeClient.Description = state.Description.ValueString()
 
 		if state.PostRender != nil {
@@ -1150,6 +1160,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.SkipCRDs = plan.SkipCrds.ValueBool()
 	client.SubNotes = plan.RenderSubchartNotes.ValueBool()
 	client.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
+	client.SkipSchemaValidation = plan.SkipSchemaValidation.ValueBool()
 	client.Force = plan.ForceUpdate.ValueBool()
 	client.ResetValues = plan.ResetValues.ValueBool()
 	client.ReuseValues = plan.ReuseValues.ValueBool()
@@ -1461,6 +1472,8 @@ func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interfa
 		base = mergeMaps(base, currentMap)
 	}
 
+	base = cleanMaps(base)
+
 	// Processing "set" attribute
 	if !model.Set.IsNull() {
 		tflog.Debug(ctx, "Processing Set attribute")
@@ -1567,11 +1580,31 @@ func getValue(base map[string]interface{}, set setResourceModel) diag.Diagnostic
 		} else {
 			base[name] = literal
 		}
+	case "json":
+		var parsedValue interface{}
+		if err := json.Unmarshal([]byte(value), &parsedValue); err != nil {
+			diags.AddError("Failed parsing JSON value", fmt.Sprintf("Key %q with JSON value %s: %s", name, value, err))
+			return diags
+		}
+		base[name] = parsedValue
 	default:
 		diags.AddError("Unexpected type", fmt.Sprintf("Unexpected type: %s", valueType))
 		return diags
 	}
 	return diags
+}
+
+// cleanMaps recursively removes nil values from a map to prevent panics in
+// strvals.ParseInto when it tries to traverse into a nil interface{} value.
+func cleanMaps(m map[string]interface{}) map[string]interface{} {
+	for k, v := range m {
+		if v == nil {
+			delete(m, k)
+		} else if subm, ok := v.(map[string]interface{}); ok {
+			cleanMaps(subm)
+		}
+	}
+	return m
 }
 
 // deepCloneMap creates a deep copy of a map[string]interface{}
@@ -2070,6 +2103,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			install.SkipCRDs = plan.SkipCrds.ValueBool()
 			install.SubNotes = plan.RenderSubchartNotes.ValueBool()
 			install.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
+			install.SkipSchemaValidation = plan.SkipSchemaValidation.ValueBool()
 			install.Replace = plan.Replace.ValueBool()
 			install.Description = plan.Description.ValueString()
 			install.CreateNamespace = plan.CreateNamespace.ValueBool()
@@ -2156,6 +2190,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.Atomic = plan.Atomic.ValueBool()
 		upgrade.SubNotes = plan.RenderSubchartNotes.ValueBool()
 		upgrade.WaitForJobs = plan.WaitForJobs.ValueBool()
+		upgrade.SkipSchemaValidation = plan.SkipSchemaValidation.ValueBool()
 		upgrade.Force = plan.ForceUpdate.ValueBool()
 		upgrade.ResetValues = plan.ResetValues.ValueBool()
 		upgrade.ReuseValues = plan.ReuseValues.ValueBool()
