@@ -177,6 +177,42 @@ resource "helm_release" "nginx_ingress" {
 
 - `set`, `set_list`, and `set_sensitive` is now a list of nested objects using `[ { ... } ]`.
 
+#### `postrender` Configuration
+
+The `postrender` attribute has been changed from a block to a single nested object attribute.
+
+**Old SDKv2 Configuration:**
+
+```hcl
+resource "helm_release" "example" {
+  name  = "my-release"
+  chart = "my-chart"
+
+  postrender {
+    binary_path = "/path/to/post-renderer"
+    args        = ["arg1", "arg2"]
+  }
+}
+```
+
+**New Plugin Framework Configuration:**
+
+```hcl
+resource "helm_release" "example" {
+  name  = "my-release"
+  chart = "my-chart"
+
+  postrender = {
+    binary_path = "/path/to/post-renderer"
+    args        = ["arg1", "arg2"]
+  }
+}
+```
+
+**What Changed?**
+
+- `postrender` is now a single nested object attribute using `= { ... }` instead of a block using `{ ... }`.
+
 ### Changes to helm_template Data Source
 
 #### `set`, `set_list`, and `set_sensitive` Configuration
