@@ -1,0 +1,3 @@
+```release-note:bug
+`data-source/helm_template`: Default `Capabilities.KubeVersion` to the Kubernetes version the provider is built against instead of `v1.20.0`, so charts declaring a `kubeVersion` constraint render without having to set `kube_version` explicitly.
+```
