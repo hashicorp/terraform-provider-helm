@@ -2236,11 +2236,21 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 		installedVersion, err := getInstalledReleaseVersion(ctx, meta, actionConfig, name)
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to check installed release version", err.Error())
-			return
-		}
-
-		if installedVersion != "" {
+			if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
+				// Cluster is not reachable during plan — this is expected when the
+				// cluster is being created in the same Terraform configuration.
+				// Fall back to chart version or mark as unknown for apply-time resolution.
+				tflog.Debug(ctx, fmt.Sprintf("%s cluster unreachable during plan, falling back to chart version", logID))
+				if len(chart.Metadata.Version) > 0 {
+					plan.Version = types.StringValue(chart.Metadata.Version)
+				} else {
+					plan.Version = types.StringUnknown()
+				}
+			} else {
+				resp.Diagnostics.AddError("Failed to check installed release version", err.Error())
+				return
+			}
+		} else if installedVersion != "" {
 			tflog.Debug(ctx, fmt.Sprintf("%s setting version to installed version %s", logID, installedVersion))
 			plan.Version = types.StringValue(installedVersion)
 		} else if len(chart.Metadata.Version) > 0 {
@@ -2263,7 +2273,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			} else {
 				resp.Diagnostics.AddError(
 					"Planned version is different from configured version",
-					fmt.Sprintf(`The version in the configuration is %q but the planned version is %q. 
+					fmt.Sprintf(`The version in the configuration is %q but the planned version is %q.
 You should update the version in your configuration to %[2]q, or remove the version attribute from your configuration.`, config.Version.ValueString(), plan.Version.ValueString()))
 				return
 			}
