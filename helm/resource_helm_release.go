@@ -1431,6 +1431,82 @@ func getWriteOnlyValues(ctx context.Context, model *HelmReleaseModel) (map[strin
 	return base, diags
 }
 
+func getNonSensitiveValues(ctx context.Context, model *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
+	base := map[string]interface{}{}
+	var diags diag.Diagnostics
+
+	// Processing "values" attribute
+	for _, raw := range model.Values.Elements() {
+		if raw.IsNull() {
+			continue
+		}
+
+		value, ok := raw.(types.String)
+		if !ok {
+			diags.AddError("Type Error", fmt.Sprintf("Expected types.String, got %T", raw))
+			return nil, diags
+		}
+
+		values := value.ValueString()
+		if values == "" {
+			continue
+		}
+
+		currentMap := map[string]interface{}{}
+		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+			diags.AddError("Error unmarshaling values", fmt.Sprintf("---> %v %s", err, values))
+			return nil, diags
+		}
+
+		base = mergeMaps(base, currentMap)
+	}
+
+	// Processing "set" attribute
+	if !model.Set.IsNull() {
+		tflog.Debug(ctx, "Processing Set attribute")
+		var setList []setResourceModel
+		setDiags := model.Set.ElementsAs(ctx, &setList, false)
+		diags.Append(setDiags...)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		for i, set := range setList {
+			tflog.Debug(ctx, fmt.Sprintf("Processing Set element at index %d: %v", i, set))
+			setDiags := getValue(base, set)
+			diags.Append(setDiags...)
+			if diags.HasError() {
+				tflog.Debug(ctx, fmt.Sprintf("Error occurred while processing Set element at index %d", i))
+				return nil, diags
+			}
+		}
+	}
+
+	// Processing "set_list" attribute
+	if !model.SetList.IsUnknown() {
+		tflog.Debug(ctx, "Processing Set_list attribute")
+		var setListSlice []set_listResourceModel
+		setListDiags := model.SetList.ElementsAs(ctx, &setListSlice, false)
+		diags.Append(setListDiags...)
+		if diags.HasError() {
+			tflog.Debug(ctx, "Error occurred while processing Set_list attribute")
+			return nil, diags
+		}
+
+		for i, setList := range setListSlice {
+			tflog.Debug(ctx, fmt.Sprintf("Processing Set_list element at index %d: %v", i, setList))
+			setListDiags := getListValue(ctx, base, setList)
+			diags.Append(setListDiags...)
+			if diags.HasError() {
+				tflog.Debug(ctx, fmt.Sprintf("Error occurred while processing Set_list element at index %d", i))
+				return nil, diags
+			}
+		}
+	}
+
+	return base, diags
+}
+
 func getValues(ctx context.Context, model *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
 	base := map[string]interface{}{}
 	var diags diag.Diagnostics
@@ -1687,13 +1763,17 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		return diags
 	}
 
-	// Cloak sensitive values in the release config
+	// Build metadata values from non-sensitive inputs only (values, set, set_list)
+	// to prevent set_sensitive values from leaking in plan output.
+	// Sensitive values are only merged at apply time via getValues().
+	nonSensitiveValues, nsDiags := getNonSensitiveValues(ctx, state)
+	diags.Append(nsDiags...)
+	if nsDiags.HasError() {
+		return diags
+	}
 	values := "{}"
-	if r.Config != nil {
-		// Deep clone the config to avoid modifying the original
-		configClone := deepCloneMap(r.Config)
-		cloakSetValues(configClone, state)
-		v, err := json.Marshal(configClone)
+	if len(nonSensitiveValues) > 0 {
+		v, err := json.Marshal(nonSensitiveValues)
 		if err != nil {
 			diags.AddError(
 				"Error marshaling values",
