@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	pathpkg "path"
+	"reflect"
 	"strings"
 	"time"
 
@@ -107,6 +108,7 @@ type HelmReleaseModel struct {
 	SetList                  types.List       `tfsdk:"set_list"`
 	SetSensitive             types.List       `tfsdk:"set_sensitive"`
 	SkipCrds                 types.Bool       `tfsdk:"skip_crds"`
+	SkipPlanValidation       types.Bool       `tfsdk:"skip_plan_validation"`
 	Status                   types.String     `tfsdk:"status"`
 	TakeOwnership            types.Bool       `tfsdk:"take_ownership"`
 	Timeout                  types.Int64      `tfsdk:"timeout"`
@@ -137,6 +139,7 @@ var defaultAttributes = map[string]interface{}{
 	"reset_values":               false,
 	"reuse_values":               false,
 	"skip_crds":                  false,
+	"skip_plan_validation":       false,
 	"take_ownership":             false,
 	"timeout":                    int64(300),
 	"verify":                     false,
@@ -502,6 +505,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Default:     booldefault.StaticBool(defaultAttributes["skip_crds"].(bool)),
 				Description: "If set, no CRDs will be installed. By default, CRDs are installed if not already present",
+			},
+			"skip_plan_validation": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(defaultAttributes["skip_plan_validation"].(bool)),
+				Description: "If set, the plan stage will skip the Helm dry-run which validates rendered manifests against the Kubernetes API. Useful when deploying CRDs and custom resources in the same Terraform run.",
 			},
 			"status": schema.StringAttribute{
 				Computed:    true,
@@ -1054,6 +1063,31 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 			fmt.Sprintf("Unable to set attributes for helm release %s", state.Name.ValueString()),
 		)
 		return
+	}
+
+	// Detect drift in deployed values vs state-computed values (fixes #372 and #472)
+	if state.SetWORevision.ValueInt64() <= 0 {
+		deployValues := release.Config
+		if deployValues == nil {
+			deployValues = map[string]interface{}{}
+		}
+		stateValues, stateValuesDiags := getValues(ctx, &state)
+		resp.Diagnostics.Append(stateValuesDiags...)
+		if !stateValuesDiags.HasError() {
+			if stateValues == nil {
+				stateValues = map[string]interface{}{}
+			}
+			if !reflect.DeepEqual(deployValues, stateValues) {
+				tflog.Debug(ctx, fmt.Sprintf("Values drift detected for release %s", state.Name.ValueString()))
+				deployYAML, err := yaml.Marshal(deployValues)
+				if err == nil {
+					state.Values = types.ListValueMust(types.StringType, []attr.Value{
+						types.StringValue(string(deployYAML)),
+					})
+					tflog.Debug(ctx, fmt.Sprintf("Updated state values to reflect deployed values for release %s", state.Name.ValueString()))
+				}
+			}
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -2022,19 +2056,24 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	tflog.Debug(ctx, fmt.Sprintf("%s Release validated", logID))
 
 	if meta.ExperimentEnabled("manifest") {
-		// Check if all necessary values are known
-		if valuesUnknown(plan) {
-			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
-			plan.Manifest = types.StringUnknown()
-			plan.Resources = types.MapUnknown(types.StringType)
-			if config.Version.IsNull() {
-				plan.Version = types.StringUnknown()
+		if plan.SkipPlanValidation.ValueBool() {
+			tflog.Debug(ctx, "skip_plan_validation is set, skipping dry run")
+			plan.Manifest = types.StringNull()
+			plan.Resources = types.MapNull(types.StringType)
+		} else {
+			// Check if all necessary values are known
+			if valuesUnknown(plan) {
+				tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
+				plan.Manifest = types.StringUnknown()
+				plan.Resources = types.MapUnknown(types.StringType)
+				if config.Version.IsNull() {
+					plan.Version = types.StringUnknown()
+				}
+				resp.Plan.Set(ctx, &plan)
+				return
 			}
-			resp.Plan.Set(ctx, &plan)
-			return
-		}
 
-		if plan.PostRender != nil {
+			if plan.PostRender != nil {
 			binaryPath := plan.PostRender.BinaryPath.ValueString()
 			argsList := plan.PostRender.Args.Elements()
 
@@ -2223,11 +2262,11 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		if !state.Resources.Equal(plan.Resources) {
 			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
 		}
-
-	} else {
-		plan.Manifest = types.StringNull()
-		plan.Resources = types.MapNull(types.StringType)
 	}
+} else {
+	plan.Manifest = types.StringNull()
+	plan.Resources = types.MapNull(types.StringType)
+}
 
 	tflog.Debug(ctx, fmt.Sprintf("%s Done", logID))
 
