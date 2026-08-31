@@ -1,0 +1,4 @@
+```release-note:bug
+`helm_release`: Fix Windows apply failure "Rename .tgz to .tgz Access is denied" caused by stale temp files and transient rename conflicts in the Helm chart downloader (#1683)
+```
+

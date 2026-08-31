@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -54,15 +55,55 @@ type Meta struct {
 	ChartPathMutex        sync.Mutex
 }
 
-// LocateChart serializes calls to cpo.LocateChart to avoid concurrent writes to Helm's shared repository cache.
-// Helm's chart downloader writes to a random temp file under the shared repository cache (e.g. %TEMP%\helm\repository\<chart>-<ver>.tgz<suffix>)
-// and then renames it to the canonical cache path. When multiple releases reference the same OCI chart/version in a single run, concurrent renames
-// of same file on Windows fail with "Access is denied" (see provider issue #1623). Serializing LocateChart avoids the race
-// while keeping a single cache entry per chart/version.
+// LocateChart serializes calls to cpo.LocateChart to avoid concurrent writes to Helm's shared repository cache,
+// cleans stale temp files from previous failed downloads, and retries on transient rename failures.
+//
+// Helm's chart downloader writes to a random temp file under the shared repository cache (e.g. <cache>/<chart>-<ver>.tgz<suffix>)
+// and then renames it to the canonical cache path. On Windows, os.Rename fails with "Access is denied" when:
+//   - Multiple releases reference the same chart/version concurrently (mitigated by serialization, issue #1623)
+//   - Stale temp files from a previous crash/interruption remain in the cache directory (issue #1683)
+//   - Antivirus or other processes temporarily lock the destination file
+//
+// Cleaning stale temp files and retrying with backoff addresses these scenarios.
 func (m *Meta) LocateChart(cpo *action.ChartPathOptions, name string) (string, error) {
 	m.ChartPathMutex.Lock()
 	defer m.ChartPathMutex.Unlock()
-	return cpo.LocateChart(name, m.Settings)
+
+	cleanupStaleTgzTempFiles(m.Settings.RepositoryCache)
+
+	const maxRetries = 3
+	var lastErr error
+	for i := range maxRetries {
+		path, err := cpo.LocateChart(name, m.Settings)
+		if err == nil {
+			return path, nil
+		}
+		if isRenameError(err) {
+			lastErr = err
+			time.Sleep(time.Duration(100*(i+1)) * time.Millisecond)
+			continue
+		}
+		return "", err
+	}
+	return "", lastErr
+}
+
+// cleanupStaleTgzTempFiles removes temp files left behind by os.CreateTemp in Helm's AtomicWriteFile.
+// These files match *.tgz?* — they have the .tgz extension followed by additional random characters.
+func cleanupStaleTgzTempFiles(cacheDir string) {
+	matches, err := filepath.Glob(filepath.Join(cacheDir, "*.tgz?*"))
+	if err != nil {
+		return
+	}
+	for _, f := range matches {
+		os.Remove(f)
+	}
+}
+
+// isRenameError checks if the error is a rename/link related failure (common on Windows).
+func isRenameError(err error) bool {
+	errStr := err.Error()
+	return strings.Contains(errStr, "link error") || strings.Contains(errStr, "rename")
 }
 
 // HelmProviderModel contains the configuration for the provider
