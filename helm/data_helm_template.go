@@ -887,14 +887,24 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 
 	version := getVersionModel(model)
 
+	digest := chartDigest(chartName)
+	if digest == "" {
+		digest = chartDigest(version)
+	}
+	if digest != "" && !strings.Contains(chartName, "@"+digest) {
+		chartName = chartName + "@" + digest
+	}
+
 	cpo.CaFile = model.RepositoryCaFile.ValueString()
 	cpo.CertFile = model.RepositoryCertFile.ValueString()
 	cpo.KeyFile = model.RepositoryKeyFile.ValueString()
 	cpo.Keyring = model.Keyring.ValueString()
 	cpo.RepoURL = repositoryURL
 	cpo.Verify = model.Verify.ValueBool()
-	if !useChartVersion(chartName, cpo.RepoURL) {
-		cpo.Version = version
+	if digest == "" {
+		if !useChartVersion(chartName, cpo.RepoURL) {
+			cpo.Version = version
+		}
 	}
 	cpo.Username = model.RepositoryUsername.ValueString()
 	cpo.Password = model.RepositoryPassword.ValueString()
