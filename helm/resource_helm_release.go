@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -82,7 +83,7 @@ type HelmReleaseModel struct {
 	ID                       types.String     `tfsdk:"id"`
 	Keyring                  types.String     `tfsdk:"keyring"`
 	Lint                     types.Bool       `tfsdk:"lint"`
-	Manifest                 types.String     `tfsdk:"manifest"`
+	Manifest                 jsontypes.Normalized `tfsdk:"manifest"`
 	MaxHistory               types.Int64      `tfsdk:"max_history"`
 	Metadata                 types.Object     `tfsdk:"metadata"`
 	Name                     types.String     `tfsdk:"name"`
@@ -356,6 +357,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Description: "Run helm lint when planning",
 			},
 			"manifest": schema.StringAttribute{
+				CustomType:  jsontypes.NormalizedType{},
 				Description: "The rendered manifest as JSON.",
 				Computed:    true,
 			},
@@ -1666,7 +1668,7 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 	var diags diag.Diagnostics
 	// Update state with attributes from the helm release
 	state.Resources = types.MapNull(types.StringType)
-	state.Manifest = types.StringNull()
+	state.Manifest = jsontypes.NewNormalizedNull()
 	state.Name = types.StringValue(r.Name)
 	version := r.Chart.Metadata.Version
 	if !versionsEqual(version, state.Version.ValueString()) {
@@ -1716,7 +1718,7 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		}
 		sensitiveValues := extractSensitiveValues(state)
 		manifest := redactSensitiveValues(string(jsonManifest), sensitiveValues)
-		state.Manifest = types.StringValue(manifest)
+		state.Manifest = jsontypes.NewNormalizedValue(manifest)
 
 		resources, resDiags := getLiveResources(ctx, r, meta)
 		diags.Append(resDiags...)
@@ -2025,7 +2027,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		// Check if all necessary values are known
 		if valuesUnknown(plan) {
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
-			plan.Manifest = types.StringUnknown()
+			plan.Manifest = jsontypes.NewNormalizedUnknown()
 			plan.Resources = types.MapUnknown(types.StringType)
 			if config.Version.IsNull() {
 				plan.Version = types.StringUnknown()
@@ -2091,7 +2093,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
 					resp.Diagnostics.AddError("cluster was unreachable at create time, marking manifest as computed", err.Error())
-					plan.Manifest = types.StringNull()
+					plan.Manifest = jsontypes.NewNormalizedNull()
 					resp.Plan.Set(ctx, &plan)
 					return
 				}
@@ -2118,7 +2120,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				}
 			}
 			manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
-			plan.Manifest = types.StringValue(manifest)
+			plan.Manifest = jsontypes.NewNormalizedValue(manifest)
 			resources, resDiags := getDryRunResources(ctx, dry, meta)
 			resp.Diagnostics.Append(resDiags...)
 			if resp.Diagnostics.HasError() {
@@ -2135,7 +2137,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			if len(chart.Metadata.Version) > 0 {
 				plan.Version = types.StringValue(chart.Metadata.Version)
 			}
-			plan.Manifest = types.StringNull()
+			plan.Manifest = jsontypes.NewNormalizedNull()
 			plan.Resources = types.MapNull(types.StringType)
 			resp.Plan.Set(ctx, &plan)
 			return
@@ -2178,7 +2180,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				plan.Version = types.StringValue(chart.Metadata.Version)
 			}
 			plan.Version = types.StringNull()
-			plan.Manifest = types.StringNull()
+			plan.Manifest = jsontypes.NewNormalizedNull()
 			plan.Resources = types.MapNull(types.StringType)
 			resp.Plan.Set(ctx, &plan)
 			return
@@ -2206,7 +2208,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 		}
 		manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
-		plan.Manifest = types.StringValue(manifest)
+		plan.Manifest = jsontypes.NewNormalizedValue(manifest)
 		resources, resDiags := getDryRunResources(ctx, dry, meta)
 		resp.Diagnostics.Append(resDiags...)
 		if resp.Diagnostics.HasError() {
@@ -2225,7 +2227,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 
 	} else {
-		plan.Manifest = types.StringNull()
+		plan.Manifest = jsontypes.NewNormalizedNull()
 		plan.Resources = types.MapNull(types.StringType)
 	}
 
