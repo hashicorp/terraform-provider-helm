@@ -1,0 +1,3 @@
+```release-note:enhancement
+`provider`: add `suppress_metadata_notes` and `suppress_metadata_values` experiments to suppress verbose, and potentially insecure, metadata outputs in terraform plans, addressing [GH-1315](https://github.com/hashicorp/terraform-provider-helm/issues/1315)
+```

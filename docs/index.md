@@ -203,11 +203,15 @@ The `registries` block has options:
 The provider takes an `experiments` block that allows you enable experimental features by setting them to `true`.
 
 * `manifest` - Enable storing of the rendered manifest for `helm_release` so the full diff of what is changing can been seen in the plan.
+* `suppress_metadata_notes` - Suppress verbose helm chart notes from `metadata` output to reduce plan verbosity and avoid exposing potentially sensitive information in logs.
+* `suppress_metadata_values` - Suppress helm values from `metadata` output to reduce plan verbosity and avoid exposing sensitive configuration values in logs.
 
 ```terraform
 provider "helm" {
   experiments = {
     manifest = true
+    suppress_metadata_notes  = true
+    suppress_metadata_values = true
   }
 }
 ```
