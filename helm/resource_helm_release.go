@@ -1394,7 +1394,7 @@ func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string
 
 	path, err := m.LocateChart(cpo, name)
 	if err != nil {
-		diags.AddError("Error locating chart", fmt.Sprintf("Unable to locate chart %s: %s", name, err))
+		diags.AddError("Error locating chart", fmt.Sprintf("Unable to locate chart %s: %s\n\nTry running 'helm repo update' to refresh your repository cache, or verify the chart name and repository are correct.", name, err))
 		return nil, "", diags
 	}
 
