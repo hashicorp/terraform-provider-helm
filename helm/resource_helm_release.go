@@ -42,6 +42,7 @@ import (
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/repo"
 	"k8s.io/helm/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
@@ -94,6 +95,7 @@ type HelmReleaseModel struct {
 	Replace                  types.Bool       `tfsdk:"replace"`
 	RenderSubchartNotes      types.Bool       `tfsdk:"render_subchart_notes"`
 	Repository               types.String     `tfsdk:"repository"`
+	RepositoryUpdate         types.Bool       `tfsdk:"repository_update"`
 	RepositoryCaFile         types.String     `tfsdk:"repository_ca_file"`
 	RepositoryCertFile       types.String     `tfsdk:"repository_cert_file"`
 	RepositoryKeyFile        types.String     `tfsdk:"repository_key_file"`
@@ -136,6 +138,7 @@ var defaultAttributes = map[string]interface{}{
 	"replace":                    false,
 	"reset_values":               false,
 	"reuse_values":               false,
+	"repository_update":          true,
 	"skip_crds":                  false,
 	"take_ownership":             false,
 	"timeout":                    int64(300),
@@ -458,6 +461,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			"repository": schema.StringAttribute{
 				Optional:    true,
 				Description: "Repository where to locate the requested chart. If it is a URL, the chart is installed without installing the repository",
+			},
+			"repository_update": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(defaultAttributes["repository_update"].(bool)),
+				Description: "Run helm repo update before fetching the chart. This ensures the repository index is up to date. Defaults to true.",
 			},
 			"repository_ca_file": schema.StringAttribute{
 				Optional:    true,
@@ -805,6 +814,13 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
+	if state.RepositoryUpdate.ValueBool() {
+		resp.Diagnostics.Append(repoUpdate(ctx, meta, getRepoNameForUpdate(&state))...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
 	c, cpath, chartDiags := getChart(ctx, &state, meta, chartName, cpo)
 	resp.Diagnostics.Append(chartDiags...)
 	if resp.Diagnostics.HasError() {
@@ -1119,6 +1135,13 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
+	if plan.RepositoryUpdate.ValueBool() {
+		resp.Diagnostics.Append(repoUpdate(ctx, meta, getRepoNameForUpdate(&plan))...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
 	c, path, chartDiags := getChart(ctx, &plan, meta, chartName, cpo)
 	resp.Diagnostics.Append(chartDiags...)
 	if resp.Diagnostics.HasError() {
@@ -1385,6 +1408,63 @@ func isChartInstallable(ch *chart.Chart) error {
 		return nil
 	}
 	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
+}
+
+func getRepoNameForUpdate(model *HelmReleaseModel) string {
+	repoVal := model.Repository.ValueString()
+	if repoVal != "" {
+		if _, err := url.ParseRequestURI(repoVal); err != nil && !registry.IsOCI(repoVal) {
+			return repoVal
+		}
+	}
+	chart := model.Chart.ValueString()
+	if idx := strings.Index(chart, "/"); idx > 0 {
+		candidate := chart[:idx]
+		if _, err := url.ParseRequestURI(candidate); err != nil {
+			return candidate
+		}
+	}
+	return ""
+}
+
+func repoUpdate(ctx context.Context, m *Meta, repoName string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if repoName == "" {
+		return diags
+	}
+
+	repoFile, err := repo.LoadFile(m.Settings.RepositoryConfig)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return diags
+		}
+		diags.AddError("Failed to load repository config", fmt.Sprintf("Could not load repository config file %s: %s", m.Settings.RepositoryConfig, err))
+		return diags
+	}
+
+	for _, entry := range repoFile.Repositories {
+		if entry.Name == repoName {
+			chartRepo, err := repo.NewChartRepository(entry, getter.All(m.Settings))
+			if err != nil {
+				diags.AddError("Failed to create chart repository", fmt.Sprintf("Could not create chart repository for %q: %s", repoName, err))
+				return diags
+			}
+			if m.Settings.RepositoryCache != "" {
+				chartRepo.CachePath = m.Settings.RepositoryCache
+			}
+
+			tflog.Debug(ctx, fmt.Sprintf("Updating repository index for %q (%s)", repoName, entry.URL))
+			if _, err := chartRepo.DownloadIndexFile(); err != nil {
+				diags.AddError("Failed to update repository", fmt.Sprintf("Could not update repository index for %q: %s", repoName, err))
+				return diags
+			}
+			return diags
+		}
+	}
+
+	tflog.Warn(ctx, fmt.Sprintf("Repository %q not found in repository config. Skipping repo update.", repoName))
+	return diags
 }
 
 func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string, cpo *action.ChartPathOptions) (*chart.Chart, string, diag.Diagnostics) {
@@ -1991,6 +2071,13 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if plan.RepositoryUpdate.ValueBool() {
+		resp.Diagnostics.Append(repoUpdate(ctx, meta, getRepoNameForUpdate(&plan))...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	chart, path, diags := getChart(ctx, &plan, meta, chartName, cpo)
