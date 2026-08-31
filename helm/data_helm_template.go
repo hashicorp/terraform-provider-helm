@@ -97,7 +97,7 @@ type HelmTemplateModel struct {
 	Timeout                  types.Int64      `tfsdk:"timeout"`
 	Timeouts                 timeouts.Value   `tfsdk:"timeouts"`
 	Validate                 types.Bool       `tfsdk:"validate"`
-	Values                   types.List       `tfsdk:"values"`
+	Values                   types.Dynamic    `tfsdk:"values"`
 	Version                  types.String     `tfsdk:"version"`
 	Verify                   types.Bool       `tfsdk:"verify"`
 	Wait                     types.Bool       `tfsdk:"wait"`
@@ -386,10 +386,9 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 				Optional:    true,
 				Description: "Validate your manifests against the Kubernetes cluster you are currently pointing at. This is the same validation performed on an install.",
 			},
-			"values": schema.ListAttribute{
+			"values": schema.DynamicAttribute{
 				Optional:    true,
-				ElementType: types.StringType,
-				Description: "List of values in raw yaml format to pass to helm.",
+				Description: "List of values in raw YAML format or an object of structured values to pass to helm.",
 			},
 			"verify": schema.BoolAttribute{
 				Optional:    true,
@@ -752,29 +751,47 @@ func getValuesModel(ctx context.Context, model *HelmTemplateModel) (map[string]i
 	var diags diag.Diagnostics
 
 	// Process "values" attribute
-	for _, raw := range model.Values.Elements() {
-		if raw.IsNull() {
-			continue
-		}
+	if !model.Values.IsNull() && !model.Values.IsUnknown() {
+		uv := model.Values.UnderlyingValue()
+		if uv != nil {
+			switch v := uv.(type) {
+			case types.List:
+				for _, raw := range v.Elements() {
+					if raw.IsNull() {
+						continue
+					}
 
-		value, ok := raw.(types.String)
-		if !ok {
-			diags.AddError("Type Error", fmt.Sprintf("Expected types.String, got %T", raw))
-			return nil, diags
-		}
+					value, ok := raw.(types.String)
+					if !ok {
+						diags.AddError("Type Error", fmt.Sprintf("Expected types.String, got %T", raw))
+						return nil, diags
+					}
 
-		values := value.ValueString()
-		if values == "" {
-			continue
-		}
+					values := value.ValueString()
+					if values == "" {
+						continue
+					}
 
-		currentMap := map[string]interface{}{}
-		if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
-			diags.AddError("Error unmarshaling values", fmt.Sprintf("---> %v %s", err, values))
-			return nil, diags
-		}
+					currentMap := map[string]interface{}{}
+					if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+						diags.AddError("Error unmarshaling values", fmt.Sprintf("---> %v %s", err, values))
+						return nil, diags
+					}
 
-		base = mergeMaps(base, currentMap)
+					base = mergeMaps(base, currentMap)
+				}
+			case types.Object:
+				valueMap, mapDiags := dynamicObjectToMap(ctx, v)
+				diags.Append(mapDiags...)
+				if diags.HasError() {
+					return nil, diags
+				}
+				base = mergeMaps(base, valueMap)
+			default:
+				diags.AddError("Type Error", fmt.Sprintf("Expected types.Object or types.List, got %T", uv))
+				return nil, diags
+			}
+		}
 	}
 
 	// Process "set" attribute

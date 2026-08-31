@@ -260,7 +260,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 						},
 						"upgrade_install": tftypes.Bool,
 						"take_ownership":  tftypes.Bool,
-						"values":          tftypes.List{ElementType: tftypes.String},
+						"values":          tftypes.DynamicPseudoType,
 						"verify":          tftypes.Bool,
 						"version":         tftypes.String,
 						"wait":            tftypes.Bool,
