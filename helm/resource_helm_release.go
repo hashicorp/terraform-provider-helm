@@ -129,7 +129,7 @@ var defaultAttributes = map[string]interface{}{
 	"disable_webhooks":           false,
 	"force_update":               false,
 	"lint":                       false,
-	"max_history":                int64(0),
+	"max_history":                int64(10),
 	"pass_credentials":           false,
 	"recreate_pods":              false,
 	"render_subchart_notes":      true,
