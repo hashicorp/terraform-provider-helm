@@ -37,7 +37,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `max_history` (Number) Limit the maximum number of revisions saved per release. Use 0 for no limit. Defaults to 0 (no limit).
 - `namespace` (String) Namespace to install the release into. Defaults to `default`.
 - `pass_credentials` (Boolean) Pass credentials to all domains. Defaults to `false`.
-- `postrender` (Block List, Max: 1) Postrender command configuration. (see [below for nested schema](#nestedblock--postrender))
+- `postrender` (Attribute List, Max: 1) Postrender command configuration. (see [below for nested schema](#nestedatt--postrender))
 - `recreate_pods` (Boolean) Perform pods restart during upgrade/rollback. Defaults to `false`.
 - `render_subchart_notes` (Boolean) If set, render subchart notes along with the parent. Defaults to `true`.
 - `replace` (Boolean) Re-use the given name, even if that name is already used. This is unsafe in production. Defaults to `false`.
@@ -72,7 +72,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `metadata` (List of Object) Status of the deployed release. (see [below for nested schema](#nestedatt--metadata))
 - `status` (String) Status of the release.
 
-<a id="nestedblock--postrender"></a>
+<a id="nestedatt--postrender"></a>
 ### Nested Schema for `postrender`
 
 Required:
@@ -329,7 +329,7 @@ set = [
 
 ```
 
-The `postrender` block supports two attributes:
+The `postrender` attribute supports two attributes:
 
 * `binary_path` - (Required) relative or full path to command binary.
 * `args` - (Optional) a list of arguments to supply to the post-renderer.

@@ -353,7 +353,8 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 							Required: true,
 						},
 						"value": schema.StringAttribute{
-							Required: true,
+							Required:  true,
+							Sensitive: true,
 						},
 						"type": schema.StringAttribute{
 							Optional: true,
