@@ -2632,6 +2632,14 @@ func stripSecretManagedByLabel(obj map[string]any) {
 	}
 }
 
+func stripSecretData(obj map[string]any) {
+	if kind, _ := obj["kind"].(string); kind != "Secret" {
+		return
+	}
+	delete(obj, "data")
+	delete(obj, "stringData")
+}
+
 func normalizeStatus(obj map[string]any) {
 	kind, _ := obj["kind"].(string)
 	if kind == "Deployment" {
@@ -2646,5 +2654,6 @@ func normalizeK8sObject(obj map[string]any) {
 	stripHelmMetaAnnotations(obj)
 	stripVolatileFields(obj)
 	stripSecretManagedByLabel(obj)
+	stripSecretData(obj)
 	normalizeStatus(obj)
 }
