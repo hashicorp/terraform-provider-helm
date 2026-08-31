@@ -229,7 +229,7 @@ func (m suppressKeyringPlanModifier) MarkdownDescription(ctx context.Context) st
 func (m suppressKeyringPlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
 	var verify types.Bool
 	req.Plan.GetAttribute(ctx, path.Root("verify"), &verify)
-	if !verify.IsNull() && !verify.ValueBool() {
+	if !verify.IsNull() && !verify.ValueBool() && req.ConfigValue.IsNull() {
 		resp.PlanValue = req.StateValue
 	}
 }
@@ -310,6 +310,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			},
 			"devel": schema.BoolAttribute{
 				Optional:    true,
+				Computed:    true,
 				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If 'version' is set, this is ignored",
 				PlanModifiers: []planmodifier.Bool{
 					suppressDevel(),
@@ -344,6 +345,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			},
 			"keyring": schema.StringAttribute{
 				Optional:    true,
+				Computed:    true,
 				Description: "Location of public keys used for verification, Used only if 'verify is true'",
 				PlanModifiers: []planmodifier.String{
 					suppressKeyring(),
@@ -591,7 +593,9 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 						},
 						"type": schema.StringAttribute{
 							Optional:  true,
+							Computed:  true,
 							WriteOnly: true,
+							Default:   stringdefault.StaticString(""),
 							Validators: []validator.String{
 								stringvalidator.OneOf("auto", "string"),
 							},
@@ -635,6 +639,8 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 						},
 						"type": schema.StringAttribute{
 							Optional: true,
+							Computed: true,
+							Default:  stringdefault.StaticString(""),
 							Validators: []validator.String{
 								stringvalidator.OneOf("auto", "string", "literal"),
 							},
