@@ -258,6 +258,19 @@ func getLiveResources(ctx context.Context, r *release.Release, m *Meta) (map[str
 	return cleaned, diags
 }
 
+// getManifestResources returns the resources as defined in the Helm release manifest.
+func getManifestResources(ctx context.Context, r *release.Release, m *Meta) (map[string]string, diag.Diagnostics) {
+	actionConfig, err := m.GetHelmConfiguration(ctx, r.Namespace)
+	if err != nil {
+		var diags diag.Diagnostics
+		diags.AddError("Helm Config Error", err.Error())
+		return nil, diags
+	}
+	return mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
+		return i.Object, nil
+	})
+}
+
 func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
