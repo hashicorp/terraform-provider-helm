@@ -108,6 +108,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 						"version":                    tftypes.String,
 						"wait":                       tftypes.Bool,
 						"wait_for_jobs":              tftypes.Bool,
+						"wait_for_daemonsets":        tftypes.Bool,
 					},
 				}
 
@@ -265,6 +266,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 						"version":         tftypes.String,
 						"wait":            tftypes.Bool,
 						"wait_for_jobs":   tftypes.Bool,
+						"wait_for_daemonsets": tftypes.Bool,
 					},
 				}
 				newValue := tftypes.NewValue(newType, map[string]tftypes.Value{
@@ -323,6 +325,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 					"version":                    oldState["version"],
 					"wait":                       oldState["wait"],
 					"wait_for_jobs":              oldState["wait_for_jobs"],
+					"wait_for_daemonsets":        oldState["wait_for_daemonsets"],
 				})
 
 				dv, err := tfprotov6.NewDynamicValue(newType, newValue)
