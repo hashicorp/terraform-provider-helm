@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	pathpkg "path"
@@ -79,6 +80,7 @@ type HelmReleaseModel struct {
 	DisableOpenapiValidation types.Bool       `tfsdk:"disable_openapi_validation"`
 	DisableWebhooks          types.Bool       `tfsdk:"disable_webhooks"`
 	ForceUpdate              types.Bool       `tfsdk:"force_update"`
+	HookOutputLogPolicy      types.String     `tfsdk:"hook_output_log_policy"`
 	ID                       types.String     `tfsdk:"id"`
 	Keyring                  types.String     `tfsdk:"keyring"`
 	Lint                     types.Bool       `tfsdk:"lint"`
@@ -338,6 +340,15 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Default:     booldefault.StaticBool(defaultAttributes["force_update"].(bool)),
 				Description: "Force resource update through delete/recreate if needed.",
+			},
+			"hook_output_log_policy": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Copy hook output logs to the provider logs. Valid values are 'hook-succeeded', 'hook-failed', 'always', 'never'. Defaults to 'never'.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("hook-succeeded", "hook-failed", "always", "never"),
+				},
+				Default: stringdefault.StaticString("never"),
 			},
 			"id": schema.StringAttribute{
 				Computed: true,
@@ -757,6 +768,27 @@ func getInstalledReleaseVersion(ctx context.Context, m *Meta, cfg *action.Config
 	return installedVersion, nil
 }
 
+func configureHookOutputLogPolicy(actionConfig *action.Configuration, policy string) {
+	if policy == "never" || policy == "" {
+		return
+	}
+
+	actionConfig.SetHookOutputFunc(func(namespace, pod, container string) io.Writer {
+		return &hookLogWriter{namespace: namespace, pod: pod, container: container}
+	})
+}
+
+type hookLogWriter struct {
+	namespace string
+	pod       string
+	container string
+}
+
+func (w *hookLogWriter) Write(p []byte) (int, error) {
+	tflog.Info(context.Background(), fmt.Sprintf("[hook-log] namespace=%s pod=%s container=%s\n%s", w.namespace, w.pod, w.container, string(p)))
+	return len(p), nil
+}
+
 func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var state HelmReleaseModel
 	diags := req.Plan.Get(ctx, &state)
@@ -792,6 +824,8 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
+	configureHookOutputLogPolicy(actionConfig, state.HookOutputLogPolicy.ValueString())
+
 	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
@@ -1106,6 +1140,8 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 		resp.Diagnostics.AddError("Error getting helm configuration", fmt.Sprintf("Unable to get Helm configuration for namespace %s: %s", namespace, err))
 		return
 	}
+	configureHookOutputLogPolicy(actionConfig, plan.HookOutputLogPolicy.ValueString())
+
 	ociDiags := OCIRegistryLogin(ctx, meta, actionConfig, meta.RegistryClient, state.Repository.ValueString(), state.Chart.ValueString(), state.RepositoryUsername.ValueString(), state.RepositoryPassword.ValueString())
 	resp.Diagnostics.Append(ociDiags...)
 	if resp.Diagnostics.HasError() {
