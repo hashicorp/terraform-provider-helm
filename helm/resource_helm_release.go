@@ -238,6 +238,56 @@ func suppressKeyring() planmodifier.String {
 	return suppressKeyringPlanModifier{}
 }
 
+type localChartPathPlanModifier struct{}
+
+func (m localChartPathPlanModifier) Description(ctx context.Context) string {
+	return "Preserve chart path from state for local charts on decomposed plan/apply"
+}
+
+func (m localChartPathPlanModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m localChartPathPlanModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if req.StateValue.IsNull() || req.StateValue.IsUnknown() {
+		return
+	}
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	configVal := req.ConfigValue.ValueString()
+	stateVal := req.StateValue.ValueString()
+
+	if !isLocalChartPath(configVal) {
+		return
+	}
+
+	if chartIdentity(configVal) == chartIdentity(stateVal) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+func useStateForLocalChartPath() planmodifier.String {
+	return localChartPathPlanModifier{}
+}
+
+func isLocalChartPath(path string) bool {
+	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") || strings.HasPrefix(path, "oci://") {
+		return false
+	}
+	return true
+}
+
+func chartIdentity(p string) string {
+	p = strings.TrimSuffix(p, "/")
+	parts := strings.Split(p, "/")
+	if len(parts) >= 2 {
+		return strings.Join(parts[len(parts)-2:], "/")
+	}
+	return p
+}
+
 func namespaceDefault() defaults.String {
 	return namespaceDefaultValue{}
 }
@@ -281,6 +331,9 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			"chart": schema.StringAttribute{
 				Required:    true,
 				Description: "Chart name to be installed. A path may be used",
+				PlanModifiers: []planmodifier.String{
+					useStateForLocalChartPath(),
+				},
 			},
 			"cleanup_on_fail": schema.BoolAttribute{
 				Optional:    true,
