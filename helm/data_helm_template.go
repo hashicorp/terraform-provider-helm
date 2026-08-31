@@ -98,6 +98,7 @@ type HelmTemplateModel struct {
 	Timeouts                 timeouts.Value   `tfsdk:"timeouts"`
 	Validate                 types.Bool       `tfsdk:"validate"`
 	Values                   types.List       `tfsdk:"values"`
+	ValuesMap                types.Map        `tfsdk:"values_map"`
 	Version                  types.String     `tfsdk:"version"`
 	Verify                   types.Bool       `tfsdk:"verify"`
 	Wait                     types.Bool       `tfsdk:"wait"`
@@ -777,6 +778,27 @@ func getValuesModel(ctx context.Context, model *HelmTemplateModel) (map[string]i
 		base = mergeMaps(base, currentMap)
 	}
 
+
+	// Process "values_map" attribute
+	if !model.ValuesMap.IsNull() && !model.ValuesMap.IsUnknown() {
+		tflog.Debug(ctx, "Processing ValuesMap attribute")
+		elements := model.ValuesMap.Elements()
+		parsedMap := map[string]interface{}{}
+		for k, v := range elements {
+			parsedMap[k] = dynamicValueToGo(v)
+		}
+		yamlBytes, err := yaml.Marshal(parsedMap)
+		if err != nil {
+			diags.AddError("Error serializing values_map to YAML", err.Error())
+			return nil, diags
+		}
+		var currentMap map[string]interface{}
+		if err := yaml.Unmarshal(yamlBytes, &currentMap); err != nil {
+			diags.AddError("Error deserializing values_map from YAML", err.Error())
+			return nil, diags
+		}
+		base = mergeMaps(base, currentMap)
+	}
 	// Process "set" attribute
 	if !model.Set.IsNull() {
 		var setList []SetValue
