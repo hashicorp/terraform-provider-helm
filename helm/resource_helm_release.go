@@ -1323,6 +1323,9 @@ func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPath
 	}
 
 	version := getVersion(model)
+	if registry.IsOCI(repository) {
+		version = strings.TrimPrefix(version, "v")
+	}
 
 	cpo.CaFile = model.RepositoryCaFile.ValueString()
 	cpo.CertFile = model.RepositoryCertFile.ValueString()
