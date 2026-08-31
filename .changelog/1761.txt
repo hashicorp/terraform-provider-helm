@@ -1,0 +1,3 @@
+```release-note:feature
+`helm_release`: Add `repository_password_wo` write-only attribute
+```
