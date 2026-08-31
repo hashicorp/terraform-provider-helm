@@ -1899,6 +1899,7 @@ func checkChartDependencies(ctx context.Context, model *HelmReleaseModel, c *cha
 					Keyring:          model.Keyring.ValueString(),
 					SkipUpdate:       false,
 					Getters:          p,
+					RegistryClient:   m.RegistryClient,
 					RepositoryConfig: m.Settings.RepositoryConfig,
 					RepositoryCache:  m.Settings.RepositoryCache,
 					Debug:            m.Settings.Debug,
