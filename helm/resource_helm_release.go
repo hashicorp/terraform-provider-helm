@@ -113,6 +113,8 @@ type HelmReleaseModel struct {
 	Timeouts                 timeouts.Value   `tfsdk:"timeouts"`
 	UpgradeInstall           types.Bool       `tfsdk:"upgrade_install"`
 	Values                   types.List       `tfsdk:"values"`
+	ValuesWO                 types.List       `tfsdk:"values_wo"`
+	ValuesWORevision         types.Int64      `tfsdk:"values_wo_revision"`
 	Verify                   types.Bool       `tfsdk:"verify"`
 	Version                  types.String     `tfsdk:"version"`
 	Wait                     types.Bool       `tfsdk:"wait"`
@@ -530,6 +532,19 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Description: "List of values in raw YAML format to pass to helm",
 				ElementType: types.StringType,
 			},
+			"values_wo": schema.ListAttribute{
+				Description: "List of values in raw YAML format that are write-only and will not be stored in state or plan. Use values_wo_revision to trigger updates.",
+				Optional:    true,
+				WriteOnly:   true,
+				ElementType: types.StringType,
+			},
+			"values_wo_revision": schema.Int64Attribute{
+				Optional:    true,
+				Description: `The current revision of the write-only "values_wo" attribute. Incrementing this integer value will cause Terraform to update the write-only value.`,
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+				},
+			},
 			"verify": schema.BoolAttribute{
 				Optional:    true,
 				Computed:    true,
@@ -831,6 +846,17 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 
 	if config.SetWORevision.ValueInt64() > 0 {
 		woValues, woDiags := getWriteOnlyValues(ctx, &config)
+		resp.Diagnostics.Append(woDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if len(woValues) > 0 {
+			values = mergeMaps(values, woValues)
+		}
+	}
+
+	if config.ValuesWORevision.ValueInt64() > 0 {
+		woValues, woDiags := getWriteOnlyValuesYAML(ctx, &config)
 		resp.Diagnostics.Append(woDiags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -1192,6 +1218,17 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 		}
 	}
 
+	if plan.ValuesWORevision.ValueInt64() > state.ValuesWORevision.ValueInt64() {
+		woValues, woDiags := getWriteOnlyValuesYAML(ctx, &config)
+		resp.Diagnostics.Append(woDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		if len(woValues) > 0 {
+			values = mergeMaps(values, woValues)
+		}
+	}
+
 	name := plan.Name.ValueString()
 	release, err := client.Run(name, c, values)
 	if err != nil {
@@ -1405,6 +1442,37 @@ func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string
 	}
 
 	return c, path, diags
+}
+
+func getWriteOnlyValuesYAML(ctx context.Context, model *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
+	base := map[string]interface{}{}
+	diags := diag.Diagnostics{}
+
+	if !model.ValuesWO.IsUnknown() && !model.ValuesWO.IsNull() {
+		tflog.Debug(ctx, "Processing ValuesWO attribute")
+		for _, raw := range model.ValuesWO.Elements() {
+			if raw.IsNull() {
+				continue
+			}
+			value, ok := raw.(types.String)
+			if !ok {
+				diags.AddError("Type Error", fmt.Sprintf("Expected types.String, got %T", raw))
+				return nil, diags
+			}
+			values := value.ValueString()
+			if values == "" {
+				continue
+			}
+			currentMap := map[string]interface{}{}
+			if err := yaml.Unmarshal([]byte(values), &currentMap); err != nil {
+				diags.AddError("Error unmarshaling values_wo", fmt.Sprintf("---> %v %s", err, values))
+				return nil, diags
+			}
+			base = mergeMaps(base, currentMap)
+		}
+	}
+
+	return base, diags
 }
 
 func getWriteOnlyValues(ctx context.Context, model *HelmReleaseModel) (map[string]interface{}, diag.Diagnostics) {
@@ -1735,11 +1803,11 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		}
 	}
 
-	// NOTE Don't retrieve values if write-only is being used.
+	// NOTE Don't retrieve values if any write-only attribute is being used.
 	// It is not possible to pick out which values are write-only
 	// at read time because write-only values are ephemeral
 	valuesstr := types.StringValue("{}")
-	if state.SetWORevision.ValueInt64() <= 0 {
+	if state.SetWORevision.ValueInt64() <= 0 && state.ValuesWORevision.ValueInt64() <= 0 {
 		valuesstr = types.StringValue(values)
 	}
 
@@ -2466,6 +2534,7 @@ func (r *HelmRelease) ImportState(ctx context.Context, req resource.ImportStateR
 		},
 	})
 	state.Values = types.ListNull(types.StringType)
+	state.ValuesWO = types.ListNull(types.StringType)
 
 	tflog.Debug(ctx, fmt.Sprintf("Setting final state: %+v", state))
 	diags = resp.State.Set(ctx, &state)
