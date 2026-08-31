@@ -1,0 +1,3 @@
+```release-note:bug
+`resource/helm_release`: Fix `Delete` skipping the uninstall and dropping the resource from state when the release lookup fails because of a transient error (for example `net/http: TLS handshake timeout`), leaving the release behind in the cluster.
+```
