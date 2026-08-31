@@ -1743,6 +1743,17 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		valuesstr = types.StringValue(values)
 	}
 
+	// Suppress metadata values if experiment is enabled
+	if meta.ExperimentEnabled("suppress_metadata_values") {
+		valuesstr = types.StringValue("{}")
+	}
+
+	// Determine notes value based on suppression experiment
+	notesValue := types.StringValue(r.Info.Notes)
+	if meta.ExperimentEnabled("suppress_metadata_notes") {
+		notesValue = types.StringValue("")
+	}
+
 	// Create metadata as a slice of maps
 	metadata := map[string]attr.Value{
 		"name":           types.StringValue(r.Name),
@@ -1754,7 +1765,7 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		"values":         valuesstr,
 		"first_deployed": types.Int64Value(r.Info.FirstDeployed.Unix()),
 		"last_deployed":  types.Int64Value(r.Info.LastDeployed.Unix()),
-		"notes":          types.StringValue(r.Info.Notes),
+		"notes":          notesValue,
 	}
 
 	// Convert the list of ObjectValues to a ListValue
@@ -2270,7 +2281,7 @@ You should update the version in your configuration to %[2]q, or remove the vers
 		}
 	}
 
-	if recomputeMetadata(plan, state) {
+	if recomputeMetadata(plan, state, meta) {
 		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
 		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
 	}
@@ -2280,8 +2291,17 @@ You should update the version in your configuration to %[2]q, or remove the vers
 
 // TODO: write unit test, always returns true for recomputing the metadata
 // returns true if any metadata fields have changed
-func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
+func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel, meta *Meta) bool {
 	if state == nil {
+		return true
+	}
+
+	// If a metadata suppression experiment was enabled after the release was
+	// already created, prior state still holds the populated values/notes.
+	// Force a recompute so the metadata is re-derived (and blanked) at apply
+	// time, otherwise the planned metadata would differ from the applied
+	// metadata, producing an "inconsistent result after apply" error.
+	if stateMetadataNeedsSuppression(state, meta) {
 		return true
 	}
 
@@ -2304,6 +2324,47 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 		return true
 	}
 	if !plan.SetList.Equal(state.SetList) {
+		return true
+	}
+	return false
+}
+
+// stateMetadataNeedsSuppression reports whether a metadata suppression
+// experiment is enabled while the existing state still holds an unsuppressed
+// (non-empty) value for the corresponding metadata field. This detects the
+// case where a suppression experiment is retrofitted onto an already-created
+// release, so the metadata can be recomputed and blanked at apply time.
+func stateMetadataNeedsSuppression(state *HelmReleaseModel, meta *Meta) bool {
+	if meta == nil || state == nil {
+		return false
+	}
+	if state.Metadata.IsNull() || state.Metadata.IsUnknown() {
+		return false
+	}
+
+	attrs := state.Metadata.Attributes()
+	fieldPopulated := func(name string) bool {
+		v, ok := attrs[name].(types.String)
+		if !ok || v.IsNull() || v.IsUnknown() {
+			return false
+		}
+		return v.ValueString() != ""
+	}
+
+	// For values, "{}" is the suppressed sentinel — treat it as already suppressed.
+	valuesPopulated := func() bool {
+		v, ok := attrs["values"].(types.String)
+		if !ok || v.IsNull() || v.IsUnknown() {
+			return false
+		}
+		s := v.ValueString()
+		return s != "" && s != "{}"
+	}
+
+	if meta.ExperimentEnabled("suppress_metadata_values") && valuesPopulated() {
+		return true
+	}
+	if meta.ExperimentEnabled("suppress_metadata_notes") && fieldPopulated("notes") {
 		return true
 	}
 	return false
