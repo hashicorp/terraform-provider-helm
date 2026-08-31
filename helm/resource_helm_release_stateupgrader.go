@@ -136,24 +136,19 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 					resp.Diagnostics.AddError("Failed to read metadata[0]", err.Error())
 					return
 				}
-				var postrenderList []tftypes.Value
-				var prObj map[string]tftypes.Value
+			var postrenderList []tftypes.Value
+			var prObj map[string]tftypes.Value
+			prNull := true
 
-				if prVal, ok := oldState["postrender"]; ok && !prVal.IsNull() {
-					if err := prVal.As(&postrenderList); err == nil && len(postrenderList) > 0 {
-						if err := postrenderList[0].As(&prObj); err != nil {
-							resp.Diagnostics.AddError("Failed to read postrender[0]", err.Error())
-							return
-						}
+			if prVal, ok := oldState["postrender"]; ok && !prVal.IsNull() {
+				if err := prVal.As(&postrenderList); err == nil && len(postrenderList) > 0 {
+					if err := postrenderList[0].As(&prObj); err != nil {
+						resp.Diagnostics.AddError("Failed to read postrender[0]", err.Error())
+						return
 					}
+					prNull = false
 				}
-
-				if prObj == nil {
-					prObj = map[string]tftypes.Value{
-						"binary_path": tftypes.NewValue(tftypes.String, ""),
-						"args":        tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, []tftypes.Value{}),
-					}
-				}
+			}
 
 				// Creating new type in FW
 				newType := tftypes.Object{
@@ -267,18 +262,21 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 						"wait_for_jobs":   tftypes.Bool,
 					},
 				}
-				newValue := tftypes.NewValue(newType, map[string]tftypes.Value{
-					"metadata": tftypes.NewValue(newType.AttributeTypes["metadata"], metadata),
-					"postrender": tftypes.NewValue(
-						newType.AttributeTypes["postrender"],
-						prObj,
-					),
+			var postrenderVal tftypes.Value
+			if prNull {
+				postrenderVal = tftypes.NewValue(newType.AttributeTypes["postrender"], nil)
+			} else {
+				postrenderVal = tftypes.NewValue(newType.AttributeTypes["postrender"], prObj)
+			}
+			newValue := tftypes.NewValue(newType, map[string]tftypes.Value{
+				"metadata": tftypes.NewValue(newType.AttributeTypes["metadata"], metadata),
+				"postrender": postrenderVal,
 					"set_wo": tftypes.NewValue(
 						newType.AttributeTypes["set_wo"],
 						[]tftypes.Value{},
 					),
 					"take_ownership":             tftypes.NewValue(tftypes.Bool, false),
-					"set_wo_revision":            tftypes.NewValue(tftypes.Number, float64(1)),
+					"set_wo_revision":            tftypes.NewValue(tftypes.Number, float64(0)),
 					"resources":                  tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, map[string]tftypes.Value{}),
 					"timeouts":                   tftypes.NewValue(newType.AttributeTypes["timeouts"], nil),
 					"atomic":                     oldState["atomic"],

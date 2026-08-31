@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	pathpkg "path"
+	"sort"
 	"strings"
 	"time"
 
@@ -32,6 +33,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/pkg/errors"
 	"helm.sh/helm/v3/pkg/action"
@@ -78,6 +80,7 @@ type HelmReleaseModel struct {
 	DisableCrdHooks          types.Bool       `tfsdk:"disable_crd_hooks"`
 	DisableOpenapiValidation types.Bool       `tfsdk:"disable_openapi_validation"`
 	DisableWebhooks          types.Bool       `tfsdk:"disable_webhooks"`
+	DriftDetection           types.Bool       `tfsdk:"drift_detection"`
 	ForceUpdate              types.Bool       `tfsdk:"force_update"`
 	ID                       types.String     `tfsdk:"id"`
 	Keyring                  types.String     `tfsdk:"keyring"`
@@ -127,6 +130,7 @@ var defaultAttributes = map[string]interface{}{
 	"disable_crd_hooks":          false,
 	"disable_openapi_validation": false,
 	"disable_webhooks":           false,
+	"drift_detection":            false,
 	"force_update":               false,
 	"lint":                       false,
 	"max_history":                int64(0),
@@ -332,6 +336,12 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Computed:    true,
 				Default:     booldefault.StaticBool(defaultAttributes["disable_webhooks"].(bool)),
 				Description: "Prevent hooks from running",
+			},
+			"drift_detection": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(defaultAttributes["drift_detection"].(bool)),
+				Description: "Enable drift detection. If enabled, Terraform will detect drift between the Helm release manifest and the live Kubernetes resources. Resources modified outside of Terraform or Helm will be reported during planning.",
 			},
 			"force_update": schema.BoolAttribute{
 				Optional:    true,
@@ -539,7 +549,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 			"version": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed",
+				Description: "Specify the exact chart version to install. If this is not specified, the latest version is installed. Supports semver range syntax (e.g., ^1.2.3, >= 1.0.0 < 2.0.0) for standard chart repositories and OCI registries.",
 			},
 			"wait": schema.BoolAttribute{
 				Optional:    true,
@@ -1056,6 +1066,11 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
+	if state.DriftDetection.ValueBool() {
+		driftDiags := detectDrift(ctx, release, meta)
+		resp.Diagnostics.Append(driftDiags...)
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -1324,6 +1339,15 @@ func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPath
 
 	version := getVersion(model)
 
+	if registry.IsOCI(repository) && version != "" {
+		resolvedVersion, resolveDiags := resolveOCIVersionConstraint(meta, repository, model.Chart.ValueString(), version)
+		diags.Append(resolveDiags...)
+		if resolveDiags.HasError() {
+			return nil, "", diags
+		}
+		version = resolvedVersion
+	}
+
 	cpo.CaFile = model.RepositoryCaFile.ValueString()
 	cpo.CertFile = model.RepositoryCertFile.ValueString()
 	cpo.KeyFile = model.RepositoryKeyFile.ValueString()
@@ -1377,6 +1401,58 @@ func getVersion(model *HelmReleaseModel) string {
 		return ">0.0.0-0"
 	}
 	return strings.TrimSpace(version)
+}
+
+func resolveOCIVersionConstraint(meta *Meta, repository, chartName, version string) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if version == "" {
+		return version, diags
+	}
+
+	_, err := semver.StrictNewVersion(version)
+	if err == nil {
+		return version, diags
+	}
+
+	constraint, err := semver.NewConstraint(version)
+	if err != nil {
+		return version, diags
+	}
+
+	u, err := url.Parse(repository)
+	if err != nil {
+		diags.AddError("Invalid OCI Repository URL", fmt.Sprintf("Failed to parse OCI repository URL %s: %s", repository, err))
+		return "", diags
+	}
+	u.Path = pathpkg.Join(u.Path, chartName)
+	ref := strings.TrimPrefix(u.String(), "oci://")
+
+	tags, err := meta.RegistryClient.Tags(ref)
+	if err != nil {
+		diags.AddError("Error listing OCI registry tags", fmt.Sprintf("Unable to list tags for OCI reference %s: %s", ref, err))
+		return "", diags
+	}
+
+	var bestMatch *semver.Version
+	for _, tag := range tags {
+		v, err := semver.StrictNewVersion(tag)
+		if err != nil {
+			continue
+		}
+		if constraint.Check(v) {
+			if bestMatch == nil || v.GreaterThan(bestMatch) {
+				bestMatch = v
+			}
+		}
+	}
+
+	if bestMatch == nil {
+		diags.AddError("No matching chart version found", fmt.Sprintf("No chart version in repository %s satisfies constraint %q", repository, version))
+		return "", diags
+	}
+
+	return bestMatch.String(), diags
 }
 
 func isChartInstallable(ch *chart.Chart) error {
@@ -1976,8 +2052,8 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		if state != nil && !plan.Version.Equal(state.Version) {
 
 			// Ensure trimming 'v' prefix correctly
-			oldVersionStr := strings.TrimPrefix(state.Version.String(), "v")
-			newVersionStr := strings.TrimPrefix(plan.Version.String(), "v")
+			oldVersionStr := strings.TrimPrefix(state.Version.ValueString(), "v")
+			newVersionStr := strings.TrimPrefix(plan.Version.ValueString(), "v")
 
 			if oldVersionStr != newVersionStr && newVersionStr != "" {
 				// Setting Metadata to a computed value
@@ -2270,7 +2346,7 @@ You should update the version in your configuration to %[2]q, or remove the vers
 		}
 	}
 
-	if recomputeMetadata(plan, state) {
+	if recomputeMetadata(ctx, plan, state) {
 		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
 		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
 	}
@@ -2280,7 +2356,7 @@ You should update the version in your configuration to %[2]q, or remove the vers
 
 // TODO: write unit test, always returns true for recomputing the metadata
 // returns true if any metadata fields have changed
-func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
+func recomputeMetadata(ctx context.Context, plan HelmReleaseModel, state *HelmReleaseModel) bool {
 	if state == nil {
 		return true
 	}
@@ -2291,20 +2367,80 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 	if !plan.Repository.Equal(state.Repository) {
 		return true
 	}
-	if !plan.Version.Equal(state.Version) {
+	if !versionsEqual(plan.Version.ValueString(), state.Version.ValueString()) {
 		return true
 	}
 	if !plan.Values.Equal(state.Values) {
 		return true
 	}
-	if !plan.Set.Equal(state.Set) {
+
+	var setList, stateSetList []setResourceModel
+	plan.Set.ElementsAs(ctx, &setList, false)
+	state.Set.ElementsAs(ctx, &stateSetList, false)
+	sort.Slice(setList, func(i, j int) bool {
+		return setList[i].Name.ValueString() < setList[j].Name.ValueString()
+	})
+	sort.Slice(stateSetList, func(i, j int) bool {
+		return stateSetList[i].Name.ValueString() < stateSetList[j].Name.ValueString()
+	})
+	if len(setList) != len(stateSetList) {
 		return true
 	}
-	if !plan.SetSensitive.Equal(state.SetSensitive) {
+	for i := range setList {
+		if setList[i].Name.ValueString() != stateSetList[i].Name.ValueString() ||
+			setList[i].Value.ValueString() != stateSetList[i].Value.ValueString() ||
+			setList[i].Type.ValueString() != stateSetList[i].Type.ValueString() {
+			return true
+		}
+	}
+
+	var setSensitiveList, stateSetSensitiveList []setResourceModel
+	plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
+	state.SetSensitive.ElementsAs(ctx, &stateSetSensitiveList, false)
+	sort.Slice(setSensitiveList, func(i, j int) bool {
+		return setSensitiveList[i].Name.ValueString() < setSensitiveList[j].Name.ValueString()
+	})
+	sort.Slice(stateSetSensitiveList, func(i, j int) bool {
+		return stateSetSensitiveList[i].Name.ValueString() < stateSetSensitiveList[j].Name.ValueString()
+	})
+	if len(setSensitiveList) != len(stateSetSensitiveList) {
 		return true
 	}
-	if !plan.SetList.Equal(state.SetList) {
+	for i := range setSensitiveList {
+		if setSensitiveList[i].Name.ValueString() != stateSetSensitiveList[i].Name.ValueString() ||
+			setSensitiveList[i].Value.ValueString() != stateSetSensitiveList[i].Value.ValueString() ||
+			setSensitiveList[i].Type.ValueString() != stateSetSensitiveList[i].Type.ValueString() {
+			return true
+		}
+	}
+
+	var setListList, stateSetListList []set_listResourceModel
+	plan.SetList.ElementsAs(ctx, &setListList, false)
+	state.SetList.ElementsAs(ctx, &stateSetListList, false)
+	sort.Slice(setListList, func(i, j int) bool {
+		return setListList[i].Name.ValueString() < setListList[j].Name.ValueString()
+	})
+	sort.Slice(stateSetListList, func(i, j int) bool {
+		return stateSetListList[i].Name.ValueString() < stateSetListList[j].Name.ValueString()
+	})
+	if len(setListList) != len(stateSetListList) {
 		return true
+	}
+	for i := range setListList {
+		if setListList[i].Name.ValueString() != stateSetListList[i].Name.ValueString() {
+			return true
+		}
+		var aVals, bVals []string
+		setListList[i].Value.ElementsAs(ctx, &aVals, false)
+		stateSetListList[i].Value.ElementsAs(ctx, &bVals, false)
+		if len(aVals) != len(bVals) {
+			return true
+		}
+		for j := range aVals {
+			if aVals[j] != bVals[j] {
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -2647,4 +2783,51 @@ func normalizeK8sObject(obj map[string]any) {
 	stripVolatileFields(obj)
 	stripSecretManagedByLabel(obj)
 	normalizeStatus(obj)
+}
+
+
+func detectDrift(ctx context.Context, r *release.Release, m *Meta) diag.Diagnostics {
+	logID := fmt.Sprintf("[detectDrift: %s]", r.Name)
+	tflog.Debug(ctx, fmt.Sprintf("%s checking for drift between release manifest and live cluster state", logID))
+
+	manifestResources, resDiags := getManifestResources(ctx, r, m)
+	if resDiags.HasError() {
+		return resDiags
+	}
+
+	liveResources, resDiags := getLiveResources(ctx, r, m)
+	if resDiags.HasError() {
+		return resDiags
+	}
+
+	var driftedResources []string
+	for key, manifestVal := range manifestResources {
+		liveVal, exists := liveResources[key]
+		if !exists {
+			driftedResources = append(driftedResources, fmt.Sprintf("  - %s: missing from cluster", key))
+			continue
+		}
+		if manifestVal != liveVal {
+			driftedResources = append(driftedResources, fmt.Sprintf("  - %s: has drifted", key))
+		}
+	}
+	for key := range liveResources {
+		if _, exists := manifestResources[key]; !exists {
+			driftedResources = append(driftedResources, fmt.Sprintf("  - %s: not in release manifest, found in cluster only", key))
+		}
+	}
+
+	if len(driftedResources) > 0 {
+		tflog.Warn(ctx, fmt.Sprintf("%s drift detected in %d resources", logID, len(driftedResources)))
+		var diags diag.Diagnostics
+		diags.AddWarning(
+			"Drift Detected",
+			fmt.Sprintf("The following resources have drifted from the Helm release manifest:\n%s\n\nRun 'terraform apply' to reconcile the release and restore the desired state.",
+				strings.Join(driftedResources, "\n")),
+		)
+		return diags
+	}
+
+	tflog.Debug(ctx, fmt.Sprintf("%s no drift detected", logID))
+	return nil
 }
