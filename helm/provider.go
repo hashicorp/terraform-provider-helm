@@ -4,10 +4,13 @@
 package helm
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -87,9 +90,17 @@ type ExperimentsConfigModel struct {
 
 // RegistryConfigModel configures an OCI registry
 type RegistryConfigModel struct {
-	URL      types.String `tfsdk:"url"`
-	Username types.String `tfsdk:"username"`
-	Password types.String `tfsdk:"password"`
+	URL          types.String                     `tfsdk:"url"`
+	Username     types.String                     `tfsdk:"username"`
+	Password     types.String                     `tfsdk:"password"`
+	PasswordExec *RegistryPasswordExecConfigModel `tfsdk:"password_exec"`
+}
+
+// RegistryPasswordExecConfigModel configures an external command to obtain a registry password/token
+type RegistryPasswordExecConfigModel struct {
+	Command types.String `tfsdk:"command"`
+	Args    types.List   `tfsdk:"args"`
+	Env     types.Map    `tfsdk:"env"`
 }
 
 // KubernetesConfigModel configures a Kubernetes client
@@ -217,8 +228,28 @@ func registriesResourceSchema() map[string]schema.Attribute {
 			Description: "The username to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
 		},
 		"password": schema.StringAttribute{
-			Required:    true,
-			Description: "The password to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint.",
+			Optional:    true,
+			Description: "The password to use for the OCI HTTP basic authentication when accessing the Kubernetes master endpoint. Either this or password_exec must be set.",
+		},
+		"password_exec": schema.SingleNestedAttribute{
+			Optional:    true,
+			Description: "An exec-based credential provider for the OCI registry. Either this or password must be set.",
+			Attributes: map[string]schema.Attribute{
+				"command": schema.StringAttribute{
+					Required:    true,
+					Description: "The command to execute to obtain the registry password or token.",
+				},
+				"args": schema.ListAttribute{
+					Optional:    true,
+					Description: "List of arguments to pass to the command.",
+					ElementType: types.StringType,
+				},
+				"env": schema.MapAttribute{
+					Optional:    true,
+					Description: "Additional environment variables to set for the command.",
+					ElementType: types.StringType,
+				},
+			},
 		},
 	}
 }
@@ -623,15 +654,33 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			return
 		}
 		for _, r := range registryConfigs {
-			if r.URL.IsNull() || r.Username.IsNull() || r.Password.IsNull() {
+			if r.URL.IsNull() || r.Username.IsNull() {
 				resp.Diagnostics.AddError(
 					"OCI Registry login failed",
-					"Registry URL, Username, or Password is null",
+					"Registry URL and Username are required",
 				)
 				return
 			}
 
-			err := OCIRegistryPerformLogin(ctx, meta, meta.RegistryClient, r.URL.ValueString(), r.Username.ValueString(), r.Password.ValueString())
+			if r.Password.IsNull() && r.PasswordExec == nil {
+				resp.Diagnostics.AddError(
+					"OCI Registry login failed",
+					"Either password or password_exec must be set",
+				)
+				return
+			}
+
+			password := r.Password.ValueString()
+			if r.PasswordExec != nil {
+				execPassword, execDiags := executeRegistryExec(ctx, r.PasswordExec)
+				resp.Diagnostics.Append(execDiags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				password = execPassword
+			}
+
+			err := OCIRegistryPerformLogin(ctx, meta, meta.RegistryClient, r.URL.ValueString(), r.Username.ValueString(), password)
 			if err != nil {
 				resp.Diagnostics.AddError(
 					"OCI Registry login failed",
@@ -659,6 +708,84 @@ func (p *HelmProvider) Resources(ctx context.Context) []func() resource.Resource
 	return []func() resource.Resource{
 		NewHelmRelease,
 	}
+}
+
+// executeRegistryExec executes an external command to obtain a registry password/token.
+func executeRegistryExec(ctx context.Context, execConfig *RegistryPasswordExecConfigModel) (string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if execConfig.Command.IsNull() || execConfig.Command.ValueString() == "" {
+		diags.AddError("Exec command required", "The command field in password_exec is required")
+		return "", diags
+	}
+
+	cmdName := execConfig.Command.ValueString()
+
+	var args []string
+	if !execConfig.Args.IsNull() {
+		aDiags := execConfig.Args.ElementsAs(ctx, &args, false)
+		diags.Append(aDiags...)
+		if diags.HasError() {
+			return "", diags
+		}
+	}
+
+	cmd := exec.CommandContext(ctx, cmdName, args...)
+
+	if !execConfig.Env.IsNull() {
+		var envMap map[string]string
+		eDiags := execConfig.Env.ElementsAs(ctx, &envMap, false)
+		diags.Append(eDiags...)
+		if diags.HasError() {
+			return "", diags
+		}
+		for k, v := range envMap {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		diags.AddError(
+			"Failed to execute registry credential command",
+			fmt.Sprintf("Command %q failed: %s\nstderr: %s", cmdName, err, stderr.String()),
+		)
+		return "", diags
+	}
+
+	output := strings.TrimSpace(stdout.String())
+	if output == "" {
+		diags.AddError(
+			"Empty registry credential command output",
+			fmt.Sprintf("Command %q produced no output", cmdName),
+		)
+		return "", diags
+	}
+
+	// Try to parse as JSON and extract common token fields
+	var parsed map[string]interface{}
+	if err := json.Unmarshal([]byte(output), &parsed); err == nil {
+		// Try common token field names
+		for _, key := range []string{"accessToken", "token", "access_token"} {
+			if v, ok := parsed[key]; ok {
+				if s, ok := v.(string); ok && s != "" {
+					return s, diags
+				}
+			}
+		}
+		// Check for nested status.token (kubelogin pattern)
+		if status, ok := parsed["status"].(map[string]interface{}); ok {
+			if token, ok := status["token"].(string); ok && token != "" {
+				return token, diags
+			}
+		}
+	}
+
+	// Fallback: return raw stdout
+	return output, diags
 }
 
 func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Configuration, registryClient *registry.Client, repository, chartName, username, password string) diag.Diagnostics {
