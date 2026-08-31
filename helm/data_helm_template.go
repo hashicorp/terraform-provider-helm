@@ -947,6 +947,7 @@ func checkChartDependenciesModel(ctx context.Context, model *HelmTemplateModel, 
 					Getters:          p,
 					RepositoryConfig: meta.Settings.RepositoryConfig,
 					RepositoryCache:  meta.Settings.RepositoryCache,
+					RegistryClient:   meta.RegistryClient,
 					Debug:            meta.Settings.Debug,
 				}
 				tflog.Debug(ctx, "Downloading chart dependencies...")
