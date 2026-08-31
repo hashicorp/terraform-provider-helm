@@ -770,6 +770,11 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	attrTimeout := time.Duration(state.Timeout.ValueInt64()) * time.Second
+	if attrTimeout > createTimeout {
+		createTimeout = attrTimeout
+	}
+
 	var config HelmReleaseModel
 	diags = req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -854,7 +859,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.Devel = state.Devel.ValueBool()
 	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
 	client.TakeOwnership = state.TakeOwnership.ValueBool()
-	client.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
+	client.Timeout = createTimeout
 	client.Namespace = state.Namespace.ValueString()
 	client.ReleaseName = state.Name.ValueString()
 	client.Atomic = state.Atomic.ValueBool()
@@ -897,7 +902,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		upgradeClient.DisableHooks = state.DisableWebhooks.ValueBool()
 		upgradeClient.Wait = state.Wait.ValueBool()
 		upgradeClient.Devel = state.Devel.ValueBool()
-		upgradeClient.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
+		upgradeClient.Timeout = createTimeout
 		upgradeClient.Namespace = state.Namespace.ValueString()
 		upgradeClient.Atomic = state.Atomic.ValueBool()
 		upgradeClient.SkipCRDs = state.SkipCrds.ValueBool()
@@ -922,7 +927,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 			}
 		}
 
-		rel, err = upgradeClient.Run(releaseName, c, values)
+		rel, err = upgradeClient.RunWithContext(ctx, releaseName, c, values)
 	} else {
 		tflog.Debug(ctx, fmt.Sprintf("Installing chart %q", releaseName))
 		if state.PostRender != nil {
@@ -944,7 +949,7 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 				client.PostRenderer = pr
 			}
 		}
-		rel, err = client.Run(c, values)
+		rel, err = client.RunWithContext(ctx, c, values)
 	}
 	if err != nil && rel == nil {
 		resp.Diagnostics.AddError("installation failed", err.Error())
@@ -972,6 +977,9 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		resp.Diagnostics.Append(diag.NewErrorDiagnostic("Helm release error", err.Error()))
 
 		return
+	}
+
+	if state.Wait.ValueBool() {
 	}
 
 	diags = setReleaseAttributes(ctx, &state, resp.Identity, rel, meta)
@@ -1083,6 +1091,10 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	attrTimeout := time.Duration(plan.Timeout.ValueInt64()) * time.Second
+	if attrTimeout > updateTimeout {
+		updateTimeout = attrTimeout
+	}
 
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
@@ -1141,7 +1153,7 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.Devel = plan.Devel.ValueBool()
 	client.Namespace = plan.Namespace.ValueString()
 	client.TakeOwnership = plan.TakeOwnership.ValueBool()
-	client.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
+	client.Timeout = updateTimeout
 	client.Wait = plan.Wait.ValueBool()
 	client.WaitForJobs = plan.WaitForJobs.ValueBool()
 	client.DryRun = false
@@ -1193,10 +1205,18 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	name := plan.Name.ValueString()
-	release, err := client.Run(name, c, values)
+	release, err := client.RunWithContext(ctx, name, c, values)
 	if err != nil {
 		resp.Diagnostics.AddError("Error upgrading chart", fmt.Sprintf("Upgrade failed: %s", err))
 		return
+	}
+
+	if plan.Wait.ValueBool() {
+		waitDiags := verifyReleaseReadiness(ctx, actionConfig, plan.WaitForJobs.ValueBool(), plan.Timeout.ValueInt64(), release)
+		resp.Diagnostics.Append(waitDiags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	diags = setReleaseAttributes(ctx, &plan, resp.Identity, release, meta)
@@ -1232,6 +1252,10 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+	attrTimeout := time.Duration(state.Timeout.ValueInt64()) * time.Second
+	if attrTimeout > deleteTimeout {
+		deleteTimeout = attrTimeout
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
@@ -1276,7 +1300,7 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 	uninstall := action.NewUninstall(actionConfig)
 	uninstall.Wait = state.Wait.ValueBool()
 	uninstall.DisableHooks = state.DisableWebhooks.ValueBool()
-	uninstall.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
+	uninstall.Timeout = deleteTimeout
 
 	// Uninstall the release
 	tflog.Info(ctx, fmt.Sprintf("Uninstalling Helm release: %s", name))
@@ -1652,6 +1676,37 @@ func getListValue(ctx context.Context, base map[string]interface{}, set set_list
 
 	if err := strvals.ParseInto(fmt.Sprintf("%s={%s}", name, listString), base); err != nil {
 		diags.AddError("Error parsing list value", fmt.Sprintf("Failed parsing key %q with value %s: %s", name, listString, err))
+		return diags
+	}
+
+	return diags
+}
+
+func verifyReleaseReadiness(ctx context.Context, actionConfig *action.Configuration, waitForJobs bool, timeout int64, rel *release.Release) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if rel == nil || rel.Manifest == "" {
+		return diags
+	}
+
+	tflog.Debug(ctx, "Performing post-install readiness check")
+	resources, err := actionConfig.KubeClient.Build(strings.NewReader(rel.Manifest), false)
+	if err != nil {
+		tflog.Warn(ctx, fmt.Sprintf("Could not build resources for post-install readiness check: %s", err))
+		return diags
+	}
+
+	if len(resources) == 0 {
+		return diags
+	}
+
+	waitTimeout := time.Duration(timeout) * time.Second
+	if waitForJobs {
+		err = actionConfig.KubeClient.WaitWithJobs(resources, waitTimeout)
+	} else {
+		err = actionConfig.KubeClient.Wait(resources, waitTimeout)
+	}
+	if err != nil {
+		diags.AddError("Error waiting for resources", fmt.Sprintf("Verification of resource readiness failed: %s", err))
 		return diags
 	}
 
