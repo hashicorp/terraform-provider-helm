@@ -203,11 +203,13 @@ The `registries` block has options:
 The provider takes an `experiments` block that allows you enable experimental features by setting them to `true`.
 
 * `manifest` - Enable storing of the rendered manifest for `helm_release` so the full diff of what is changing can been seen in the plan.
+* `keyed_lists` - Store Kubernetes list-map fields in the rendered manifest as objects keyed by their identifying field instead of as arrays. Requires `manifest`. Terraform diffs an array by position, so a chart that inserts a single new entry near the front of a container's `env` makes every later entry read as changed and the plan looks as though the whole pod spec were being rewritten. Keying those lists by `name` (or `ip`, for host aliases) keeps the diff to the entries that actually changed. Only fields the Kubernetes API declares as `x-kubernetes-list-type: map` are affected; genuinely ordered lists such as `args` and `command` are left alone, as is any list whose entries do not all carry a unique identifier. This changes the shape of the `manifest` attribute, so expect a one-time diff the first time it is enabled.
 
 ```terraform
 provider "helm" {
   experiments = {
-    manifest = true
+    manifest    = true
+    keyed_lists = true
   }
 }
 ```

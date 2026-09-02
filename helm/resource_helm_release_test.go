@@ -2017,7 +2017,7 @@ func getReleaseJSONManifest(ctx context.Context, namespace, name string) (string
 	}
 
 	// Convert the YAML manifest to JSON
-	jsonManifest, err := convertYAMLManifestToJSON(string(manifest))
+	jsonManifest, err := convertYAMLManifestToJSON(string(manifest), false)
 	if err != nil {
 		return "", err
 	}

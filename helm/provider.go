@@ -82,7 +82,8 @@ type HelmProviderModel struct {
 
 // ExperimentsConfigModel configures the experiments that are enabled or disabled
 type ExperimentsConfigModel struct {
-	Manifest types.Bool `tfsdk:"manifest"`
+	Manifest   types.Bool `tfsdk:"manifest"`
+	KeyedLists types.Bool `tfsdk:"keyed_lists"`
 }
 
 // RegistryConfigModel configures an OCI registry
@@ -202,6 +203,14 @@ func experimentsSchema() map[string]schema.Attribute {
 		"manifest": schema.BoolAttribute{
 			Optional:    true,
 			Description: "Enable full diff by storing the rendered manifest in the state.",
+		},
+		"keyed_lists": schema.BoolAttribute{
+			Optional: true,
+			Description: "Store Kubernetes list-map fields in the rendered manifest as objects keyed by their identifying field " +
+				"(`name`, or `ip` for host aliases) instead of as arrays. Terraform diffs arrays by position, so inserting one " +
+				"element makes every later element read as changed; keying them keeps the diff to the entries that actually " +
+				"moved. Requires `manifest` to be enabled. Changes the shape of the `manifest` attribute, so expect a one-time " +
+				"diff when enabling it.",
 		},
 	}
 }
@@ -525,8 +534,19 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 
 	manifestExperiment := false
+	keyedListsExperiment := false
 	if config.Experiments != nil {
 		manifestExperiment = config.Experiments.Manifest.ValueBool()
+		keyedListsExperiment = config.Experiments.KeyedLists.ValueBool()
+	}
+
+	if keyedListsExperiment && !manifestExperiment {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("experiments").AtName("keyed_lists"),
+			"keyed_lists has no effect without manifest",
+			"The keyed_lists experiment changes how the rendered manifest is stored, but the manifest experiment is disabled "+
+				"so no manifest is stored. Enable experiments.manifest as well, or remove keyed_lists.",
+		)
 	}
 
 	var execAttrValue attr.Value = types.ObjectNull(execSchemaAttrTypes())
@@ -601,7 +621,8 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		Settings:   settings,
 		HelmDriver: helmDriver,
 		Experiments: map[string]bool{
-			"manifest": manifestExperiment,
+			"manifest":    manifestExperiment,
+			"keyed_lists": keyedListsExperiment,
 		},
 		loggedInOCIRegistries: make(map[string]struct{}),
 	}

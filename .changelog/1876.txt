@@ -1,0 +1,7 @@
+```release-note:enhancement
+`provider`: Add the `keyed_lists` experiment. With `experiments.manifest` enabled, Kubernetes list-map fields in the stored manifest (`containers`, `env`, `volumes`, `volumeMounts`, `ports`, and similar) are stored as objects keyed by their identifying field instead of as arrays. Terraform diffs arrays by position, so a chart inserting one entry near the front of a container's `env` made every later entry read as changed; keying them keeps the plan to the entries that actually changed. Ordered lists such as `args` and `command`, and any list whose entries lack a unique identifier, are left as arrays. Enabling it changes the shape of the `manifest` attribute, so expect a one-time diff.
+```
+
+```release-note:bug
+`resource/helm_release`: Stop replacing the whole `metadata` object with an unknown value whenever the chart version or values change. Because `metadata` carries its own copy of the release values, that re-printed the entire previous values blob as removed and marked every field `(known after apply)`, burying a small change in hundreds of lines of plan output. The release name and namespace, the chart coordinates and merged values from the dry run, and the unchanged `first_deployed` timestamp are now planned as known values; only `revision`, `last_deployed` and `notes` remain unknown.
+```
