@@ -201,13 +201,24 @@ func hashSensitiveValue(v string) string {
 	return fmt.Sprintf("(sensitive value %x)", hash)
 }
 
-// redactSensitiveValues removes values that appear in `set_sensitive` blocks from the manifest JSON
-func redactSensitiveValues(text string, sensitiveValues map[string]string) string {
+// redactSensitiveValues replaces every occurrence of a set_sensitive value in
+// text with a stable hash, so a manifest stored in state or plan output never
+// contains a value the caller marked sensitive.
+//
+// Skips empty strings deliberately: strings.ReplaceAll(text, "", marker)
+// matches every position in text and would insert marker between every rune,
+// corrupting the whole manifest rather than redacting nothing. sensitiveSetValues
+// already filters these out before they reach here; this is a second, cheap
+// guard on the one thing that would make the corruption catastrophic instead
+// of silent.
+func redactSensitiveValues(text string, sensitiveValues []string) string {
 	masked := text
 
-	for originalValue := range sensitiveValues {
-		hashedValue := hashSensitiveValue(originalValue)
-		masked = strings.ReplaceAll(masked, originalValue, hashedValue)
+	for _, value := range sensitiveValues {
+		if value == "" {
+			continue
+		}
+		masked = strings.ReplaceAll(masked, value, hashSensitiveValue(value))
 	}
 
 	return masked

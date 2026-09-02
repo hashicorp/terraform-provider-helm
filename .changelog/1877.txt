@@ -1,0 +1,3 @@
+```release-note:bug
+`resource/helm_release`: Fix `metadata.first_deployed` being planned from the outgoing release's state when `name` or `namespace` changes force a replacement. Both attributes carry `RequiresReplace()`, so on a forced replacement the prior state describes the release about to be destroyed, not the one the plan is building; the new release has not been installed and its own `first_deployed` only exists after apply. Renaming a release, or moving it to a different namespace, could otherwise plan the old release's timestamp onto the new one.
+```

@@ -1707,11 +1707,10 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 			)
 			return diags
 		}
-		sensitiveValues := extractSensitiveValues(state)
-		manifest := redactSensitiveValues(string(jsonManifest), sensitiveValues)
-		state.Manifest = types.StringValue(manifest)
+		sensitiveValues := sensitiveSetValues(ctx, state.SetSensitive)
+		state.Manifest = types.StringValue(redactSensitiveValues(string(jsonManifest), sensitiveValues))
 
-		resources, resDiags := getLiveResources(ctx, r, meta)
+		resources, resDiags := getLiveResources(ctx, r, meta, sensitiveValues)
 		diags.Append(resDiags...)
 
 		if !resDiags.HasError() {
@@ -1914,22 +1913,42 @@ func metadataAttrTypes() map[string]attr.Type {
 	}
 }
 
-func extractSensitiveValues(state *HelmReleaseModel) map[string]string {
-	sensitiveValues := make(map[string]string)
-
-	if !state.SetSensitive.IsNull() {
-		var setSensitiveList []setResourceModel
-		diags := state.SetSensitive.ElementsAs(context.Background(), &setSensitiveList, false)
-		if diags.HasError() {
-			return sensitiveValues
-		}
-
-		for _, set := range setSensitiveList {
-			sensitiveValues[set.Name.ValueString()] = "(sensitive value)"
-		}
+// sensitiveSetValues collects the real values of a set_sensitive list, so
+// redactSensitiveValues can strip them out of a stored manifest. Used on both
+// the read path (state.SetSensitive, the values Helm actually applied) and the
+// two plan-time dry-run paths (plan.SetSensitive, what the config asks for).
+//
+// A prior version of this (both here and at its two other call sites) built a
+// map keyed by attribute NAME with the secret value discarded or replaced by
+// a placeholder, then handed that to redactSensitiveValues - which redacts its
+// argument's contents verbatim. That searched the manifest for literal
+// attribute names like "dbPassword" and never touched the actual secret text,
+// so set_sensitive values were never redacted from a manifest stored in state
+// or plan output. Returning the real values directly removes the possibility
+// of getting the orientation backwards again.
+//
+// Null/unknown entries are skipped: unknown has nothing to redact yet, and an
+// empty string would make every position in the text a match.
+func sensitiveSetValues(ctx context.Context, setSensitive types.List) []string {
+	if setSensitive.IsNull() || setSensitive.IsUnknown() {
+		return nil
 	}
 
-	return sensitiveValues
+	var list []setResourceModel
+	if diags := setSensitive.ElementsAs(ctx, &list, false); diags.HasError() {
+		return nil
+	}
+
+	values := make([]string, 0, len(list))
+	for _, set := range list {
+		if set.Value.IsNull() || set.Value.IsUnknown() {
+			continue
+		}
+		if v := set.Value.ValueString(); v != "" {
+			values = append(values, v)
+		}
+	}
+	return values
 }
 
 func (m *Meta) ExperimentEnabled(name string) bool {
@@ -2225,22 +2244,9 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				resp.Diagnostics.AddError("Error converting YAML manifest to JSON", err.Error())
 				return
 			}
-			valuesMap := make(map[string]string)
-			if !plan.SetSensitive.IsNull() {
-				var setSensitiveList []setResourceModel
-				setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
-				resp.Diagnostics.Append(setSensitiveDiags...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-
-				for _, set := range setSensitiveList {
-					valuesMap[set.Name.ValueString()] = set.Value.ValueString()
-				}
-			}
-			manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
-			plan.Manifest = types.StringValue(manifest)
-			resources, resDiags := getDryRunResources(ctx, dry, meta)
+			sensitiveValues := sensitiveSetValues(ctx, plan.SetSensitive)
+			plan.Manifest = types.StringValue(redactSensitiveValues(string(jsonManifest), sensitiveValues))
+			resources, resDiags := getDryRunResources(ctx, dry, meta, sensitiveValues)
 			resp.Diagnostics.Append(resDiags...)
 			if resp.Diagnostics.HasError() {
 				return
@@ -2314,22 +2320,9 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			resp.Diagnostics.AddError("Error converting YAML manifest to JSON", err.Error())
 			return
 		}
-		valuesMap := make(map[string]string)
-		if !plan.SetSensitive.IsNull() {
-			var setSensitiveList []setResourceModel
-			setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
-			resp.Diagnostics.Append(setSensitiveDiags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-
-			for _, set := range setSensitiveList {
-				valuesMap[set.Name.ValueString()] = set.Value.ValueString()
-			}
-		}
-		manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
-		plan.Manifest = types.StringValue(manifest)
-		resources, resDiags := getDryRunResources(ctx, dry, meta)
+		sensitiveValues := sensitiveSetValues(ctx, plan.SetSensitive)
+		plan.Manifest = types.StringValue(redactSensitiveValues(string(jsonManifest), sensitiveValues))
+		resources, resDiags := getDryRunResources(ctx, dry, meta, sensitiveValues)
 		resp.Diagnostics.Append(resDiags...)
 		if resp.Diagnostics.HasError() {
 			return

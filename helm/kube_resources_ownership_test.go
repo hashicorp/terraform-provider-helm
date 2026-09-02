@@ -11,40 +11,42 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// TestSetDryRunOwnershipMetadata pins the exact behaviour of Helm's own
-// setMetadataVisitor (helm.sh/helm/v3/pkg/action/validate.go), which every
-// real Install, Upgrade and Rollback runs with force=true and which the
+// TestSetDryRunOwnershipMetadata pins the one thing Helm's own
+// setMetadataVisitor (helm.sh/helm/v3/pkg/action/validate.go) does that the
 // experiments.manifest dry run must replicate to avoid "Provider produced
-// inconsistent result after apply" on the resources[...] map.
+// inconsistent result after apply" on the resources[...] map: stamping
+// app.kubernetes.io/managed-by=Helm.
+//
+// setMetadataVisitor also stamps two meta.helm.sh/* annotations, which this
+// function deliberately does not replicate - normalizeK8sObject's
+// stripHelmMetaAnnotations strips every meta.helm.sh/* annotation from both
+// the dry-run and live objects before either is stored, so setting them here
+// would only be redacted away before the two are ever compared.
 func TestSetDryRunOwnershipMetadata(t *testing.T) {
-	t.Run("object with no metadata at all", func(t *testing.T) {
+	t.Run("object with no labels at all", func(t *testing.T) {
 		obj := &unstructured.Unstructured{Object: map[string]any{
 			"apiVersion": "v1", "kind": "ConfigMap",
 			"metadata": map[string]any{"name": "app"},
 		}}
 
-		require.NoError(t, setDryRunOwnershipMetadata(obj, "litellm", "litellm"))
+		require.NoError(t, setDryRunOwnershipMetadata(obj))
 
 		assert.Equal(t, "Helm", obj.GetLabels()["app.kubernetes.io/managed-by"])
-		assert.Equal(t, "litellm", obj.GetAnnotations()["meta.helm.sh/release-name"])
-		assert.Equal(t, "litellm", obj.GetAnnotations()["meta.helm.sh/release-namespace"])
 	})
 
-	t.Run("existing labels and annotations are preserved, not replaced", func(t *testing.T) {
+	t.Run("existing labels are preserved, not replaced", func(t *testing.T) {
 		obj := &unstructured.Unstructured{Object: map[string]any{
 			"apiVersion": "v1", "kind": "ConfigMap",
 			"metadata": map[string]any{
-				"name":        "app",
-				"labels":      map[string]any{"app.kubernetes.io/name": "litellm"},
-				"annotations": map[string]any{"checksum/config": "abc123"},
+				"name":   "app",
+				"labels": map[string]any{"app.kubernetes.io/name": "litellm"},
 			},
 		}}
 
-		require.NoError(t, setDryRunOwnershipMetadata(obj, "litellm", "litellm"))
+		require.NoError(t, setDryRunOwnershipMetadata(obj))
 
 		assert.Equal(t, "litellm", obj.GetLabels()["app.kubernetes.io/name"], "unrelated label must survive")
 		assert.Equal(t, "Helm", obj.GetLabels()["app.kubernetes.io/managed-by"])
-		assert.Equal(t, "abc123", obj.GetAnnotations()["checksum/config"], "unrelated annotation must survive")
 	})
 
 	t.Run("a conflicting prior value is force-overwritten, matching force=true", func(t *testing.T) {
@@ -55,28 +57,26 @@ func TestSetDryRunOwnershipMetadata(t *testing.T) {
 				"labels": map[string]any{
 					"app.kubernetes.io/managed-by": "something-else",
 				},
-				"annotations": map[string]any{
-					"meta.helm.sh/release-name": "wrong-release",
-				},
 			},
 		}}
 
-		require.NoError(t, setDryRunOwnershipMetadata(obj, "litellm", "litellm-ns"))
+		require.NoError(t, setDryRunOwnershipMetadata(obj))
 
 		assert.Equal(t, "Helm", obj.GetLabels()["app.kubernetes.io/managed-by"])
-		assert.Equal(t, "litellm", obj.GetAnnotations()["meta.helm.sh/release-name"])
-		assert.Equal(t, "litellm-ns", obj.GetAnnotations()["meta.helm.sh/release-namespace"])
 	})
 
-	t.Run("namespace differs from release name", func(t *testing.T) {
+	t.Run("Secret kind is unaffected by the function itself", func(t *testing.T) {
+		// stripSecretManagedByLabel later strips this label specifically for
+		// Secrets before comparison, but setDryRunOwnershipMetadata has no
+		// kind-specific behaviour of its own - it always sets the label, and
+		// normalization decides afterward whether that matters for this kind.
 		obj := &unstructured.Unstructured{Object: map[string]any{
 			"apiVersion": "v1", "kind": "Secret",
 			"metadata": map[string]any{"name": "app-secret"},
 		}}
 
-		require.NoError(t, setDryRunOwnershipMetadata(obj, "my-release", "some-other-namespace"))
+		require.NoError(t, setDryRunOwnershipMetadata(obj))
 
-		assert.Equal(t, "my-release", obj.GetAnnotations()["meta.helm.sh/release-name"])
-		assert.Equal(t, "some-other-namespace", obj.GetAnnotations()["meta.helm.sh/release-namespace"])
+		assert.Equal(t, "Helm", obj.GetLabels()["app.kubernetes.io/managed-by"])
 	})
 }

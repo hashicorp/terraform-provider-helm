@@ -92,9 +92,7 @@ spec:
 		jsonManifest, err := convertYAMLManifestToJSON(manifest, keyed)
 		require.NoError(t, err)
 
-		redacted := redactSensitiveValues(jsonManifest, map[string]string{
-			"correct-horse-battery-staple": "",
-		})
+		redacted := redactSensitiveValues(jsonManifest, []string{"correct-horse-battery-staple"})
 		assert.NotContains(t, redacted, "correct-horse-battery-staple")
 		assert.Contains(t, redacted, "(sensitive value")
 	}

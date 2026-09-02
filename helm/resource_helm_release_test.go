@@ -2860,7 +2860,7 @@ func getReleaseJSONResourcesPF(t *testing.T, namespace, name string) map[string]
 	}
 
 	ctx := context.Background()
-	result, diags := mapRuntimeObjects(ctx, kc, objects)
+	result, diags := mapRuntimeObjects(ctx, kc, objects, nil)
 	if diags.HasError() {
 		t.Fatalf("failed to map runtime objects: %v", diags)
 	}
@@ -3221,4 +3221,89 @@ func testAccHelmReleaseConfigOCIRealChart(resource, ns, name, version string) st
 			})]
 		}
 	`, resource, name, ns, version)
+}
+
+// TestAccResourceRelease_manifestRedactsSetSensitive is a real regression test
+// for a genuine secret-leak bug: redactSensitiveValues used to be handed a map
+// keyed by attribute NAME with the real value discarded, so it searched the
+// manifest for literal attribute names and never touched actual secret text.
+// Any set_sensitive value flowed into Terraform state and plan output in the
+// clear whenever experiments.manifest was enabled. Unit tests on the isolated
+// functions cannot catch a bug at the CALL SITE that wires them together
+// wrong, so this inspects the real, on-disk Terraform state after a real
+// apply - the only place that actually proves nothing leaked.
+func TestAccResourceRelease_manifestRedactsSetSensitive(t *testing.T) {
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+	name := randName("redact")
+
+	const secretValue = "correct-horse-battery-staple-canary"
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigSetSensitiveManifest(testResourceName, namespace, name, secretValue),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("helm_release.test", "manifest"),
+					func(s *terraform.State) error {
+						// set_sensitive[].value is itself stored in state unredacted -
+						// Sensitive:true on a schema attribute only masks Terraform's
+						// CLI/plan output, never the state file, and that is expected,
+						// universal Terraform behaviour this test must not flag. What
+						// actually matters is that the secret does not ALSO appear
+						// inside manifest or resources[...] - the COMPUTED attributes
+						// that mirror what got deployed, which is what redactSensitiveValues
+						// exists to scrub. Check only those, not the whole state blob.
+						res := s.RootModule().Resources["helm_release.test"]
+						if res == nil || res.Primary == nil {
+							return fmt.Errorf("helm_release.test not found in state")
+						}
+
+						foundMarker := false
+						for key, value := range res.Primary.Attributes {
+							if key != "manifest" && !strings.HasPrefix(key, "resources.") {
+								continue
+							}
+							if strings.Contains(value, secretValue) {
+								return fmt.Errorf("set_sensitive value leaked into computed attribute %q verbatim: %s", key, value)
+							}
+							if strings.Contains(value, "(sensitive value") {
+								foundMarker = true
+							}
+						}
+						if !foundMarker {
+							return fmt.Errorf("expected the redaction hash marker in manifest or resources[...]; attribute may not have been populated")
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigSetSensitiveManifest(resource, ns, name, secretValue string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments = {
+				manifest = true
+			}
+		}
+
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+
+			set_sensitive = [
+				{
+					name  = "podAnnotations.canary"
+					value = %q
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, "1.2.3", secretValue)
 }
