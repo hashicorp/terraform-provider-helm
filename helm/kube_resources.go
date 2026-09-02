@@ -258,6 +258,49 @@ func getLiveResources(ctx context.Context, r *release.Release, m *Meta) (map[str
 	return cleaned, diags
 }
 
+// setDryRunOwnershipMetadata stamps the label and annotations a real Install,
+// Upgrade or Rollback always adds to every resource, via Helm's own
+// setMetadataVisitor (helm.sh/helm/v3/pkg/action/validate.go) - which this
+// dry-run merge never goes through, since it computes the server-side-apply
+// result directly rather than running an actual Helm action.
+//
+// Without it, any resource whose own chart template doesn't already declare
+// these - which is most of them, since charts rely on Helm to add them -
+// diffs against the live object on exactly this key, and Terraform aborts the
+// apply with "Provider produced inconsistent result after apply": the planned
+// resources[...] entry (missing the label) never matches what setReleaseAttributes
+// reads back from the live cluster (carrying it) after a real apply.
+//
+// Mutating i.Object here is local to this dry run: mapResources re-parses
+// r.Manifest into a fresh resource.Info list on every call, so nothing here is
+// shared with the real Install/Upgrade action that later applies the release.
+func setDryRunOwnershipMetadata(obj runtime.Object, releaseName, releaseNamespace string) error {
+	accessor := apimeta.NewAccessor()
+
+	labels, err := accessor.Labels(obj)
+	if err != nil {
+		return err
+	}
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	labels["app.kubernetes.io/managed-by"] = "Helm"
+	if err := accessor.SetLabels(obj, labels); err != nil {
+		return err
+	}
+
+	annotations, err := accessor.Annotations(obj)
+	if err != nil {
+		return err
+	}
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	annotations["meta.helm.sh/release-name"] = releaseName
+	annotations["meta.helm.sh/release-namespace"] = releaseNamespace
+	return accessor.SetAnnotations(obj, annotations)
+}
+
 func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -277,6 +320,9 @@ func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[s
 	}
 
 	rawResources, resDiags := mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
+		if err := setDryRunOwnershipMetadata(i.Object, r.Name, r.Namespace); err != nil {
+			return nil, err
+		}
 		info := &diff.InfoObject{
 			LocalObj:        i.Object,
 			Info:            i,

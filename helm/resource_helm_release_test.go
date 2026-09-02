@@ -3049,3 +3049,176 @@ func TestAccResourceRelease_replaceDoesNotInheritMetadata(t *testing.T) {
 		},
 	})
 }
+
+// TestAccResourceRelease_manifestUnknownValuesOnUpdate is a stricter sibling of
+// TestAccResourceRelease_manifestUnknownValues. That test only covers Create,
+// where state is nil and metadata is naturally unknown by default. On Update,
+// state.Metadata already holds the previous apply's real values, and
+// ModifyPlan's valuesUnknown(plan) branch returns before ever touching
+// plan.Metadata - so if the framework's default behaviour for an unmodified
+// Computed attribute is to carry the prior state value forward, this could
+// present the OLD metadata.values as a known value in a plan whose real
+// values are about to change, which is exactly the shape of a "Provider
+// produced inconsistent result after apply" failure that the resource.Test
+// harness checks for automatically on every step.
+func TestAccResourceRelease_manifestUnknownValuesOnUpdate(t *testing.T) {
+	name := randName("unknown-update")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"random": {
+				Source: "hashicorp/random",
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				// Install with a real, known value.
+				Config: testAccHelmReleaseConfigManifestUnknownValuesOnUpdate(testResourceName, namespace, name, "one"),
+				Check:  resource.TestCheckResourceAttrSet("helm_release.test", "metadata.values"),
+			},
+			{
+				// Change the keeper so random_string is replaced: its .result is
+				// unknown until THIS apply runs, so plan.Set becomes unknown on an
+				// UPDATE of an already-deployed release, unlike the Create-only
+				// case the sibling test covers.
+				Config: testAccHelmReleaseConfigManifestUnknownValuesOnUpdate(testResourceName, namespace, name, "two"),
+			},
+			{
+				// A third, unrelated update (repeats the pattern) to catch a
+				// carried-forward value surviving more than one cycle.
+				Config: testAccHelmReleaseConfigManifestUnknownValuesOnUpdate(testResourceName, namespace, name, "three"),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigManifestUnknownValuesOnUpdate(resource, ns, name, keeper string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments = {
+				manifest = true
+			}
+		}
+
+		resource "random_string" "random_label" {
+			length  = 16
+			special = false
+			keepers = {
+				generation = %q
+			}
+		}
+
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+
+			set = [
+				{
+					name  = "podAnnotations.random"
+					value = random_string.random_label.result
+				}
+			]
+		}
+	`, keeper, resource, name, ns, testRepositoryURL, "1.2.3")
+}
+
+// TestAccResourceRelease_manifestOCIChartUpgrade uses the real litellm-helm OCI
+// chart across the exact version jump (1.83.3-stable -> 1.98.0) that motivated
+// this whole audit, with experiments.manifest AND experiments.keyed_lists both
+// on. Upstream has a history of manifest-experiment bugs specific to OCI charts
+// (issues #1325 "manifest diffs aren't generated for OCI charts", #1326 "Fix
+// manifest diffs for OCI charts", #1402 "Perpetual diff on Deployment and
+// crash on apply for OCI chart with manifest experiment"), so this is the
+// scenario most likely to reproduce something neither the constructed-manifest
+// unit tests nor the local-chart acceptance tests would catch: real OCI
+// registry auth/pull, a real Job resource (the migrations Job, exercising the
+// exact bug fixed on the other branch), a real HPA, and hundreds of real env
+// vars including the one that shifted position between these two versions.
+func TestAccResourceRelease_manifestOCIChartUpgrade(t *testing.T) {
+	if testing.Short() {
+		t.Skip("pulls a real chart from ghcr.io; skipped with -short")
+	}
+
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+	name := randName("litellm")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigOCIRealChart(testResourceName, namespace, name, "1.83.3-stable"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.83.3-stable"),
+					resource.TestCheckResourceAttrSet("helm_release.test", "manifest"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseConfigOCIRealChart(testResourceName, namespace, name, "1.98.0"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("helm_release.test", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.98.0"),
+				),
+			},
+			{
+				// Same config again: must be a clean no-op plan, exactly the
+				// property that would break if metadata or the keyed manifest
+				// were unstable between identical plans.
+				Config:   testAccHelmReleaseConfigOCIRealChart(testResourceName, namespace, name, "1.98.0"),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigOCIRealChart(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments = {
+				manifest    = true
+				keyed_lists = true
+			}
+		}
+
+		resource "helm_release" "%s" {
+			name             = %q
+			namespace        = %q
+			create_namespace = true
+			chart            = "oci://ghcr.io/berriai/litellm-helm"
+			version          = %q
+			wait             = false
+			wait_for_jobs    = false
+			timeout          = 120
+
+			values = [yamlencode({
+				image = {
+					repository = "busybox"
+					tag        = "1.36"
+					pullPolicy = "IfNotPresent"
+				}
+				db = {
+					deployStandalone = false
+					useExisting      = false
+				}
+				postgresql = { enabled = false }
+				redis      = { enabled = false }
+				serviceAccount = {
+					create = false
+					name   = "default"
+				}
+				migrationJob = { enabled = false }
+				masterkey    = "sk-acceptance-test-deterministic"
+			})]
+		}
+	`, resource, name, ns, version)
+}
