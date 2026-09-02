@@ -1855,8 +1855,16 @@ func plannedMetadata(plan *HelmReleaseModel, state *HelmReleaseModel, dry *relea
 		planned["namespace"] = plan.Namespace
 	}
 
-	// first_deployed is stamped at install time and an upgrade does not move it.
-	if state != nil {
+	// first_deployed is stamped at install time and an upgrade does not move it -
+	// but name and namespace both carry RequiresReplace(), so when either has
+	// changed, state describes the release about to be destroyed, not the one
+	// this plan is building. Its first_deployed belongs to that old release and
+	// must not leak into a plan for a new one that has not been installed yet.
+	sameIdentity := state != nil &&
+		plan.Name.Equal(state.Name) &&
+		plan.Namespace.Equal(state.Namespace)
+
+	if sameIdentity {
 		if firstDeployed, ok := knownMetadataAttr(state.Metadata, "first_deployed"); ok {
 			planned["first_deployed"] = firstDeployed
 		}

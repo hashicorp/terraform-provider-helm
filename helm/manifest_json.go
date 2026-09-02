@@ -38,6 +38,16 @@ func convertYAMLManifestToJSON(manifest string, keyLists bool) (string, error) {
 		}
 
 		gvk := resourceMeta.GetObjectKind().GroupVersionKind()
+
+		// Helm hands back a document for every template it rendered, including
+		// the ones a conditional emptied out and the ones that are only
+		// comments. Those carry no kind, and storing them produced a single
+		// bogus "//" entry in the manifest that tracked nothing in the cluster
+		// and moved in and out of the diff as templates toggled.
+		if gvk.Kind == "" {
+			continue
+		}
+
 		key := fmt.Sprintf("%s/%s/%s", strings.ToLower(gvk.GroupKind().String()),
 			resourceMeta.APIVersion,
 			resourceMeta.Metadata.Name)

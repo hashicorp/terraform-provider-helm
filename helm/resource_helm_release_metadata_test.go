@@ -196,3 +196,39 @@ func TestKnownMetadataAttr(t *testing.T) {
 	_, ok = knownMetadataAttr(deployedMetadata(), "nope")
 	assert.False(t, ok)
 }
+
+// Renaming a release (or moving its namespace) forces replacement: name and
+// namespace both carry RequiresReplace(), so ModifyPlan's "state" is the
+// release about to be destroyed, not the one this plan is building. Its
+// first_deployed timestamp belongs to that old release and must not leak into
+// the plan for the new one - the new release has not been installed yet.
+func TestPlannedMetadata_ReplacementDoesNotInheritFirstDeployed(t *testing.T) {
+	state := baseModel()
+	state.Metadata = deployedMetadata() // first_deployed = 1757673881
+
+	t.Run("name changes", func(t *testing.T) {
+		plan := baseModel()
+		plan.Name = types.StringValue("renamed")
+
+		planned := plannedMetadata(&plan, &state, nil)
+		assert.True(t, planned.Attributes()["first_deployed"].IsUnknown(),
+			"first_deployed must not carry over when the release is being replaced")
+	})
+
+	t.Run("namespace changes", func(t *testing.T) {
+		plan := baseModel()
+		plan.Namespace = types.StringValue("other-namespace")
+
+		planned := plannedMetadata(&plan, &state, nil)
+		assert.True(t, planned.Attributes()["first_deployed"].IsUnknown(),
+			"first_deployed must not carry over when the release is being replaced")
+	})
+
+	t.Run("same identity still inherits it", func(t *testing.T) {
+		plan := baseModel()
+
+		planned := plannedMetadata(&plan, &state, nil)
+		assert.Equal(t, types.Int64Value(1757673881), planned.Attributes()["first_deployed"],
+			"an upgrade of the same release should still carry it over")
+	})
+}

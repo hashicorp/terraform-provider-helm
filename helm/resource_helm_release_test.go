@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
@@ -3001,4 +3002,50 @@ func checkDeploymentReplicasAndGeneration(resourceName, namespace, deploymentNam
 		}
 		return nil
 	}
+}
+
+// TestAccResourceRelease_replaceDoesNotInheritMetadata guards against a bug
+// found while auditing the metadata-recompute change (2026-09): name and
+// namespace both carry RequiresReplace(), and ModifyPlan's "state" argument is
+// the release being destroyed - not the one the plan is building. Reusing its
+// first_deployed for the replacement release would have been wrong. This
+// forces a replacement (renaming the release) and checks the plan itself,
+// which a state-only assertion after apply cannot do.
+func TestAccResourceRelease_replaceDoesNotInheritMetadata(t *testing.T) {
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	firstName := randName("first")
+	secondName := randName("second")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"local": {
+				Source: "hashicorp/local",
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseRecomputeMetadata(testResourceName, namespace, firstName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", firstName),
+					resource.TestCheckResourceAttrSet("helm_release.test", "metadata.first_deployed"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseRecomputeMetadata(testResourceName, namespace, secondName),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("helm_release.test", plancheck.ResourceActionDestroyBeforeCreate),
+						plancheck.ExpectUnknownValue("helm_release.test", tfjsonpath.New("metadata").AtMapKey("first_deployed")),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", secondName),
+					resource.TestCheckResourceAttrSet("helm_release.test", "metadata.first_deployed"),
+				),
+			},
+		},
+	})
 }
