@@ -313,7 +313,11 @@ spec:
   - name: app
     image: app:1
 `,
-			keyed: []string{"spec.containers", "spec.ephemeralContainers", "spec.securityContext.sysctls"},
+			keyed: []string{"spec.containers", "spec.ephemeralContainers"},
+			// sysctls is a genuine k8s +listType=atomic field, not a list-map:
+			// Kubernetes replaces the whole list on any change, so it must stay
+			// an array even though every element carries a unique name.
+			arrays: []string{"spec.securityContext.sysctls"},
 		},
 		"custom resource whose env is an ordered scalar list": {
 			manifest: `apiVersion: example.com/v1
@@ -491,4 +495,98 @@ spec:
 	var decoded map[string]any
 	require.NoError(t, json.Unmarshal([]byte(out), &decoded))
 	assert.Len(t, decoded, 2)
+}
+
+// TestKeyedLists_VolumeMountsKeyOnMountPath pins the fix: volumeMounts keys on
+// mountPath (Kubernetes' actual +listMapKey), not name. A container that
+// mounts the same volume twice at different paths - a legitimate, if unusual,
+// pattern - has two distinct mount points; keying by name would collide them.
+func TestKeyedLists_VolumeMountsKeyOnMountPath(t *testing.T) {
+	manifest := `apiVersion: v1
+kind: Pod
+metadata:
+  name: p
+spec:
+  containers:
+  - name: app
+    volumeMounts:
+    - name: shared
+      mountPath: /var/read
+      readOnly: true
+    - name: shared
+      mountPath: /var/write
+`
+	resource := onlyResource(t, manifest, true)
+	mounts := at(t, resource, "spec.containers.app.volumeMounts")
+	require.IsType(t, map[string]any{}, mounts)
+
+	byPath := mounts.(map[string]any)
+	assert.Contains(t, byPath, "/var/read")
+	assert.Contains(t, byPath, "/var/write")
+	assert.Len(t, byPath, 2, "two mounts of the same volume at different paths must both survive")
+}
+
+func TestKeyedLists_VolumeDevicesKeyOnDevicePath(t *testing.T) {
+	manifest := `apiVersion: v1
+kind: Pod
+metadata:
+  name: p
+spec:
+  containers:
+  - name: app
+    volumeDevices:
+    - name: data
+      devicePath: /dev/xvda
+`
+	resource := onlyResource(t, manifest, true)
+	devices := at(t, resource, "spec.containers.app.volumeDevices")
+	require.IsType(t, map[string]any{}, devices)
+	assert.Contains(t, devices, "/dev/xvda")
+}
+
+// TestKeyedLists_PortsIsAHeuristicNotAKubernetesMergeKey documents and pins
+// the honest tradeoff: ports keys on name for usability even though that is
+// not Kubernetes' actual (compound) merge key, so two ports sharing a name
+// but differing in the field Kubernetes actually merges on (protocol) would
+// collide under this heuristic. elementsByKey's uniqueness requirement means
+// that case is never silently merged - the whole list stays an array instead,
+// which is what this test demonstrates alongside the common working case.
+func TestKeyedLists_PortsIsAHeuristicNotAKubernetesMergeKey(t *testing.T) {
+	t.Run("uniquely named ports key cleanly", func(t *testing.T) {
+		resource := onlyResource(t, `apiVersion: v1
+kind: Pod
+metadata: {name: p}
+spec:
+  containers:
+  - name: app
+    ports:
+    - name: http
+      containerPort: 8080
+    - name: metrics
+      containerPort: 9090
+`, true)
+		ports := at(t, resource, "spec.containers.app.ports")
+		require.IsType(t, map[string]any{}, ports)
+		assert.Len(t, ports, 2)
+	})
+
+	t.Run("same name, different protocol - the real k8s merge key - stays an array", func(t *testing.T) {
+		resource := onlyResource(t, `apiVersion: v1
+kind: Pod
+metadata: {name: p}
+spec:
+  containers:
+  - name: app
+    ports:
+    - name: dns
+      containerPort: 53
+      protocol: UDP
+    - name: dns
+      containerPort: 53
+      protocol: TCP
+`, true)
+		ports := at(t, resource, "spec.containers.app.ports")
+		require.IsType(t, []any{}, ports, "duplicate names must fall back to an array, never silently drop one port")
+		assert.Len(t, ports, 2)
+	})
 }

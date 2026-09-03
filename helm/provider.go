@@ -206,11 +206,11 @@ func experimentsSchema() map[string]schema.Attribute {
 		},
 		"keyed_lists": schema.BoolAttribute{
 			Optional: true,
-			Description: "Store Kubernetes list-map fields in the rendered manifest as objects keyed by their identifying field " +
-				"(`name`, or `ip` for host aliases) instead of as arrays. Terraform diffs arrays by position, so inserting one " +
-				"element makes every later element read as changed; keying them keeps the diff to the entries that actually " +
-				"moved. Requires `manifest` to be enabled. Changes the shape of the `manifest` attribute, so expect a one-time " +
-				"diff when enabling it.",
+			Description: "Store Kubernetes list-map fields in the rendered `manifest` and the per-resource `resources` map as " +
+				"objects keyed by their identifying field (`name`, `mountPath`/`devicePath` for volume mounts/devices, or `ip` " +
+				"for host aliases) instead of as arrays. Terraform diffs arrays by position, so inserting one element makes " +
+				"every later element read as changed; keying them keeps the diff to the entries that actually moved. Requires " +
+				"`manifest` to be enabled. Changes the shape of both attributes, so expect a one-time diff when enabling it.",
 		},
 	}
 }

@@ -77,6 +77,7 @@ func TestRecomputeMetadata(t *testing.T) {
 		}, want: true},
 		"name changed only":      {mutate: func(m *HelmReleaseModel) { m.Name = types.StringValue("renamed") }, want: false},
 		"namespace changed only": {mutate: func(m *HelmReleaseModel) { m.Namespace = types.StringValue("other") }, want: false},
+		"set_wo_revision bumped": {mutate: func(m *HelmReleaseModel) { m.SetWORevision = types.Int64Value(1) }, want: true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			state := baseModel()

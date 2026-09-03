@@ -57,16 +57,24 @@ func convertYAMLManifestToJSON(manifest string, keyLists bool) (string, error) {
 		}
 
 		if gvk.Kind == "Secret" {
+			// Decoded into the typed corev1.Secret so redactSecretData can hash
+			// Data - a map[string][]byte field, so this also base64-decodes each
+			// entry the same way the real API server would. Any field on the
+			// resource that isn't part of corev1.Secret's schema (nonstandard,
+			// or newer than this pinned k8s.io/api dependency) is dropped by
+			// this round-trip, unlike every other Kind, which stays on the
+			// generic map path above and keeps unknown fields verbatim. Real
+			// Secrets don't carry such fields - the API server itself would
+			// reject them - so this is a display-only limitation with no
+			// practical impact, not corrected here to avoid the complexity of
+			// merging the hashed Data back onto the generic decode.
 			secret := corev1.Secret{}
 			err = yaml.Unmarshal([]byte(resource), &secret)
 			if err != nil {
 				return "", err
 			}
 
-			for k, v := range secret.Data {
-				h := hashSensitiveValue(string(v))
-				secret.Data[k] = []byte(h)
-			}
+			redactSecretData(&secret)
 
 			jsonbytes, err = json.Marshal(secret)
 			if err != nil {
@@ -109,18 +117,38 @@ func convertYAMLManifestToJSON(manifest string, keyLists bool) (string, error) {
 // Only fields on this list are re-keyed. Anything absent from it - `args`,
 // `command`, `rules`, `finalizers` - is genuinely ordered and is left as an
 // array.
+//
+// Most entries use the field Kubernetes itself declares via
+// `+listMapKey`/`x-kubernetes-list-map-keys` on the corresponding API type -
+// verified against k8s.io/api, not assumed. Two exceptions, both deliberate:
+//
+//   - `ports` keys on "name" even though neither Container.Ports
+//     (`+listMapKey=containerPort,protocol`) nor ServiceSpec.Ports
+//     (`+listMapKey=port,protocol`) actually uses name as its merge key, and
+//     elementsByKey only supports a single field, not a compound one. name is
+//     still a safe choice - elementsByKey requires every element to carry a
+//     unique, non-empty value for it, so an unnamed or duplicate-named port
+//     list is left as an array rather than keyed incorrectly - and it is
+//     useful in the common case of uniquely-named ports, at the cost of not
+//     being what Kubernetes would actually merge on.
+//   - `sysctls` is deliberately ABSENT even though every element does carry a
+//     unique `name`: PodSecurityContext.Sysctls is declared
+//     `+listType=atomic`, meaning Kubernetes replaces the entire list on any
+//     change rather than merging by element. Presenting it as a keyed map
+//     would misleadingly imply a single-entry diff has the same effect as
+//     changing one sysctl in isolation, when the applied behavior actually
+//     replaces the whole list.
 var listMapKeys = map[string]string{
 	"containers":          "name",
 	"initContainers":      "name",
 	"ephemeralContainers": "name",
 	"env":                 "name",
-	"ports":               "name",
-	"volumeMounts":        "name",
-	"volumeDevices":       "name",
+	"ports":               "name", // heuristic, not k8s's declared key - see comment above
+	"volumeMounts":        "mountPath",
+	"volumeDevices":       "devicePath",
 	"volumes":             "name",
 	"imagePullSecrets":    "name",
 	"secrets":             "name",
-	"sysctls":             "name",
 	"hostAliases":         "ip",
 }
 

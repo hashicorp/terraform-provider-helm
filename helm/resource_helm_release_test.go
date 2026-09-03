@@ -2860,7 +2860,7 @@ func getReleaseJSONResourcesPF(t *testing.T, namespace, name string) map[string]
 	}
 
 	ctx := context.Background()
-	result, diags := mapRuntimeObjects(ctx, kc, objects, nil)
+	result, diags := mapRuntimeObjects(ctx, kc, objects, nil, false)
 	if diags.HasError() {
 		t.Fatalf("failed to map runtime objects: %v", diags)
 	}
@@ -3306,4 +3306,70 @@ func testAccHelmReleaseConfigSetSensitiveManifest(resource, ns, name, secretValu
 			]
 		}
 	`, resource, name, ns, testRepositoryURL, "1.2.3", secretValue)
+}
+
+// TestAccResourceRelease_keyedListsAppliesToResourcesToo pins the extension of
+// experiments.keyed_lists to the resources[...] map, not just manifest.
+// Before this, resources[...] had its own independent JSON encoding that never
+// benefited from keyed_lists even though it suffers the identical positional-
+// array diff noise - the same class of problem this whole feature exists to
+// fix, just in a second attribute nobody had wired it into.
+func TestAccResourceRelease_keyedListsAppliesToResourcesToo(t *testing.T) {
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+	name := randName("keyedres")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigKeyedResources(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						res := s.RootModule().Resources["helm_release.test"]
+						if res == nil || res.Primary == nil {
+							return fmt.Errorf("helm_release.test not found in state")
+						}
+						for key, value := range res.Primary.Attributes {
+							if !strings.HasPrefix(key, "resources.") || !strings.Contains(key, "deployment") {
+								continue
+							}
+							var decoded map[string]any
+							if err := json.Unmarshal([]byte(value), &decoded); err != nil {
+								return fmt.Errorf("resources[%s] is not valid JSON: %w", key, err)
+							}
+							containers := decoded["spec"].(map[string]any)["template"].(map[string]any)["spec"].(map[string]any)["containers"]
+							if _, isArray := containers.([]any); isArray {
+								return fmt.Errorf("resources[%s].spec.template.spec.containers is still an array; keyed_lists did not reach the resources map", key)
+							}
+							if _, isMap := containers.(map[string]any); !isMap {
+								return fmt.Errorf("resources[%s].spec.template.spec.containers has unexpected type %T", key, containers)
+							}
+							return nil
+						}
+						return fmt.Errorf("no deployment found under resources[...] to check")
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigKeyedResources(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments = {
+				manifest    = true
+				keyed_lists = true
+			}
+		}
+
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+		}
+	`, resource, name, ns, testRepositoryURL, "1.2.3")
 }

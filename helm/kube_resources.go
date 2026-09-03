@@ -93,7 +93,7 @@ func removeUnmanagedFields(parser *managedfields.GvkParser, obj runtime.Object, 
 }
 
 // mapRuntimeObjects converts runtime.Objects to JSON with unmanaged fields removed and sensitive values redacted.
-func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.Object, sensitiveValues []string) (map[string]string, diag.Diagnostics) {
+func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.Object, sensitiveValues []string, keyLists bool) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	clientSet, err := kc.Factory.KubernetesClientSet()
@@ -160,8 +160,13 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 		}
 		normalizeK8sObject(umap)
 
+		var toMarshal any = umap
+		if keyLists {
+			toMarshal = keyListMapsIn(umap)
+		}
+
 		// Marshal back to JSON for the state
-		objJSON, err := json.Marshal(umap)
+		objJSON, err := json.Marshal(toMarshal)
 		if err != nil {
 			diags.AddError("Marshal Error", err.Error())
 			return nil, diags
@@ -174,7 +179,7 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 	return mappedObjects, diags
 }
 
-func mapResources(ctx context.Context, actionConfig *action.Configuration, r *release.Release, sensitiveValues []string, f func(*resource.Info) (runtime.Object, error)) (map[string]string, diag.Diagnostics) {
+func mapResources(ctx context.Context, actionConfig *action.Configuration, r *release.Release, sensitiveValues []string, keyLists bool, f func(*resource.Info) (runtime.Object, error)) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	resources, err := actionConfig.KubeClient.Build(bytes.NewBufferString(r.Manifest), false)
@@ -208,11 +213,11 @@ func mapResources(ctx context.Context, actionConfig *action.Configuration, r *re
 		diags.AddError("Client Error", err.Error())
 		return nil, diags
 	}
-	return mapRuntimeObjects(ctx, kc, objects, sensitiveValues)
+	return mapRuntimeObjects(ctx, kc, objects, sensitiveValues, keyLists)
 }
 
 // getLiveResources fetches the live cluster resources of a Helm release.
-func getLiveResources(ctx context.Context, r *release.Release, m *Meta, sensitiveValues []string) (map[string]string, diag.Diagnostics) {
+func getLiveResources(ctx context.Context, r *release.Release, m *Meta, sensitiveValues []string, keyLists bool) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	actionConfig, err := m.GetHelmConfiguration(ctx, r.Namespace)
@@ -227,7 +232,7 @@ func getLiveResources(ctx context.Context, r *release.Release, m *Meta, sensitiv
 	}
 	// mapResources -> mapRuntimeObjects already normalizes and redacts every
 	// object before returning, so its result is used directly here.
-	return mapResources(ctx, actionConfig, r, sensitiveValues, func(i *resource.Info) (runtime.Object, error) {
+	return mapResources(ctx, actionConfig, r, sensitiveValues, keyLists, func(i *resource.Info) (runtime.Object, error) {
 		gvk := i.Object.GetObjectKind().GroupVersionKind()
 		return kc.Factory.NewBuilder().
 			Unstructured().
@@ -278,7 +283,7 @@ func setDryRunOwnershipMetadata(obj runtime.Object) error {
 	return accessor.SetLabels(obj, labels)
 }
 
-func getDryRunResources(ctx context.Context, r *release.Release, m *Meta, sensitiveValues []string) (map[string]string, diag.Diagnostics) {
+func getDryRunResources(ctx context.Context, r *release.Release, m *Meta, sensitiveValues []string, keyLists bool) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	actionConfig, err := m.GetHelmConfiguration(ctx, r.Namespace)
@@ -298,7 +303,7 @@ func getDryRunResources(ctx context.Context, r *release.Release, m *Meta, sensit
 
 	// mapResources -> mapRuntimeObjects already normalizes and redacts every
 	// object before returning, so its result is used directly here.
-	return mapResources(ctx, actionConfig, r, sensitiveValues, func(i *resource.Info) (runtime.Object, error) {
+	return mapResources(ctx, actionConfig, r, sensitiveValues, keyLists, func(i *resource.Info) (runtime.Object, error) {
 		if err := setDryRunOwnershipMetadata(i.Object); err != nil {
 			return nil, err
 		}

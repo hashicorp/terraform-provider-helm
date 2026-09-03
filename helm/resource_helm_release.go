@@ -1710,7 +1710,7 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		sensitiveValues := sensitiveSetValues(ctx, state.SetSensitive)
 		state.Manifest = types.StringValue(redactSensitiveValues(string(jsonManifest), sensitiveValues))
 
-		resources, resDiags := getLiveResources(ctx, r, meta, sensitiveValues)
+		resources, resDiags := getLiveResources(ctx, r, meta, sensitiveValues, meta.ExperimentEnabled("keyed_lists"))
 		diags.Append(resDiags...)
 
 		if !resDiags.HasError() {
@@ -2246,13 +2246,18 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 			sensitiveValues := sensitiveSetValues(ctx, plan.SetSensitive)
 			plan.Manifest = types.StringValue(redactSensitiveValues(string(jsonManifest), sensitiveValues))
-			resources, resDiags := getDryRunResources(ctx, dry, meta, sensitiveValues)
+			resources, resDiags := getDryRunResources(ctx, dry, meta, sensitiveValues, meta.ExperimentEnabled("keyed_lists"))
 			resp.Diagnostics.Append(resDiags...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
 			plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
 			resp.Diagnostics.Append(diags...)
+			// state is nil here (this is Create), so recomputeMetadata is never
+			// reached below - plan the same partial-known object an Update would
+			// get, rather than leaving metadata at the framework's blanket-unknown
+			// default for the whole object.
+			plan.Metadata = plannedMetadata(&plan, nil, dryRelease)
 			resp.Plan.Set(ctx, &plan)
 			return
 		}
@@ -2322,7 +2327,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 		sensitiveValues := sensitiveSetValues(ctx, plan.SetSensitive)
 		plan.Manifest = types.StringValue(redactSensitiveValues(string(jsonManifest), sensitiveValues))
-		resources, resDiags := getDryRunResources(ctx, dry, meta, sensitiveValues)
+		resources, resDiags := getDryRunResources(ctx, dry, meta, sensitiveValues, meta.ExperimentEnabled("keyed_lists"))
 		resp.Diagnostics.Append(resDiags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -2419,6 +2424,17 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 		return true
 	}
 	if !plan.SetList.Equal(state.SetList) {
+		return true
+	}
+	// A write-only value bump changes what gets applied even though nothing
+	// else here does - plannedMetadata's own values field is independently
+	// guarded by SetWORevision regardless of this check, so omitting it never
+	// risked exposing a value it shouldn't, but omitting it did mean a plan
+	// whose only change is bumping set_wo_revision left every OTHER metadata
+	// field (name, namespace, chart, version, first_deployed) at the
+	// framework's blanket-unknown default instead of the known values
+	// plannedMetadata could otherwise supply.
+	if !plan.SetWORevision.Equal(state.SetWORevision) {
 		return true
 	}
 	return false
