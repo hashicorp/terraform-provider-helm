@@ -246,10 +246,48 @@ func redactSensitiveValues(text string, sensitiveValues []string) string {
 		if value == "" {
 			continue
 		}
-		masked = strings.ReplaceAll(masked, value, hashSensitiveValue(value))
+
+		// text is always JSON (the manifest/resources attributes are always
+		// produced by json.Marshal), so a value containing a character JSON
+		// escapes - a double quote, a backslash, or a control character such
+		// as a newline - never appears in text as its raw bytes. It appears
+		// as its JSON-escaped form instead: a multi-line secret like a PEM
+		// private key or certificate, or any secret containing a quote or
+		// backslash, would otherwise survive "redaction" fully readable,
+		// just with backslash-n / backslash-quote / double-backslash in
+		// place of the original control characters. jsonEscapedForm is
+		// exactly what value looks like once embedded in the JSON string
+		// field that holds it, so search for that instead of the raw value.
+		//
+		// For a value with no JSON-special characters (the common case -
+		// plain alphanumeric secrets), the escaped form is byte-identical to
+		// the raw value, so this changes nothing for the values every
+		// existing test already covers.
+		escaped, ok := jsonEscapedForm(value)
+		if !ok || escaped == "" {
+			continue
+		}
+		masked = strings.ReplaceAll(masked, escaped, hashSensitiveValue(value))
 	}
 
 	return masked
+}
+
+// jsonEscapedForm returns value as it appears inside a JSON string field -
+// json.Marshal's quoted encoding with the surrounding quotes stripped - or
+// false if value cannot be encoded as a JSON string (never true for a Go
+// string, which is always valid UTF-8 input to json.Marshal; the check
+// exists so a theoretical encoding failure skips that one value instead of
+// panicking or silently matching nothing).
+func jsonEscapedForm(value string) (string, bool) {
+	b, err := json.Marshal(value)
+	if err != nil {
+		return "", false
+	}
+	if len(b) < 2 || b[0] != '"' || b[len(b)-1] != '"' {
+		return "", false
+	}
+	return string(b[1 : len(b)-1]), true
 }
 
 func redactSecretData(secret *corev1.Secret) {

@@ -3373,3 +3373,135 @@ func testAccHelmReleaseConfigKeyedResources(resource, ns, name string) string {
 		}
 	`, resource, name, ns, testRepositoryURL, "1.2.3")
 }
+
+// TestAccResourceRelease_manifestRedactsMultiLineSetSensitive is a real
+// end-to-end regression test for a gap found during pre-submission review of
+// the fix above: redactSensitiveValues searched the JSON manifest text for
+// the RAW configured secret value, but that text is always JSON, so a value
+// containing a character JSON escapes - a quote, a backslash, or a control
+// character such as a newline - never appears in it as raw bytes. Secrets
+// containing such characters (a PEM private key/certificate being the
+// canonical multi-line case) therefore survived "redaction" fully readable,
+// merely re-escaped, on every single apply. This is the same
+// state-inspection technique as the sibling test above, applied to a secret
+// shaped like the ones that were actually affected.
+func TestAccResourceRelease_manifestRedactsQuoteContainingSetSensitive(t *testing.T) {
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+	name := randName("redact-esc")
+
+	// A quote alone is enough to exercise the JSON-escaping gap ("→\") without
+	// tripping over set_sensitive's own, unrelated strvals.ParseInto value
+	// parsing (Helm's --set-style mini-language, which treats backslash as
+	// its own escape character and can't carry a raw embedded newline through
+	// a single "key=value" argument at all) - a value containing a literal
+	// newline or backslash gets mangled by THAT parser before it ever reaches
+	// the chart, which is a real, separate, pre-existing set_sensitive
+	// behavior unrelated to redaction. The unit-level tests in
+	// manifest_redaction_test.go cover the newline/backslash cases directly
+	// against redactSensitiveValues, bypassing strvals entirely, which is
+	// where those cases are actually meaningful to test.
+	const secretValue = `canary-with-a-"quoted-phrase"-inside-it`
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigSetSensitiveManifest(testResourceName, namespace, name, secretValue),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("helm_release.test", "manifest"),
+					func(s *terraform.State) error {
+						res := s.RootModule().Resources["helm_release.test"]
+						if res == nil || res.Primary == nil {
+							return fmt.Errorf("helm_release.test not found in state")
+						}
+
+						foundMarker := false
+						for key, value := range res.Primary.Attributes {
+							if key != "manifest" && !strings.HasPrefix(key, "resources.") {
+								continue
+							}
+							if strings.Contains(value, "canary-with-a") {
+								return fmt.Errorf("quote-containing set_sensitive value leaked into computed attribute %q, readable: %s", key, value)
+							}
+							if strings.Contains(value, "(sensitive value") {
+								foundMarker = true
+							}
+						}
+						if !foundMarker {
+							return fmt.Errorf("expected the redaction hash marker in manifest or resources[...]; attribute may not have been populated")
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceRelease_ownershipMetadataLocalChart is a fully local,
+// offline-safe regression test for the setDryRunOwnershipMetadata fix,
+// covering the same property TestAccResourceRelease_manifestOCIChartUpgrade
+// proves against a real third-party chart, without any external dependency.
+// Uses ./testdata/charts/bare-metadata, whose ConfigMap deliberately declares
+// no labels of its own - most real charts (including this repo's own
+// test-chart, via _helpers.tpl) set app.kubernetes.io/managed-by themselves,
+// which means the label agrees on both the dry-run and live sides for a
+// completely unrelated reason (both read it from the same chart template)
+// and never actually exercises the code path this fix touches. Without the
+// fix, this fails the create step outright with "Provider produced
+// inconsistent result after apply" on resources[...].
+func TestAccResourceRelease_ownershipMetadataLocalChart(t *testing.T) {
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+	name := randName("bare-metadata")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigBareMetadata(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						res := s.RootModule().Resources["helm_release.test"]
+						if res == nil || res.Primary == nil {
+							return fmt.Errorf("helm_release.test not found in state")
+						}
+						for key, value := range res.Primary.Attributes {
+							if strings.HasPrefix(key, "resources.") && strings.Contains(key, "configmap") {
+								if !strings.Contains(value, `"app.kubernetes.io/managed-by":"Helm"`) {
+									return fmt.Errorf("resources[%s] is missing the Helm-injected managed-by label the fix is supposed to predict: %s", key, value)
+								}
+								return nil
+							}
+						}
+						return fmt.Errorf("no configmap found under resources[...] to check")
+					},
+				),
+			},
+			{
+				// A second apply (an Update, not just a Create) with a
+				// deliberately unrelated change, to prove the fix holds on
+				// the update dry-run path too, not just install.
+				Config: testAccHelmReleaseConfigBareMetadata(testResourceName, namespace, name),
+				Check:  resource.TestCheckResourceAttrSet("helm_release.test", "manifest"),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigBareMetadata(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments = {
+				manifest = true
+			}
+		}
+
+		resource "helm_release" "%s" {
+			name      = %q
+			namespace = %q
+			chart     = "./testdata/charts/bare-metadata"
+		}
+	`, resource, name, ns)
+}

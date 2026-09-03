@@ -5,6 +5,7 @@ package helm
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -139,4 +140,80 @@ spec:
 		assert.NotContains(t, redacted, "env.DATABASE_PASSWORD", "keyed=%v: attribute name must never appear as a redaction target", keyed)
 		assert.Contains(t, redacted, "(sensitive value", "keyed=%v: hash marker must be present", keyed)
 	}
+}
+
+// TestJSONEscapedForm pins jsonEscapedForm's contract directly: it must
+// return exactly what json.Marshal would put inside a JSON string field for
+// this value, with the surrounding quotes stripped - the plain-value case is
+// a byte-identical no-op, everything else is genuinely transformed.
+func TestJSONEscapedForm(t *testing.T) {
+	for name, tc := range map[string]struct {
+		value string
+		want  string
+	}{
+		"plain alphanumeric":               {value: "correct-horse-battery-staple", want: "correct-horse-battery-staple"},
+		"empty string":                     {value: "", want: ""},
+		"contains a newline":               {value: "line one\nline two", want: `line one\nline two`},
+		"contains a quote":                 {value: `say "hello"`, want: `say \"hello\"`},
+		"contains a backslash":             {value: `C:\path\to\thing`, want: `C:\\path\\to\\thing`},
+		"contains tab and carriage return": {value: "a\tb\rc", want: `a\tb\rc`},
+		"contains a null byte":             {value: "a\x00b", want: `a\u0000b`},
+		"contains angle brackets and amp":  {value: "<script>&amp;</script>", want: `\u003cscript\u003e\u0026amp;\u003c/script\u003e`},
+		"unicode":                          {value: "héllo wörld 日本語 🚀", want: "héllo wörld 日本語 🚀"},
+		"multi-line secret with mixed special characters": {
+			value: "line-one-canary\nline-two-quo\"te\nline-three-back\\slash",
+			want:  `line-one-canary\nline-two-quo\"te\nline-three-back\\slash`,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			got, ok := jsonEscapedForm(tc.value)
+			require.True(t, ok)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// TestRedactSensitiveValues_MultiLineAndSpecialCharacters is a regression
+// test for a real gap found during pre-submission review: redactSensitiveValues
+// used to search the JSON manifest text for the RAW configured secret value.
+// Since that text is always JSON, any value containing a character JSON
+// escapes - a quote, a backslash, or a control character such as a newline -
+// never appears in the text as its raw bytes, so the raw-value search found
+// nothing and the secret (in its readable, merely re-escaped form) shipped
+// into state/plan output unredacted. A multi-line secret - a PEM private key
+// or certificate being the obvious real-world case - was affected on every
+// single apply, silently, regardless of the map-orientation bug fixed
+// alongside this one.
+func TestRedactSensitiveValues_MultiLineAndSpecialCharacters(t *testing.T) {
+	for name, secret := range map[string]string{
+		"multi-line with embedded newlines":                                     "line-one-canary\nline-two-indented\nline-three-end",
+		"contains a double quote":                                               `value with a "quoted phrase" inside it`,
+		"contains a backslash":                                                  `C:\Users\canary\secret.txt`,
+		"contains a backslash immediately before a quote":                       `path\"escaped`,
+		"contains tab and carriage return":                                      "a\tcanary\rb",
+		"contains a null byte":                                                  "before\x00after-canary",
+		"contains angle brackets (HTML-unsafe under Go's default json.Marshal)": "<canary>&value</canary>",
+	} {
+		t.Run(name, func(t *testing.T) {
+			manifest := podEnv(secret)
+			for _, keyed := range []bool{false, true} {
+				jsonManifest, err := convertYAMLManifestToJSON(manifest, keyed)
+				require.NoError(t, err)
+
+				redacted := redactSensitiveValues(jsonManifest, []string{secret})
+
+				assert.NotContains(t, redacted, "canary", "keyed=%v: secret content must not survive redaction: %s", keyed, redacted)
+				assert.Contains(t, redacted, "(sensitive value", "keyed=%v: hash marker must be present", keyed)
+			}
+		})
+	}
+}
+
+// podEnv renders a manifest whose single env value, once through YAML's
+// block-scalar handling, round-trips secret byte-for-byte (YAML block
+// literals preserve embedded quotes/backslashes/control characters exactly,
+// which is what this test needs to actually exercise the escaping gap).
+func podEnv(value string) string {
+	b, _ := json.Marshal(value) // reuse Go's own JSON string encoding as a safe way to embed an arbitrary string inside YAML too
+	return "apiVersion: v1\nkind: Pod\nmetadata:\n  name: p\nspec:\n  containers:\n  - name: app\n    env:\n    - name: TLS_KEY\n      value: " + string(b) + "\n"
 }
