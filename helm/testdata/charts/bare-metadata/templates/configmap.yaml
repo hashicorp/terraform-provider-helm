@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-bare
+  # Deliberately no `labels:` block - no app.kubernetes.io/managed-by, no
+  # helm.sh/chart, nothing. Every one of those comes solely from Helm's own
+  # setMetadataVisitor at apply time, not from this template.
+data:
+  marker: bare-metadata

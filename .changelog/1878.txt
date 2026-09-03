@@ -1,0 +1,3 @@
+```release-note:bug
+`resource/helm_release`: Fix `experiments.manifest` planning `resources[...]` values that permanently disagreed with the live cluster for any resource whose chart template doesn't itself set `app.kubernetes.io/managed-by` and the `meta.helm.sh/release-name` / `meta.helm.sh/release-namespace` annotations - which is most resources, since a real Install, Upgrade or Rollback always adds them via Helm's own metadata visitor. The dry run computing the `resources` map never replicated that step, so any Create or Update of such a resource failed outright with "Provider produced inconsistent result after apply" whenever `experiments.manifest` was enabled.
+```

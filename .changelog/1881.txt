@@ -1,0 +1,3 @@
+```release-note:bug
+`provider`: Correct three entries in the `keyed_lists` list-map key allowlist against Kubernetes' own `+listMapKey` declarations: `volumeMounts` now keys on `mountPath` (was `name`), `volumeDevices` on `devicePath` (was `name`), and `sysctls` is no longer keyed at all - Kubernetes declares it `+listType=atomic`, meaning the entire list is replaced on any change rather than merged by element, so presenting it as a keyed map misrepresented what actually happens on apply. `ports` remains keyed on `name` as a documented, deliberate usability heuristic rather than Kubernetes' actual (compound) merge key.
+```

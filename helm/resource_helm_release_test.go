@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
@@ -2017,7 +2018,7 @@ func getReleaseJSONManifest(ctx context.Context, namespace, name string) (string
 	}
 
 	// Convert the YAML manifest to JSON
-	jsonManifest, err := convertYAMLManifestToJSON(string(manifest))
+	jsonManifest, err := convertYAMLManifestToJSON(string(manifest), false)
 	if err != nil {
 		return "", err
 	}
@@ -2859,7 +2860,7 @@ func getReleaseJSONResourcesPF(t *testing.T, namespace, name string) map[string]
 	}
 
 	ctx := context.Background()
-	result, diags := mapRuntimeObjects(ctx, kc, objects)
+	result, diags := mapRuntimeObjects(ctx, kc, objects, nil, false)
 	if diags.HasError() {
 		t.Fatalf("failed to map runtime objects: %v", diags)
 	}
@@ -3001,4 +3002,506 @@ func checkDeploymentReplicasAndGeneration(resourceName, namespace, deploymentNam
 		}
 		return nil
 	}
+}
+
+// TestAccResourceRelease_replaceDoesNotInheritMetadata guards against a bug
+// found while auditing the metadata-recompute change (2026-09): name and
+// namespace both carry RequiresReplace(), and ModifyPlan's "state" argument is
+// the release being destroyed - not the one the plan is building. Reusing its
+// first_deployed for the replacement release would have been wrong. This
+// forces a replacement (renaming the release) and checks the plan itself,
+// which a state-only assertion after apply cannot do.
+func TestAccResourceRelease_replaceDoesNotInheritMetadata(t *testing.T) {
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	firstName := randName("first")
+	secondName := randName("second")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"local": {
+				Source: "hashicorp/local",
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseRecomputeMetadata(testResourceName, namespace, firstName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", firstName),
+					resource.TestCheckResourceAttrSet("helm_release.test", "metadata.first_deployed"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseRecomputeMetadata(testResourceName, namespace, secondName),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("helm_release.test", plancheck.ResourceActionDestroyBeforeCreate),
+						plancheck.ExpectUnknownValue("helm_release.test", tfjsonpath.New("metadata").AtMapKey("first_deployed")),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.name", secondName),
+					resource.TestCheckResourceAttrSet("helm_release.test", "metadata.first_deployed"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceRelease_manifestUnknownValuesOnUpdate is a stricter sibling of
+// TestAccResourceRelease_manifestUnknownValues. That test only covers Create,
+// where state is nil and metadata is naturally unknown by default. On Update,
+// state.Metadata already holds the previous apply's real values, and
+// ModifyPlan's valuesUnknown(plan) branch returns before ever touching
+// plan.Metadata - so if the framework's default behaviour for an unmodified
+// Computed attribute is to carry the prior state value forward, this could
+// present the OLD metadata.values as a known value in a plan whose real
+// values are about to change, which is exactly the shape of a "Provider
+// produced inconsistent result after apply" failure that the resource.Test
+// harness checks for automatically on every step.
+func TestAccResourceRelease_manifestUnknownValuesOnUpdate(t *testing.T) {
+	name := randName("unknown-update")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"random": {
+				Source: "hashicorp/random",
+			},
+		},
+		Steps: []resource.TestStep{
+			{
+				// Install with a real, known value.
+				Config: testAccHelmReleaseConfigManifestUnknownValuesOnUpdate(testResourceName, namespace, name, "one"),
+				Check:  resource.TestCheckResourceAttrSet("helm_release.test", "metadata.values"),
+			},
+			{
+				// Change the keeper so random_string is replaced: its .result is
+				// unknown until THIS apply runs, so plan.Set becomes unknown on an
+				// UPDATE of an already-deployed release, unlike the Create-only
+				// case the sibling test covers.
+				Config: testAccHelmReleaseConfigManifestUnknownValuesOnUpdate(testResourceName, namespace, name, "two"),
+			},
+			{
+				// A third, unrelated update (repeats the pattern) to catch a
+				// carried-forward value surviving more than one cycle.
+				Config: testAccHelmReleaseConfigManifestUnknownValuesOnUpdate(testResourceName, namespace, name, "three"),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigManifestUnknownValuesOnUpdate(resource, ns, name, keeper string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments = {
+				manifest = true
+			}
+		}
+
+		resource "random_string" "random_label" {
+			length  = 16
+			special = false
+			keepers = {
+				generation = %q
+			}
+		}
+
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+
+			set = [
+				{
+					name  = "podAnnotations.random"
+					value = random_string.random_label.result
+				}
+			]
+		}
+	`, keeper, resource, name, ns, testRepositoryURL, "1.2.3")
+}
+
+// TestAccResourceRelease_manifestOCIChartUpgrade uses the real litellm-helm OCI
+// chart across the exact version jump (1.83.3-stable -> 1.98.0) that motivated
+// this whole audit, with experiments.manifest AND experiments.keyed_lists both
+// on. Upstream has a history of manifest-experiment bugs specific to OCI charts
+// (issues #1325 "manifest diffs aren't generated for OCI charts", #1326 "Fix
+// manifest diffs for OCI charts", #1402 "Perpetual diff on Deployment and
+// crash on apply for OCI chart with manifest experiment"), so this is the
+// scenario most likely to reproduce something neither the constructed-manifest
+// unit tests nor the local-chart acceptance tests would catch: real OCI
+// registry auth/pull, a real Job resource (the migrations Job, exercising the
+// exact bug fixed on the other branch), a real HPA, and hundreds of real env
+// vars including the one that shifted position between these two versions.
+func TestAccResourceRelease_manifestOCIChartUpgrade(t *testing.T) {
+	if testing.Short() {
+		t.Skip("pulls a real chart from ghcr.io; skipped with -short")
+	}
+
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+	name := randName("litellm")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigOCIRealChart(testResourceName, namespace, name, "1.83.3-stable"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.83.3-stable"),
+					resource.TestCheckResourceAttrSet("helm_release.test", "manifest"),
+				),
+			},
+			{
+				Config: testAccHelmReleaseConfigOCIRealChart(testResourceName, namespace, name, "1.98.0"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("helm_release.test", plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.98.0"),
+				),
+			},
+			{
+				// Same config again: must be a clean no-op plan, exactly the
+				// property that would break if metadata or the keyed manifest
+				// were unstable between identical plans.
+				Config:   testAccHelmReleaseConfigOCIRealChart(testResourceName, namespace, name, "1.98.0"),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigOCIRealChart(resource, ns, name, version string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments = {
+				manifest    = true
+				keyed_lists = true
+			}
+		}
+
+		resource "helm_release" "%s" {
+			name             = %q
+			namespace        = %q
+			create_namespace = true
+			chart            = "oci://ghcr.io/berriai/litellm-helm"
+			version          = %q
+			wait             = false
+			wait_for_jobs    = false
+			timeout          = 120
+
+			values = [yamlencode({
+				image = {
+					repository = "busybox"
+					tag        = "1.36"
+					pullPolicy = "IfNotPresent"
+				}
+				db = {
+					deployStandalone = false
+					useExisting      = false
+				}
+				postgresql = { enabled = false }
+				redis      = { enabled = false }
+				serviceAccount = {
+					create = false
+					name   = "default"
+				}
+				migrationJob = { enabled = false }
+				masterkey    = "sk-acceptance-test-deterministic"
+			})]
+		}
+	`, resource, name, ns, version)
+}
+
+// TestAccResourceRelease_manifestRedactsSetSensitive is a real regression test
+// for a genuine secret-leak bug: redactSensitiveValues used to be handed a map
+// keyed by attribute NAME with the real value discarded, so it searched the
+// manifest for literal attribute names and never touched actual secret text.
+// Any set_sensitive value flowed into Terraform state and plan output in the
+// clear whenever experiments.manifest was enabled. Unit tests on the isolated
+// functions cannot catch a bug at the CALL SITE that wires them together
+// wrong, so this inspects the real, on-disk Terraform state after a real
+// apply - the only place that actually proves nothing leaked.
+func TestAccResourceRelease_manifestRedactsSetSensitive(t *testing.T) {
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+	name := randName("redact")
+
+	const secretValue = "correct-horse-battery-staple-canary"
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigSetSensitiveManifest(testResourceName, namespace, name, secretValue),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("helm_release.test", "manifest"),
+					func(s *terraform.State) error {
+						// set_sensitive[].value is itself stored in state unredacted -
+						// Sensitive:true on a schema attribute only masks Terraform's
+						// CLI/plan output, never the state file, and that is expected,
+						// universal Terraform behaviour this test must not flag. What
+						// actually matters is that the secret does not ALSO appear
+						// inside manifest or resources[...] - the COMPUTED attributes
+						// that mirror what got deployed, which is what redactSensitiveValues
+						// exists to scrub. Check only those, not the whole state blob.
+						res := s.RootModule().Resources["helm_release.test"]
+						if res == nil || res.Primary == nil {
+							return fmt.Errorf("helm_release.test not found in state")
+						}
+
+						foundMarker := false
+						for key, value := range res.Primary.Attributes {
+							if key != "manifest" && !strings.HasPrefix(key, "resources.") {
+								continue
+							}
+							if strings.Contains(value, secretValue) {
+								return fmt.Errorf("set_sensitive value leaked into computed attribute %q verbatim: %s", key, value)
+							}
+							if strings.Contains(value, "(sensitive value") {
+								foundMarker = true
+							}
+						}
+						if !foundMarker {
+							return fmt.Errorf("expected the redaction hash marker in manifest or resources[...]; attribute may not have been populated")
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigSetSensitiveManifest(resource, ns, name, secretValue string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments = {
+				manifest = true
+			}
+		}
+
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+
+			set_sensitive = [
+				{
+					name  = "podAnnotations.canary"
+					value = %q
+				}
+			]
+		}
+	`, resource, name, ns, testRepositoryURL, "1.2.3", secretValue)
+}
+
+// TestAccResourceRelease_keyedListsAppliesToResourcesToo pins the extension of
+// experiments.keyed_lists to the resources[...] map, not just manifest.
+// Before this, resources[...] had its own independent JSON encoding that never
+// benefited from keyed_lists even though it suffers the identical positional-
+// array diff noise - the same class of problem this whole feature exists to
+// fix, just in a second attribute nobody had wired it into.
+func TestAccResourceRelease_keyedListsAppliesToResourcesToo(t *testing.T) {
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+	name := randName("keyedres")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigKeyedResources(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						res := s.RootModule().Resources["helm_release.test"]
+						if res == nil || res.Primary == nil {
+							return fmt.Errorf("helm_release.test not found in state")
+						}
+						for key, value := range res.Primary.Attributes {
+							if !strings.HasPrefix(key, "resources.") || !strings.Contains(key, "deployment") {
+								continue
+							}
+							var decoded map[string]any
+							if err := json.Unmarshal([]byte(value), &decoded); err != nil {
+								return fmt.Errorf("resources[%s] is not valid JSON: %w", key, err)
+							}
+							containers := decoded["spec"].(map[string]any)["template"].(map[string]any)["spec"].(map[string]any)["containers"]
+							if _, isArray := containers.([]any); isArray {
+								return fmt.Errorf("resources[%s].spec.template.spec.containers is still an array; keyed_lists did not reach the resources map", key)
+							}
+							if _, isMap := containers.(map[string]any); !isMap {
+								return fmt.Errorf("resources[%s].spec.template.spec.containers has unexpected type %T", key, containers)
+							}
+							return nil
+						}
+						return fmt.Errorf("no deployment found under resources[...] to check")
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigKeyedResources(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments = {
+				manifest    = true
+				keyed_lists = true
+			}
+		}
+
+		resource "helm_release" "%s" {
+			name        = %q
+			namespace   = %q
+			repository  = %q
+			version     = %q
+			chart       = "test-chart"
+		}
+	`, resource, name, ns, testRepositoryURL, "1.2.3")
+}
+
+// TestAccResourceRelease_manifestRedactsMultiLineSetSensitive is a real
+// end-to-end regression test for a gap found during pre-submission review of
+// the fix above: redactSensitiveValues searched the JSON manifest text for
+// the RAW configured secret value, but that text is always JSON, so a value
+// containing a character JSON escapes - a quote, a backslash, or a control
+// character such as a newline - never appears in it as raw bytes. Secrets
+// containing such characters (a PEM private key/certificate being the
+// canonical multi-line case) therefore survived "redaction" fully readable,
+// merely re-escaped, on every single apply. This is the same
+// state-inspection technique as the sibling test above, applied to a secret
+// shaped like the ones that were actually affected.
+func TestAccResourceRelease_manifestRedactsQuoteContainingSetSensitive(t *testing.T) {
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+	name := randName("redact-esc")
+
+	// A quote alone is enough to exercise the JSON-escaping gap ("→\") without
+	// tripping over set_sensitive's own, unrelated strvals.ParseInto value
+	// parsing (Helm's --set-style mini-language, which treats backslash as
+	// its own escape character and can't carry a raw embedded newline through
+	// a single "key=value" argument at all) - a value containing a literal
+	// newline or backslash gets mangled by THAT parser before it ever reaches
+	// the chart, which is a real, separate, pre-existing set_sensitive
+	// behavior unrelated to redaction. The unit-level tests in
+	// manifest_redaction_test.go cover the newline/backslash cases directly
+	// against redactSensitiveValues, bypassing strvals entirely, which is
+	// where those cases are actually meaningful to test.
+	const secretValue = `canary-with-a-"quoted-phrase"-inside-it`
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigSetSensitiveManifest(testResourceName, namespace, name, secretValue),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet("helm_release.test", "manifest"),
+					func(s *terraform.State) error {
+						res := s.RootModule().Resources["helm_release.test"]
+						if res == nil || res.Primary == nil {
+							return fmt.Errorf("helm_release.test not found in state")
+						}
+
+						foundMarker := false
+						for key, value := range res.Primary.Attributes {
+							if key != "manifest" && !strings.HasPrefix(key, "resources.") {
+								continue
+							}
+							if strings.Contains(value, "canary-with-a") {
+								return fmt.Errorf("quote-containing set_sensitive value leaked into computed attribute %q, readable: %s", key, value)
+							}
+							if strings.Contains(value, "(sensitive value") {
+								foundMarker = true
+							}
+						}
+						if !foundMarker {
+							return fmt.Errorf("expected the redaction hash marker in manifest or resources[...]; attribute may not have been populated")
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceRelease_ownershipMetadataLocalChart is a fully local,
+// offline-safe regression test for the setDryRunOwnershipMetadata fix,
+// covering the same property TestAccResourceRelease_manifestOCIChartUpgrade
+// proves against a real third-party chart, without any external dependency.
+// Uses ./testdata/charts/bare-metadata, whose ConfigMap deliberately declares
+// no labels of its own - most real charts (including this repo's own
+// test-chart, via _helpers.tpl) set app.kubernetes.io/managed-by themselves,
+// which means the label agrees on both the dry-run and live sides for a
+// completely unrelated reason (both read it from the same chart template)
+// and never actually exercises the code path this fix touches. Without the
+// fix, this fails the create step outright with "Provider produced
+// inconsistent result after apply" on resources[...].
+func TestAccResourceRelease_ownershipMetadataLocalChart(t *testing.T) {
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+	name := randName("bare-metadata")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigBareMetadata(testResourceName, namespace, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					func(s *terraform.State) error {
+						res := s.RootModule().Resources["helm_release.test"]
+						if res == nil || res.Primary == nil {
+							return fmt.Errorf("helm_release.test not found in state")
+						}
+						for key, value := range res.Primary.Attributes {
+							if strings.HasPrefix(key, "resources.") && strings.Contains(key, "configmap") {
+								if !strings.Contains(value, `"app.kubernetes.io/managed-by":"Helm"`) {
+									return fmt.Errorf("resources[%s] is missing the Helm-injected managed-by label the fix is supposed to predict: %s", key, value)
+								}
+								return nil
+							}
+						}
+						return fmt.Errorf("no configmap found under resources[...] to check")
+					},
+				),
+			},
+			{
+				// A second apply (an Update, not just a Create) with a
+				// deliberately unrelated change, to prove the fix holds on
+				// the update dry-run path too, not just install.
+				Config: testAccHelmReleaseConfigBareMetadata(testResourceName, namespace, name),
+				Check:  resource.TestCheckResourceAttrSet("helm_release.test", "manifest"),
+			},
+		},
+	})
+}
+
+func testAccHelmReleaseConfigBareMetadata(resource, ns, name string) string {
+	return fmt.Sprintf(`
+		provider helm {
+			experiments = {
+				manifest = true
+			}
+		}
+
+		resource "helm_release" "%s" {
+			name      = %q
+			namespace = %q
+			chart     = "./testdata/charts/bare-metadata"
+		}
+	`, resource, name, ns)
 }

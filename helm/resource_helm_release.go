@@ -1688,25 +1688,18 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 	}
 
 	// Cloak sensitive values in the release config
-	values := "{}"
-	if r.Config != nil {
-		// Deep clone the config to avoid modifying the original
-		configClone := deepCloneMap(r.Config)
-		cloakSetValues(configClone, state)
-		v, err := json.Marshal(configClone)
-		if err != nil {
-			diags.AddError(
-				"Error marshaling values",
-				fmt.Sprintf("unable to marshal values: %s", err),
-			)
-			return diags
-		}
-		values = string(v)
+	values, err := releaseValuesJSON(r, state)
+	if err != nil {
+		diags.AddError(
+			"Error marshaling values",
+			fmt.Sprintf("unable to marshal values: %s", err),
+		)
+		return diags
 	}
 
 	// Handling the helm release if manifest experiment is enabled
 	if meta.ExperimentEnabled("manifest") {
-		jsonManifest, err := convertYAMLManifestToJSON(r.Manifest)
+		jsonManifest, err := convertYAMLManifestToJSON(r.Manifest, meta.ExperimentEnabled("keyed_lists"))
 		if err != nil {
 			diags.AddError(
 				"Error converting manifest to JSON",
@@ -1714,11 +1707,10 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 			)
 			return diags
 		}
-		sensitiveValues := extractSensitiveValues(state)
-		manifest := redactSensitiveValues(string(jsonManifest), sensitiveValues)
-		state.Manifest = types.StringValue(manifest)
+		sensitiveValues := sensitiveSetValues(ctx, state.SetSensitive)
+		state.Manifest = types.StringValue(redactSensitiveValues(string(jsonManifest), sensitiveValues))
 
-		resources, resDiags := getLiveResources(ctx, r, meta)
+		resources, resDiags := getLiveResources(ctx, r, meta, sensitiveValues, meta.ExperimentEnabled("keyed_lists"))
 		diags.Append(resDiags...)
 
 		if !resDiags.HasError() {
@@ -1783,6 +1775,129 @@ func mapToTerraformStringMap(ctx context.Context, m map[string]string) (types.Ma
 	return types.MapValue(types.StringType, valueMap)
 }
 
+// releaseValuesJSON renders a release's configured values the way
+// metadata.values stores them, with set_sensitive entries cloaked. The read
+// path and the planner share it so the value planned for metadata.values is
+// produced exactly the way the value written back after apply is, and the two
+// cannot drift into an "inconsistent result after apply" error.
+func releaseValuesJSON(r *release.Release, model *HelmReleaseModel) (string, error) {
+	if r == nil || r.Config == nil {
+		return "{}", nil
+	}
+
+	// Deep clone the config to avoid modifying the original
+	configClone := deepCloneMap(r.Config)
+	cloakSetValues(configClone, model)
+
+	v, err := json.Marshal(configClone)
+	if err != nil {
+		return "", err
+	}
+
+	return string(v), nil
+}
+
+// knownMetadataAttr reads a single attribute out of a metadata object,
+// reporting false unless the object and the attribute are both present and
+// known.
+func knownMetadataAttr(metadata types.Object, name string) (attr.Value, bool) {
+	if metadata.IsNull() || metadata.IsUnknown() {
+		return nil, false
+	}
+
+	value, ok := metadata.Attributes()[name]
+	if !ok || value == nil || value.IsNull() || value.IsUnknown() {
+		return nil, false
+	}
+
+	return value, true
+}
+
+// plannedMetadata builds the metadata object for the plan.
+//
+// metadata used to be replaced wholesale with an unknown object whenever
+// anything it derives from changed. Because metadata carries its own copy of
+// the release values, that turned any version or values change into a plan that
+// re-prints the entire previous values blob as removed: on a real deployment,
+// several hundred lines of noise wrapped around a two-line change, with every
+// field reading "(known after apply)".
+//
+// Most of metadata is in fact settled before apply. The release name and
+// namespace come from the configuration; the chart coordinates and the merged
+// values come from the dry run that the manifest experiment already performs;
+// and first_deployed is fixed when the release is first installed, so an
+// upgrade carries it over unchanged. Only revision, last_deployed and the
+// rendered notes genuinely have to wait for the apply, so only those are left
+// unknown.
+//
+// dry is nil when no dry run was possible - the manifest experiment is off, or
+// values were still unknown - and then everything derived from it stays
+// unknown, which is the old behaviour for those fields.
+func plannedMetadata(plan *HelmReleaseModel, state *HelmReleaseModel, dry *release.Release) types.Object {
+	planned := map[string]attr.Value{
+		"name":           types.StringUnknown(),
+		"namespace":      types.StringUnknown(),
+		"chart":          types.StringUnknown(),
+		"version":        types.StringUnknown(),
+		"app_version":    types.StringUnknown(),
+		"values":         types.StringUnknown(),
+		"revision":       types.Int64Unknown(),
+		"first_deployed": types.Int64Unknown(),
+		"last_deployed":  types.Int64Unknown(),
+		"notes":          types.StringUnknown(),
+	}
+
+	if !plan.Name.IsNull() && !plan.Name.IsUnknown() {
+		planned["name"] = plan.Name
+	}
+	if !plan.Namespace.IsNull() && !plan.Namespace.IsUnknown() {
+		planned["namespace"] = plan.Namespace
+	}
+
+	// first_deployed is stamped at install time and an upgrade does not move it -
+	// but name and namespace both carry RequiresReplace(), so when either has
+	// changed, state describes the release about to be destroyed, not the one
+	// this plan is building. Its first_deployed belongs to that old release and
+	// must not leak into a plan for a new one that has not been installed yet.
+	sameIdentity := state != nil &&
+		plan.Name.Equal(state.Name) &&
+		plan.Namespace.Equal(state.Namespace)
+
+	if sameIdentity {
+		if firstDeployed, ok := knownMetadataAttr(state.Metadata, "first_deployed"); ok {
+			planned["first_deployed"] = firstDeployed
+		}
+	}
+
+	if dry == nil {
+		return types.ObjectValueMust(metadataAttrTypes(), planned)
+	}
+
+	if dry.Name != "" {
+		planned["name"] = types.StringValue(dry.Name)
+	}
+	if dry.Namespace != "" {
+		planned["namespace"] = types.StringValue(dry.Namespace)
+	}
+	if dry.Chart != nil && dry.Chart.Metadata != nil {
+		planned["chart"] = types.StringValue(dry.Chart.Metadata.Name)
+		planned["version"] = types.StringValue(dry.Chart.Metadata.Version)
+		planned["app_version"] = types.StringValue(dry.Chart.Metadata.AppVersion)
+	}
+
+	// Write-only values are ephemeral, so the read path deliberately stores "{}"
+	// rather than the real config once one has been supplied. Planning a value
+	// here would contradict that, so leave it unknown unless we can see that no
+	// write-only value is in play.
+	if !plan.SetWORevision.IsUnknown() && plan.SetWORevision.ValueInt64() <= 0 {
+		if values, err := releaseValuesJSON(dry, plan); err == nil {
+			planned["values"] = types.StringValue(values)
+		}
+	}
+
+	return types.ObjectValueMust(metadataAttrTypes(), planned)
+}
+
 func metadataAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"name":           types.StringType,
@@ -1798,22 +1913,42 @@ func metadataAttrTypes() map[string]attr.Type {
 	}
 }
 
-func extractSensitiveValues(state *HelmReleaseModel) map[string]string {
-	sensitiveValues := make(map[string]string)
-
-	if !state.SetSensitive.IsNull() {
-		var setSensitiveList []setResourceModel
-		diags := state.SetSensitive.ElementsAs(context.Background(), &setSensitiveList, false)
-		if diags.HasError() {
-			return sensitiveValues
-		}
-
-		for _, set := range setSensitiveList {
-			sensitiveValues[set.Name.ValueString()] = "(sensitive value)"
-		}
+// sensitiveSetValues collects the real values of a set_sensitive list, so
+// redactSensitiveValues can strip them out of a stored manifest. Used on both
+// the read path (state.SetSensitive, the values Helm actually applied) and the
+// two plan-time dry-run paths (plan.SetSensitive, what the config asks for).
+//
+// A prior version of this (both here and at its two other call sites) built a
+// map keyed by attribute NAME with the secret value discarded or replaced by
+// a placeholder, then handed that to redactSensitiveValues - which redacts its
+// argument's contents verbatim. That searched the manifest for literal
+// attribute names like "dbPassword" and never touched the actual secret text,
+// so set_sensitive values were never redacted from a manifest stored in state
+// or plan output. Returning the real values directly removes the possibility
+// of getting the orientation backwards again.
+//
+// Null/unknown entries are skipped: unknown has nothing to redact yet, and an
+// empty string would make every position in the text a match.
+func sensitiveSetValues(ctx context.Context, setSensitive types.List) []string {
+	if setSensitive.IsNull() || setSensitive.IsUnknown() {
+		return nil
 	}
 
-	return sensitiveValues
+	var list []setResourceModel
+	if diags := setSensitive.ElementsAs(ctx, &list, false); diags.HasError() {
+		return nil
+	}
+
+	values := make([]string, 0, len(list))
+	for _, set := range list {
+		if set.Value.IsNull() || set.Value.IsUnknown() {
+			continue
+		}
+		if v := set.Value.ValueString(); v != "" {
+			values = append(values, v)
+		}
+	}
+	return values
 }
 
 func (m *Meta) ExperimentEnabled(name string) bool {
@@ -1980,8 +2115,8 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			newVersionStr := strings.TrimPrefix(plan.Version.String(), "v")
 
 			if oldVersionStr != newVersionStr && newVersionStr != "" {
-				// Setting Metadata to a computed value
-				plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+				// No dry run has happened yet, so only the configured fields are known.
+				plan.Metadata = plannedMetadata(&plan, state, nil)
 			}
 		}
 	}
@@ -2020,6 +2155,10 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 	}
 	tflog.Debug(ctx, fmt.Sprintf("%s Release validated", logID))
+
+	// Retained so plannedMetadata can fill in the parts of metadata the dry run
+	// already determined instead of marking the whole object unknown.
+	var dryRelease *release.Release
 
 	if meta.ExperimentEnabled("manifest") {
 		// Check if all necessary values are known
@@ -2083,6 +2222,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 			tflog.Debug(ctx, fmt.Sprintf("%s performing dry run install", logID))
 			dry, err := install.Run(chart, values)
+			dryRelease = dry
 			if err != nil {
 				// NOTE if the cluster is not reachable then we can't run the install
 				// this will happen if the user has their cluster creation in the
@@ -2099,33 +2239,25 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 				return
 			}
 
-			jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
+			jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest, meta.ExperimentEnabled("keyed_lists"))
 			if err != nil {
 				resp.Diagnostics.AddError("Error converting YAML manifest to JSON", err.Error())
 				return
 			}
-			valuesMap := make(map[string]string)
-			if !plan.SetSensitive.IsNull() {
-				var setSensitiveList []setResourceModel
-				setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
-				resp.Diagnostics.Append(setSensitiveDiags...)
-				if resp.Diagnostics.HasError() {
-					return
-				}
-
-				for _, set := range setSensitiveList {
-					valuesMap[set.Name.ValueString()] = set.Value.ValueString()
-				}
-			}
-			manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
-			plan.Manifest = types.StringValue(manifest)
-			resources, resDiags := getDryRunResources(ctx, dry, meta)
+			sensitiveValues := sensitiveSetValues(ctx, plan.SetSensitive)
+			plan.Manifest = types.StringValue(redactSensitiveValues(string(jsonManifest), sensitiveValues))
+			resources, resDiags := getDryRunResources(ctx, dry, meta, sensitiveValues, meta.ExperimentEnabled("keyed_lists"))
 			resp.Diagnostics.Append(resDiags...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
 			plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
 			resp.Diagnostics.Append(diags...)
+			// state is nil here (this is Create), so recomputeMetadata is never
+			// reached below - plan the same partial-known object an Update would
+			// get, rather than leaving metadata at the framework's blanket-unknown
+			// default for the whole object.
+			plan.Metadata = plannedMetadata(&plan, nil, dryRelease)
 			resp.Plan.Set(ctx, &plan)
 			return
 		}
@@ -2173,6 +2305,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 
 		tflog.Debug(ctx, fmt.Sprintf("%s performing dry run upgrade", logID))
 		dry, err := upgrade.Run(name, chart, values)
+		dryRelease = dry
 		if err != nil && strings.Contains(err.Error(), "has no deployed releases") {
 			if len(chart.Metadata.Version) > 0 && cpo.Version != "" {
 				plan.Version = types.StringValue(chart.Metadata.Version)
@@ -2187,27 +2320,14 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			return
 		}
 
-		jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
+		jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest, meta.ExperimentEnabled("keyed_lists"))
 		if err != nil {
 			resp.Diagnostics.AddError("Error converting YAML manifest to JSON", err.Error())
 			return
 		}
-		valuesMap := make(map[string]string)
-		if !plan.SetSensitive.IsNull() {
-			var setSensitiveList []setResourceModel
-			setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
-			resp.Diagnostics.Append(setSensitiveDiags...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
-
-			for _, set := range setSensitiveList {
-				valuesMap[set.Name.ValueString()] = set.Value.ValueString()
-			}
-		}
-		manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
-		plan.Manifest = types.StringValue(manifest)
-		resources, resDiags := getDryRunResources(ctx, dry, meta)
+		sensitiveValues := sensitiveSetValues(ctx, plan.SetSensitive)
+		plan.Manifest = types.StringValue(redactSensitiveValues(string(jsonManifest), sensitiveValues))
+		resources, resDiags := getDryRunResources(ctx, dry, meta, sensitiveValues, meta.ExperimentEnabled("keyed_lists"))
 		resp.Diagnostics.Append(resDiags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -2221,7 +2341,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
 
 		if !state.Resources.Equal(plan.Resources) {
-			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			plan.Metadata = plannedMetadata(&plan, state, dryRelease)
 		}
 
 	} else {
@@ -2271,8 +2391,8 @@ You should update the version in your configuration to %[2]q, or remove the vers
 	}
 
 	if recomputeMetadata(plan, state) {
-		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
-		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, recomputing", logID))
+		plan.Metadata = plannedMetadata(&plan, state, dryRelease)
 	}
 
 	resp.Plan.Set(ctx, &plan)
@@ -2304,6 +2424,17 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 		return true
 	}
 	if !plan.SetList.Equal(state.SetList) {
+		return true
+	}
+	// A write-only value bump changes what gets applied even though nothing
+	// else here does - plannedMetadata's own values field is independently
+	// guarded by SetWORevision regardless of this check, so omitting it never
+	// risked exposing a value it shouldn't, but omitting it did mean a plan
+	// whose only change is bumping set_wo_revision left every OTHER metadata
+	// field (name, namespace, chart, version, first_deployed) at the
+	// framework's blanket-unknown default instead of the known values
+	// plannedMetadata could otherwise supply.
+	if !plan.SetWORevision.Equal(state.SetWORevision) {
 		return true
 	}
 	return false

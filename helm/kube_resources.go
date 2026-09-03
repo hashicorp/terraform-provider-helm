@@ -93,7 +93,7 @@ func removeUnmanagedFields(parser *managedfields.GvkParser, obj runtime.Object, 
 }
 
 // mapRuntimeObjects converts runtime.Objects to JSON with unmanaged fields removed and sensitive values redacted.
-func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.Object) (map[string]string, diag.Diagnostics) {
+func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.Object, sensitiveValues []string, keyLists bool) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	clientSet, err := kc.Factory.KubernetesClientSet()
@@ -160,21 +160,26 @@ func mapRuntimeObjects(ctx context.Context, kc *kube.Client, objects []runtime.O
 		}
 		normalizeK8sObject(umap)
 
+		var toMarshal any = umap
+		if keyLists {
+			toMarshal = keyListMapsIn(umap)
+		}
+
 		// Marshal back to JSON for the state
-		objJSON, err := json.Marshal(umap)
+		objJSON, err := json.Marshal(toMarshal)
 		if err != nil {
 			diags.AddError("Marshal Error", err.Error())
 			return nil, diags
 		}
 
-		mappedObjects[key] = string(objJSON)
+		mappedObjects[key] = redactSensitiveValues(string(objJSON), sensitiveValues)
 		tflog.Debug(ctx, "Mapped runtime object", map[string]interface{}{"key": key})
 	}
 
 	return mappedObjects, diags
 }
 
-func mapResources(ctx context.Context, actionConfig *action.Configuration, r *release.Release, f func(*resource.Info) (runtime.Object, error)) (map[string]string, diag.Diagnostics) {
+func mapResources(ctx context.Context, actionConfig *action.Configuration, r *release.Release, sensitiveValues []string, keyLists bool, f func(*resource.Info) (runtime.Object, error)) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	resources, err := actionConfig.KubeClient.Build(bytes.NewBufferString(r.Manifest), false)
@@ -208,11 +213,11 @@ func mapResources(ctx context.Context, actionConfig *action.Configuration, r *re
 		diags.AddError("Client Error", err.Error())
 		return nil, diags
 	}
-	return mapRuntimeObjects(ctx, kc, objects)
+	return mapRuntimeObjects(ctx, kc, objects, sensitiveValues, keyLists)
 }
 
 // getLiveResources fetches the live cluster resources of a Helm release.
-func getLiveResources(ctx context.Context, r *release.Release, m *Meta) (map[string]string, diag.Diagnostics) {
+func getLiveResources(ctx context.Context, r *release.Release, m *Meta, sensitiveValues []string, keyLists bool) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	actionConfig, err := m.GetHelmConfiguration(ctx, r.Namespace)
@@ -225,7 +230,9 @@ func getLiveResources(ctx context.Context, r *release.Release, m *Meta) (map[str
 		diags.AddError("Kube Client Error", err.Error())
 		return nil, diags
 	}
-	rawResources, resDiags := mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
+	// mapResources -> mapRuntimeObjects already normalizes and redacts every
+	// object before returning, so its result is used directly here.
+	return mapResources(ctx, actionConfig, r, sensitiveValues, keyLists, func(i *resource.Info) (runtime.Object, error) {
 		gvk := i.Object.GetObjectKind().GroupVersionKind()
 		return kc.Factory.NewBuilder().
 			Unstructured().
@@ -235,30 +242,48 @@ func getLiveResources(ctx context.Context, r *release.Release, m *Meta) (map[str
 			Do().
 			Object()
 	})
-	diags.Append(resDiags...)
-	if resDiags.HasError() {
-		return rawResources, diags
-	}
-
-	cleaned := make(map[string]string, len(rawResources))
-	for k, v := range rawResources {
-		var obj map[string]any
-		if err := json.Unmarshal([]byte(v), &obj); err != nil {
-			cleaned[k] = v
-			continue
-		}
-		normalizeK8sObject(obj)
-		if b, err := json.Marshal(obj); err == nil {
-			cleaned[k] = string(b)
-		} else {
-			cleaned[k] = v
-		}
-	}
-
-	return cleaned, diags
 }
 
-func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[string]string, diag.Diagnostics) {
+// setDryRunOwnershipMetadata stamps the app.kubernetes.io/managed-by=Helm
+// label every real Install, Upgrade or Rollback adds to every resource, via
+// Helm's own setMetadataVisitor (helm.sh/helm/v3/pkg/action/validate.go) -
+// which this dry-run merge never goes through, since it computes the
+// server-side-apply result directly rather than running an actual Helm
+// action.
+//
+// Without it, any resource whose own chart template doesn't already declare
+// the label - which is most of them, since charts rely on Helm to add it -
+// diffs against the live object on exactly this key, and Terraform aborts the
+// apply with "Provider produced inconsistent result after apply": the planned
+// resources[...] entry (missing the label) never matches what
+// setReleaseAttributes reads back from the live cluster (carrying it) after a
+// real apply.
+//
+// setMetadataVisitor also stamps two meta.helm.sh/* annotations, which this
+// function deliberately does NOT replicate: normalizeK8sObject's
+// stripHelmMetaAnnotations strips every meta.helm.sh/* annotation from BOTH
+// the dry-run and live objects before either is stored, so setting them here
+// would be redacted away before the two are ever compared - dead code that
+// would only mislead a future reader into thinking it mattered.
+//
+// Mutating i.Object here is local to this dry run: mapResources re-parses
+// r.Manifest into a fresh resource.Info list on every call, so nothing here is
+// shared with the real Install/Upgrade action that later applies the release.
+func setDryRunOwnershipMetadata(obj runtime.Object) error {
+	accessor := apimeta.NewAccessor()
+
+	labels, err := accessor.Labels(obj)
+	if err != nil {
+		return err
+	}
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	labels["app.kubernetes.io/managed-by"] = "Helm"
+	return accessor.SetLabels(obj, labels)
+}
+
+func getDryRunResources(ctx context.Context, r *release.Release, m *Meta, sensitiveValues []string, keyLists bool) (map[string]string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	actionConfig, err := m.GetHelmConfiguration(ctx, r.Namespace)
@@ -276,7 +301,12 @@ func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[s
 		fieldManager = filepath.Base(os.Args[0])
 	}
 
-	rawResources, resDiags := mapResources(ctx, actionConfig, r, func(i *resource.Info) (runtime.Object, error) {
+	// mapResources -> mapRuntimeObjects already normalizes and redacts every
+	// object before returning, so its result is used directly here.
+	return mapResources(ctx, actionConfig, r, sensitiveValues, keyLists, func(i *resource.Info) (runtime.Object, error) {
+		if err := setDryRunOwnershipMetadata(i.Object); err != nil {
+			return nil, err
+		}
 		info := &diff.InfoObject{
 			LocalObj:        i.Object,
 			Info:            i,
@@ -289,24 +319,4 @@ func getDryRunResources(ctx context.Context, r *release.Release, m *Meta) (map[s
 		}
 		return info.Merged()
 	})
-	diags.Append(resDiags...)
-	if resDiags.HasError() {
-		return rawResources, diags
-	}
-	cleaned := make(map[string]string, len(rawResources))
-	for k, v := range rawResources {
-		var obj map[string]any
-		if err := json.Unmarshal([]byte(v), &obj); err != nil {
-			cleaned[k] = v
-			continue
-		}
-		normalizeK8sObject(obj)
-		if b, err := json.Marshal(obj); err == nil {
-			cleaned[k] = string(b)
-		} else {
-			cleaned[k] = v
-		}
-	}
-
-	return cleaned, diags
 }

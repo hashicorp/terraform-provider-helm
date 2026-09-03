@@ -1,0 +1,14 @@
+apiVersion: v2
+name: bare-metadata
+description: >-
+  A minimal fixture chart whose ConfigMap declares no labels of its own -
+  deliberately, so app.kubernetes.io/managed-by only ever appears via Helm's
+  own metadata injection (setMetadataVisitor), never via the chart template.
+  Most real charts declare this label themselves through a common labels
+  helper, which means they can never expose a dry-run/live discrepancy in
+  that label - this chart exists specifically so a discrepancy there is
+  reproducible locally, without depending on a third-party chart whose
+  templates happen to omit it.
+type: application
+version: 1.0.0
+appVersion: "1.0"

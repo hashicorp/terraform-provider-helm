@@ -1,0 +1,3 @@
+```release-note:enhancement
+`provider`: Extend the `keyed_lists` experiment to the `resources` attribute, not just `manifest`. Both attributes render the same per-resource JSON and suffer the identical positional-array diff noise; `keyed_lists` previously only reached `manifest` because `resources` has its own independent encoding path that nothing had wired the experiment into.
+```
