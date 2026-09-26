@@ -75,6 +75,7 @@ type HelmReleaseModel struct {
 	DependencyUpdate         types.Bool       `tfsdk:"dependency_update"`
 	Description              types.String     `tfsdk:"description"`
 	Devel                    types.Bool       `tfsdk:"devel"`
+	Digest                   types.String     `tfsdk:"digest"`
 	DisableCrdHooks          types.Bool       `tfsdk:"disable_crd_hooks"`
 	DisableOpenapiValidation types.Bool       `tfsdk:"disable_openapi_validation"`
 	DisableWebhooks          types.Bool       `tfsdk:"disable_webhooks"`
@@ -314,6 +315,11 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				PlanModifiers: []planmodifier.Bool{
 					suppressDevel(),
 				},
+			},
+			"digest": schema.StringAttribute{
+				Optional:    true,
+				Description: chartDigestDescription,
+				Validators:  chartDigestValidators(),
 			},
 			"disable_crd_hooks": schema.BoolAttribute{
 				Optional:    true,
@@ -664,7 +670,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				},
 			},
 		},
-		Version: 2,
+		Version: 3,
 	}
 }
 
@@ -1323,6 +1329,10 @@ func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPath
 	}
 
 	version := getVersion(model)
+	if err := validateChartDigest(chartName, repositoryURL, model.Digest.ValueString(), model.Digest.IsUnknown()); err != nil {
+		diags.AddError("Invalid chart digest", err.Error())
+		return nil, "", diags
+	}
 
 	cpo.CaFile = model.RepositoryCaFile.ValueString()
 	cpo.CertFile = model.RepositoryCertFile.ValueString()
@@ -1392,9 +1402,9 @@ func getChart(ctx context.Context, model *HelmReleaseModel, m *Meta, name string
 
 	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", m.Settings))
 
-	path, err := m.LocateChart(cpo, name)
+	path, err := downloadMaybePinnedChart(m, name, cpo, model.Digest.ValueString())
 	if err != nil {
-		diags.AddError("Error locating chart", fmt.Sprintf("Unable to locate chart %s: %s", name, err))
+		diags.AddError("Error downloading chart", err.Error())
 		return nil, "", diags
 	}
 
@@ -1971,6 +1981,20 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	// Always set desired state to DEPLOYED
 	plan.Status = types.StringValue(release.StatusDeployed.String())
 
+	if plan.Digest.IsUnknown() {
+		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+		if meta != nil && meta.ExperimentEnabled("manifest") {
+			plan.Manifest = types.StringUnknown()
+			plan.Resources = types.MapUnknown(types.StringType)
+		}
+		resp.Diagnostics.Append(resp.Plan.Set(ctx, &plan)...)
+		return
+	}
+
+	if state != nil && !plan.Digest.Equal(state.Digest) {
+		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+	}
+
 	if !useChartVersion(plan.Chart.ValueString(), plan.Repository.ValueString()) {
 		// Check if version has changed
 		if state != nil && !plan.Version.Equal(state.Version) {
@@ -2292,6 +2316,9 @@ func recomputeMetadata(plan HelmReleaseModel, state *HelmReleaseModel) bool {
 		return true
 	}
 	if !plan.Version.Equal(state.Version) {
+		return true
+	}
+	if !plan.Digest.Equal(state.Digest) {
 		return true
 	}
 	if !plan.Values.Equal(state.Values) {

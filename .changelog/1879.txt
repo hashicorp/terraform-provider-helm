@@ -1,0 +1,7 @@
+```release-note:enhancement
+`helm_release`: Add `digest` to pin an HTTP chart archive by SHA256
+```
+
+```release-note:enhancement
+`helm_template`: Add `digest` to pin an HTTP chart archive by SHA256
+```

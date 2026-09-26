@@ -4,6 +4,8 @@ package helm
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -12,6 +14,16 @@ import (
 
 func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
+		2: {
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				dv, err := upgradeHelmReleaseStateAddDigest(req.RawState)
+				if err != nil {
+					resp.Diagnostics.AddError("Failed to upgrade state for chart digest", err.Error())
+					return
+				}
+				resp.DynamicValue = &dv
+			},
+		},
 		1: {
 			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 				oldType := tftypes.Object{
@@ -262,6 +274,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 						"take_ownership":  tftypes.Bool,
 						"values":          tftypes.List{ElementType: tftypes.String},
 						"verify":          tftypes.Bool,
+						"digest":          tftypes.String,
 						"version":         tftypes.String,
 						"wait":            tftypes.Bool,
 						"wait_for_jobs":   tftypes.Bool,
@@ -320,6 +333,7 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 					"upgrade_install":            oldState["upgrade_install"],
 					"values":                     oldState["values"],
 					"verify":                     oldState["verify"],
+					"digest":                     tftypes.NewValue(tftypes.String, nil),
 					"version":                    oldState["version"],
 					"wait":                       oldState["wait"],
 					"wait_for_jobs":              oldState["wait_for_jobs"],
@@ -337,4 +351,23 @@ func (r *HelmRelease) buildUpgradeStateMap(_ context.Context) map[int64]resource
 			},
 		},
 	}
+}
+
+// upgradeHelmReleaseStateAddDigest sets digest to null only when it is unset.
+func upgradeHelmReleaseStateAddDigest(raw *tfprotov6.RawState) (tfprotov6.DynamicValue, error) {
+	if raw == nil || len(raw.JSON) == 0 {
+		return tfprotov6.DynamicValue{}, fmt.Errorf("helm release state has no JSON to upgrade")
+	}
+	var attrs map[string]json.RawMessage
+	if err := json.Unmarshal(raw.JSON, &attrs); err != nil {
+		return tfprotov6.DynamicValue{}, err
+	}
+	if _, ok := attrs["digest"]; !ok {
+		attrs["digest"] = json.RawMessage("null")
+	}
+	encoded, err := json.Marshal(attrs)
+	if err != nil {
+		return tfprotov6.DynamicValue{}, err
+	}
+	return tfprotov6.DynamicValue{JSON: encoded}, nil
 }

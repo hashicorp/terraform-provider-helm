@@ -31,6 +31,7 @@ For further details on the `helm template` command, refer to the [Helm documenta
 - `dependency_update` (Boolean) Run helm dependency update before installing the chart. Defaults to `false`.
 - `description` (String) Add a custom description
 - `devel` (Boolean) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored
+- `digest` (String) Must be `sha256:` followed by 64 lowercase hexadecimal characters. SHA256 of a chart archive downloaded from an http or https URL.
 - `disable_openapi_validation` (Boolean) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema.Defaults to `false`.
 - `disable_webhooks` (Boolean) Prevent hooks from running.Defaults to `300` seconds.
 - `include_crds` (Boolean) Include CRDs in the templated output

@@ -63,6 +63,7 @@ type HelmTemplateModel struct {
 	DependencyUpdate         types.Bool       `tfsdk:"dependency_update"`
 	Description              types.String     `tfsdk:"description"`
 	Devel                    types.Bool       `tfsdk:"devel"`
+	Digest                   types.String     `tfsdk:"digest"`
 	DisableOpenAPIValidation types.Bool       `tfsdk:"disable_openapi_validation"`
 	DisableWebhooks          types.Bool       `tfsdk:"disable_webhooks"`
 	ID                       types.String     `tfsdk:"id"`
@@ -175,6 +176,11 @@ func (d *HelmTemplate) Schema(ctx context.Context, req datasource.SchemaRequest,
 			"devel": schema.BoolAttribute{
 				Optional:    true,
 				Description: "Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored.",
+			},
+			"digest": schema.StringAttribute{
+				Optional:    true,
+				Description: chartDigestDescription,
+				Validators:  chartDigestValidators(),
 			},
 			"disable_openapi_validation": schema.BoolAttribute{
 				Optional:    true,
@@ -886,6 +892,10 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 	}
 
 	version := getVersionModel(model)
+	if err := validateChartDigest(chartName, repositoryURL, model.Digest.ValueString(), model.Digest.IsUnknown()); err != nil {
+		diags.AddError("Invalid chart digest", err.Error())
+		return nil, "", diags
+	}
 
 	cpo.CaFile = model.RepositoryCaFile.ValueString()
 	cpo.CertFile = model.RepositoryCertFile.ValueString()
@@ -916,9 +926,9 @@ func getChartModel(ctx context.Context, model *HelmTemplateModel, meta *Meta, na
 
 	tflog.Debug(ctx, fmt.Sprintf("Helm settings: %+v", meta.Settings))
 
-	path, err := meta.LocateChart(cpo, name)
+	path, err := downloadMaybePinnedChart(meta, name, cpo, model.Digest.ValueString())
 	if err != nil {
-		diags.AddError("Error locating chart", fmt.Sprintf("Unable to locate chart %s: %s", name, err))
+		diags.AddError("Error downloading chart", err.Error())
 		return nil, "", diags
 	}
 

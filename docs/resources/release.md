@@ -28,6 +28,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `dependency_update` (Boolean) Run helm dependency update before installing the chart. Defaults to `false`.
 - `description` (String) Add a custom description
 - `devel` (Boolean) Use chart development versions, too. Equivalent to version '>0.0.0-0'. If `version` is set, this is ignored
+- `digest` (String) Must be `sha256:` followed by 64 lowercase hexadecimal characters. SHA256 of a chart archive downloaded from an http or https URL.
 - `disable_crd_hooks` (Boolean) Prevent CRD hooks from, running, but run other hooks.  See helm install --no-crd-hook
 - `disable_openapi_validation` (Boolean) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema. Defaults to `false`.
 - `disable_webhooks` (Boolean) Prevent hooks from running.Defaults to `false`.
@@ -212,6 +213,26 @@ resource "helm_release" "example" {
   repository  = "oci://localhost:5000/helm-charts"
   version     = "1.2.3"
   chart       = "test-chart"
+}
+```
+
+## Example Usage - Pin a chart archive by digest
+
+`digest` pins an http or https chart repository, or a chart archive
+URL, to the SHA256 of the downloaded `.tgz`. Write it as `sha256:` plus
+64 lowercase hexadecimal characters. If a repository replaces chart
+contents by version, Terraform refuses to install it.
+
+OCI charts already accept a digest on the chart reference
+(`oci://host/charts/app@sha256:...`). Do not set `digest` for those.
+
+```terraform
+resource "helm_release" "example" {
+  name       = "my-redis-release"
+  repository = "https://charts.example.com"
+  chart      = "redis"
+  version    = "6.0.1"
+  digest     = "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 }
 ```
 

@@ -6,6 +6,8 @@ package helm
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -1908,6 +1910,63 @@ func TestAccResourceRelease_chartURL(t *testing.T) {
 	})
 }
 
+func TestAccResourceRelease_digest(t *testing.T) {
+	name := randName("digest")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	// testRepositoryURL is the HTTP server for the packaged test charts.
+	// A filesystem chart path rejects digest.
+	digest := testRepositoryChartDigest(t, "test-chart-1.2.3.tgz")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccHelmReleaseConfigDigest(testResourceName, namespace, name, "1.2.3", digest),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("helm_release.test", "status", release.StatusDeployed.String()),
+					resource.TestCheckResourceAttr("helm_release.test", "digest", digest),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.chart", "test-chart"),
+					resource.TestCheckResourceAttr("helm_release.test", "metadata.version", "1.2.3"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRelease_digestMismatch(t *testing.T) {
+	name := randName("digest-mismatch")
+	namespace := createRandomNamespace(t)
+	defer deleteNamespace(t, namespace)
+
+	digest := testRepositoryChartDigest(t, "test-chart-1.2.3.tgz")
+	mismatch := digest[:len(digest)-1] + "0"
+	if mismatch == digest {
+		mismatch = digest[:len(digest)-1] + "1"
+	}
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccHelmReleaseConfigDigest(testResourceName, namespace, name, "1.2.3", mismatch),
+				ExpectError: regexp.MustCompile("does not match pinned digest"),
+			},
+		},
+	})
+}
+
+func testRepositoryChartDigest(t *testing.T, filename string) string {
+	t.Helper()
+	body, err := os.ReadFile(filepath.Join(testRepositoryDir, filename))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(body)
+	return "sha256:" + hex.EncodeToString(sum[:])
+}
+
 func TestAccResourceRelease_helm_repo_add(t *testing.T) {
 	name := randName("helm-repo-add")
 	namespace := createRandomNamespace(t)
@@ -2640,6 +2699,19 @@ func testAccHelmReleaseConfig_helm_repo_add(resource, ns, name string) string {
 			version     = "1.2.3"
 		}
 	`, resource, name, ns)
+}
+
+func testAccHelmReleaseConfigDigest(resource, ns, name, version, digest string) string {
+	return fmt.Sprintf(`
+		resource "helm_release" %q {
+			name       = %q
+			namespace  = %q
+			repository = %q
+			chart      = "test-chart"
+			version    = %q
+			digest     = %q
+		}
+	`, resource, name, ns, testRepositoryURL, version, digest)
 }
 
 func testAccHelmReleaseConfig_chartURL(resource, ns, name, url string) string {
