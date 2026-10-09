@@ -2062,6 +2062,10 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			install := action.NewInstall(actionConfig)
 			install.ChartPathOptions = *cpo
 			install.DryRun = true
+			// A client-only dry run makes `lookup` return nothing, so charts that
+			// render from live objects plan differently from how they apply. Server
+			// mode reads the cluster, as apply does.
+			install.DryRunOption = "server"
 			install.DisableHooks = plan.DisableWebhooks.ValueBool()
 			install.Wait = plan.Wait.ValueBool()
 			install.WaitForJobs = plan.WaitForJobs.ValueBool()
@@ -2160,6 +2164,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
 		upgrade.Wait = plan.Wait.ValueBool()
 		upgrade.DryRun = true
+		upgrade.DryRunOption = "server"
 		upgrade.DisableHooks = plan.DisableWebhooks.ValueBool()
 		upgrade.Atomic = plan.Atomic.ValueBool()
 		upgrade.SubNotes = plan.RenderSubchartNotes.ValueBool()
