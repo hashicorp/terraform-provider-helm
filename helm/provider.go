@@ -82,7 +82,8 @@ type HelmProviderModel struct {
 
 // ExperimentsConfigModel configures the experiments that are enabled or disabled
 type ExperimentsConfigModel struct {
-	Manifest types.Bool `tfsdk:"manifest"`
+	Manifest  types.Bool `tfsdk:"manifest"`
+	Resources types.Bool `tfsdk:"resources"`
 }
 
 // RegistryConfigModel configures an OCI registry
@@ -202,6 +203,10 @@ func experimentsSchema() map[string]schema.Attribute {
 		"manifest": schema.BoolAttribute{
 			Optional:    true,
 			Description: "Enable full diff by storing the rendered manifest in the state.",
+		},
+		"resources": schema.BoolAttribute{
+			Optional:    true,
+			Description: "Store the live state of the release's kubernetes resources in the `resources` attribute. Requires `manifest`. Defaults to the value of `manifest`.",
 		},
 	}
 }
@@ -525,8 +530,13 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 	}
 
 	manifestExperiment := false
+	resourcesExperiment := false
 	if config.Experiments != nil {
 		manifestExperiment = config.Experiments.Manifest.ValueBool()
+		resourcesExperiment = manifestExperiment
+		if !config.Experiments.Resources.IsNull() && !config.Experiments.Resources.IsUnknown() {
+			resourcesExperiment = manifestExperiment && config.Experiments.Resources.ValueBool()
+		}
 	}
 
 	var execAttrValue attr.Value = types.ObjectNull(execSchemaAttrTypes())
@@ -595,13 +605,15 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 			BurstLimit:           types.Int64Value(burstLimit),
 			Kubernetes:           kubernetesConfigObjectValue,
 			Experiments: &ExperimentsConfigModel{
-				Manifest: types.BoolValue(manifestExperiment),
+				Manifest:  types.BoolValue(manifestExperiment),
+				Resources: types.BoolValue(resourcesExperiment),
 			},
 		},
 		Settings:   settings,
 		HelmDriver: helmDriver,
 		Experiments: map[string]bool{
-			"manifest": manifestExperiment,
+			"manifest":  manifestExperiment,
+			"resources": resourcesExperiment,
 		},
 		loggedInOCIRegistries: make(map[string]struct{}),
 	}

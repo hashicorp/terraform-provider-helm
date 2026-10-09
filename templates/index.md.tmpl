@@ -124,3 +124,4 @@ The `registry` block has options:
 The provider takes an `experiments` block that allows you enable experimental features by setting them to `true`.
 
 * `manifest` - Enable storing of the rendered manifest for `helm_release` so the full diff of what is changing can been seen in the plan.
+* `resources` - Enable storing the live state of the release's kubernetes resources in `helm_release.resources`. Requires `manifest`, and defaults to its value. Set to `false` to keep the manifest diff without storing live state, which can differ from the planned value and fail the apply.

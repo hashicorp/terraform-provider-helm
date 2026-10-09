@@ -1717,7 +1717,9 @@ func setReleaseAttributes(ctx context.Context, state *HelmReleaseModel, identity
 		sensitiveValues := extractSensitiveValues(state)
 		manifest := redactSensitiveValues(string(jsonManifest), sensitiveValues)
 		state.Manifest = types.StringValue(manifest)
+	}
 
+	if meta.ExperimentEnabled("resources") {
 		resources, resDiags := getLiveResources(ctx, r, meta)
 		diags.Append(resDiags...)
 
@@ -2026,7 +2028,10 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		if valuesUnknown(plan) {
 			tflog.Debug(ctx, "not all values are known, skipping dry run to render manifest")
 			plan.Manifest = types.StringUnknown()
-			plan.Resources = types.MapUnknown(types.StringType)
+			plan.Resources = types.MapNull(types.StringType)
+			if meta.ExperimentEnabled("resources") {
+				plan.Resources = types.MapUnknown(types.StringType)
+			}
 			if config.Version.IsNull() {
 				plan.Version = types.StringUnknown()
 			}
@@ -2119,13 +2124,16 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			}
 			manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
 			plan.Manifest = types.StringValue(manifest)
-			resources, resDiags := getDryRunResources(ctx, dry, meta)
-			resp.Diagnostics.Append(resDiags...)
-			if resp.Diagnostics.HasError() {
-				return
+			plan.Resources = types.MapNull(types.StringType)
+			if meta.ExperimentEnabled("resources") {
+				resources, resDiags := getDryRunResources(ctx, dry, meta)
+				resp.Diagnostics.Append(resDiags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+				plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
+				resp.Diagnostics.Append(diags...)
 			}
-			plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
-			resp.Diagnostics.Append(diags...)
 			resp.Plan.Set(ctx, &plan)
 			return
 		}
@@ -2207,21 +2215,33 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		}
 		manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
 		plan.Manifest = types.StringValue(manifest)
-		resources, resDiags := getDryRunResources(ctx, dry, meta)
-		resp.Diagnostics.Append(resDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-
-		plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 		tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
 
-		if !state.Resources.Equal(plan.Resources) {
-			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+		if meta.ExperimentEnabled("resources") {
+			resources, resDiags := getDryRunResources(ctx, dry, meta)
+			resp.Diagnostics.Append(resDiags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+
+			plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+
+			if !state.Resources.Equal(plan.Resources) {
+				plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			}
+		} else {
+			plan.Resources = types.MapNull(types.StringType)
+
+			// Without `resources`, a changed manifest is the only signal that a
+			// change outside the release's inputs (e.g. post-renderer output) will
+			// upgrade the release and so bump its metadata.
+			if !state.Manifest.Equal(plan.Manifest) {
+				plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			}
 		}
 
 	} else {
