@@ -719,6 +719,32 @@ func cloakSetValue(values map[string]interface{}, valuePath string) {
 	m[sensitiveKey] = sensitiveContentValue
 }
 
+func mergeSlices(a, b []interface{}) []interface{} {
+	maxLen := len(a)
+	if len(b) > maxLen {
+		maxLen = len(b)
+	}
+
+	out := make([]interface{}, maxLen)
+	for i := 0; i < maxLen; i++ {
+		switch {
+		case i < len(a) && i < len(b):
+			if avMap, ok := a[i].(map[string]interface{}); ok {
+				if bvMap, ok := b[i].(map[string]interface{}); ok {
+					out[i] = mergeMaps(avMap, bvMap)
+					continue
+				}
+			}
+			out[i] = b[i] // incoming items win when they arent maps
+		case i < len(b):
+			out[i] = b[i]
+		default:
+			out[i] = a[i]
+		}
+	}
+	return out
+}
+
 func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 	out := make(map[string]interface{}, len(a))
 	for k, v := range a {
@@ -729,6 +755,14 @@ func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 			if bv, ok := out[k]; ok {
 				if bvMap, ok := bv.(map[string]interface{}); ok {
 					out[k] = mergeMaps(bvMap, vMap)
+					continue
+				}
+			}
+		}
+		if vSlice, ok := v.([]interface{}); ok {
+			if bv, ok := out[k]; ok {
+				if bvSlice, ok := bv.([]interface{}); ok {
+					out[k] = mergeSlices(bvSlice, vSlice)
 					continue
 				}
 			}
