@@ -1,0 +1,3 @@
+```release-note:bug
+`resource/helm_release`: Share one discovery cache across a release operation, so Helm no longer repeats API discovery for every manifest object.
+```
