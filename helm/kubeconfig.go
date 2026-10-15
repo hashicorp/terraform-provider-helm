@@ -32,6 +32,12 @@ type KubeConfig struct {
 	Burst        int
 	QPS          float32
 	sync.Mutex
+
+	// Helm asks for a discovery client and a REST mapper for every object it
+	// builds. They are created once, so all of them share one discovery cache.
+	discoveryMutex  sync.Mutex
+	discoveryClient discovery.CachedDiscoveryInterface
+	restMapper      meta.RESTMapper
 }
 
 // Converting KubeConfig to a REST config, which will be used to create k8s clients
@@ -40,8 +46,18 @@ func (k *KubeConfig) ToRESTConfig() (*rest.Config, error) {
 	return config, err
 }
 
-// Converting KubeConfig to a discovery client, which will be used to find api resources
+// Converting KubeConfig to a discovery client, which will be used to find api resources.
+// The client is created once and cached, so its discovery cache is shared.
 func (k *KubeConfig) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	k.discoveryMutex.Lock()
+	defer k.discoveryMutex.Unlock()
+	return k.cachedDiscoveryClient()
+}
+
+func (k *KubeConfig) cachedDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	if k.discoveryClient != nil {
+		return k.discoveryClient, nil
+	}
 	config, err := k.ToRESTConfig()
 	if err != nil {
 		return nil, err
@@ -49,12 +65,24 @@ func (k *KubeConfig) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, er
 
 	config.Burst = k.Burst
 	config.QPS = k.QPS
-	return memory.NewMemCacheClient(discovery.NewDiscoveryClientForConfigOrDie(config)), nil
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	k.discoveryClient = memory.NewMemCacheClient(discoveryClient)
+	return k.discoveryClient, nil
 }
 
-// Converting KubeConfig to a REST mapper, which will be used to map REST resources to their API obj
+// Converting KubeConfig to a REST mapper, which will be used to map REST resources to their API obj.
+// The mapper is created once on the shared discovery client: an invalidated
+// discovery client resets it as well.
 func (k *KubeConfig) ToRESTMapper() (meta.RESTMapper, error) {
-	discoveryClient, err := k.ToDiscoveryClient()
+	k.discoveryMutex.Lock()
+	defer k.discoveryMutex.Unlock()
+	if k.restMapper != nil {
+		return k.restMapper, nil
+	}
+	discoveryClient, err := k.cachedDiscoveryClient()
 	if err != nil {
 		return nil, err
 	}
@@ -67,9 +95,8 @@ func (k *KubeConfig) ToRESTMapper() (meta.RESTMapper, error) {
 	}
 
 	// Pass the warning handler to the NewShortcutExpander function
-	expander := restmapper.NewShortcutExpander(mapper, discoveryClient, warningHandler)
-
-	return expander, nil
+	k.restMapper = restmapper.NewShortcutExpander(mapper, discoveryClient, warningHandler)
+	return k.restMapper, nil
 }
 
 // Function returning raw k8s client config
