@@ -1015,13 +1015,18 @@ func (r *HelmRelease) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
+	// A failed lookup is not a missing release. Only a release the cluster
+	// reports as absent leaves the state; any other error fails the read, so
+	// that an unreachable API server, an expired credential or a slow
+	// cluster never turns into a plan that re-creates a release which still
+	// exists ("cannot re-use a name that is still in use").
 	exists, diags := resourceReleaseExists(ctx, state.Name.ValueString(), state.Namespace.ValueString(), meta)
-	if !exists {
-		resp.State.RemoveResource(ctx)
-		return
-	}
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !exists {
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -1251,12 +1256,14 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 	name := state.Name.ValueString()
 	namespace := state.Namespace.ValueString()
 
+	// As in Read: a failed lookup fails the delete instead of skipping the
+	// uninstall, which would drop a release that still exists from the state.
 	exists, diags := resourceReleaseExists(ctx, name, namespace, meta)
-	if !exists {
-		return
-	}
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !exists {
 		return
 	}
 

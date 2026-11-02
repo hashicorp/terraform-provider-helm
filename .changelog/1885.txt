@@ -1,0 +1,3 @@
+```release-note:bug
+`resource/helm_release`: a failed lookup of the release (unreachable API server, expired credential) no longer removes the release from the state or skips its uninstall; the read or delete fails with the error instead
+```
