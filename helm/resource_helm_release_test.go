@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-version"
+	fwattr "github.com/hashicorp/terraform-plugin-framework/attr"
+	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
@@ -2601,6 +2603,13 @@ func testAccHelmReleaseConfigManifestUnknownValues(resource, ns, name, version s
 					value = random_string.random_label.result
 				}
 			]
+
+			set_list = [
+				{
+					name  = "podAnnotations.list"
+					value = [random_string.random_label.result]
+				}
+			]
 			
 			values = [<<EOT
 podAnnotations:
@@ -3000,5 +3009,91 @@ func checkDeploymentReplicasAndGeneration(resourceName, namespace, deploymentNam
 			return fmt.Errorf("expected generation=%d but got %d", generation, deployment.Generation)
 		}
 		return nil
+	}
+}
+
+func TestValuesUnknown_SetList(t *testing.T) {
+	setElemType := fwtypes.ObjectType{
+		AttrTypes: map[string]fwattr.Type{
+			"name":  fwtypes.StringType,
+			"type":  fwtypes.StringType,
+			"value": fwtypes.StringType,
+		},
+	}
+	setListElemType := fwtypes.ObjectType{
+		AttrTypes: map[string]fwattr.Type{
+			"name":  fwtypes.StringType,
+			"value": fwtypes.ListType{ElemType: fwtypes.StringType},
+		},
+	}
+	basePlan := func(setList fwtypes.List) HelmReleaseModel {
+		return HelmReleaseModel{
+			Values:       fwtypes.ListNull(fwtypes.StringType),
+			Set:          fwtypes.ListNull(setElemType),
+			SetSensitive: fwtypes.ListNull(setElemType),
+			SetList:      setList,
+		}
+	}
+
+	knownList, diags := fwtypes.ListValue(fwtypes.StringType, []fwattr.Value{
+		fwtypes.StringValue("a"),
+		fwtypes.StringValue("b"),
+	})
+	if diags.HasError() {
+		t.Fatalf("unexpected diags: %v", diags)
+	}
+	knownItem, diags := fwtypes.ObjectValue(setListElemType.AttrTypes, map[string]fwattr.Value{
+		"name":  fwtypes.StringValue("items"),
+		"value": knownList,
+	})
+	if diags.HasError() {
+		t.Fatalf("unexpected diags: %v", diags)
+	}
+	knownSetList, diags := fwtypes.ListValue(setListElemType, []fwattr.Value{knownItem})
+	if diags.HasError() {
+		t.Fatalf("unexpected diags: %v", diags)
+	}
+
+	if valuesUnknown(basePlan(knownSetList)) {
+		t.Fatalf("expected valuesUnknown to return false when all set_list elements are known")
+	}
+
+	unknownElemList, diags := fwtypes.ListValue(fwtypes.StringType, []fwattr.Value{
+		fwtypes.StringValue("a"),
+		fwtypes.StringUnknown(),
+	})
+	if diags.HasError() {
+		t.Fatalf("unexpected diags: %v", diags)
+	}
+	unknownElemItem, diags := fwtypes.ObjectValue(setListElemType.AttrTypes, map[string]fwattr.Value{
+		"name":  fwtypes.StringValue("items"),
+		"value": unknownElemList,
+	})
+	if diags.HasError() {
+		t.Fatalf("unexpected diags: %v", diags)
+	}
+	unknownElemSetList, diags := fwtypes.ListValue(setListElemType, []fwattr.Value{unknownElemItem})
+	if diags.HasError() {
+		t.Fatalf("unexpected diags: %v", diags)
+	}
+
+	if !valuesUnknown(basePlan(unknownElemSetList)) {
+		t.Fatalf("expected valuesUnknown to return true when a set_list value element is unknown")
+	}
+
+	unknownInnerListItem, diags := fwtypes.ObjectValue(setListElemType.AttrTypes, map[string]fwattr.Value{
+		"name":  fwtypes.StringValue("items"),
+		"value": fwtypes.ListUnknown(fwtypes.StringType),
+	})
+	if diags.HasError() {
+		t.Fatalf("unexpected diags: %v", diags)
+	}
+	unknownInnerSetList, diags := fwtypes.ListValue(setListElemType, []fwattr.Value{unknownInnerListItem})
+	if diags.HasError() {
+		t.Fatalf("unexpected diags: %v", diags)
+	}
+
+	if !valuesUnknown(basePlan(unknownInnerSetList)) {
+		t.Fatalf("expected valuesUnknown to return true when set_list value list itself is unknown")
 	}
 }

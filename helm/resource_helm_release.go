@@ -2529,11 +2529,18 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 		}
 	}
 
-	setList := []setResourceModel{}
-	plan.Set.ElementsAs(context.Background(), &setList, false)
+	setList := []set_listResourceModel{}
+	if diags := plan.SetList.ElementsAs(context.Background(), &setList, false); diags.HasError() {
+		return true
+	}
 	for _, s := range setList {
 		if s.Value.IsUnknown() {
 			return true
+		}
+		for _, elem := range s.Value.Elements() {
+			if elem.IsUnknown() {
+				return true
+			}
 		}
 	}
 
