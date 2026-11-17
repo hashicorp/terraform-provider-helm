@@ -2287,6 +2287,23 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			plan.Resources = types.MapNull(types.StringType)
 			resp.Plan.Set(ctx, &plan)
 			return
+		} else if warningSummary, ok := isDeferrableDryRunError(err); ok {
+			resp.Diagnostics.AddWarning(warningSummary, err.Error())
+			plan.Manifest = types.StringUnknown()
+			plan.Resources = types.MapUnknown(types.StringType)
+			if config.Version.IsNull() {
+				plan.Version = types.StringUnknown()
+			}
+			if recomputeMetadata(plan, state) {
+				plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			}
+			if req.ClientCapabilities.DeferralAllowed {
+				resp.Deferred = &resource.Deferred{
+					Reason: resource.DeferredReasonResourceConfigUnknown,
+				}
+			}
+			resp.Plan.Set(ctx, &plan)
+			return
 		} else if err != nil {
 			resp.Diagnostics.AddError("Error running dry run for a diff", err.Error())
 			return
@@ -2665,10 +2682,11 @@ func isDeferrableDryRunError(err error) (string, bool) {
 	if err == nil {
 		return "", false
 	}
-	if strings.Contains(strings.ToLower(err.Error()), "kubernetes cluster unreachable") {
+	errMsg := strings.ToLower(err.Error())
+	if strings.Contains(errMsg, "kubernetes cluster unreachable") {
 		return "cluster was unreachable at create time, marking manifest as computed", true
 	}
-	if apimeta.IsNoMatchError(err) {
+	if apimeta.IsNoMatchError(err) || strings.Contains(errMsg, "no matches for kind") {
 		return "API did not recognize GroupVersionKind from manifest (CRD may not be installed), marking manifest as computed", true
 	}
 	return "", false

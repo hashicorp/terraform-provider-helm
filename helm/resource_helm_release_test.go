@@ -3176,6 +3176,11 @@ func TestIsDeferrableDryRunError(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "stringified no matches for kind from infoForObject",
+			err:  errors.New(`unable to build kubernetes objects from release manifest: unable to recognize "": no matches for kind "IngressClassParams" in version "elbv2.k8s.aws/v1beta1"`),
+			want: true,
+		},
+		{
 			name: "unrelated error",
 			err:  errors.New("template: test/templates/deployment.yaml:12: function \"bad\" not defined"),
 			want: false,
