@@ -3052,9 +3052,36 @@ func TestIsDeferrableDryRunError(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "stringified no matches for kind from infoForObject",
-			err:  errors.New(`unable to build kubernetes objects from release manifest: unable to recognize "": no matches for kind "IngressClassParams" in version "elbv2.k8s.aws/v1beta1"`),
-			want: true,
+			name: "core group typo is not treated as missing CRD",
+			err: errors.Wrap(
+				utilerrors.NewAggregate([]error{
+					&apimeta.NoKindMatchError{
+						GroupKind:        schema.GroupKind{Group: "apps", Kind: "Deployement"},
+						SearchedVersions: []string{"v1"},
+					},
+				}),
+				"unable to build kubernetes objects from release manifest",
+			),
+			want: false,
+		},
+		{
+			name: "mixed aggregate with missing CRD and validation error is not deferred",
+			err: errors.Wrap(
+				utilerrors.NewAggregate([]error{
+					&apimeta.NoKindMatchError{
+						GroupKind:        schema.GroupKind{Group: "monitoring.coreos.com", Kind: "ServiceMonitor"},
+						SearchedVersions: []string{"v1"},
+					},
+					errors.New("error validating data: invalid field"),
+				}),
+				"unable to build kubernetes objects from release manifest",
+			),
+			want: false,
+		},
+		{
+			name: "plain string containing no matches for kind without typed error",
+			err:  errors.New(`post-renderer failed: no matches for kind "Foo"`),
+			want: false,
 		},
 		{
 			name: "unrelated error",
