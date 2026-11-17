@@ -47,8 +47,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	runtimeresource "k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	runtimeresource "k8s.io/cli-runtime/pkg/resource"
 )
 
 func TestAccResourceRelease_basic(t *testing.T) {
@@ -1026,8 +1026,8 @@ func TestAccResourceRelease_invalidName(t *testing.T) {
 		// CheckDestroy:             testAccCheckHelmReleaseDestroy(namespace),
 		Steps: []resource.TestStep{
 			{
-				Config:             broken,
-				ExpectError:        regexp.MustCompile("invalid release"),
+				Config:      broken,
+				ExpectError: regexp.MustCompile("invalid release"),
 			},
 		},
 	})
@@ -3037,7 +3037,6 @@ func checkDeploymentReplicasAndGeneration(resourceName, namespace, deploymentNam
 	}
 }
 
-<<<<<<< HEAD
 func testKubeConfig(kubeconfig, namespace string) *genericclioptions.ConfigFlags {
 	cf := genericclioptions.NewConfigFlags(true)
 	cf.Namespace = &namespace
@@ -3130,7 +3129,7 @@ func TestValuesUnknown_SetList(t *testing.T) {
 		t.Fatalf("expected valuesUnknown to return true when set_list value list itself is unknown")
 	}
 }
-=======
+
 func TestIsDeferrableDryRunError(t *testing.T) {
 	cases := []struct {
 		name string
@@ -3176,9 +3175,36 @@ func TestIsDeferrableDryRunError(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "stringified no matches for kind from infoForObject",
-			err:  errors.New(`unable to build kubernetes objects from release manifest: unable to recognize "": no matches for kind "IngressClassParams" in version "elbv2.k8s.aws/v1beta1"`),
-			want: true,
+			name: "core group typo is not treated as missing CRD",
+			err: errors.Wrap(
+				utilerrors.NewAggregate([]error{
+					&apimeta.NoKindMatchError{
+						GroupKind:        schema.GroupKind{Group: "apps", Kind: "Deployement"},
+						SearchedVersions: []string{"v1"},
+					},
+				}),
+				"unable to build kubernetes objects from release manifest",
+			),
+			want: false,
+		},
+		{
+			name: "mixed aggregate with missing CRD and validation error is not deferred",
+			err: errors.Wrap(
+				utilerrors.NewAggregate([]error{
+					&apimeta.NoKindMatchError{
+						GroupKind:        schema.GroupKind{Group: "monitoring.coreos.com", Kind: "ServiceMonitor"},
+						SearchedVersions: []string{"v1"},
+					},
+					errors.New("error validating data: invalid field"),
+				}),
+				"unable to build kubernetes objects from release manifest",
+			),
+			want: false,
+		},
+		{
+			name: "plain string containing no matches for kind without typed error",
+			err:  errors.New(`post-renderer failed: no matches for kind "Foo"`),
+			want: false,
 		},
 		{
 			name: "unrelated error",
@@ -3238,4 +3264,3 @@ func TestAccResourceRelease_manifestUnreachableCluster(t *testing.T) {
 		},
 	})
 }
->>>>>>> 26ba7753 (fix(helm_release): warn and defer when cluster or CRD is unavailable during ModifyPlan)

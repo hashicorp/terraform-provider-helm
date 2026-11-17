@@ -44,6 +44,7 @@ import (
 	"helm.sh/helm/v4/pkg/release/common"
 	"helm.sh/helm/v4/pkg/release/v1"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/helm/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
@@ -2291,64 +2292,57 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			resp.Diagnostics.AddWarning(warningSummary, err.Error())
 			plan.Manifest = types.StringUnknown()
 			plan.Resources = types.MapUnknown(types.StringType)
-			if config.Version.IsNull() {
-				plan.Version = types.StringUnknown()
-			}
-			if recomputeMetadata(plan, state) {
-				plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
-			}
+			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
 			if req.ClientCapabilities.DeferralAllowed {
 				resp.Deferred = &resource.Deferred{
 					Reason: resource.DeferredReasonResourceConfigUnknown,
 				}
 			}
-			resp.Plan.Set(ctx, &plan)
-			return
 		} else if err != nil {
 			resp.Diagnostics.AddError("Error running dry run for a diff", err.Error())
 			return
-		}
-		dry, ok := dryReleaser.(*v1.Release)
-		if !ok {
-			resp.Diagnostics.AddError("Error running dry run for a diff", "Unable to type assert release to v1.Release")
-			return
-		}
+		} else {
+			dry, ok := dryReleaser.(*v1.Release)
+			if !ok {
+				resp.Diagnostics.AddError("Error running dry run for a diff", "Unable to type assert release to v1.Release")
+				return
+			}
+			jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
+			if err != nil {
+				resp.Diagnostics.AddError("Error converting YAML manifest to JSON", err.Error())
+				return
+			}
+			valuesMap := make(map[string]string)
+			if !plan.SetSensitive.IsNull() {
+				var setSensitiveList []setResourceModel
+				setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
+				resp.Diagnostics.Append(setSensitiveDiags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 
-		jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
-		if err != nil {
-			resp.Diagnostics.AddError("Error converting YAML manifest to JSON", err.Error())
-			return
-		}
-		valuesMap := make(map[string]string)
-		if !plan.SetSensitive.IsNull() {
-			var setSensitiveList []setResourceModel
-			setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
-			resp.Diagnostics.Append(setSensitiveDiags...)
+				for _, set := range setSensitiveList {
+					valuesMap[set.Name.ValueString()] = set.Value.ValueString()
+				}
+			}
+			manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
+			plan.Manifest = types.StringValue(manifest)
+			resources, resDiags := getDryRunResources(ctx, dry, meta)
+			resp.Diagnostics.Append(resDiags...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
 
-			for _, set := range setSensitiveList {
-				valuesMap[set.Name.ValueString()] = set.Value.ValueString()
+			plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
 			}
-		}
-		manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
-		plan.Manifest = types.StringValue(manifest)
-		resources, resDiags := getDryRunResources(ctx, dry, meta)
-		resp.Diagnostics.Append(resDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+			tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
 
-		plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
-
-		if !state.Resources.Equal(plan.Resources) {
-			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			if !state.Resources.Equal(plan.Resources) {
+				plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			}
 		}
 
 	} else {
@@ -2682,14 +2676,41 @@ func isDeferrableDryRunError(err error) (string, bool) {
 	if err == nil {
 		return "", false
 	}
-	errMsg := strings.ToLower(err.Error())
-	if strings.Contains(errMsg, "kubernetes cluster unreachable") {
+	if strings.Contains(strings.ToLower(err.Error()), "kubernetes cluster unreachable") {
 		return "cluster was unreachable at create time, marking manifest as computed", true
 	}
-	if apimeta.IsNoMatchError(err) || strings.Contains(errMsg, "no matches for kind") {
+	if hasOnlyCRDNoMatchErrors(err) {
 		return "API did not recognize GroupVersionKind from manifest (CRD may not be installed), marking manifest as computed", true
 	}
 	return "", false
+}
+
+func hasOnlyCRDNoMatchErrors(err error) bool {
+	if err == nil {
+		return false
+	}
+	var agg utilerrors.Aggregate
+	if errors.As(err, &agg) {
+		errs := agg.Errors()
+		if len(errs) == 0 {
+			return false
+		}
+		for _, e := range errs {
+			if !hasOnlyCRDNoMatchErrors(e) {
+				return false
+			}
+		}
+		return true
+	}
+	var noKindErr *apimeta.NoKindMatchError
+	if errors.As(err, &noKindErr) {
+		return strings.Contains(noKindErr.GroupKind.Group, ".")
+	}
+	var noResErr *apimeta.NoResourceMatchError
+	if errors.As(err, &noResErr) {
+		return strings.Contains(noResErr.PartialResource.Group, ".")
+	}
+	return false
 }
 
 func isInternalAnno(key string) bool {
