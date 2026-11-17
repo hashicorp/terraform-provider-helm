@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
@@ -36,10 +37,13 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	runtimeresource "k8s.io/cli-runtime/pkg/resource"
 )
 
@@ -3001,4 +3005,139 @@ func checkDeploymentReplicasAndGeneration(resourceName, namespace, deploymentNam
 		}
 		return nil
 	}
+}
+
+func TestIsDeferrableDryRunError(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil error",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "helm v3 cluster unreachable",
+			err:  errors.Wrap(errors.New("dial tcp 127.0.0.1:6443: connect: connection refused"), "Kubernetes cluster unreachable"),
+			want: true,
+		},
+		{
+			name: "helm v4 lowercase cluster unreachable",
+			err:  fmt.Errorf("kubernetes cluster unreachable: %w", errors.New("dial tcp 127.0.0.1:6443: connect: connection refused")),
+			want: true,
+		},
+		{
+			name: "wrapped NoKindMatchError aggregate from KubeClient.Build",
+			err: errors.Wrap(
+				utilerrors.NewAggregate([]error{
+					&apimeta.NoKindMatchError{
+						GroupKind:        schema.GroupKind{Group: "monitoring.coreos.com", Kind: "ServiceMonitor"},
+						SearchedVersions: []string{"v1"},
+					},
+				}),
+				"unable to build kubernetes objects from release manifest",
+			),
+			want: true,
+		},
+		{
+			name: "wrapped NoResourceMatchError",
+			err: errors.Wrap(
+				&apimeta.NoResourceMatchError{
+					PartialResource: schema.GroupVersionResource{Group: "example.com", Version: "v1", Resource: "widgets"},
+				},
+				"unable to build kubernetes objects from release manifest",
+			),
+			want: true,
+		},
+		{
+			name: "core group typo is not treated as missing CRD",
+			err: errors.Wrap(
+				utilerrors.NewAggregate([]error{
+					&apimeta.NoKindMatchError{
+						GroupKind:        schema.GroupKind{Group: "apps", Kind: "Deployement"},
+						SearchedVersions: []string{"v1"},
+					},
+				}),
+				"unable to build kubernetes objects from release manifest",
+			),
+			want: false,
+		},
+		{
+			name: "mixed aggregate with missing CRD and validation error is not deferred",
+			err: errors.Wrap(
+				utilerrors.NewAggregate([]error{
+					&apimeta.NoKindMatchError{
+						GroupKind:        schema.GroupKind{Group: "monitoring.coreos.com", Kind: "ServiceMonitor"},
+						SearchedVersions: []string{"v1"},
+					},
+					errors.New("error validating data: invalid field"),
+				}),
+				"unable to build kubernetes objects from release manifest",
+			),
+			want: false,
+		},
+		{
+			name: "plain string containing no matches for kind without typed error",
+			err:  errors.New(`post-renderer failed: no matches for kind "Foo"`),
+			want: false,
+		},
+		{
+			name: "unrelated error",
+			err:  errors.New("template: test/templates/deployment.yaml:12: function \"bad\" not defined"),
+			want: false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			summary, got := isDeferrableDryRunError(tc.err)
+			if got != tc.want {
+				t.Fatalf("isDeferrableDryRunError(%v) = (%q, %v), want %v", tc.err, summary, got, tc.want)
+			}
+			if got && summary == "" {
+				t.Fatalf("expected non-empty warning summary when deferrable")
+			}
+		})
+	}
+}
+
+func TestAccResourceRelease_manifestUnreachableCluster(t *testing.T) {
+	if !accTest {
+		t.Skip("TF_ACC=1 not set")
+	}
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: protoV6ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(`
+					provider "helm" {
+						kubernetes = {
+							config_path = ""
+							host        = "https://127.0.0.1:1"
+						}
+						experiments = {
+							manifest = true
+						}
+					}
+
+					resource "helm_release" "test" {
+						name      = %q
+						namespace = "default"
+						chart     = "%s/test-chart"
+					}
+				`, randName("unreachable"), testChartsPath),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("helm_release.test", plancheck.ResourceActionCreate),
+						plancheck.ExpectUnknownValue("helm_release.test", tfjsonpath.New("manifest")),
+						plancheck.ExpectUnknownValue("helm_release.test", tfjsonpath.New("resources")),
+					},
+				},
+			},
+		},
+	})
 }

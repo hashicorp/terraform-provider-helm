@@ -42,6 +42,8 @@ import (
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/helm/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
@@ -2084,14 +2086,22 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			tflog.Debug(ctx, fmt.Sprintf("%s performing dry run install", logID))
 			dry, err := install.Run(chart, values)
 			if err != nil {
-				// NOTE if the cluster is not reachable then we can't run the install
-				// this will happen if the user has their cluster creation in the
-				// same apply. We are catching this case here and marking manifest
-				// as computed to avoid breaking existing configs
-
-				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
-					resp.Diagnostics.AddError("cluster was unreachable at create time, marking manifest as computed", err.Error())
-					plan.Manifest = types.StringNull()
+				// NOTE if the cluster is not reachable or a required CRD is not yet
+				// installed (e.g. when the cluster or CRD is created in the same apply),
+				// we mark manifest and resources as unknown and optionally request
+				// deferral so existing configs do not fail during planning.
+				if warningSummary, ok := isDeferrableDryRunError(err); ok {
+					resp.Diagnostics.AddWarning(warningSummary, err.Error())
+					plan.Manifest = types.StringUnknown()
+					plan.Resources = types.MapUnknown(types.StringType)
+					if config.Version.IsNull() {
+						plan.Version = types.StringUnknown()
+					}
+					if req.ClientCapabilities.DeferralAllowed {
+						resp.Deferred = &resource.Deferred{
+							Reason: resource.DeferredReasonResourceConfigUnknown,
+						}
+					}
 					resp.Plan.Set(ctx, &plan)
 					return
 				}
@@ -2182,46 +2192,56 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			plan.Resources = types.MapNull(types.StringType)
 			resp.Plan.Set(ctx, &plan)
 			return
+		} else if warningSummary, ok := isDeferrableDryRunError(err); ok {
+			resp.Diagnostics.AddWarning(warningSummary, err.Error())
+			plan.Manifest = types.StringUnknown()
+			plan.Resources = types.MapUnknown(types.StringType)
+			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			if req.ClientCapabilities.DeferralAllowed {
+				resp.Deferred = &resource.Deferred{
+					Reason: resource.DeferredReasonResourceConfigUnknown,
+				}
+			}
 		} else if err != nil {
 			resp.Diagnostics.AddError("Error running dry run for a diff", err.Error())
 			return
-		}
+		} else {
+			jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
+			if err != nil {
+				resp.Diagnostics.AddError("Error converting YAML manifest to JSON", err.Error())
+				return
+			}
+			valuesMap := make(map[string]string)
+			if !plan.SetSensitive.IsNull() {
+				var setSensitiveList []setResourceModel
+				setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
+				resp.Diagnostics.Append(setSensitiveDiags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
 
-		jsonManifest, err := convertYAMLManifestToJSON(dry.Manifest)
-		if err != nil {
-			resp.Diagnostics.AddError("Error converting YAML manifest to JSON", err.Error())
-			return
-		}
-		valuesMap := make(map[string]string)
-		if !plan.SetSensitive.IsNull() {
-			var setSensitiveList []setResourceModel
-			setSensitiveDiags := plan.SetSensitive.ElementsAs(ctx, &setSensitiveList, false)
-			resp.Diagnostics.Append(setSensitiveDiags...)
+				for _, set := range setSensitiveList {
+					valuesMap[set.Name.ValueString()] = set.Value.ValueString()
+				}
+			}
+			manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
+			plan.Manifest = types.StringValue(manifest)
+			resources, resDiags := getDryRunResources(ctx, dry, meta)
+			resp.Diagnostics.Append(resDiags...)
 			if resp.Diagnostics.HasError() {
 				return
 			}
 
-			for _, set := range setSensitiveList {
-				valuesMap[set.Name.ValueString()] = set.Value.ValueString()
+			plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
 			}
-		}
-		manifest := redactSensitiveValues(string(jsonManifest), valuesMap)
-		plan.Manifest = types.StringValue(manifest)
-		resources, resDiags := getDryRunResources(ctx, dry, meta)
-		resp.Diagnostics.Append(resDiags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+			tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
 
-		plan.Resources, diags = types.MapValueFrom(ctx, types.StringType, resources)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		tflog.Debug(ctx, fmt.Sprintf("%s set manifest: %s", logID, jsonManifest))
-
-		if !state.Resources.Equal(plan.Resources) {
-			plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			if !state.Resources.Equal(plan.Resources) {
+				plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
+			}
 		}
 
 	} else {
@@ -2537,6 +2557,47 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 		}
 	}
 
+	return false
+}
+
+func isDeferrableDryRunError(err error) (string, bool) {
+	if err == nil {
+		return "", false
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "kubernetes cluster unreachable") {
+		return "cluster was unreachable at create time, marking manifest as computed", true
+	}
+	if hasOnlyCRDNoMatchErrors(err) {
+		return "API did not recognize GroupVersionKind from manifest (CRD may not be installed), marking manifest as computed", true
+	}
+	return "", false
+}
+
+func hasOnlyCRDNoMatchErrors(err error) bool {
+	if err == nil {
+		return false
+	}
+	var agg utilerrors.Aggregate
+	if errors.As(err, &agg) {
+		errs := agg.Errors()
+		if len(errs) == 0 {
+			return false
+		}
+		for _, e := range errs {
+			if !hasOnlyCRDNoMatchErrors(e) {
+				return false
+			}
+		}
+		return true
+	}
+	var noKindErr *apimeta.NoKindMatchError
+	if errors.As(err, &noKindErr) {
+		return strings.Contains(noKindErr.GroupKind.Group, ".")
+	}
+	var noResErr *apimeta.NoResourceMatchError
+	if errors.As(err, &noResErr) {
+		return strings.Contains(noResErr.PartialResource.Group, ".")
+	}
 	return false
 }
 

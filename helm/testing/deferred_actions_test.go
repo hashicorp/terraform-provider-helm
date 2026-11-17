@@ -82,3 +82,44 @@ func TestAccDeferredActions_basic(t *testing.T) {
 		},
 	})
 }
+
+func TestAccDeferredActions_manifestUnreachableCluster(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
+			tfversion.SkipBelow(tfversion.Version1_9_0),
+		},
+		AdditionalCLIOptions: &resource.AdditionalCLIOptions{
+			Plan:  resource.PlanOptions{AllowDeferral: true},
+			Apply: resource.ApplyOptions{AllowDeferral: true},
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: providerFactory,
+				Config: `
+					provider "helm" {
+						kubernetes = {
+							config_path = ""
+							host        = "https://127.0.0.1:1"
+						}
+						experiments = {
+							manifest = true
+						}
+					}
+
+					resource "helm_release" "test" {
+						name      = "test-unreachable"
+						namespace = "default"
+						chart     = "../testdata/charts/test-chart"
+					}
+				`,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectDeferredChange("helm_release.test", plancheck.DeferredReasonResourceConfigUnknown),
+					},
+				},
+			},
+		},
+	})
+}

@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: Fix `ModifyPlan` failing when `experiments.manifest` is enabled and the cluster is unreachable or a required CRD is not yet installed
+```
