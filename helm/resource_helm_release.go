@@ -42,6 +42,7 @@ import (
 	"helm.sh/helm/v3/pkg/postrender"
 	"helm.sh/helm/v3/pkg/registry"
 	"helm.sh/helm/v3/pkg/release"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/helm/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
@@ -2084,14 +2085,22 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			tflog.Debug(ctx, fmt.Sprintf("%s performing dry run install", logID))
 			dry, err := install.Run(chart, values)
 			if err != nil {
-				// NOTE if the cluster is not reachable then we can't run the install
-				// this will happen if the user has their cluster creation in the
-				// same apply. We are catching this case here and marking manifest
-				// as computed to avoid breaking existing configs
-
-				if strings.Contains(err.Error(), "Kubernetes cluster unreachable") {
-					resp.Diagnostics.AddError("cluster was unreachable at create time, marking manifest as computed", err.Error())
-					plan.Manifest = types.StringNull()
+				// NOTE if the cluster is not reachable or a required CRD is not yet
+				// installed (e.g. when the cluster or CRD is created in the same apply),
+				// we mark manifest and resources as unknown and optionally request
+				// deferral so existing configs do not fail during planning.
+				if warningSummary, ok := isDeferrableDryRunError(err); ok {
+					resp.Diagnostics.AddWarning(warningSummary, err.Error())
+					plan.Manifest = types.StringUnknown()
+					plan.Resources = types.MapUnknown(types.StringType)
+					if config.Version.IsNull() {
+						plan.Version = types.StringUnknown()
+					}
+					if req.ClientCapabilities.DeferralAllowed {
+						resp.Deferred = &resource.Deferred{
+							Reason: resource.DeferredReasonResourceConfigUnknown,
+						}
+					}
 					resp.Plan.Set(ctx, &plan)
 					return
 				}
@@ -2538,6 +2547,19 @@ func valuesUnknown(plan HelmReleaseModel) bool {
 	}
 
 	return false
+}
+
+func isDeferrableDryRunError(err error) (string, bool) {
+	if err == nil {
+		return "", false
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "kubernetes cluster unreachable") {
+		return "cluster was unreachable at create time, marking manifest as computed", true
+	}
+	if apimeta.IsNoMatchError(err) {
+		return "API did not recognize GroupVersionKind from manifest (CRD may not be installed), marking manifest as computed", true
+	}
+	return "", false
 }
 
 func isInternalAnno(key string) bool {
