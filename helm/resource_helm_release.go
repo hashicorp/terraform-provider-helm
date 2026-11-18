@@ -441,10 +441,11 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Default:     booldefault.StaticBool(defaultAttributes["pass_credentials"].(bool)),
 			},
 			"recreate_pods": schema.BoolAttribute{
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(defaultAttributes["recreate_pods"].(bool)),
-				Description: "Perform pods restart during upgrade/rollback",
+				Optional:           true,
+				Computed:           true,
+				Default:            booldefault.StaticBool(defaultAttributes["recreate_pods"].(bool)),
+				DeprecationMessage: "recreate_pods is no longer supported in Helm v4 and has no effect. Helm v4 removed the underlying upgrade --recreate-pods flag.",
+				Description:        "Perform pods restart during upgrade/rollback",
 			},
 			"render_subchart_notes": schema.BoolAttribute{
 				Optional:    true,
