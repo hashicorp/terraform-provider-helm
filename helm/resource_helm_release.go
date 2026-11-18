@@ -861,11 +861,12 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 
 	client.DryRunStrategy = action.DryRunNone
 	client.DisableHooks = state.DisableWebhooks.ValueBool()
-	if state.Wait.ValueBool() || state.WaitForJobs.ValueBool() {
+	if state.Wait.ValueBool() || state.Atomic.ValueBool() {
 		client.WaitStrategy = kube.StatusWatcherStrategy
 	} else {
 		client.WaitStrategy = kube.HookOnlyStrategy
 	}
+	client.WaitForJobs = state.WaitForJobs.ValueBool()
 	client.Devel = state.Devel.ValueBool()
 	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
 	client.TakeOwnership = state.TakeOwnership.ValueBool()
@@ -910,11 +911,12 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		upgradeClient.ChartPathOptions = *cpo
 		upgradeClient.DryRunStrategy = action.DryRunNone
 		upgradeClient.DisableHooks = state.DisableWebhooks.ValueBool()
-		if state.Wait.ValueBool() || state.WaitForJobs.ValueBool() {
+		if state.Wait.ValueBool() || state.Atomic.ValueBool() {
 			upgradeClient.WaitStrategy = kube.StatusWatcherStrategy
 		} else {
 			upgradeClient.WaitStrategy = kube.HookOnlyStrategy
 		}
+		upgradeClient.WaitForJobs = state.WaitForJobs.ValueBool()
 		upgradeClient.Devel = state.Devel.ValueBool()
 		upgradeClient.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
 		upgradeClient.Namespace = state.Namespace.ValueString()
@@ -1188,11 +1190,12 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.Namespace = plan.Namespace.ValueString()
 	client.TakeOwnership = plan.TakeOwnership.ValueBool()
 	client.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
-	if plan.Wait.ValueBool() || plan.WaitForJobs.ValueBool() {
+	if plan.Wait.ValueBool() || plan.Atomic.ValueBool() {
 		client.WaitStrategy = kube.StatusWatcherStrategy
 	} else {
 		client.WaitStrategy = kube.HookOnlyStrategy
 	}
+	client.WaitForJobs = plan.WaitForJobs.ValueBool()
 	client.DryRunStrategy = action.DryRunNone
 	client.DisableHooks = plan.DisableWebhooks.ValueBool()
 	client.RollbackOnFailure = plan.Atomic.ValueBool()
@@ -1327,7 +1330,7 @@ func (r *HelmRelease) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 	// Initialize uninstall action
 	uninstall := action.NewUninstall(actionConfig)
-	if state.Wait.ValueBool() || state.WaitForJobs.ValueBool() {
+	if state.Wait.ValueBool() || state.Atomic.ValueBool() {
 		uninstall.WaitStrategy = kube.StatusWatcherStrategy
 	} else {
 		uninstall.WaitStrategy = kube.HookOnlyStrategy
@@ -2146,11 +2149,12 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			install.ChartPathOptions = *cpo
 			install.DryRunStrategy = action.DryRunServer
 			install.DisableHooks = plan.DisableWebhooks.ValueBool()
-			if plan.Wait.ValueBool() || plan.WaitForJobs.ValueBool() {
+			if plan.Wait.ValueBool() || plan.Atomic.ValueBool() {
 				install.WaitStrategy = kube.StatusWatcherStrategy
 			} else {
 				install.WaitStrategy = kube.HookOnlyStrategy
 			}
+			install.WaitForJobs = plan.WaitForJobs.ValueBool()
 			install.Devel = plan.Devel.ValueBool()
 			install.DependencyUpdate = plan.DependencyUpdate.ValueBool()
 			install.TakeOwnership = plan.TakeOwnership.ValueBool()
@@ -2254,11 +2258,12 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.Namespace = plan.Namespace.ValueString()
 		upgrade.TakeOwnership = plan.TakeOwnership.ValueBool()
 		upgrade.Timeout = time.Duration(plan.Timeout.ValueInt64()) * time.Second
-		if plan.Wait.ValueBool() || plan.WaitForJobs.ValueBool() {
+		if plan.Wait.ValueBool() || plan.Atomic.ValueBool() {
 			upgrade.WaitStrategy = kube.StatusWatcherStrategy
 		} else {
 			upgrade.WaitStrategy = kube.HookOnlyStrategy
 		}
+		upgrade.WaitForJobs = plan.WaitForJobs.ValueBool()
 		upgrade.DryRunStrategy = action.DryRunServer
 		upgrade.DisableHooks = plan.DisableWebhooks.ValueBool()
 		upgrade.RollbackOnFailure = plan.Atomic.ValueBool()
