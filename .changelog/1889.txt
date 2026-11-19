@@ -1,0 +1,19 @@
+```release-note:feature
+`helm_release` and `helm_template` now use the Helm v4 SDK (`helm.sh/helm/v4`) to support Helm 4 charts and registries. Existing v3 releases remain compatible.
+```
+
+```release-note:enhancement
+`resource/helm_release`: Deprecate `recreate_pods`, which is no longer supported in Helm v4 and has no effect
+```
+
+```release-note:enhancement
+`resource/helm_release`: `force_update` now maps to the Helm v4 force mechanism matching the release's effective apply mode (`force-conflicts` under server-side apply, delete/recreate under client-side apply)
+```
+
+```release-note:enhancement
+`provider`: Plain HTTP for OCI registries is now opt-in via the `HELM_PROVIDER_OCI_PLAIN_HTTP` environment variable, replacing the localhost auto-detection that could silently downgrade TLS
+```
+
+```release-note:bug
+`helm_release`: Fix `wait_for_jobs` not being passed to the Helm v4 install and upgrade actions, restoring job waiting alongside `wait`
+```

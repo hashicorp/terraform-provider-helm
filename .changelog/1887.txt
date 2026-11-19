@@ -1,0 +1,3 @@
+```release-note:bug
+`helm_release`: Fix `valuesUnknown` failing to detect unknown values in `set_list` when `experiments.manifest` is enabled
+```

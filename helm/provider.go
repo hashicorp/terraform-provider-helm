@@ -24,10 +24,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/cli"
-	"helm.sh/helm/v3/pkg/registry"
-	"helm.sh/helm/v3/pkg/storage/driver"
+	"helm.sh/helm/v4/pkg/action"
+	"helm.sh/helm/v4/pkg/cli"
+	"helm.sh/helm/v4/pkg/registry"
+	"helm.sh/helm/v4/pkg/storage/driver"
 )
 
 var _ provider.Provider = &HelmProvider{}
@@ -605,7 +605,7 @@ func (p *HelmProvider) Configure(ctx context.Context, req provider.ConfigureRequ
 		},
 		loggedInOCIRegistries: make(map[string]struct{}),
 	}
-	registryClient, err := registry.NewClient()
+	registryClient, err := newOCIRegistryClient()
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Registry client initialization failed",
@@ -661,9 +661,36 @@ func (p *HelmProvider) Resources(ctx context.Context) []func() resource.Resource
 	}
 }
 
+// newOCIRegistryClient builds the provider's registry client. Plain HTTP is
+// strictly opt-in via HELM_PROVIDER_OCI_PLAIN_HTTP (any non-empty value other
+// than "0"/"false"): Helm v4 never auto-detects local registries, and the
+// provider must not silently downgrade TLS for localhost registries since
+// TLS-secured registries are legitimately served on loopback (e.g. through a
+// port-forward). The acceptance-test helper sets the variable for its local
+// plain-HTTP registry.
+func newOCIRegistryClient() (*registry.Client, error) {
+	var opts []registry.ClientOption
+	if plainHTTPRequested() {
+		opts = append(opts, registry.ClientOptPlainHTTP())
+	}
+	return registry.NewClient(opts...)
+}
+
+func plainHTTPRequested() bool {
+	v := strings.TrimSpace(os.Getenv("HELM_PROVIDER_OCI_PLAIN_HTTP"))
+	if v == "" || v == "0" || v == "false" {
+		return false
+	}
+	return true
+}
+
 func OCIRegistryLogin(ctx context.Context, meta *Meta, actionConfig *action.Configuration, registryClient *registry.Client, repository, chartName, username, password string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
+	// Always populate the action configuration's registry client, even for
+	// non-OCI operations: chart dependency updates and other registry-backed
+	// calls go through actionConfig.RegistryClient regardless of whether the
+	// top-level chart reference is an OCI URL.
 	actionConfig.RegistryClient = registryClient
 
 	var ociURL string
@@ -704,7 +731,9 @@ func OCIRegistryPerformLogin(ctx context.Context, meta *Meta, registryClient *re
 		return nil
 	}
 	// Now we perform the login, with the provided username and password by calling the login method
-	err = registryClient.Login(u.Host, registry.LoginOptBasicAuth(username, password))
+	err = registryClient.Login(u.Host,
+		registry.LoginOptBasicAuth(username, password),
+	)
 	if err != nil {
 		return fmt.Errorf("could not login to OCI registry %q: %v", u.Host, err)
 	}
@@ -726,9 +755,7 @@ func (m *Meta) GetHelmConfiguration(ctx context.Context, namespace string) (*act
 	if err != nil {
 		return nil, err
 	}
-	if err := actionConfig.Init(kc, namespace, m.HelmDriver, func(format string, v ...interface{}) {
-		tflog.Info(context.Background(), fmt.Sprintf(format, v...))
-	}); err != nil {
+	if err := actionConfig.Init(kc, namespace, m.HelmDriver); err != nil {
 		return nil, err
 	}
 	tflog.Info(context.Background(), "[INFO] GetHelmConfiguration success")
