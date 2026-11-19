@@ -2630,11 +2630,11 @@ func testAccHelmReleaseConfigManifestUnknownValues(resource, ns, name, version s
 
 			set_list = [
 				{
-					name  = "podAnnotations.list"
+					name  = "set_list_test"
 					value = [random_string.random_label.result]
 				}
 			]
-			
+
 			values = [<<EOT
 podAnnotations:
   test: ${random_string.random_label.result}
