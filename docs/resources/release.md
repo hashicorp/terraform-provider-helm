@@ -31,7 +31,7 @@ A Chart is a Helm package. It contains all of the resource definitions necessary
 - `disable_crd_hooks` (Boolean) Prevent CRD hooks from running, but run other hooks. See helm install --no-crd-hook
 - `disable_openapi_validation` (Boolean) If set, the installation process will not validate rendered templates against the Kubernetes OpenAPI Schema
 - `disable_webhooks` (Boolean) Prevent hooks from running
-- `force_update` (Boolean) Force resource update through delete/recreate if needed.
+- `force_update` (Boolean) Force resource update when needed. Under Helm v4, installs and server-side-apply upgrades resolve field-manager conflicts (force-conflicts). Upgrades of releases last applied with client-side apply (including releases created with provider v2/v3) force resource replacement (delete/recreate, as with v3 upgrade --force).
 - `keyring` (String) Location of public keys used for verification, Used only if 'verify is true'
 - `lint` (Boolean) Run helm lint when planning
 - `max_history` (Number) Limit the maximum number of revisions saved per release. Use 0 for no limit

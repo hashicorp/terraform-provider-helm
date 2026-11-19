@@ -340,7 +340,7 @@ func (r *HelmRelease) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(defaultAttributes["force_update"].(bool)),
-				Description: "Force resource update through delete/recreate if needed.",
+				Description: "Force resource update when needed. Under Helm v4, installs and server-side-apply upgrades resolve field-manager conflicts (force-conflicts). Upgrades of releases last applied with client-side apply (including releases created with provider v2/v3) force resource replacement (delete/recreate, as with v3 upgrade --force).",
 			},
 			"id": schema.StringAttribute{
 				Computed: true,
@@ -742,6 +742,35 @@ func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 	return out
 }
 
+// applyForceForUpdateStrategy maps the force_update attribute onto the Helm v4
+// force mechanisms according to the effective apply mode, since the two are
+// mutually exclusive in the SDK (kube.ClientUpdateOptionForceReplace must not
+// be combined with ClientUpdateOptionForceConflicts):
+//
+//   - server-side apply (install always, upgrade when the effective mode is
+//     SSA): force_update resolves field-manager conflicts (ForceConflicts).
+//   - client-side apply (upgrade of a release recorded with apply method
+//     "csa", which includes every release created under provider v3):
+//     force_update performs delete/recreate (ForceReplace), matching the
+//     v3 upgrade --force behavior the attribute was modeled on.
+func applyForceForUpdateStrategy(ctx context.Context, logID string, forceUpdate bool, lastRelease *v1.Release, install bool) (forceConflicts, forceReplace bool) {
+	if !forceUpdate {
+		return false, false
+	}
+	if install {
+		tflog.Debug(ctx, fmt.Sprintf("%s force_update: install applies server-side, mapping to ForceConflicts", logID))
+		return true, false
+	}
+	// Mirror the SDK's getUpgradeServerSideValue("auto", lastRelease.ApplyMethod):
+	// an empty apply method (all provider v3 releases) resolves to client-side.
+	if lastRelease != nil && lastRelease.ApplyMethod == string(v1.ApplyMethodServerSideApply) {
+		tflog.Debug(ctx, fmt.Sprintf("%s force_update: prior release used server-side apply, mapping to ForceConflicts", logID))
+		return true, false
+	}
+	tflog.Debug(ctx, fmt.Sprintf("%s force_update: prior release used client-side apply, mapping to ForceReplace", logID))
+	return false, true
+}
+
 func getInstalledReleaseVersion(ctx context.Context, m *Meta, cfg *action.Configuration, name string) (string, error) {
 	logID := fmt.Sprintf("[getInstalledReleaseVersion: %s]", name)
 	histClient := action.NewHistory(cfg)
@@ -872,6 +901,9 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 	client.DependencyUpdate = state.DependencyUpdate.ValueBool()
 	client.TakeOwnership = state.TakeOwnership.ValueBool()
 	client.Timeout = time.Duration(state.Timeout.ValueInt64()) * time.Second
+	// Install always applies server-side in Helm v4, so force_update resolves
+	// field-manager conflicts rather than replacing objects.
+	client.ForceConflicts, client.ForceReplace = applyForceForUpdateStrategy(ctx, fmt.Sprintf("[resourceReleaseCreate: %s]", state.Name.ValueString()), state.ForceUpdate.ValueBool(), nil, true)
 	client.Namespace = state.Namespace.ValueString()
 	client.ReleaseName = state.Name.ValueString()
 	client.RollbackOnFailure = state.Atomic.ValueBool()
@@ -926,6 +958,14 @@ func (r *HelmRelease) Create(ctx context.Context, req resource.CreateRequest, re
 		upgradeClient.SubNotes = state.RenderSubchartNotes.ValueBool()
 		upgradeClient.DisableOpenAPIValidation = state.DisableOpenapiValidation.ValueBool()
 		upgradeClient.Description = state.Description.ValueString()
+		// Same effective-mode mapping as Update: the release exists, so fetch
+		// it to learn how it was last applied.
+		lastRelease, relErr := getRelease(ctx, meta, actionConfig, releaseName)
+		if relErr != nil && !errors.Is(relErr, errReleaseNotFound) {
+			resp.Diagnostics.AddError("Error retrieving release for upgrade-install", fmt.Sprintf("Unable to determine the release's apply method: %s", relErr))
+			return
+		}
+		upgradeClient.ForceConflicts, upgradeClient.ForceReplace = applyForceForUpdateStrategy(ctx, fmt.Sprintf("[resourceReleaseCreate: %s]", releaseName), state.ForceUpdate.ValueBool(), lastRelease, false)
 
 		if state.PostRender != nil {
 			binaryPath := state.PostRender.BinaryPath.ValueString()
@@ -1203,7 +1243,6 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	client.SkipCRDs = plan.SkipCrds.ValueBool()
 	client.SubNotes = plan.RenderSubchartNotes.ValueBool()
 	client.DisableOpenAPIValidation = plan.DisableOpenapiValidation.ValueBool()
-	client.ForceConflicts = plan.ForceUpdate.ValueBool()
 	client.ResetValues = plan.ResetValues.ValueBool()
 	client.ReuseValues = plan.ReuseValues.ValueBool()
 	client.MaxHistory = int(plan.MaxHistory.ValueInt64())
@@ -1245,6 +1284,18 @@ func (r *HelmRelease) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	name := plan.Name.ValueString()
+
+	// force_update maps to the Helm v4 force mechanism matching the release's
+	// effective apply mode (see applyForceForUpdateStrategy). Requires reading
+	// the deployed release to know how it was last applied.
+	logIDForce := fmt.Sprintf("[resourceReleaseUpdate: %s]", name)
+	lastRelease, relErr := getRelease(ctx, meta, actionConfig, name)
+	if relErr != nil && !errors.Is(relErr, errReleaseNotFound) {
+		resp.Diagnostics.AddError("Error retrieving release for update", fmt.Sprintf("Unable to determine the release's apply method: %s", relErr))
+		return
+	}
+	client.ForceConflicts, client.ForceReplace = applyForceForUpdateStrategy(ctx, logIDForce, plan.ForceUpdate.ValueBool(), lastRelease, false)
+
 	releaseReleaser, err := client.Run(name, c, values)
 	if err != nil {
 		resp.Diagnostics.AddError("Error upgrading chart", fmt.Sprintf("Upgrade failed: %s", err))
@@ -2239,7 +2290,7 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 			return
 		}
 
-		_, err = getRelease(ctx, meta, actionConfig, name)
+		lastKnownRelease, err := getRelease(ctx, meta, actionConfig, name)
 		if err == errReleaseNotFound {
 			if len(chart.Metadata.Version) > 0 {
 				plan.Version = types.StringValue(chart.Metadata.Version)
@@ -2269,7 +2320,9 @@ func (r *HelmRelease) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 		upgrade.DisableHooks = plan.DisableWebhooks.ValueBool()
 		upgrade.RollbackOnFailure = plan.Atomic.ValueBool()
 		upgrade.SubNotes = plan.RenderSubchartNotes.ValueBool()
-		upgrade.ForceConflicts = plan.ForceUpdate.ValueBool()
+		// Dry-run never reaches the apply step, but mirror the apply-time
+		// effective-mode mapping for consistency.
+		upgrade.ForceConflicts, upgrade.ForceReplace = applyForceForUpdateStrategy(ctx, logID, plan.ForceUpdate.ValueBool(), lastKnownRelease, false)
 		upgrade.ResetValues = plan.ResetValues.ValueBool()
 		upgrade.ReuseValues = plan.ReuseValues.ValueBool()
 		upgrade.MaxHistory = int(plan.MaxHistory.ValueInt64())
