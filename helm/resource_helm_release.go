@@ -2453,10 +2453,6 @@ You should update the version in your configuration to %[2]q, or remove the vers
 	if recomputeMetadata(plan, state) {
 		tflog.Debug(ctx, fmt.Sprintf("%s Metadata has changes, setting to unknown", logID))
 		plan.Metadata = types.ObjectUnknown(metadataAttrTypes())
-	} else if state != nil && !plan.Metadata.IsUnknown() && !state.Metadata.IsNull() && !state.Metadata.IsUnknown() {
-		// Preserve the prior state's metadata when nothing relevant changed, to
-		// avoid spurious diffs on computed metadata between plan and apply.
-		plan.Metadata = state.Metadata
 	}
 
 	resp.Plan.Set(ctx, &plan)
@@ -2830,6 +2826,11 @@ func stripHelmMetaAnnotations(obj map[string]any) {
 }
 
 func stripVolatileFields(obj map[string]any) {
+	// metadata.generation is stripped alongside the other server-assigned
+	// fields because Kubernetes increments it on server-side apply even when
+	// the spec is unchanged (each dry-run SSA round-trip can bump it), so a
+	// live object compared against a dry-run render of the same object would
+	// otherwise show a spurious diff on generation.
 	if md, _ := obj["metadata"].(map[string]any); md != nil {
 		delete(md, "managedFields")
 		delete(md, "resourceVersion")
