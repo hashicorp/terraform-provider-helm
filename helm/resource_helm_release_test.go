@@ -2216,6 +2216,11 @@ func testAccHelmReleaseConfigWithTimeouts(resource, ns, name, version string) st
 }
 
 func setupOCIRegistry(t *testing.T, usepassword bool) (string, func()) {
+	// The local registry serves plain HTTP. The provider only uses plain HTTP
+	// when explicitly requested (HELM_PROVIDER_OCI_PLAIN_HTTP), so request it
+	// for the duration of this test.
+	t.Setenv("HELM_PROVIDER_OCI_PLAIN_HTTP", "true")
+
 	// Prefer podman, fall back to docker (podman is a drop-in replacement for
 	// the docker CLI for the commands used below).
 	containerPath, err := exec.LookPath("podman")

@@ -919,7 +919,6 @@ func chartPathOptionsModel(model *HelmTemplateModel, meta *Meta, cpo *action.Cha
 	cpo.Username = model.RepositoryUsername.ValueString()
 	cpo.Password = model.RepositoryPassword.ValueString()
 	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
-	cpo.PlainHTTP = needsPlainHTTP(repository)
 
 	return cpo, chartName, diags
 }

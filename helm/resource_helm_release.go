@@ -1448,23 +1448,8 @@ func chartPathOptions(model *HelmReleaseModel, meta *Meta, cpo *action.ChartPath
 	cpo.Username = model.RepositoryUsername.ValueString()
 	cpo.Password = model.RepositoryPassword.ValueString()
 	cpo.PassCredentialsAll = model.PassCredentials.ValueBool()
-	cpo.PlainHTTP = needsPlainHTTP(repository)
 
 	return cpo, chartName, diags
-}
-
-// needsPlainHTTP reports whether an OCI repository requires plain HTTP (no TLS).
-// Local registries (localhost / 127.0.0.1) are commonly served over plain HTTP.
-func needsPlainHTTP(repository string) bool {
-	if !registry.IsOCI(repository) {
-		return false
-	}
-	u, err := url.Parse(repository)
-	if err != nil {
-		return false
-	}
-	host := u.Hostname()
-	return host == "localhost" || host == "127.0.0.1" || host == "::1"
 }
 
 func useChartVersion(chart string, repo string) bool {
