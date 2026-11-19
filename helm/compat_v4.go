@@ -24,19 +24,6 @@ func compatSplitManifests(bigFile string) map[string]string {
 	return util.SplitManifests(bigFile)
 }
 
-// compatBySplitManifestsOrder sorts by in-file manifest order.
-// In Helm v4, this moved to helm.sh/helm/v4/pkg/release/v1/util.
-type compatBySplitManifestsOrder []string
-
-func (a compatBySplitManifestsOrder) Len() int { return len(a) }
-func (a compatBySplitManifestsOrder) Less(i, j int) bool {
-	// Split `manifest-%d`
-	anum, _ := strconvAtoi(a[i][len("manifest-"):])
-	bnum, _ := strconvAtoi(a[j][len("manifest-"):])
-	return anum < bnum
-}
-func (a compatBySplitManifestsOrder) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-
 // compatDependencies converts []*v2.Dependency to []chart.Dependency.
 // In Helm v4, chart.Dependency is an alias for any.
 func compatDependencies(deps []*v2.Dependency) []chart.Dependency {
@@ -45,24 +32,4 @@ func compatDependencies(deps []*v2.Dependency) []chart.Dependency {
 		result = append(result, d)
 	}
 	return result
-}
-
-func strconvAtoi(s string) (int, error) {
-	n := 0
-	if len(s) == 0 {
-		return 0, nil
-	}
-	sign := 1
-	i := 0
-	if s[0] == '-' {
-		sign = -1
-		i = 1
-	}
-	for ; i < len(s); i++ {
-		if s[i] < '0' || s[i] > '9' {
-			return 0, nil
-		}
-		n = n*10 + int(s[i]-'0')
-	}
-	return sign * n, nil
 }

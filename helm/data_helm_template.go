@@ -35,6 +35,7 @@ import (
 	"helm.sh/helm/v4/pkg/kube"
 	"helm.sh/helm/v4/pkg/registry"
 	"helm.sh/helm/v4/pkg/release/v1"
+	"helm.sh/helm/v4/pkg/release/v1/util"
 	"k8s.io/helm/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
@@ -575,7 +576,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 		var ok bool
 		c, ok = cLoaded.(*v2.Chart)
 		if !ok {
-			resp.Diagnostics.AddError("Error loading chart", fmt.Sprintf("Could not type assert chart to v2.Chart"))
+			resp.Diagnostics.AddError("Error loading chart", "Could not type assert chart to v2.Chart")
 			return
 		}
 	}
@@ -668,7 +669,7 @@ func (d *HelmTemplate) Read(ctx context.Context, req datasource.ReadRequest, res
 	for k := range splitManifests {
 		manifestsKeys = append(manifestsKeys, k)
 	}
-	sort.Sort(compatBySplitManifestsOrder(manifestsKeys))
+	sort.Sort(util.BySplitManifestsOrder(manifestsKeys))
 
 	var chartCRDs []string
 	for _, crd := range rel.Chart.CRDObjects() {
