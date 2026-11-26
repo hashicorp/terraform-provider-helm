@@ -1,0 +1,3 @@
+```release-note:bug
+`provider`: Fix `basic credential not found` when pulling OCI charts while more than one entry is configured in `registries`.
+```
